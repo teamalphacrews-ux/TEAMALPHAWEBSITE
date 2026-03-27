@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@300;400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #d4af37;
+  --primary-hover: #b8962e;
+  --bg-dark: #ffffff;
+  --bg-card: #f9f9f9;
+  --text-main: #1a1a1a;
+  --text-muted: #666666;
+  --glass: rgba(255, 255, 255, 0.82);
+  --border: rgba(0, 0, 0, 0.08);
+  --radius: 20px;
+}
+
+@layer base {
+  body {
+    @apply bg-[#F7F5F2] text-[#1C1C1C] antialiased;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.clip-path-right-tail {
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.clip-path-left-tail {
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes breathe {
+    0%, 100% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(1.03); opacity: 1; }
+}
+
+@keyframes gentle-fade {
+    0%, 100% { opacity: 0.4; transform: scale(0.98); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-breathe { animation: breathe 4s ease-in-out infinite; }
+.animate-gentle-fade { animation: gentle-fade 2s ease-in-out infinite; }
+.animate-slow-spin { animation: spin 12s linear infinite; }
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

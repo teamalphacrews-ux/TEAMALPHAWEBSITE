@@ -1,0 +1,17 @@
+C:\Users\vikas\OneDrive\Desktop\AlphaUpdated\backend\node_modules\multer-storage-cloudinary\lib\index.js:57
+        this.cloudinary = opts.cloudinary;
+                        ^
+System.Management.Automation.RemoteException
+TypeError: Cannot set properties of undefined (setting 'cloudinary')
+    at CloudinaryStorage (C:\Users\vikas\OneDrive\Desktop\AlphaUpdated\backend\node_modules\multer-storage-cloudinary\lib\index.js:57:25)
+    at Object.<anonymous> (C:\Users\vikas\OneDrive\Desktop\AlphaUpdated\backend\routes\galleryRoutes.js:18:17)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1504:12)
+    at require (node:internal/modules/helpers:152:16)
+System.Management.Automation.RemoteException
+Node.js v24.11.1
