@@ -48,35 +48,62 @@ router.post('/upload', auth, (req, res, next) => {
 });
 
 router.get('/', auth, async (req, res) => {
-    const items = await Gallery.find().sort({ uploadedAt: -1 });
-    res.json(items);
+    try {
+        const items = await Gallery.find().sort({ uploadedAt: -1 });
+        res.json(items);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch gallery items' });
+    }
 });
 
 router.post('/', auth, async (req, res) => {
-    const item = new Gallery(req.body);
-    await item.save();
+    try {
+        const item = new Gallery(req.body);
+        await item.save();
 
-    await Notification.create({
-        title: "Gallery Registry Updated",
-        description: `New item added to ${item.clientFolder || 'Default'} - ${item.category || 'General'}.`,
-        type: "Gallery"
-    });
+        // Safe extension: Link to Event.photos if an event matches the category/albumName
+        const Event = require('../models/Event');
+        const event = await Event.findOne({ title: item.category });
+        if (event) {
+            if (!event.photos) event.photos = [];
+            event.photos.push(item._id);
+            await event.save();
+        }
 
-    res.json(item);
+        await Notification.create({
+            title: "Gallery Registry Updated",
+            description: `New item added to ${item.clientFolder || 'Default'} - ${item.category || 'General'}${item.driveName ? ` in Drive: ${item.driveName}` : ''}.`,
+            type: "Gallery"
+        });
+
+        res.json(item);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to create gallery item' });
+    }
 });
 
 router.patch('/:id/favorite', auth, async (req, res) => {
-    const item = await Gallery.findById(req.params.id);
-    item.isFavorite = !item.isFavorite;
-    await item.save();
-    res.json(item);
+    try {
+        const item = await Gallery.findById(req.params.id);
+        if (!item) return res.status(404).json({ error: 'Item not found' });
+        item.isFavorite = !item.isFavorite;
+        await item.save();
+        res.json(item);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update favorite status' });
+    }
 });
 
 router.patch('/:id/select', auth, async (req, res) => {
-    const item = await Gallery.findById(req.params.id);
-    item.isSelected = !item.isSelected;
-    await item.save();
-    res.json(item);
+    try {
+        const item = await Gallery.findById(req.params.id);
+        if (!item) return res.status(404).json({ error: 'Item not found' });
+        item.isSelected = !item.isSelected;
+        await item.save();
+        res.json(item);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update selected status' });
+    }
 });
 
 router.patch('/:id/cover', auth, async (req, res) => {

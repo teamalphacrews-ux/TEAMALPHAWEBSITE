@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import axios from "axios";
 import { Upload, Star, ChevronDown, Image as ImageIcon, Plus, CheckCircle2, SlidersHorizontal, Grid3X3, Maximize2, Download, X, Share2, Heart, Folder, ChevronRight, FolderPlus, Trash2, Edit3, Check } from "lucide-react";
 import toast from "react-hot-toast";
@@ -19,14 +20,34 @@ export default function SmartGallery() {
   // Folder navigation state
   const [activeClientFolder, setActiveClientFolder] = useState(null);
   const [activeEventFolder, setActiveEventFolder] = useState(null);
+  const [activeDrive, setActiveDrive] = useState(null);
 
   const [showUploadForm, setShowUploadForm] = useState(false);
+  const { setIsFocusMode } = useOutletContext();
   const [editingClient, setEditingClient] = useState(null);
   const [newClientName, setNewClientName] = useState("");
   const [editingEvent, setEditingEvent] = useState(null);
   const [newEventName, setNewEventName] = useState("");
   const [editingItemId, setEditingItemId] = useState(null);
   const [newItemTitle, setNewItemTitle] = useState("");
+
+  // Focus mode toggle to hide topbar when modal is active
+  useEffect(() => {
+    if (setIsFocusMode) {
+        setIsFocusMode(showUploadForm);
+    }
+    
+    if (showUploadForm) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = 'auto';
+    }
+    
+    return () => {
+        if (setIsFocusMode) setIsFocusMode(false);
+        document.body.style.overflow = 'auto';
+    };
+  }, [showUploadForm, setIsFocusMode]);
 
   // Upload Form State
   const [selectedType, setSelectedType] = useState("Image"); // "Image", "Video", "Drive Link", "Image Link"
@@ -42,18 +63,20 @@ export default function SmartGallery() {
 
   const fetchGallery = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/gallery`, authHeader);
-      if (response.data && response.data.length > 0) {
+      setLoading(true);
+      const response = await axios.get(`${API}/api/gallery`, authHeader);
+      
+      if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
         setGalleryItems(response.data);
         const favs = new Set(response.data.filter(item => item.isFavorite).map(item => item._id));
         setFavorites(favs);
       } else {
-        setGalleryItems(MOCK_GALLERY);
+        setGalleryItems([]);
       }
-      setLoading(false);
     } catch (err) {
-      console.error("Failed to fetch gallery, utilizing local mock", err);
-      setGalleryItems(MOCK_GALLERY);
+      // API error or Network Error, gracefully show empty gallery instead of breaking React render
+      setGalleryItems([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -90,7 +113,7 @@ export default function SmartGallery() {
       if (lightboxItem?._id === id) setLightboxItem(null);
       toast.success("Asset deleted successfully!");
     } catch (err) {
-      console.error(err);
+      
       toast.error("Failed to delete asset.");
     }
   };
@@ -130,24 +153,23 @@ export default function SmartGallery() {
           fileData.append("file", file);
 
           try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/gallery/upload`, fileData, authHeader);
-
+            const res = await axios.post(`${API}/api/gallery/upload`, fileData, authHeader);
             const payload = {
               title: total > 1 ? `${generatedTitle} ${i + 1}` : generatedTitle,
               albumName: generatedTitle,
               clientFolder,
               url: res.data.url,
               category,
-              type
+              type,
+              driveName: formData.get('driveName') || null
             };
-
-            const itemRes = await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/gallery`, payload, authHeader);
+            const itemRes = await axios.post(`${API}/api/gallery`, payload, authHeader);
             newItems.push(itemRes.data);
             uploadedCount++;
             setUploadProgress(`Uploaded ${uploadedCount} of ${total} files...`);
           } catch (err) {
             const backendError = err.response?.data?.error || err.message;
-            console.error(`Failed to upload file ${i + 1}`, backendError);
+            
             toast.error(`File ${i + 1} Error: ${backendError}`);
           }
         }));
@@ -174,7 +196,7 @@ export default function SmartGallery() {
           finalUrl = res.data.url;
         } catch (err) {
           const backendError = err.response?.data?.error || err.message;
-          console.error("Drive cover upload error:", backendError);
+          
           setSubmitting(false);
           setUploadProgress("");
           return toast.error(`Upload Error: ${backendError}`);
@@ -218,7 +240,7 @@ export default function SmartGallery() {
       setDriveUrl("");
       setImageUrl("");
     } catch (err) {
-      console.error(err);
+      
       toast.error("An error occurred during submission.");
     } finally {
       setSubmitting(false);
@@ -237,7 +259,7 @@ export default function SmartGallery() {
       }));
       toast.success("Set as Folder Cover Successfully!");
     } catch (err) {
-      console.error(err);
+      
       toast.error("Failed to set cover");
     }
   };
@@ -251,7 +273,7 @@ export default function SmartGallery() {
       setNewClientName("");
       toast.success("Folder renamed successfully!");
     } catch (err) {
-      console.error(err);
+      
       toast.error("Failed to rename folder.");
     }
   };
@@ -273,7 +295,7 @@ export default function SmartGallery() {
       setNewEventName("");
       toast.success("Event folder renamed!");
     } catch (err) {
-      console.error(err);
+      
       toast.error("Failed to rename event category.");
     }
   };
@@ -287,7 +309,7 @@ export default function SmartGallery() {
       setNewItemTitle("");
       toast.success("Title updated!");
     } catch (err) {
-      console.error(err);
+      
       toast.error("Failed to update title.");
     }
   };
@@ -300,7 +322,7 @@ export default function SmartGallery() {
       toast.success("Folder deleted successfully!");
       setEditingClient(null);
     } catch (err) {
-      console.error(err);
+      
       toast.error("Failed to delete folder.");
     }
   };
@@ -313,7 +335,7 @@ export default function SmartGallery() {
       toast.success("Event folder deleted!");
       setEditingEvent(null);
     } catch (err) {
-      console.error(err);
+      
       toast.error("Failed to delete event folder.");
     }
   };
@@ -327,6 +349,22 @@ export default function SmartGallery() {
 
   // Final Media to show
   const filteredItems = itemsForActiveClient.filter(item => item.category === activeEventFolder);
+
+  // Grouping Logic for "Drives" and "Photos" at SAME LEVEL
+  const driveNames = [...new Set(filteredItems.filter(item => item.driveName).map(item => item.driveName))];
+  const directDrives = filteredItems.filter(item => item.type === 'drive');
+  const driveFolders = driveNames.map(name => ({
+    name,
+    type: 'folder',
+    items: filteredItems.filter(item => item.driveName === name)
+  }));
+
+  const displayPhotos = activeDrive 
+    ? filteredItems.filter(item => item.driveName === activeDrive)
+    : filteredItems.filter(item => !item.driveName && item.type !== 'drive');
+
+  const displayDrives = [...driveFolders, ...directDrives];
+  const allMediaItems = [...displayDrives, ...displayPhotos];
 
   return (
     <div className="space-y-8 md:space-y-12 text-charcoal px-4 md:px-0 pb-20 mt-4 animate-in fade-in duration-1500">
@@ -346,53 +384,65 @@ export default function SmartGallery() {
 
       {/* Breadcrumb Navigation */}
       <div className="flex items-center gap-3 text-sm text-warmgray font-medium animate-in fade-in slide-in-from-left-4 duration-700 delay-200" style={{ animationFillMode: 'backwards' }}>
-        <span className="cursor-pointer hover:text-charcoal transition-colors" onClick={() => { setActiveClientFolder(null); setActiveEventFolder(null); }}>Gallery</span>
+        <span className="cursor-pointer hover:text-charcoal transition-colors" onClick={() => { setActiveClientFolder(null); setActiveEventFolder(null); setActiveDrive(null); }}>Gallery</span>
         {activeClientFolder && (
           <>
             <ChevronRight size={16} />
-            <span className="cursor-pointer hover:text-charcoal transition-colors" onClick={() => setActiveEventFolder(null)}>{activeClientFolder}</span>
+            <span className="cursor-pointer hover:text-charcoal transition-colors" onClick={() => { setActiveEventFolder(null); setActiveDrive(null); }}>{activeClientFolder}</span>
           </>
         )}
         {activeEventFolder && (
           <>
             <ChevronRight size={16} />
-            <span className="text-charcoal">{activeEventFolder}</span>
+            <span className="cursor-pointer hover:text-charcoal transition-colors" onClick={() => setActiveDrive(null)}>{activeEventFolder}</span>
+          </>
+        )}
+        {activeDrive && (
+          <>
+            <ChevronRight size={16} />
+            <span className="text-charcoal">{activeDrive}</span>
           </>
         )}
       </div>
 
       {showUploadForm && (
-        <div className="fixed inset-0 bg-charcoal/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="flex justify-between items-center mb-6 border-b border-ivory pb-4">
-              <h3 className="font-serif text-2xl text-charcoal">Upload Media</h3>
-              <button type="button" onClick={() => setShowUploadForm(false)} className="p-2 hover:bg-ivory rounded-full text-warmgray hover:text-charcoal"><X size={20} /></button>
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-md z-[100] flex items-start md:items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-500">
+          <div className="bg-[#1a1c1e]/95 backdrop-blur-lg w-full max-w-xl rounded-[28px] border border-white/10 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-500 relative overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Header Glow */}
+            <div className="absolute top-0 inset-x-0 h-40 bg-linear-to-b from-white/5 to-transparent pointer-events-none z-0" />
+
+            <div className="sticky top-0 sticky-header flex justify-between items-center px-8 md:px-10 py-8 relative z-20 bg-inherit backdrop-blur-md border-b border-white/5">
+              <h3 className="font-serif text-3xl text-white tracking-tight">Upload Media</h3>
+              <button type="button" onClick={() => setShowUploadForm(false)} className="p-2.5 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-all transform hover:rotate-90">
+                <X size={26} />
+              </button>
             </div>
 
-            <form onSubmit={submitUpload} className="space-y-6">
+            <div className="flex-1 overflow-y-auto px-8 md:px-10 pb-10 scrollbar-hide pt-6">
+              <form onSubmit={submitUpload} className="space-y-8 relative z-10">
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Client Folder</label>
-                  <select name="clientFolderSelect" defaultValue={activeClientFolder || ""} className="w-full bg-ivory/40 border border-[#e6e3df] rounded-xl px-4 py-3 text-sm focus:outline-mutedbrown appearance-none custom-select">
-                    <option value="" disabled>Select a client...</option>
-                    {clientFolders.filter(c => c !== 'Default Client').map(c => <option key={c} value={c}>{c}</option>)}
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-2.5">
+                  <label className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/60 ml-1">Client Folder</label>
+                  <select name="clientFolderSelect" defaultValue={activeClientFolder || ""} className="w-full bg-white/5 border border-white/20 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white focus:bg-white/10 transition-all appearance-none cursor-pointer">
+                    <option value="" disabled className="bg-charcoal text-white">Select a client...</option>
+                    {clientFolders.filter(c => c !== 'Default Client').map(c => <option key={c} value={c} className="bg-charcoal text-white">{c}</option>)}
                   </select>
-                  <input type="text" name="newClientFolder" placeholder="Or type new client name..." className="w-full mt-2 bg-white border border-[#e6e3df] rounded-xl px-4 py-3 text-sm focus:outline-mutedbrown" />
+                  <input type="text" name="newClientFolder" placeholder="Or type new client name..." className="w-full mt-3 bg-white/5 border border-white/20 rounded-2xl px-5 py-4 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white focus:bg-white/10 transition-all" />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Event Category</label>
-                  <select name="category" defaultValue={activeEventFolder || CATEGORIES[0]} className="w-full bg-ivory/40 border border-[#e6e3df] rounded-xl px-4 py-3 text-sm focus:outline-mutedbrown appearance-none custom-select">
-                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                <div className="space-y-2.5">
+                  <label className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/60 ml-1">Event Category</label>
+                  <select name="category" defaultValue={activeEventFolder || CATEGORIES[0]} className="w-full bg-white/5 border border-white/20 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white focus:bg-white/10 transition-all appearance-none cursor-pointer">
+                    {CATEGORIES.map(c => <option key={c} className="bg-charcoal text-white">{c}</option>)}
                   </select>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Asset Type</label>
-                <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+                <label className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/60 ml-1">Asset Type</label>
+                <div className="flex gap-2 p-1.5 bg-white/5 rounded-full border border-white/10 overflow-x-auto scrollbar-hide">
                   {['Image', 'Video', 'Drive Link', 'Image Link'].map((assetType) => (
-                    <label key={assetType} className={`flex-1 min-w-[100px] flex gap-2 items-center justify-center p-3 rounded-xl border text-[10px] sm:text-xs font-bold uppercase tracking-widest cursor-pointer transition-colors ${selectedType === assetType ? 'bg-charcoal text-white border-charcoal shadow-md scale-[1.02]' : 'bg-white text-warmgray border-[#e6e3df] hover:border-charcoal'}`}>
+                    <label key={assetType} className={`flex-1 min-w-[100px] flex gap-2 items-center justify-center py-3 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-widest cursor-pointer transition-all duration-300 ${selectedType === assetType ? 'bg-white text-charcoal shadow-xl scale-[1.03]' : 'text-white/40 hover:text-white hover:bg-white/10 hover:scale-[1.02]'}`}>
                       <input type="radio" name="mediaType" value={assetType} className="hidden" checked={selectedType === assetType} onChange={() => setSelectedType(assetType)} />
                       {assetType}
                     </label>
@@ -400,30 +450,39 @@ export default function SmartGallery() {
                 </div>
               </div>
 
+              {(selectedType === 'Image' || selectedType === 'Video') && (
+                <div className="space-y-2.5">
+                  <label className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/60 ml-1">Assign to Drive (Optional)</label>
+                  <input type="text" name="driveName" placeholder="e.g. Ceremony, Reception..." className="w-full bg-white/5 border border-white/20 rounded-2xl px-5 py-4 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white transition-all" />
+                </div>
+              )}
+
               {selectedType === 'Drive Link' ? (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Google Drive Folder/Shared Link</label>
-                    <input type="url" required value={driveUrl} onChange={(e) => setDriveUrl(e.target.value)} placeholder="https://drive.google.com/..." className="w-full bg-ivory/40 border border-[#e6e3df] rounded-xl px-4 py-3 text-sm focus:outline-mutedbrown" />
-                    <p className="text-[9px] text-warmgray italic">Paste a shareable Google Drive link for this collection.</p>
+                <div className="space-y-6">
+                  <div className="space-y-2.5">
+                    <label className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/60 ml-1">Google Drive Folder/Shared Link</label>
+                    <input type="url" required value={driveUrl} onChange={(e) => setDriveUrl(e.target.value)} placeholder="https://drive.google.com/..." className="w-full bg-white/5 border border-white/20 rounded-2xl px-5 py-4 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white transition-all" />
+                    <p className="text-[10px] text-white/40 italic ml-1">Paste a shareable Google Drive link for this collection.</p>
                   </div>
-                  <div className="space-y-2 mt-4">
-                    <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Upload Cover Photo</label>
-                    <input type="file" accept="image/*" onChange={(e) => setUploadFiles(e.target.files)} required className="w-full bg-white border border-[#e6e3df] rounded-xl px-4 py-3 text-sm focus:outline-mutedbrown file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-charcoal file:text-white" />
+                  <div className="space-y-2.5">
+                    <label className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/60 ml-1">Upload Cover Photo</label>
+                    <input type="file" accept="image/*" onChange={(e) => setUploadFiles(e.target.files)} required className="w-full bg-white/5 border border-white/20 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none file:mr-6 file:py-2.5 file:px-6 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-white file:text-charcoal file:cursor-pointer hover:file:bg-white/90" />
                   </div>
-                </>
+                </div>
               ) : selectedType === 'Image Link' ? (
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Direct Cloudinary / Web URL</label>
-                  <input type="url" required value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://res.cloudinary.com/..." className="w-full bg-ivory/40 border border-[#e6e3df] rounded-xl px-4 py-3 text-sm focus:outline-mutedbrown" />
+                <div className="space-y-2.5">
+                  <label className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/60 ml-1">Direct Cloudinary / Web URL</label>
+                  <input type="url" required value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://res.cloudinary.com/..." className="w-full bg-white/5 border border-white/20 rounded-2xl px-5 py-4 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white transition-all" />
                 </div>
               ) : (
-                <div className="space-y-2 animate-in fade-in duration-500">
-                  <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Select {selectedType}s (Multiple Allowed)</label>
-                  <label className="block w-full border-2 border-dashed border-[#e6e3df] rounded-2xl p-8 hover:bg-gray-50/50 hover:border-charcoal cursor-pointer transition-all text-center">
-                    <Upload size={32} className="mx-auto mb-4 text-warmgray opacity-50" />
-                    <span className="text-charcoal font-medium text-sm block">{uploadFiles && uploadFiles.length > 0 ? `${uploadFiles.length} file(s) selected` : 'Click to Browse Files'}</span>
-                    <span className="text-[10px] text-warmgray tracking-widest uppercase mt-2 block">Upload high-res moments instantly</span>
+                <div className="space-y-3 animate-in fade-in duration-500">
+                  <label className="text-[10px] uppercase font-bold tracking-[0.2em] text-white/60 ml-1">Select {selectedType}s (Multiple Allowed)</label>
+                  <label className="block w-full border-2 border-dashed border-white/20 rounded-[28px] p-12 hover:bg-white/5 hover:border-white transition-all text-center group">
+                    <div className="w-16 h-16 bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-5 border border-white/10 group-hover:scale-110 group-hover:bg-white/10 group-hover:border-white/30 transition-all duration-500">
+                      <Upload size={28} className="text-white opacity-40 group-hover:opacity-100" />
+                    </div>
+                    <span className="text-white font-medium text-lg block mb-1.5">{uploadFiles && uploadFiles.length > 0 ? `${uploadFiles.length} file(s) selected` : 'Click to Browse Files'}</span>
+                    <span className="text-[10px] text-white/40 tracking-[0.2em] uppercase block">Upload high-res moments instantly</span>
                     <input type="file" accept={selectedType === 'Video' ? "video/*" : "image/*"} multiple onChange={(e) => setUploadFiles(e.target.files)} required className="hidden" />
                   </label>
                 </div>
@@ -432,18 +491,19 @@ export default function SmartGallery() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="relative w-full bg-charcoal text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-mutedbrown transition-all shadow-xl disabled:opacity-80 disabled:cursor-not-allowed overflow-hidden"
+                className="relative w-full bg-white text-charcoal py-5 rounded-2xl text-[12px] font-bold uppercase tracking-[0.4em] hover:bg-white hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:scale-[1.01] active:scale-[0.98] transition-all shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] disabled:opacity-40 disabled:cursor-not-allowed overflow-hidden mt-6"
               >
                 {submitting ? (
-                  <span className="flex items-center justify-center gap-3 animate-pulse">
-                    <span className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></span>
-                    {uploadProgress || "Processing Luxury Asset..."}
+                  <span className="flex items-center justify-center gap-4">
+                    <span className="w-5 h-5 rounded-full border-3 border-charcoal/20 border-t-charcoal animate-spin"></span>
+                    <span className="animate-pulse">{uploadProgress || "Curating Assets..."}</span>
                   </span>
                 ) : (
-                  "Add to Folder"
+                  "Finalize & Upload"
                 )}
               </button>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -592,102 +652,84 @@ export default function SmartGallery() {
         </div>
       )}
 
-      {/* LEVEL 3: Media Grid */}
+      {/* LEVEL 3: Unified Media & Drives Grid */}
       {activeClientFolder && activeEventFolder && (
-        <div className={`min-h-[50vh] ${viewMode === 'masonry' ? 'columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'}`}>
-          {filteredItems.map((item, idx) => {
-            const id = item._id || idx;
-            const isFav = favorites.has(id);
-            const isVideo = item.type === 'video';
+        <div className="space-y-12">
+          <div className="space-y-6">
+            <h4 className="text-[10px] uppercase font-bold tracking-[0.3em] text-warmgray border-b border-ivory pb-2">
+              {activeDrive ? `Inside Drive: ${activeDrive}` : "Collection Highlights"}
+            </h4>
+            <div className={`min-h-[30vh] ${viewMode === 'masonry' ? 'columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'}`}>
+              {allMediaItems.map((item, idx) => {
+                const id = item._id || idx;
+                const isFav = favorites.has(id);
+                const isVideo = item.type === 'video';
+                const isDrive = item.type === 'drive' || item.type === 'folder';
+                const itemUrl = item.url || (item.items?.[0]?.url); // Use folder's first image if group
 
-            return (
-              <div
-                key={id}
-                className={`group relative bg-white rounded-3xl overflow-hidden border border-ivory/50 shadow-sm hover:shadow-2xl transition-all duration-700 hover:-translate-y-2 cursor-pointer break-inside-avoid animate-in fade-in slide-in-from-bottom-8 ${viewMode === 'grid' ? 'aspect-4/5' : 'mb-6'}`}
-                style={{ animationDelay: `${idx * 50}ms`, animationFillMode: 'backwards' }}
-                onClick={() => item.type === 'drive' ? window.open(item.link || item.url, '_blank') : setLightboxItem(item)}
-              >
-                <div className="w-full h-full relative overflow-hidden">
-                  {isVideo ? (
-                    <video src={item.url} className="w-full h-auto object-cover block group-hover:scale-110 transition-transform duration-3000 ease-out" muted loop onMouseOver={e => e.target.play()} onMouseOut={e => e.target.pause()} />
-                  ) : (
-                    <img
-                      src={item.url}
-                      alt={item.albumName || "Gallery"}
-                      className="w-full h-auto min-h-[240px] bg-gray-50 object-cover block query-target group-hover:scale-110 transition-transform duration-3000 ease-out"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800"; // Fallback aesthetic cover
-                      }}
-                    />
-                  )}
-
-                  {isVideo && (
-                    <div className="absolute top-4 right-4 w-8 h-8 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10">
-                      <div className="w-0 h-0 border-t-4 border-t-transparent border-l-8 border-l-white border-b-4 border-b-transparent ml-0.5"></div>
+                return (
+                  <div
+                    key={id}
+                    className="group relative bg-white rounded-3xl overflow-hidden border border-ivory/50 shadow-sm hover:shadow-2xl transition-all duration-700 hover:-translate-y-2 cursor-pointer break-inside-avoid animate-in fade-in slide-in-from-bottom-8 mb-6"
+                    style={{ animationDelay: `${idx * 50}ms`, animationFillMode: 'backwards' }}
+                    onClick={() => {
+                      if (item.type === 'folder') return setActiveDrive(item.name);
+                      if (item.type === 'drive') return window.open(item.link || item.url, '_blank');
+                      setLightboxItem(item);
+                    }}
+                  >
+                    <div className="w-full h-full relative overflow-hidden">
+                      {isVideo ? (
+                        <video src={itemUrl} className="w-full h-auto block group-hover:scale-105 transition-transform duration-3000 ease-out" muted loop onMouseOver={e => e.target.play()} onMouseOut={e => e.target.pause()} />
+                      ) : (
+                        <img
+                          src={itemUrl}
+                          alt={item.title || item.name || "Gallery"}
+                          className="w-full h-auto bg-gray-50 object-contain block group-hover:scale-105 group-hover:blur-[2px] transition-all duration-3000 ease-out"
+                          loading="lazy"
+                        />
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-linear-to-t from-charcoal/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
-                  {item.type === 'drive' && (
-                    <div className="absolute top-4 left-4 bg-[#1aa0a0]/90 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-md flex items-center gap-1">
-                      <Folder size={12} /> Drive Access
-                    </div>
-                  )}
-                  <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                    {editingItemId === id ? (
-                      <input
-                        autoFocus
-                        type="text"
-                        className="w-full bg-white/20 border border-white/40 rounded-lg px-2 py-1 text-sm text-white font-serif mb-2 outline-none backdrop-blur-md"
-                        value={newItemTitle}
-                        onChange={(e) => setNewItemTitle(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => e.key === 'Enter' && handleUpdateTitle(id, item.title)}
-                      />
-                    ) : (
-                      <h3 className="text-white font-serif text-lg truncate mb-1">{item.title || "Wedding Moment"}</h3>
-                    )}
-                    <div className="flex items-center justify-between mt-3">
-                      <div className="flex gap-2">
-                        <button onClick={(e) => toggleFavorite(id, e)} className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition-colors ${isFav ? 'bg-white/20 border-gold/50 text-gold' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}>
-                          <Heart size={15} fill={isFav ? "currentColor" : "none"} />
-                        </button>
-                        <button onClick={(e) => handleSetCover(id, e)} title="Set as Thumbnail Cover" className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition-colors ${item.isCover ? 'bg-gold border-gold text-white shadow-lg shadow-gold/30' : 'bg-white/10 border-white/20 text-white hover:bg-gold hover:border-gold'}`}>
-                          <Star size={15} fill={item.isCover ? "currentColor" : "none"} />
-                        </button>
-                        {item.type === 'drive' ? (
-                          <button onClick={(e) => { e.stopPropagation(); window.open(item.link || item.url, '_blank') }} className="px-3 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white backdrop-blur-md hover:bg-[#1aa0a0] hover:border-[#1aa0a0] transition-all text-[10px] font-bold tracking-widest">
-                            <Share2 size={14} className="mr-2" /> Drive
-                          </button>
-                        ) : (
-                          <button onClick={(e) => downloadItem(item.url, e)} className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white backdrop-blur-md hover:bg-white hover:text-charcoal transition-all">
-                            <Download size={15} />
-                          </button>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (editingItemId === id) handleUpdateTitle(id, item.title);
-                            else { setEditingItemId(id); setNewItemTitle(item.title || ""); }
-                          }}
-                          className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition-all ${editingItemId === id ? 'bg-green-500 border-green-500 text-white' : 'bg-white/10 border-white/20 text-white hover:bg-charcoal'}`}
-                        >
-                          {editingItemId === id ? <Check size={15} /> : <Edit3 size={15} />}
-                        </button>
-                        <button onClick={(e) => deleteItem(id, e)} className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white backdrop-blur-md hover:bg-red-500 hover:border-red-500 hover:text-white transition-all">
-                          <Trash2 size={15} />
-                        </button>
+                    {/* Unified Overlay */}
+                    <div className="absolute inset-0 bg-linear-to-t from-charcoal/90 via-charcoal/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6">
+                      
+                      {/* Stealth Drive Badge - ONLY ON HOVER */}
+                      {isDrive && (
+                        <div className="absolute top-6 left-6 bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest flex items-center gap-2 transform -translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                          <Share2 size={12} />
+                          Drive Access
+                        </div>
+                      )}
+
+                      <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                        <h3 className="text-white font-serif text-lg truncate mb-1">{item.title || item.name || "Gallery Moment"}</h3>
+                        <div className="flex items-center justify-between mt-3 text-white/50 text-[9px] font-bold uppercase tracking-widest">
+                           <span>{isDrive ? "Open Collection" : "View Photo"}</span>
+                           <div className="flex gap-2">
+                             {!isDrive && (
+                               <button onClick={(e) => toggleFavorite(id, e)} className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md border transition-colors ${isFav ? 'bg-white/20 border-gold/50 text-gold' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}>
+                                 <Heart size={15} fill={isFav ? "currentColor" : "none"} />
+                               </button>
+                             )}
+                             <button onClick={(e) => { e.stopPropagation(); if (isDrive) window.open(item.link || item.url, '_blank'); else downloadItem(itemUrl, e); }} className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white backdrop-blur-md hover:bg-white hover:text-charcoal transition-all">
+                                 {isDrive ? <Share2 size={15} /> : <Download size={15} />}
+                             </button>
+                             <button onClick={(e) => deleteItem(id, e)} className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white backdrop-blur-md hover:bg-red-500 hover:border-red-500 hover:text-white transition-all">
+                               <Trash2 size={15} />
+                             </button>
+                           </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            )
-          })}
+                )
+              })}
+            </div>
+            {allMediaItems.length === 0 && (
+               <div className="py-20 text-center text-warmgray italic">This collection is currently empty.</div>
+            )}
+          </div>
         </div>
       )}
 

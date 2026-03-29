@@ -23,21 +23,20 @@ export default function Gallery() {
             headers: { 'x-auth-token': token }
           });
           if (res.ok) {
-            const userData = await res.json();
-            setUser(userData);
-            // Use specific galleryTag if set, otherwise fallback to firstName (lowercase)
-            currentTag = (userData.galleryTag && userData.galleryTag.trim() !== "") 
-                         ? userData.galleryTag 
-                         : userData.firstName.toLowerCase();
-            setDisplayTag(currentTag);
-            console.log("Portal User Data:", userData);
-            console.log("Using dynamic gallery tag:", currentTag);
-          } else {
-            console.error("Failed to fetch user data for personalization");
+            const textData = await res.text();
+            if (textData) {
+              const userData = JSON.parse(textData);
+              setUser(userData);
+              // Use specific galleryTag if set, otherwise fallback to firstName (lowercase)
+              currentTag = (userData.galleryTag && userData.galleryTag.trim() !== "") 
+                           ? userData.galleryTag 
+                           : userData.firstName.toLowerCase();
+              setDisplayTag(currentTag);
+            }
           }
         }
       } catch (err) {
-        console.error("Error fetching user for gallery:", err);
+        
       }
 
       if (CLOUD_NAME === "YOUR_CLOUD_NAME_HERE") {
@@ -53,16 +52,24 @@ export default function Gallery() {
             `https://res.cloudinary.com/${CLOUD_NAME}/${resourceType}/list/${currentTag}.json`
           );
           if (response.ok) {
-            const json = await response.json();
-            return json.resources.map(res => {
-              const type = res.type || "upload";
-              const encodedPublicId = res.public_id.split('/').map(encodeURIComponent).join('/');
-              const url = `https://res.cloudinary.com/${CLOUD_NAME}/${resourceType}/${type}/v${res.version}/${encodedPublicId}.${res.format}`;
-              return { type: resourceType, src: url, publicId: res.public_id };
-            });
+            try {
+              const text = await response.text();
+              if (text) {
+                const json = JSON.parse(text);
+                return json.resources.map(res => {
+                  const type = res.type || "upload";
+                  const encodedPublicId = res.public_id.split('/').map(encodeURIComponent).join('/');
+                  const url = `https://res.cloudinary.com/${CLOUD_NAME}/${resourceType}/${type}/v${res.version}/${encodedPublicId}.${res.format}`;
+                  return { type: resourceType, src: url, publicId: res.public_id };
+                });
+              }
+            } catch (e) {
+              
+            }
           }
+
         } catch (err) {
-          console.error(`Error fetching ${resourceType} for ${currentTag}:`, err);
+          
         }
         return [];
       };
@@ -83,7 +90,7 @@ export default function Gallery() {
           setImages(fetchedImages);
         }
       } catch (error) {
-        console.error("Critical Error during gallery loading:", error);
+        
       } finally {
         setLoading(false);
       }
@@ -91,6 +98,16 @@ export default function Gallery() {
 
     fetchUserAndImages();
   }, []);
+
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (selectedMedia) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => { document.body.style.overflow = 'auto'; };
+  }, [selectedMedia]);
 
   const downloadMedia = async (url, filename) => {
     try {
@@ -105,7 +122,7 @@ export default function Gallery() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error("Download failed:", error);
+      
     }
   };
 
@@ -137,7 +154,7 @@ export default function Gallery() {
             {images.map((item, index) => (
               <div
                 key={index}
-                className={`media-tile tile-size-${(index % 5) + 1}`}
+                className="media-tile"
                 onClick={() => setSelectedMedia(item)}
               >
                 {item.type === "image" ? (
@@ -207,14 +224,14 @@ export default function Gallery() {
                 }
 
                 .gallery-mosaic {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-                    grid-auto-rows: 280px;
-                    grid-auto-flow: dense;
-                    gap: 12px;
+                    column-count: 4;
+                    column-gap: 16px;
+                    width: 100%;
                 }
 
                 .media-tile {
+                    break-inside: avoid;
+                    margin-bottom: 24px;
                     position: relative;
                     overflow: hidden;
                     cursor: pointer;
@@ -225,99 +242,147 @@ export default function Gallery() {
                 }
 
                 .media-tile:hover {
-                    box-shadow: 0 15px 35px rgba(0,0,0,0.08);
-                    z-index: 10;
-                    transform: translateY(-5px);
+                    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+                    transform: translateY(-4px);
                     border-color: var(--primary);
                 }
-
-                /* Premium Masonry-like sizing */
-                .tile-size-1 { grid-column: span 1; grid-row: span 1; }
-                .tile-size-2 { grid-column: span 2; grid-row: span 2; }
-                .tile-size-3 { grid-column: span 1; grid-row: span 2; }
-                .tile-size-4 { grid-column: span 2; grid-row: span 1; }
-                .tile-size-5 { grid-column: span 1; grid-row: span 1; }
 
                 .media-tile img,
                 .media-tile video {
                     width: 100%;
-                    height: 100%;
-                    object-fit: cover;
+                    height: auto;
                     display: block;
-                    filter: saturate(0.9);
                     transition: all 0.6s ease;
                 }
 
                 .media-tile:hover img,
                 .media-tile:hover video {
                     transform: scale(1.05);
-                    filter: saturate(1.1);
                 }
 
+                /* Redefined Modal CSS for Premium Balanced UI */
                 .modal-backdrop {
                     position: fixed;
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(255,255,255,0.95);
-                    z-index: 2000;
+                    top: 0; left: 0;
+                    width: 100%; height: 100%;
+                    background: rgba(0, 0, 0, 0.6);
+                    backdrop-filter: blur(10px);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    backdrop-filter: blur(20px);
+                    z-index: 1000;
+                    padding: 20px;
+                    overflow-y: auto;
+                    animate: fadeIn 0.4s ease;
                 }
 
-                .modal-content {
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+                .modal-container {
+                    background: rgba(255, 255, 255, 0.03);
+                    backdrop-filter: blur(20px);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 24px;
+                    width: 100%;
+                    max-width: 1100px;
+                    max-height: 95vh;
                     position: relative;
-                    max-width: 95%;
-                    max-height: 95%;
                     display: flex;
                     flex-direction: column;
-                    align-items: center;
+                    box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+                    overflow: hidden;
                 }
+
+                .modal-media-wrapper {
+                    flex: 1;
+                    overflow-y: auto;
+                    scrollbar-width: none;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    background: #000;
+                    min-height: 300px;
+                }
+
+                .modal-media-wrapper::-webkit-scrollbar { display: none; }
 
                 .modal-media {
                     max-width: 100%;
-                    max-height: 80vh;
-                    box-shadow: 0 40px 100px rgba(0,0,0,0.1);
-                    border-radius: var(--radius);
-                    border: 1px solid var(--border);
+                    max-height: 100%;
+                    display: block;
+                    object-fit: contain;
                 }
 
-                .modal-actions {
-                    margin-top: 32px;
+                .modal-content-footer {
+                    padding: 24px 32px;
+                    background: rgba(0,0,0,0.4);
+                    backdrop-filter: blur(10px);
+                    border-top: 1px solid rgba(255,255,255,0.05);
                     display: flex;
+                    justify-content: center;
                     gap: 16px;
                 }
 
                 .modal-btn {
-                    background: #1a1a1a;
-                    color: white;
+                    padding: 14px 28px;
+                    background: #fff;
+                    color: #000;
                     border: none;
-                    padding: 14px 40px;
-                    cursor: pointer;
-                    font-family: "Inter", sans-serif;
+                    font-family: inherit;
+                    font-weight: 700;
                     font-size: 0.75rem;
-                    font-weight: 600;
                     letter-spacing: 2px;
                     text-transform: uppercase;
-                    border-radius: 40px;
+                    border-radius: 50px;
+                    cursor: pointer;
                     transition: all 0.3s;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
                 }
 
                 .modal-btn:hover {
                     background: var(--primary);
+                    color: #fff;
                     transform: translateY(-2px);
+                    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
                 }
 
-                .close-modal {
+                .modal-btn.secondary {
+                    background: rgba(255,255,255,0.1);
+                    color: #fff;
+                    border: 1px solid rgba(255,255,255,0.1);
+                }
+
+                .modal-btn.secondary:hover {
+                    background: rgba(255,255,255,0.2);
+                    border-color: #fff;
+                }
+
+                .close-modal-btn {
                     position: absolute;
-                    top: -60px;
-                    right: 0;
-                    color: #000;
-                    font-size: 3rem;
+                    top: 24px;
+                    right: 24px;
+                    width: 44px;
+                    height: 44px;
+                    background: rgba(0,0,0,0.5);
+                    backdrop-filter: blur(10px);
+                    color: #fff;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 24px;
                     cursor: pointer;
-                    background: none;
-                    border: none;
-                    font-weight: 200;
+                    z-index: 50;
+                    transition: all 0.3s;
+                }
+
+                .close-modal-btn:hover {
+                    background: #fff;
+                    color: #000;
+                    transform: rotate(90deg);
                 }
 
                 .loading-state {
@@ -363,14 +428,19 @@ export default function Gallery() {
                     color: var(--text-muted);
                 }
 
-                @media (max-width: 768px) {
+                @media (max-width: 1024px) {
                     .gallery-header h2 { font-size: 1.8rem; letter-spacing: 4px; }
                     .gallery-mosaic {
-                        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                        grid-auto-rows: 140px;
+                        column-count: 2;
                     }
                     .modal-actions { flex-direction: column; width: 100%; }
                     .modal-btn { width: 100%; }
+                }
+
+                @media (max-width: 600px) {
+                    .gallery-mosaic {
+                        column-count: 1;
+                    }
                 }
             `}} />
     </div>
@@ -380,21 +450,31 @@ export default function Gallery() {
 function ImageModal({ media, onClose, onDownload }) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <button className="close-modal" onClick={onClose}>&times;</button>
-        {media.type === "image" ? (
-          <img src={media.src.replace('/upload/', '/upload/q_auto,f_auto/')} className="modal-media" alt="Full view" />
-        ) : (
-          <video src={media.src} controls autoPlay className="modal-media" />
-        )}
-        <div className="modal-actions">
+      <div className="modal-container" onClick={e => e.stopPropagation()}>
+        <button className="close-modal-btn" onClick={onClose}>&times;</button>
+        
+        <div className="modal-media-wrapper">
+          {media.type === "image" ? (
+            <img 
+              src={media.src.replace('/upload/', '/upload/q_auto,f_auto/')} 
+              className="modal-media" 
+              alt="Luxury Capture" 
+            />
+          ) : (
+            <video src={media.src} controls autoPlay className="modal-media" />
+          )}
+        </div>
+
+        <div className="modal-content-footer">
           <button
             className="modal-btn"
             onClick={() => onDownload(media.src, `${media.publicId}.${media.src.split('.').pop()}`)}
           >
             Save Memory
           </button>
-          <button className="modal-btn" style={{ background: '#eee', color: '#000' }} onClick={onClose}>Back</button>
+          <button className="modal-btn secondary" onClick={onClose}>
+            Back
+          </button>
         </div>
       </div>
     </div>

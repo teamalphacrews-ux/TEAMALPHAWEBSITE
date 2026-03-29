@@ -7,6 +7,7 @@ const gallerySchema = new mongoose.Schema({
     link: { type: String }, // Used specifically for Drive links
     type: { type: String, enum: ['image', 'video', 'drive'], default: 'image' },
     category: { type: String, enum: ['Engagement', 'Wedding', 'Pre-wedding', 'Haldi', 'Reception', 'Sangeeth', 'Other'], default: 'Wedding' },
+    driveName: { type: String }, // Optional: Group photos under a named drive
     subCategory: { type: String }, // e.g., 'Candid', 'Traditional', 'Drone'
     tags: [{ type: String }],
     width: { type: Number },

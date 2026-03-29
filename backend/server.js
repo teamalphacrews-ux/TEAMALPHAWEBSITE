@@ -164,4 +164,4 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT} with Sockets`));
+server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT} with Sockets`));

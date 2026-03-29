@@ -29,7 +29,10 @@ const upload = multer({ storage });
 router.post('/', auth, async (req, res) => {
     try {
         const { text, recipient, replyTo } = req.body;
-        const user = await User.findById(req.user.id);
+        let user = null;
+        if (req.user.id !== 'hardcoded-admin-id') {
+            user = await User.findById(req.user.id);
+        }
         const isAdmin = req.user.role === 'admin' || req.user.id === 'hardcoded-admin-id';
 
         const newMessage = new Message({
@@ -84,7 +87,7 @@ router.get('/admin/conversations', auth, async (req, res) => {
     }
 
     try {
-        // Group messages by client (who is either sender or recipient)
+        // Improved grouping and name resolution
         const currentUserId = req.user.id;
         const messages = await Message.find({
             $or: [
@@ -94,12 +97,17 @@ router.get('/admin/conversations', auth, async (req, res) => {
             ]
         }).sort({ timestamp: -1 });
 
-        // Simple grouping in JavaScript (can be optimized with aggregation)
-        const conversations = {};
+        const conversationsMap = {};
+        const clientIds = new Set();
+
         messages.forEach(msg => {
             const clientUserId = msg.recipient === 'admin' ? msg.sender : msg.recipient;
-            if (!conversations[clientUserId]) {
-                conversations[clientUserId] = {
+            if (clientUserId !== 'admin' && clientUserId !== 'hardcoded-admin-id') {
+                clientIds.add(clientUserId);
+            }
+            
+            if (!conversationsMap[clientUserId]) {
+                conversationsMap[clientUserId] = {
                     userId: clientUserId,
                     userName: msg.recipient === 'admin' ? msg.senderName : 'Client',
                     lastMessage: msg.text,
@@ -108,11 +116,23 @@ router.get('/admin/conversations', auth, async (req, res) => {
                 };
             }
             if (!msg.isRead && msg.recipient === 'admin') {
-                conversations[clientUserId].unreadCount += 1;
+                conversationsMap[clientUserId].unreadCount += 1;
             }
         });
 
-        res.json(Object.values(conversations));
+        // Resolve actual names for all clients
+        const users = await User.find({ _id: { $in: Array.from(clientIds) } }, 'firstName lastName name');
+        const nameMap = {};
+        users.forEach(u => {
+            nameMap[u._id.toString()] = u.name || `${u.firstName} ${u.lastName}`.trim();
+        });
+
+        const conversations = Object.values(conversationsMap).map(conv => ({
+            ...conv,
+            userName: nameMap[conv.userId] || conv.userName
+        }));
+
+        res.json(conversations);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -132,9 +152,14 @@ router.get('/admin/:userId', auth, async (req, res) => {
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         // Check for clearedAt timestamp for this conversation
-        const user = await User.findById(req.user.id);
-        const chatClearInfo = user.clearedChats?.find(c => c.contactId === req.params.userId);
-        const clearedAt = chatClearInfo ? chatClearInfo.clearedAt : new Date(0);
+        let clearedAt = new Date(0);
+        if (req.user.id !== 'hardcoded-admin-id') {
+            const user = await User.findById(req.user.id);
+            if (user) {
+                const chatClearInfo = user.clearedChats?.find(c => c.contactId === req.params.userId);
+                if (chatClearInfo) clearedAt = chatClearInfo.clearedAt;
+            }
+        }
 
         const query = {
             $or: [
@@ -266,6 +291,9 @@ router.delete('/:messageId/:mode', auth, async (req, res) => {
 // @access  Private
 router.post('/clear/:userId', auth, async (req, res) => {
     try {
+        if (req.user.id === 'hardcoded-admin-id') {
+            return res.status(400).json({ msg: 'System Admin cannot clear persistent chats via database' });
+        }
         const user = await User.findById(req.user.id);
         const contactId = req.params.userId;
 

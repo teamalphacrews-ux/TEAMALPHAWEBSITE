@@ -10,9 +10,46 @@ import { useAuth } from "../../../context/AuthContext";
 
 export default function Topbar({ onMenuClick }) {
     const navigate = useNavigate();
-    const { user: adminProfile, logout } = useAuth();
-    const [query, setQuery] = useState("");
+    const { user: adminProfile, logout, updateUser } = useAuth();
     const [showProfileModal, setShowProfileModal] = useState(false);
+    
+    // Premium Scroll Behavior State
+    const [isVisible, setIsVisible] = useState(true);
+    const [isScrolled, setIsScrolled] = useState(false);
+    const lastScrollY = useRef(0);
+    const ticking = useRef(false);
+
+    useEffect(() => {
+        const updateHeader = () => {
+            const currentScrollY = window.scrollY;
+            
+            // Toggle shadow based on scroll position
+            setIsScrolled(currentScrollY > 10);
+
+            // Hide/Show logic with 10px threshold to avoid flicker
+            if (currentScrollY < 10) {
+                setIsVisible(true);
+            } else if (currentScrollY > lastScrollY.current) {
+                setIsVisible(false);
+            } else if (currentScrollY < lastScrollY.current - 5) {
+                // Requiring a 5px upward scroll to trigger re-appearance for stability
+                setIsVisible(true);
+            }
+
+            lastScrollY.current = currentScrollY;
+            ticking.current = false;
+        };
+
+        const handleScroll = () => {
+            if (!ticking.current) {
+                window.requestAnimationFrame(updateHeader);
+                ticking.current = true;
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
 
     // Notifications State
     const [showNotifications, setShowNotifications] = useState(false);
@@ -21,14 +58,8 @@ export default function Topbar({ onMenuClick }) {
 
     // Initial check: if no user is present, Topbar should still render but with defaults
     const activeProfile = {
-        name: adminProfile?.name || "Admin",
+        name: adminProfile?.firstName || adminProfile?.name || "Admin",
         role: adminProfile?.role === 'admin' ? "Admin Registry" : (adminProfile?.role || "Staff")
-    };
-
-    const handleSearch = (e) => {
-        if (e.key === 'Enter' && query.trim()) {
-            navigate(`/admin/crm?search=${encodeURIComponent(query)}`);
-        }
     };
 
     // --- Notifications Logic ---
@@ -38,20 +69,22 @@ export default function Topbar({ onMenuClick }) {
             const res = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/notifications`, {
                 headers: { "x-auth-token": token }
             });
-            setNotifications(res.data);
+            if (res && res.data && Array.isArray(res.data)) {
+                setNotifications(res.data);
+            } else {
+                setNotifications([]);
+            }
         } catch (err) {
-            console.error("Failed to fetch notifications");
+            setNotifications([]);
         }
     };
 
     useEffect(() => {
         fetchNotifications();
-        // Setup polling every 5 seconds for near real-time emulation
         const interval = setInterval(fetchNotifications, 5000);
         return () => clearInterval(interval);
     }, []);
 
-    // Close notifications dropdown when clicking outside
     useEffect(() => {
         function handleClickOutside(event) {
             if (notifRef.current && !notifRef.current.contains(event.target)) {
@@ -121,7 +154,7 @@ export default function Topbar({ onMenuClick }) {
 
     return (
         <>
-            <header className="h-16 md:h-20 px-3 md:px-8 flex items-center justify-between border-b border-[#e6e3df] bg-white/80 backdrop-blur-md sticky top-0 z-30 w-full">
+            <header className={`h-16 md:h-20 px-3 md:px-8 flex items-center justify-between border-b border-[#e6e3df] bg-white/95 backdrop-blur-md sticky top-0 z-30 w-full transition-all duration-300 ease-in-out ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"} ${isScrolled ? "shadow-md border-transparent" : "shadow-none"}`}>
                 <div className="flex items-center gap-2 md:gap-4 flex-1">
                     <button
                         onClick={onMenuClick}
@@ -129,17 +162,7 @@ export default function Topbar({ onMenuClick }) {
                     >
                         <Menu size={18} className="md:w-5 md:h-5" />
                     </button>
-                    <div className="hidden md:flex items-center flex-1 max-w-xl relative">
-                        <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-warmgray" size={18} />
-                        <input
-                            type="text"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            onKeyDown={handleSearch}
-                            placeholder="Search leads, clients..."
-                            className="w-full pl-8 py-2 bg-transparent text-sm focus:outline-none placeholder:text-warmgray/60 font-medium"
-                        />
-                    </div>
+                    {/* Search bar removed per request */}
                 </div>
 
                 <div className="flex items-center gap-2 md:gap-6">

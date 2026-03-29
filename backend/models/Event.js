@@ -7,7 +7,8 @@ const eventSchema = new mongoose.Schema({
     lead: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },
     location: String,
     teamMembers: [String],
-    type: { type: String, enum: ['Wedding', 'Pre-Wedding', 'Engagement', 'Meeting'], default: 'Wedding' }
+    type: { type: String, enum: ['Wedding', 'Pre-Wedding', 'Engagement', 'Meeting'], default: 'Wedding' },
+    photos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Gallery' }]
 }, { timestamps: true });
 
 module.exports = mongoose.models.Event || mongoose.model('Event', eventSchema);

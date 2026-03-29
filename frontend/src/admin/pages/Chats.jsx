@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MessageSquare, Send, User, Check, CheckCheck, ChevronLeft, 
   MoreVertical, Edit3, Trash2, Smile, Paperclip, Search, X, Clock, Reply, Copy, Image as ImageIcon
@@ -7,11 +7,13 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import EmojiPicker from 'emoji-picker-react';
 import { format } from 'date-fns';
+import { useAuth } from "../../context/AuthContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😲', '😢'];
 
 export default function Chats() {
+  const { user: adminProfile } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -86,7 +88,7 @@ export default function Chats() {
     newSocket.on('message_edited', (updatedMsg) => { setMessages(prev => prev.map(m => m._id === updatedMsg._id ? updatedMsg : m)); });
     newSocket.on('message_deleted_everyone', (data) => { setMessages(prev => prev.map(m => m._id === data.id ? { ...m, text: 'This transmission redacted', isDeletedEveryone: true, attachments: [] } : m)); });
     newSocket.on('messages_seen', () => {
-      setMessages(prev => prev.map(m => (m.sender === "admin" || m.sender === "hardcoded-admin-id") ? { ...m, status: 'seen', isRead: true } : m));
+      setMessages(prev => prev.map(m => (m.sender === "admin" || String(m.sender) === String(adminProfile?.id || adminProfile?._id)) ? { ...m, status: 'seen', isRead: true } : m));
       fetchConversations();
     });
 
@@ -200,6 +202,39 @@ export default function Chats() {
     } catch (err) { }
   };
 
+  const handleDelete = async (messageId, mode) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_URL}/api/chats/${messageId}/${mode}`, { headers: { "x-auth-token": token } });
+      if (mode === 'everyone') {
+        setMessages(prev => prev.map(m => m._id === messageId ? { ...m, text: 'This transmission redacted', isDeletedEveryone: true, attachments: [] } : m));
+      } else {
+        setMessages(prev => prev.filter(m => m._id !== messageId));
+      }
+    } catch (err) { }
+  };
+
+  const handleClear = async (userId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(`${API_URL}/api/chats/clear/${userId}`, {}, { headers: { "x-auth-token": token } });
+      setMessages([]);
+      setShowClearModal(false);
+      fetchConversations();
+    } catch (err) { }
+  };
+
+
+  const handleEditSave = async (messageId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.patch(`${API_URL}/api/chats/${messageId}`, { text: editText }, { headers: { "x-auth-token": token } });
+      setMessages(prev => prev.map(m => m._id === messageId ? res.data : m));
+      setEditingMessage(null);
+      setEditText("");
+    } catch (err) { }
+  };
+
   const handleTyping = (e) => {
     setNewMessage(e.target.value);
     if (!socketRef.current || !selectedUser) return;
@@ -207,6 +242,7 @@ export default function Chats() {
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => { socketRef.current.emit('typing_stop', { roomId: selectedUser.userId, senderId: 'admin' }); }, 2000);
   };
+
 
   const handleEmojiClick = (emojiData) => {
     const input = inputRef.current;
@@ -230,9 +266,10 @@ export default function Chats() {
             <h3 className="text-lg font-serif text-charcoal mb-1">Clear history</h3>
             <p className="text-[9px] text-warmgray mb-6 font-bold uppercase tracking-widest">Permanent record deletion</p>
             <div className="flex flex-col gap-2">
-              <button onClick={() => { setShowClearModal(false); }} className="w-full py-2.5 bg-red-600 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest shadow-lg">Confirm clear</button>
+              <button onClick={() => handleClear(selectedUser.userId)} className="w-full py-2.5 bg-red-600 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest shadow-lg">Confirm clear</button>
               <button onClick={() => setShowClearModal(false)} className="w-full py-2.5 bg-ivory text-warmgray rounded-xl text-[9px] font-bold uppercase tracking-widest border border-[#e6e3df]">Abort</button>
             </div>
+
           </div>
         </div>
       )}
@@ -255,20 +292,22 @@ export default function Chats() {
             {conversations.filter(c => c.userName?.toLowerCase().includes(searchTerm.toLowerCase())).map((conv) => (
                 <button
                   key={conv.userId} onClick={() => selectConversation(conv)}
-                  className={`w-full flex items-center gap-2.5 p-2.5 rounded-[18px] transition-all group ${selectedUser?.userId === conv.userId ? 'bg-charcoal text-white shadow-lg translate-x-0.5' : 'hover:bg-[#fafafa]'}`}
+                  className={`w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all group ${selectedUser?.userId === conv.userId ? 'bg-charcoal text-white shadow-xl' : 'hover:bg-[#fafafa]'}`}
                 >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-serif text-sm shrink-0 ${selectedUser?.userId === conv.userId ? 'bg-white/10 text-white' : 'bg-ivory text-mutedbrown'}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-serif text-base shrink-0 transition-all ${selectedUser?.userId === conv.userId ? 'bg-white/10 text-white' : 'bg-ivory text-mutedbrown shadow-sm group-hover:scale-105 font-bold'}`}>
                     {conv.userName?.charAt(0)}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 text-left">
                     <div className="flex justify-between items-center mb-0.5">
-                      <h3 className={`text-[12px] font-bold truncate ${selectedUser?.userId === conv.userId ? 'text-white' : 'text-charcoal'}`}>{conv.userName}</h3>
-                      <span className="text-[8px] opacity-30 uppercase font-black">{conv.timestamp ? format(new Date(conv.timestamp), 'hh:mm a') : ''}</span>
+                      <h3 className={`text-[13px] font-bold truncate ${selectedUser?.userId === conv.userId ? 'text-white' : 'text-charcoal'}`}>{conv.userName}</h3>
+                      <span className="text-[9px] opacity-40 uppercase font-black">{conv.timestamp ? format(new Date(conv.timestamp), 'hh:mm a') : ''}</span>
                     </div>
-                    <p className={`text-[10px] truncate opacity-40 font-medium ${selectedUser?.userId === conv.userId ? 'text-white/70' : 'text-warmgray'}`}>{conv.lastMessage}</p>
+                    <p className={`text-[11px] truncate opacity-50 font-medium ${selectedUser?.userId === conv.userId ? 'text-white/70' : 'text-warmgray leading-tight'}`}>{conv.lastMessage}</p>
                   </div>
                   {conv.unreadCount > 0 && selectedUser?.userId !== conv.userId && (
-                    <div className="w-3.5 h-3.5 bg-mutedbrown text-white text-[8px] flex items-center justify-center rounded-full font-bold">{conv.unreadCount}</div>
+                    <div className="w-4 h-4 bg-mutedbrown text-white text-[9px] flex items-center justify-center rounded-full font-black shadow-sm ring-2 ring-white">
+                      {conv.unreadCount}
+                    </div>
                   )}
                 </button>
             ))}
@@ -311,7 +350,7 @@ export default function Chats() {
               {/* Chat Canvas */}
               <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-5 md:p-8 flex flex-col gap-5 custom-scrollbar scroll-smooth bg-[#FAFAFA]/40">
                 {messages.map((msg, idx) => {
-                  const isSentByAdmin = msg.sender === "admin" || msg.sender === "hardcoded-admin-id";
+                  const isSentByAdmin = (adminProfile?.id || adminProfile?._id) && (String(msg.sender) === String(adminProfile.id || adminProfile._id) || msg.sender === 'admin');
                   const showDateHeader = idx === 0 || new Date(messages[idx-1].timestamp).toDateString() !== new Date(msg.timestamp).toDateString();
                   
                   return (
@@ -324,71 +363,109 @@ export default function Chats() {
                         </div>
                       )}
                       
-                      <div className={`flex w-full relative ${isSentByAdmin ? "justify-end" : "justify-start"}`}>
-                        <div className="flex flex-col group max-w-[65%] lg:max-w-[42%] relative">
-                          <div 
-                            className={`px-3 py-2.5 shadow-sm text-[12px] leading-relaxed relative flex flex-col gap-2 transition-all cursor-pointer ${
-                              isSentByAdmin ? "bg-charcoal text-white rounded-[16px] rounded-tr-none" : "bg-white border border-[#f0f0f0]/60 text-charcoal rounded-[16px] rounded-tl-none font-medium"
-                            }`}
-                            onClick={() => setActiveMenuId(activeMenuId === msg._id ? null : msg._id)}
-                          >
-                            {msg.replyTo && (
-                                <div className={`p-2 rounded-[12px] text-[10px] mb-0.5 line-clamp-2 border-l-3 ${isSentByAdmin ? 'bg-white/10 border-white/20' : 'bg-[#f9f9f9] border-[#eee]'}`}>
-                                    <p className="font-bold opacity-40 mb-0.5 text-[8px] uppercase tracking-tighter">Reference</p>
-                                    {msg.replyTo.text}
+                      {/* Message Row Structure */}
+                      <div className={`w-full flex mb-2 px-2 ${isSentByAdmin ? "justify-end" : "justify-start"}`}>
+                        <div 
+                            className={`flex flex-col group max-w-[80%] lg:max-w-[70%] relative ${isSentByAdmin ? 'items-end' : 'items-start'}`}
+                        >
+                          <div className={`flex items-start gap-2 ${isSentByAdmin ? 'flex-row-reverse' : 'flex-row'}`}>
+                            {/* Message Bubble Container */}
+                            <div 
+                                className={`px-4 py-3 shadow-sm text-[13px] leading-relaxed relative flex flex-col gap-1.5 transition-all ${
+                                isSentByAdmin 
+                                    ? "bg-charcoal text-white rounded-[20px] rounded-tr-none shadow-md" 
+                                    : "bg-white border border-[#f0f0f0] text-charcoal rounded-[20px] rounded-tl-none font-medium shadow-sm"
+                                }`}
+                            >
+                                {/* Message Tail */}
+                                <div className={`absolute top-0 w-2 h-2 ${isSentByAdmin ? '-right-1.5 bg-charcoal' : '-left-1.5 bg-white border-l border-t border-[#f0f0f0]'}`} style={{ clipPath: isSentByAdmin ? 'polygon(0 0, 0% 100%, 100% 0)' : 'polygon(0 0, 100% 0, 100% 100%)' }}></div>
+
+                                {msg.replyTo && (
+                                    <div className={`p-2 rounded-[14px] text-[11px] mb-1 line-clamp-2 border-l-4 transition-all opacity-80 ${isSentByAdmin ? 'bg-white/10 border-white/20' : 'bg-[#f7f7f7] border-mutedbrown shadow-inner'}`}>
+                                        <p className="font-black opacity-40 mb-0.5 text-[9px] uppercase tracking-widest flex items-center gap-1.5">
+                                            <Reply size={10} strokeWidth={3} /> Quoted message
+                                        </p>
+                                        <p className="italic font-medium">{msg.replyTo.text}</p>
+                                    </div>
+                                )}
+
+                                {editingMessage === msg._id ? (
+                                    <div className="flex flex-col gap-3 min-w-[240px] animate-in fade-in duration-300">
+                                        <textarea 
+                                            className="bg-transparent focus:outline-none w-full border-b border-white/40 text-[13px] py-1 placeholder:text-white/30 resize-none font-medium" 
+                                            value={editText} 
+                                            onChange={(e) => setEditText(e.target.value)} 
+                                            autoFocus 
+                                        />
+                                        <div className="flex justify-end gap-3 text-[10px] font-bold uppercase tracking-widest">
+                                            <button onClick={() => { setEditingMessage(null); setEditText(""); }} className="opacity-60 hover:opacity-100">Abort</button>
+                                            <button onClick={() => handleEditSave(msg._id)} className="bg-white text-charcoal px-3 py-1 rounded-full shadow-md">Apply changes</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {msg.messageType === 'image' && msg.attachments?.[0] && (
+                                            <div className="relative overflow-hidden rounded-xl border border-black/5 bg-black/5 mb-1">
+                                                <img src={msg.attachments[0].url} className="w-full max-h-72 object-contain" />
+                                            </div>
+                                        )}
+                                        <p className="whitespace-pre-wrap leading-[1.6] select-text">{msg.isDeletedEveryone ? "This message was deleted" : msg.text}</p>
+                                    </>
+                                )}
+                                
+                                {/* Timestamp and Status */}
+                                <div className={`mt-1 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest opacity-40 ${isSentByAdmin ? 'justify-end text-white/50' : 'justify-start text-charcoal/50'}`}>
+                                    <span>{format(new Date(msg.timestamp), 'hh:mm a')}</span>
+                                    {isSentByAdmin && (
+                                        <span className="flex items-center gap-0.5">
+                                            {msg.status === 'sent' && <Check size={11} strokeWidth={3} />}
+                                            {msg.status === 'delivered' && <CheckCheck size={11} strokeWidth={3} />}
+                                            {msg.status === 'seen' && <CheckCheck size={11} strokeWidth={3} className="text-emerald-400" />}
+                                        </span>
+                                    )}
                                 </div>
+
+                                {msg.reactions?.length > 0 && (
+                                    <div className={`flex flex-wrap gap-1 absolute -bottom-3.5 z-10 animate-in zoom-in duration-300 ${isSentByAdmin ? 'right-2' : 'left-2'}`}>
+                                        {msg.reactions.map((r, i) => (
+                                            <div key={i} className="bg-white border border-[#f0f0f0] rounded-full px-1.5 py-0.5 text-[11px] shadow-sm ring-2 ring-[#fafafa] font-normal">
+                                                {r.emoji}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Contextual 3-Dot Menu Trigger (Visible on Hover) */}
+                            {!msg.isDeletedEveryone && !editingMessage && (
+                                <button 
+                                    onClick={() => setActiveMenuId(activeMenuId === msg._id ? null : msg._id)}
+                                    className={`p-1 mt-1 text-lightgray hover:text-charcoal transition-all opacity-0 group-hover:opacity-100 hover:bg-ivory rounded-lg shrink-0 ${activeMenuId === msg._id ? 'opacity-100' : ''}`}
+                                >
+                                    <MoreVertical size={16} />
+                                </button>
                             )}
 
-                            {editingMessage === msg._id ? (
-                                <div className="flex flex-col gap-2 min-w-[200px]">
-                                    <textarea className="bg-transparent focus:outline-none w-full border-b border-white/20 text-[12px] py-1" value={editText} onChange={(e) => setEditText(e.target.value)} autoFocus />
-                                    <div className="flex justify-end gap-2.5 text-[8px] font-bold uppercase tracking-widest opacity-80">
-                                        <button onClick={() => setEditingMessage(null)}>Abort</button>
-                                        <button className="bg-white text-charcoal px-2 py-0.5 rounded shadow-md">Apply</button>
+                            {/* Action Menu (Positioned Absolute relative to Bubble area) */}
+                            {activeMenuId === msg._id && !editingMessage && (
+                                <div ref={menuRef} className={`absolute top-full mt-2 w-48 bg-white shadow-[0_15px_40px_rgba(0,0,0,0.12)] rounded-2xl py-2 z-[100] border border-[#f8f8f8] animate-in zoom-in-95 duration-150 ${isSentByAdmin ? "right-0" : "left-0"}`}>
+                                    <div className="px-4 py-1.5 mb-1 flex items-center justify-between border-b border-[#f9f9f9] pb-2">
+                                        {REACTION_EMOJIS.map(emoji => <button key={emoji} onClick={() => handleReact(msg._id, emoji)} className="text-lg hover:scale-125 transition-transform">{emoji}</button>)}
+                                    </div>
+                                    <button onClick={() => {setReplyingTo(msg); setActiveMenuId(null);}} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fafafa] text-[12px] font-bold text-charcoal/80"><Reply size={14} className="opacity-40" /> Reply</button>
+                                    <button onClick={() => {navigator.clipboard.writeText(msg.text); setActiveMenuId(null); toast.success('Copied to clipboard');}} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fafafa] text-[12px] font-bold text-charcoal/80"><Copy size={14} className="opacity-40" /> Copy Text</button>
+                                    {isSentByAdmin && (
+                                        <button onClick={() => {setEditingMessage(msg._id); setEditText(msg.text); setActiveMenuId(null);}} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fafafa] text-[12px] font-bold text-charcoal/80"><Edit3 size={14} className="opacity-40" /> Edit Message</button>
+                                    )}
+                                    <div className="mt-1 pt-1 border-t border-red-50">
+                                        <button onClick={() => { setIsDeleting(msg); setActiveMenuId(null); }} className="w-full text-left px-4 py-2.5 text-[10px] uppercase font-black text-red-500 hover:bg-red-50 flex items-center gap-3"><Trash2 size={14} /> Remove for me</button>
+                                        {isSentByAdmin && (
+                                            <button onClick={() => {handleDelete(msg._id, 'everyone'); setActiveMenuId(null);}} className="w-full text-left px-4 py-2.5 text-[10px] uppercase font-black text-red-500 hover:bg-red-50 flex items-center gap-3"><Trash2 size={14} /> Wipe for everyone</button>
+                                        )}
                                     </div>
                                 </div>
-                            ) : (
-                                <>
-                                    {msg.messageType === 'image' && msg.attachments?.[0] && <img src={msg.attachments[0].url} className="rounded-xl w-full mb-0.5 border border-black/5 max-h-52 object-contain bg-black/5" />}
-                                    <p className="whitespace-pre-wrap">{msg.isDeletedEveryone ? "This transmission redacted" : msg.text}</p>
-                                </>
-                            )}
-                            
-                            {msg.reactions?.length > 0 && (
-                                <div className="flex flex-wrap gap-1 absolute -bottom-2.5 left-2">
-                                    {msg.reactions.map((r, i) => <div key={i} className="bg-white border border-[#f0f0f0] rounded-full px-1 py-0.5 text-[10px] shadow-sm">{r.emoji}</div>)}
-                                </div>
                             )}
                           </div>
-
-                          <div className={`mt-1.2 flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-widest text-lightgray opacity-30 ${isSentByAdmin ? 'justify-end' : 'justify-start'}`}>
-                            <span>{format(new Date(msg.timestamp), 'hh:mm a')}</span>
-                            {isSentByAdmin && !msg.isDeletedEveryone && (
-                                <span className="flex items-center">
-                                    {msg.status === 'sent' && <Check size={10} />}
-                                    {msg.status === 'delivered' && <CheckCheck size={10} />}
-                                    {msg.status === 'seen' && <CheckCheck size={10} className="text-emerald-500" />}
-                                </span>
-                            )}
-                          </div>
-
-                          {/* Action Menu */}
-                          {activeMenuId === msg._id && !editingMessage && (
-                            <div ref={menuRef} className={`absolute top-0 w-48 bg-white shadow-[0_15px_40px_rgba(0,0,0,0.12)] rounded-xl py-1 z-[100] border border-[#f8f8f8] animate-in zoom-in-95 duration-150 ${isSentByAdmin ? "right-[105%]" : "left-[105%]"}`}>
-                               <button onClick={() => {setReplyingTo(msg); setActiveMenuId(null);}} className="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-[#fafafa] text-[11px] font-medium"><Reply size={13} className="opacity-30" /> Reply</button>
-                               <div className="px-3 py-1.5 border-y border-[#f9f9f9] flex items-center justify-between">
-                                  {REACTION_EMOJIS.map(emoji => <button key={emoji} onClick={() => handleReact(msg._id, emoji)} className="text-base hover:scale-125 transition-all">{emoji}</button>)}
-                               </div>
-                               <button onClick={() => {navigator.clipboard.writeText(msg.text); setActiveMenuId(null);}} className="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-[#fafafa] text-[11px] font-medium"><Copy size={13} className="opacity-30" /> Copy Text</button>
-                               <button onClick={() => {setEditingMessage(msg._id); setEditText(msg.text); setActiveMenuId(null);}} className="w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-[#fafafa] text-[11px] font-medium"><Edit3 size={13} className="opacity-30" /> Edit Message</button>
-                               <div className="pt-1">
-                                  <button onClick={() => { setIsDeleting(msg); setActiveMenuId(null); }} className="w-full text-left px-3.5 py-2 text-[9px] uppercase font-bold text-red-500 hover:bg-red-50 flex items-center gap-2.5"><Trash2 size={13} /> Remove me</button>
-                                  {isSentByAdmin && (
-                                    <button onClick={() => {handleDelete(msg._id, 'everyone'); setActiveMenuId(null);}} className="w-full text-left px-3.5 py-2 text-[9px] uppercase font-bold text-red-500 hover:bg-red-50 flex items-center gap-2.5"><Trash2 size={13} /> Wipe everyone</button>
-                                  )}
-                               </div>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </React.Fragment>
@@ -416,14 +493,14 @@ export default function Chats() {
                    </button>
                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
 
-                   <div className="flex-1 relative flex items-center">
-                     <textarea 
-                        ref={inputRef} placeholder="Enter transmission..." value={newMessage} onChange={handleTyping}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
-                        className="w-full bg-[#f9f9f9] border-none rounded-xl py-2.5 pl-4 pr-10 text-[12px] min-h-[40px] max-h-24 resize-none custom-scrollbar focus:ring-1 focus:ring-neutral-100 transition-all font-medium placeholder:text-lightgray/40"
-                        rows={1} onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px'; }}
-                     />
-                     <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-2 p-1.5 rounded-lg transition-all ${showEmojiPicker ? 'bg-charcoal text-white shadow-lg' : 'text-warmgray hover:bg-[#efefef] opactiy-60'}`}><Smile size={17} /></button>
+                    <div className="flex-1 relative flex items-center">
+                      <textarea 
+                         ref={inputRef} placeholder="Enter transmission..." value={newMessage} onChange={handleTyping}
+                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
+                         className="w-full bg-[#f9f9f9] border-none rounded-[24px] py-3 pl-5 pr-12 text-[13px] min-h-[44px] max-h-32 resize-none custom-scrollbar focus:ring-1 focus:ring-neutral-100 transition-all font-medium placeholder:text-lightgray/40 shadow-inner"
+                         rows={1} onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
+                      />
+                      <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-3 p-1.5 rounded-full transition-all ${showEmojiPicker ? 'bg-charcoal text-white shadow-lg' : 'text-warmgray hover:bg-[#efefef] opacity-60'}`}><Smile size={18} /></button>
                      {showEmojiPicker && (
                         <div className="absolute bottom-[calc(100%+16px)] right-0 z-50 shadow-2xl rounded-2xl overflow-hidden animate-in zoom-in-95">
                             <EmojiPicker onEmojiClick={handleEmojiClick} width={300} height={380} theme="light" skinTonesDisabled />

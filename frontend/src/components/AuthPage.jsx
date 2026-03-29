@@ -140,7 +140,7 @@ const AuthPage = () => {
                             <div className="relative group">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-black transition-colors" size={14} />
                                 <input
-                                    type="email"
+                                    type="text"
                                     name="email"
                                     value={formData.email}
                                     onChange={handleChange}

@@ -97,6 +97,8 @@ function App() {
                 <Route path="chats" element={<AdminChats />} />
               </Route>
             </Route>
+            {/* Catch-All Route for invalid URLs */}
+            <Route path="*" element={<AuthPage />} />
           </Routes>
         </AnimatePresence>
       </Suspense>

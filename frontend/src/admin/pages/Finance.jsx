@@ -81,7 +81,7 @@ export default function Finance() {
                         total: editExpense.amount,
                         invoiceDate: editExpense.date,
                         status: editExpense.status
-                    });
+                    }, authHeader);
                     toast.success("Transaction updated");
                 } else {
                     await axios.put(`${import.meta.env.VITE_API_URL || ""}/api/finance/expense/${editExpense.id}`, editExpense, authHeader);

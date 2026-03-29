@@ -6,15 +6,16 @@ import { toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
 import EstimatePreview from "./EstimatePreview";
 
-export default function InvoiceForm({ onClose, initialClientName = "" }) {
-    const token = localStorage.getItem('token');
-    const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
-    const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  const [clientName, setClientName] = useState(initialClientName);
-  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
+export default function InvoiceForm({ onClose, initialData = null, initialClientName = "" }) {
+  const token = localStorage.getItem('token');
+  const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
+  const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  const [clientName, setClientName] = useState(initialData?.clientName || initialClientName);
+  const [invoiceDate, setInvoiceDate] = useState(initialData?.invoiceDate ? initialData.invoiceDate.split('T')[0] : new Date().toISOString().split('T')[0]);
   const [currentStep, setCurrentStep] = useState(1);
 
-  const [events, setEvents] = useState([
+  const [events, setEvents] = useState(initialData?.events || [
     { eventName: "Pre Wedding", services: "Candid Photography\nCinematography\nDrone Coverage", equipment: "SONY A7R4\nSONY FX3\nDJI AIR 3S", dateLocation: "Feb 2026", price: 35000 },
     { eventName: "Home Rituals\nBride & Groom", services: "Traditional Photography", equipment: "SONY M4", dateLocation: "9th or 10th\nApril 2026", price: 16000 },
     { eventName: "Haldi\nBride & Groom", services: "Traditional Photography", equipment: "SONY M4", dateLocation: "9th or 10th\nApril 2026", price: 16000 },
@@ -23,15 +24,14 @@ export default function InvoiceForm({ onClose, initialClientName = "" }) {
     { eventName: "Muhurtham", services: "Candid Photography\nTraditional Photography\nTraditional Videography X2\nCinematography\nDrone Coverage", equipment: "SONY A7R4\nSONY M4\nSONY FX-30\nSONY FX3\nDJI AIR 3S", dateLocation: "12th April 2026", price: 70000 }
   ]);
 
-
-  const [timeline, setTimeline] = useState([
+  const [timeline, setTimeline] = useState(initialData?.timeline || [
     { deliverable: "Soft Copies (All photos)", time: "7 Days" },
     { deliverable: "Candid Photographs", time: "45 days" },
     { deliverable: "Cinematography Video", time: "60 days" },
     { deliverable: "Edited Traditional Video", time: "60 days" }
   ]);
 
-  const [deliverables, setDeliverables] = useState([
+  const [deliverables, setDeliverables] = useState(initialData?.deliverables || [
     "All RAW Data",
     "35 Pre wedding Edited Photos",
     "Pre wedding cinematic Video (3 min max)",
@@ -41,11 +41,11 @@ export default function InvoiceForm({ onClose, initialClientName = "" }) {
     "Traditional Video Edited 2 Hrs max",
     "Reels"
   ]);
-  const [deliverablesPrice, setDeliverablesPrice] = useState(40000);
-  const [discount, setDiscount] = useState(0);
-  const [extraCharges, setExtraCharges] = useState(0);
+  const [deliverablesPrice, setDeliverablesPrice] = useState(initialData?.deliverablesPrice || 40000);
+  const [discount, setDiscount] = useState(initialData?.discount || 0);
+  const [extraCharges, setExtraCharges] = useState(initialData?.extraCharges || 0);
 
-  const [coverImage, setCoverImage] = useState("");
+  const [coverImage, setCoverImage] = useState(initialData?.coverImage || "");
 
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -66,7 +66,6 @@ export default function InvoiceForm({ onClose, initialClientName = "" }) {
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
 
-        // Use html-to-image which respects modern CSS like oklch natively via SVG rendering
         const imgData = await toJpeg(page, {
           quality: 0.95,
           backgroundColor: '#ffffff',
@@ -96,7 +95,7 @@ export default function InvoiceForm({ onClose, initialClientName = "" }) {
     }
     setLoading(true);
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/invoices`, {
+      const payload = {
         clientName,
         invoiceDate,
         events,
@@ -106,9 +105,16 @@ export default function InvoiceForm({ onClose, initialClientName = "" }) {
         discount,
         extraCharges,
         total: grandTotal,
-        status: 'Pending'
-      }, authHeader);
-      toast.success("Estimate saved to Database!");
+        status: initialData?.status || 'Pending'
+      };
+
+      if (initialData?._id) {
+        await axios.put(`${API}/api/invoices/${initialData._id}`, payload, authHeader);
+        toast.success("Changes saved to Database!");
+      } else {
+        await axios.post(`${API}/api/invoices`, payload, authHeader);
+        toast.success("Estimate saved to Database!");
+      }
       if (onClose) onClose();
     } catch (err) {
       console.error("Error generating invoice:", err);
@@ -158,7 +164,6 @@ export default function InvoiceForm({ onClose, initialClientName = "" }) {
       </div>
 
       <div className="flex-1 overflow-y-auto w-full custom-scrollbar relative">
-        {/* FORM SIDE */}
         <div className="p-4 md:p-8 bg-white overflow-x-hidden">
           <form className="space-y-6" onSubmit={handleSubmit}>
 
@@ -324,14 +329,13 @@ export default function InvoiceForm({ onClose, initialClientName = "" }) {
                   disabled={loading}
                   className="flex-1 bg-green-700 text-white py-4 rounded-xl flex items-center justify-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-green-800 transition-all shadow-xl hover:shadow-2xl active:scale-[0.98] disabled:opacity-70"
                 >
-                  <Send size={18} /> {loading ? 'Saving...' : 'Save Estimate to DB'}
+                  <Send size={18} /> {loading ? 'Saving...' : 'Save Changes to DB'}
                 </button>
               )}
             </div>
           </form>
         </div>
 
-        {/* HIDDEN PREVIEW ELEMENT FOR PDF GENERATION */}
         <div className="fixed top-0 left-0 bg-white" style={{ width: '794px', zIndex: -9999, opacity: 0.01, pointerEvents: 'none' }}>
           <div ref={previewRef}>
             <EstimatePreview data={{ clientName, events, timeline, deliverables, deliverablesPrice, discount, extraCharges, total: grandTotal, coverImage }} />

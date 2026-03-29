@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useOutletContext } from "react-router-dom";
 import axios from "axios";
 import { Plus, Search, Filter, MoreHorizontal, FileText, CheckSquare, Users } from "lucide-react";
 import LeadDetails from "../components/crm/LeadDetails";
@@ -14,15 +14,38 @@ export default function CRM() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("leads");
   const [leads, setLeads] = useState([]);
+  const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState(null);
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(null);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [filterStatus, setFilterStatus] = useState("All");
+  const { setIsFocusMode } = useOutletContext();
+
+  // Focus mode toggle to hide topbar when modals/panels are active
+  useEffect(() => {
+    const isAnyModalOpen = showLeadForm || showInvoiceForm || !!selectedLead;
+    if (setIsFocusMode) {
+      setIsFocusMode(isAnyModalOpen);
+    }
+    
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      if (setIsFocusMode) setIsFocusMode(false);
+      document.body.style.overflow = 'auto';
+    };
+  }, [showLeadForm, showInvoiceForm, selectedLead, setIsFocusMode]);
 
   /* State for pre-filling invoice */
   const [invoiceDefaults, setInvoiceDefaults] = useState({ clientName: "" });
+
 
   const handleGenerateInvoice = (lead) => {
     setInvoiceDefaults({ clientName: lead.name });
@@ -31,7 +54,9 @@ export default function CRM() {
 
   useEffect(() => {
     fetchLeads();
+    fetchInvoices();
   }, []);
+
 
   useEffect(() => {
     const query = searchParams.get("search");
@@ -52,6 +77,36 @@ export default function CRM() {
       setLoading(false);
     }
   };
+
+  const fetchInvoices = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/invoices`, {
+        headers: { "x-auth-token": token }
+      });
+      setInvoices(response.data);
+    } catch (err) {
+      console.error("Failed to fetch invoices", err);
+    }
+  };
+
+  const deleteInvoice = async (id, e) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this invoice?")) {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.delete(`${import.meta.env.VITE_API_URL || ""}/api/invoices/${id}`, {
+          headers: { "x-auth-token": token }
+        });
+        setInvoices(invoices.filter(inv => inv._id !== id));
+        toast.success("Invoice deleted successfully");
+      } catch (err) {
+        console.error("Failed to delete invoice", err);
+        toast.error("Failed to delete invoice");
+      }
+    }
+  };
+
 
   const deleteLead = async (id, e) => {
     e.stopPropagation();
@@ -91,7 +146,11 @@ export default function CRM() {
         </div>
         <button
           onClick={() => {
-            if (activeTab === 'invoices') setShowInvoiceForm(true);
+            if (activeTab === 'invoices') {
+                setEditingInvoice(null);
+                setInvoiceDefaults({ clientName: "" });
+                setShowInvoiceForm(true);
+            }
             else if (activeTab === 'team' || activeTab === 'tasks') setShowLeadForm(false);
             else setShowLeadForm(true);
           }}
@@ -100,6 +159,7 @@ export default function CRM() {
           <Plus size={16} />
           {activeTab === 'invoices' ? 'New Invoice' : 'Add New Lead'}
         </button>
+
       </div>
 
       {/* Tabs */}
@@ -260,11 +320,69 @@ export default function CRM() {
 
         {
           activeTab === 'invoices' && (
-            <div className="w-full">
-              <InvoiceForm onClose={() => setActiveTab('leads')} />
+            <div className="bg-white rounded-3xl border border-[#e6e3df]/40 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="p-6 border-b border-ivory/50 flex justify-between items-center bg-ivory/10">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-charcoal">Registry of Generated Invoices</h3>
+                    <div className="text-[10px] font-bold text-warmgray uppercase tracking-widest">{invoices.length} Invoices Found</div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="border-b border-ivory text-[10px] uppercase tracking-widest text-warmgray">
+                                <th className="px-8 py-6 font-bold">Client / Date</th>
+                                <th className="px-8 py-6 font-bold">Status</th>
+                                <th className="px-8 py-6 font-bold">Total Amount</th>
+                                <th className="px-8 py-6 font-bold text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-ivory text-sm">
+                            {invoices.length > 0 ? invoices.map((inv, idx) => (
+                                <tr key={inv._id} className="hover:bg-ivory/5 transition-colors group">
+                                    <td className="px-8 py-6">
+                                        <div className="font-bold text-charcoal">{inv.clientName}</div>
+                                        <div className="text-[10px] text-warmgray mt-1">{new Date(inv.invoiceDate).toLocaleDateString()}</div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${
+                                            inv.status === 'Paid' ? 'bg-green-50 text-green-600' :
+                                            inv.status === 'Cancelled' ? 'bg-red-50 text-red-600' :
+                                            'bg-amber-50 text-amber-600'
+                                        }`}>
+                                            {inv.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-8 py-6 font-serif text-charcoal">
+                                        ₹{inv.total?.toLocaleString('en-IN')}
+                                    </td>
+                                    <td className="px-8 py-6 text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <button 
+                                                onClick={() => { setEditingInvoice(inv); setShowInvoiceForm(true); }}
+                                                className="p-2 hover:bg-ivory rounded-lg text-warmgray hover:text-charcoal transition-colors"
+                                            >
+                                                <FileText size={16} />
+                                            </button>
+                                            <button 
+                                                onClick={(e) => deleteInvoice(inv._id, e)}
+                                                className="p-2 hover:bg-red-50 rounded-lg text-warmgray hover:text-red-500 transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan="4" className="px-8 py-20 text-center text-warmgray italic">No invoices found. Generate one from a lead!</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
           )
         }
+
 
         {
           activeTab === 'tasks' && (
@@ -295,16 +413,27 @@ export default function CRM() {
 
       {
         showInvoiceForm && (
-          <div className="fixed inset-0 bg-charcoal/40 backdrop-blur-md z-60 flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 w-screen h-screen"
+            style={{ 
+                background: 'rgba(0, 0, 0, 0.3)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)'
+            }}
+          >
             <InvoiceForm
               onClose={() => {
                 setShowInvoiceForm(false);
                 setInvoiceDefaults({ clientName: "" });
+                setEditingInvoice(null);
+                fetchInvoices();
               }}
+              initialData={editingInvoice}
               initialClientName={invoiceDefaults.clientName}
             />
           </div>
         )
+
       }
 
       {/* Side Panel for Lead Details */}
