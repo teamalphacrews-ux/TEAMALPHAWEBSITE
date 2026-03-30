@@ -46,15 +46,12 @@ const GoogleSheetsService = {
     },
 
     async getTargetSheetName(spreadsheetId) {
-        console.log("-> getTargetSheetName called");
         const sheets = getSheetsClient();
         if (!sheets) throw new Error('Sheets Client not initialized');
 
         try {
             const cleanId = typeof spreadsheetId === 'string' ? spreadsheetId.trim() : spreadsheetId;
-            console.log("-> fetching spreadsheet metadata for ID:", cleanId);
             const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: cleanId });
-            console.log("-> Metadata fetched successfully!");
             const sheetsList = spreadsheet.data.sheets;
             if (!sheetsList || sheetsList.length === 0) return 'Sheet1';
             
@@ -67,7 +64,6 @@ const GoogleSheetsService = {
     },
 
     async getTasks(spreadsheetId) {
-        console.log("-> getTasks called with ID:", spreadsheetId);
         const sheets = getSheetsClient();
         if (!sheets) {
             console.error("Sheets client not initialized");
@@ -77,16 +73,12 @@ const GoogleSheetsService = {
         const finalId = (spreadsheetId || process.env.GOOGLE_SHEET_ID || '').trim();
 
         try {
-            console.log("-> Awaiting getTargetSheetName");
             const sheetName = await this.getTargetSheetName(finalId);
-            console.log("-> Resolved sheet name:", sheetName);
             
-            console.log("-> Calling spreadsheets.values.get for range:", `${sheetName}!A:ZZ`);
             const response = await sheets.spreadsheets.values.get({
                 spreadsheetId: finalId,
                 range: `${sheetName}!A:ZZ`,
             });
-            console.log("-> Received response! Row count:", response.data.values?.length);
             
             const rows = response.data.values;
             if (!rows || rows.length === 0) return { headers: [], rows: [] };
@@ -117,12 +109,39 @@ const GoogleSheetsService = {
             await sheets.spreadsheets.values.update({
                 spreadsheetId: finalId,
                 range,
-                valueInputOption: 'RAW',
+                valueInputOption: 'USER_ENTERED',
                 requestBody: { values: [[value]] },
             });
             return { success: true, sheetName };
         } catch (error) {
             console.error('Google Sheets Update Cell Error:', error.message);
+            throw error;
+        }
+    },
+
+    async updateCellsBatch(spreadsheetId, updates = [], preferredSheetName) {
+        const sheets = getSheetsClient();
+        if (!sheets) return { success: false };
+
+        const finalId = (spreadsheetId || process.env.GOOGLE_SHEET_ID || '').trim();
+        const sheetName = preferredSheetName || await this.getTargetSheetName(finalId);
+
+        const data = updates.map(u => ({
+            range: `${sheetName}!${this.getColLetter(u.colIndex)}${u.rowId}`,
+            values: [[u.value]]
+        }));
+
+        try {
+            await sheets.spreadsheets.values.batchUpdate({
+                spreadsheetId: finalId,
+                requestBody: {
+                    valueInputOption: 'USER_ENTERED',
+                    data
+                }
+            });
+            return { success: true, sheetName };
+        } catch (error) {
+            console.error('Google Sheets Batch Update Error:', error.message);
             throw error;
         }
     },
@@ -135,11 +154,15 @@ const GoogleSheetsService = {
         const sheetName = preferredSheetName || await this.getTargetSheetName(finalId);
 
         try {
+            // Force spaces instead of empty strings so Google Sheets doesn't ignore the empty append
+            const safeValues = values.map(v => v === "" ? " " : v);
+
             await sheets.spreadsheets.values.append({
                 spreadsheetId: finalId,
                 range: `${sheetName}!A:A`,
-                valueInputOption: 'RAW',
-                requestBody: { values: [values] },
+                valueInputOption: 'USER_ENTERED',
+                insertDataOption: 'INSERT_ROWS',
+                requestBody: { values: [safeValues] },
             });
             return { success: true, sheetName };
         } catch (error) {
@@ -153,21 +176,45 @@ const GoogleSheetsService = {
         if (!sheets) return { success: false };
 
         const finalId = (spreadsheetId || process.env.GOOGLE_SHEET_ID || '').trim();
-        const sheetName = preferredSheetName || await this.getTargetSheetName(finalId);
-
         try {
+            const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: finalId });
+            const sheetName = preferredSheetName || await this.getTargetSheetName(finalId);
+            const sheet = spreadsheet.data.sheets.find(s => s.properties.title === sheetName);
+            const sheetId = sheet.properties.sheetId;
+
             const res = await sheets.spreadsheets.values.get({
                 spreadsheetId: finalId,
                 range: `${sheetName}!1:1`,
             });
             const headers = res.data.values?.[0] || [];
             const nextColIndex = headers.length;
-            const colLetter = this.getColLetter(nextColIndex);
 
+            // 1. Insert a new column dimension to inherit formatting (bold, background color) from the left
+            await sheets.spreadsheets.batchUpdate({
+                spreadsheetId: finalId,
+                requestBody: {
+                    requests: [
+                        {
+                            insertDimension: {
+                                range: {
+                                    sheetId: sheetId,
+                                    dimension: 'COLUMNS',
+                                    startIndex: nextColIndex,
+                                    endIndex: nextColIndex + 1
+                                },
+                                inheritFromBefore: true
+                            }
+                        }
+                    ]
+                }
+            });
+
+            // 2. Set the header text
+            const colLetter = this.getColLetter(nextColIndex);
             await sheets.spreadsheets.values.update({
                 spreadsheetId: finalId,
                 range: `${sheetName}!${colLetter}1`,
-                valueInputOption: 'RAW',
+                valueInputOption: 'USER_ENTERED',
                 requestBody: { values: [[headerName]] },
             });
             return { success: true, sheetName };
@@ -209,6 +256,42 @@ const GoogleSheetsService = {
             return { success: true, sheetName };
         } catch (error) {
             console.error('Google Sheets Delete Row Error:', error.message);
+            throw error;
+        }
+    },
+
+    async deleteColumn(spreadsheetId, colIndex, preferredSheetName) {
+        const sheets = getSheetsClient();
+        if (!sheets) return { success: false };
+
+        const finalId = (spreadsheetId || process.env.GOOGLE_SHEET_ID || '').trim();
+        
+        try {
+            const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: finalId });
+            const sheetName = preferredSheetName || await this.getTargetSheetName(finalId);
+            const sheet = spreadsheet.data.sheets.find(s => s.properties.title === sheetName);
+            const sheetId = sheet.properties.sheetId;
+
+            await sheets.spreadsheets.batchUpdate({
+                spreadsheetId: finalId,
+                requestBody: {
+                    requests: [
+                        {
+                            deleteDimension: {
+                                range: {
+                                    sheetId,
+                                    dimension: 'COLUMNS',
+                                    startIndex: colIndex,
+                                    endIndex: colIndex + 1
+                                }
+                            }
+                        }
+                    ]
+                }
+            });
+            return { success: true, sheetName };
+        } catch (error) {
+            console.error('Google Sheets Delete Column Error:', error.message);
             throw error;
         }
     }

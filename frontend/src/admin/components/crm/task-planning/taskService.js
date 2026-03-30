@@ -42,6 +42,20 @@ export const updateCell = async (rowId, colIndex, value, sheetName) => {
     }
 };
 
+export const batchUpdateCells = async (updates, sheetName) => {
+    try {
+        const response = await axios.put(`${API_URL}/api/google-sheets/batch-update`, {
+            updates
+        }, {
+            headers: getHeaders(sheetName)
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        console.error('Error batch updating cells:', error);
+        return { success: false, error };
+    }
+};
+
 export const addRow = async (values, sheetName) => {
     try {
         const response = await axios.post(`${API_URL}/api/google-sheets/row`, {
@@ -77,7 +91,57 @@ export const deleteRow = async (rowId, sheetName) => {
         });
         return { success: true, data: response.data };
     } catch (error) {
-        console.error('Error deleting row:', error);
+        console.error('Error deleting row:', error.message);
+        return { success: false, error };
+    }
+};
+
+export const deleteColumn = async (colIndex, sheetName) => {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await axios.delete(`${API_URL}/api/google-sheets/column/${colIndex}`, {
+            headers: {
+                ...getHeaders(sheetName),
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        console.error('Error deleting column:', error.message);
+        return { success: false, error };
+    }
+};
+
+export const getDropdownConfig = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${API_URL}/api/google-sheets/config/dropdowns`, {
+            headers: {
+                ...getHeaders(),
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching dropdown config:', error.message);
+        return [];
+    }
+};
+
+export const updateDropdownConfig = async (type, options) => {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await axios.post(`${API_URL}/api/google-sheets/config/dropdowns`, {
+            type, options
+        }, {
+            headers: {
+                ...getHeaders(),
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        console.error('Error updating dropdown config:', error.message);
         return { success: false, error };
     }
 };

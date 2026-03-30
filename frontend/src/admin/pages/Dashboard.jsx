@@ -25,9 +25,9 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         const [statsRes, activityRes, eventsRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL || ""}/api/dashboard/stats`, authHeader),
-          axios.get(`${import.meta.env.VITE_API_URL || ""}/api/dashboard/recent-activity`, authHeader),
-          axios.get(`${import.meta.env.VITE_API_URL || ""}/api/dashboard/upcoming-events`, authHeader)
+          axios.get(`${API}/api/dashboard/stats`, authHeader),
+          axios.get(`${API}/api/dashboard/recent-activity`, authHeader),
+          axios.get(`${API}/api/dashboard/upcoming-events`, authHeader)
         ]);
 
         if (isMounted) {

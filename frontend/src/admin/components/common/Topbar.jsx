@@ -66,8 +66,9 @@ export default function Topbar({ onMenuClick }) {
     const fetchNotifications = async () => {
         try {
             const token = localStorage.getItem("token");
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/notifications`, {
-                headers: { "x-auth-token": token }
+            if (!token) return;
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications`, {
+                headers: { Authorization: `Bearer ${token}` }
             });
             if (res && res.data && Array.isArray(res.data)) {
                 setNotifications(res.data);
@@ -99,8 +100,8 @@ export default function Topbar({ onMenuClick }) {
         e?.stopPropagation();
         try {
             const token = localStorage.getItem("token");
-            await axios.patch(`${import.meta.env.VITE_API_URL || ""}/api/notifications/${id}/read`, {}, {
-                headers: { "x-auth-token": token }
+            await axios.patch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications/${id}/read`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
         } catch (err) {
@@ -112,8 +113,8 @@ export default function Topbar({ onMenuClick }) {
         e?.stopPropagation();
         try {
             const token = localStorage.getItem("token");
-            await axios.delete(`${import.meta.env.VITE_API_URL || ""}/api/notifications/${id}`, {
-                headers: { "x-auth-token": token }
+            await axios.delete(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications(prev => prev.filter(n => n._id !== id));
         } catch (err) {
@@ -125,8 +126,8 @@ export default function Topbar({ onMenuClick }) {
         e?.stopPropagation();
         try {
             const token = localStorage.getItem("token");
-            await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/notifications/mark-all-read`, {}, {
-                headers: { "x-auth-token": token }
+            await axios.post(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications/mark-all-read`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             toast.success("All caught up!");
@@ -139,8 +140,8 @@ export default function Topbar({ onMenuClick }) {
         e?.stopPropagation();
         try {
             const token = localStorage.getItem("token");
-            await axios.delete(`${import.meta.env.VITE_API_URL || ""}/api/notifications/clear-all`, {
-                headers: { "x-auth-token": token }
+            await axios.delete(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications/clear-all`, {
+                headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications([]);
             setShowNotifications(false);

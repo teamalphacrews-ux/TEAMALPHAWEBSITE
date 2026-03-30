@@ -6,14 +6,15 @@ import toast from "react-hot-toast";
 
 export default function ActivityLog() {
     const token = localStorage.getItem('token');
-    const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
+    const authHeader = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
     const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const fetchNotifications = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/notifications`, authHeader);
+            if (!token) { setLoading(false); return; }
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications`, authHeader);
             setNotifications(res.data);
             setLoading(false);
         } catch (err) {
