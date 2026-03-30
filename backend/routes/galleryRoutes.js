@@ -6,7 +6,10 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const CloudinaryStorageModule = require('multer-storage-cloudinary');
+
+// ROBUST IMPORT: Handle library version differences across environments
+const CloudinaryStorage = CloudinaryStorageModule.CloudinaryStorage || CloudinaryStorageModule;
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -61,7 +64,6 @@ router.post('/', auth, async (req, res) => {
         const item = new Gallery(req.body);
         await item.save();
 
-        // Safe extension: Link to Event.photos if an event matches the category/albumName
         const Event = require('../models/Event');
         const event = await Event.findOne({ title: item.category });
         if (event) {

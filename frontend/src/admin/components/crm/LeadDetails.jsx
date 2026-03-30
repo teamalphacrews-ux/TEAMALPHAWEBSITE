@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { X, Mail, Phone, Calendar, Tag, User, Users, Plus, CheckCircle2, MoreVertical, Trash2, Edit2, MapPin, Clock, Save } from "lucide-react";
 import FollowUpList from "./FollowUpList";
-import TaskList from "./TaskList";
+import TaskPlanning from "./task-planning/TaskPlanning";
 import toast from "react-hot-toast";
 import PhotographerProfile from "./PhotographerProfile";
 
-export default function LeadDetails({ lead: initialLead, onClose, onGenerateInvoice }) {
+export default function LeadDetails({ user, lead: initialLead, onClose, onGenerateInvoice }) {
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
     const [lead, setLead] = useState(initialLead);
@@ -356,7 +356,7 @@ export default function LeadDetails({ lead: initialLead, onClose, onGenerateInvo
                     </div>
 
                     <div className="grid grid-cols-1 gap-10">
-                        <TaskList leadId={lead._id} tasks={lead.tasks || []} />
+                        <TaskPlanning user={user} leadId={lead._id} isCompact={true} />
                         <FollowUpList lead={lead} onUpdate={(updatedLead) => setLead(updatedLead)} />
                     </div>
                 </div>

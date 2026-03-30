@@ -7,7 +7,7 @@ const path = require('path');
 require('dotenv').config();
 
 const User = require('./models/User');
-const connectDB = require('./config/db'); // Use the refactored DB connection
+const connectDB = require('./config/db'); 
 const leadRoutes = require('./routes/leadroutes');
 const galleryRoutes = require('./routes/galleryRoutes');
 const financeRoutes = require('./routes/financeRoutes');
@@ -30,7 +30,13 @@ const io = require('socket.io')(server, {
 app.use(express.json());
 app.use(cors());
 
-// --- Socket.IO Logic ---
+// --- Socket.IO Middleware ---
+// Attach socket instance to req so routes can emit events
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
+
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
@@ -60,24 +66,18 @@ io.on('connection', (socket) => {
     });
 });
 
-// Pass io to routes if needed (making it accessible globally)
 app.set('io', io);
 
-// Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// 1. Connect to MongoDB
 connectDB().then(() => {
-    // Initialize Cron Jobs after DB is connected
+    console.log("Database connection sequence complete.");
     initCronJobs();
 }).catch(err => {
     console.error("Delayed Cron initialization due to DB issue:", err.message);
 });
 
-// Auth Router
 const authRouter = express.Router();
-
-// Register Route
 authRouter.post('/register', async (req, res) => {
     try {
         const { firstName, lastName, email, password } = req.body;
@@ -99,12 +99,9 @@ authRouter.post('/register', async (req, res) => {
     }
 });
 
-// Login Route
 authRouter.post('/login', async (req, res) => {
     try {
         const { email, password, role } = req.body;
-
-        // --- ADMIN LOGIN WITH ENV VARS ---
         if (
             process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD &&
             email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD
@@ -116,10 +113,8 @@ authRouter.post('/login', async (req, res) => {
                 user: { id: "hardcoded-admin-id", firstName: "System", lastName: "Admin", email, role: "admin" } 
             });
         }
-        // --- ADMIN LOGIN END ---
 
         const user = await User.findOne({ email });
-
         if (!user) return res.status(400).json({ msg: "Invalid Credentials" });
         if (role && user.role !== role) return res.status(400).json({ msg: "Invalid Role" });
 
@@ -136,7 +131,7 @@ authRouter.post('/login', async (req, res) => {
         res.status(500).json({ msg: "Login failed" });
     }
 });
-// Get current user info
+
 authRouter.get('/me', auth, async (req, res) => {
     try {
         if (req.user.id === "hardcoded-admin-id") {
@@ -150,7 +145,6 @@ authRouter.get('/me', auth, async (req, res) => {
     }
 });
 
-// Routes
 app.use('/api/auth', authRouter);
 app.use('/api/chats', chatRoutes);
 app.use('/api/leads', leadRoutes);
@@ -162,6 +156,12 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/google-sheets', require('./routes/googleSheetRoutes'));
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT} with Sockets`));
+server.listen(PORT, '0.0.0.0', () => {
+    console.log('-------------------------------------------');
+    console.log(`🚀 API Server running on port ${PORT}`);
+    console.log(`🔗 Real-time Sockets Enabled`);
+    console.log('-------------------------------------------');
+});

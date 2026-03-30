@@ -5,7 +5,7 @@ import { Plus, Search, Filter, MoreHorizontal, FileText, CheckSquare, Users } fr
 import LeadDetails from "../components/crm/LeadDetails";
 import LeadForm from "../components/crm/LeadForm";
 import InvoiceForm from "../components/crm/InvoiceForm";
-import TaskList from "../components/crm/TaskList";
+import TaskPlanning from "../components/crm/task-planning/TaskPlanning";
 import PhotographerList from "../components/crm/PhotographerList";
 import { Trash2, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
@@ -23,6 +23,18 @@ export default function CRM() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [filterStatus, setFilterStatus] = useState("All");
   const { setIsFocusMode } = useOutletContext();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+      }
+    }
+  }, []);
 
   // Focus mode toggle to hide topbar when modals/panels are active
   useEffect(() => {
@@ -386,9 +398,7 @@ export default function CRM() {
 
         {
           activeTab === 'tasks' && (
-            <div className="max-w-4xl mx-auto">
-              <TaskList />
-            </div>
+            <TaskPlanning user={user} />
           )
         }
 
@@ -440,6 +450,7 @@ export default function CRM() {
       {
         selectedLead && (
           <LeadDetails
+            user={user}
             lead={selectedLead}
             onClose={() => setSelectedLead(null)}
             onGenerateInvoice={() => handleGenerateInvoice(selectedLead)}

@@ -1,0 +1,217 @@
+const { google } = require('googleapis');
+require('dotenv').config();
+
+// DNS fix for Node >= 17 on some systems where IPv6 hangs
+const dns = require('node:dns');
+dns.setDefaultResultOrder('ipv4first');
+
+let sheetsClient = null;
+
+const getSheetsClient = () => {
+    if (sheetsClient) return sheetsClient;
+
+    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+    const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+
+    if (!clientEmail || !privateKey) {
+        console.warn('⚠️ Google Sheets API credentials missing.');
+        return null;
+    }
+
+    try {
+        const auth = new google.auth.GoogleAuth({
+            credentials: {
+                client_email: clientEmail,
+                private_key: privateKey.replace(/\\n/g, '\n'),
+            },
+            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+        });
+
+        sheetsClient = google.sheets({ version: 'v4', auth });
+        return sheetsClient;
+    } catch (err) {
+        console.error('❌ Failed to initialize Google Sheets Client:', err.message);
+        return null;
+    }
+};
+
+const GoogleSheetsService = {
+    getColLetter(index) {
+        let letter = "";
+        while (index >= 0) {
+            letter = String.fromCharCode((index % 26) + 65) + letter;
+            index = Math.floor(index / 26) - 1;
+        }
+        return letter;
+    },
+
+    async getTargetSheetName(spreadsheetId) {
+        console.log("-> getTargetSheetName called");
+        const sheets = getSheetsClient();
+        if (!sheets) throw new Error('Sheets Client not initialized');
+
+        try {
+            const cleanId = typeof spreadsheetId === 'string' ? spreadsheetId.trim() : spreadsheetId;
+            console.log("-> fetching spreadsheet metadata for ID:", cleanId);
+            const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: cleanId });
+            console.log("-> Metadata fetched successfully!");
+            const sheetsList = spreadsheet.data.sheets;
+            if (!sheetsList || sheetsList.length === 0) return 'Sheet1';
+            
+            const target = sheetsList.find(s => s.properties.title === '2025') || sheetsList[0];
+            return target.properties.title;
+        } catch (error) {
+            console.error('Error fetching sheet metadata:', error.message);
+            return 'Sheet1'; 
+        }
+    },
+
+    async getTasks(spreadsheetId) {
+        console.log("-> getTasks called with ID:", spreadsheetId);
+        const sheets = getSheetsClient();
+        if (!sheets) {
+            console.error("Sheets client not initialized");
+            return { headers: [], rows: [] };
+        }
+        
+        const finalId = (spreadsheetId || process.env.GOOGLE_SHEET_ID || '').trim();
+
+        try {
+            console.log("-> Awaiting getTargetSheetName");
+            const sheetName = await this.getTargetSheetName(finalId);
+            console.log("-> Resolved sheet name:", sheetName);
+            
+            console.log("-> Calling spreadsheets.values.get for range:", `${sheetName}!A:ZZ`);
+            const response = await sheets.spreadsheets.values.get({
+                spreadsheetId: finalId,
+                range: `${sheetName}!A:ZZ`,
+            });
+            console.log("-> Received response! Row count:", response.data.values?.length);
+            
+            const rows = response.data.values;
+            if (!rows || rows.length === 0) return { headers: [], rows: [] };
+
+            const headers = rows[0] || [];
+            const dataRows = rows.slice(1).map((row, index) => ({
+                rowId: index + 2, 
+                values: headers.map((_, colIdx) => row[colIdx] || '')
+            }));
+
+            return { headers, rows: dataRows, sheetName };
+        } catch (error) {
+            console.error('Google Sheets Fetch Error:', error.message);
+            throw error;
+        }
+    },
+
+    async updateCell(spreadsheetId, rowId, colIndex, value, preferredSheetName) {
+        const sheets = getSheetsClient();
+        if (!sheets) return { success: false };
+
+        const finalId = (spreadsheetId || process.env.GOOGLE_SHEET_ID || '').trim();
+        const sheetName = preferredSheetName || await this.getTargetSheetName(finalId);
+        const colLetter = this.getColLetter(colIndex);
+        const range = `${sheetName}!${colLetter}${rowId}`;
+
+        try {
+            await sheets.spreadsheets.values.update({
+                spreadsheetId: finalId,
+                range,
+                valueInputOption: 'RAW',
+                requestBody: { values: [[value]] },
+            });
+            return { success: true, sheetName };
+        } catch (error) {
+            console.error('Google Sheets Update Cell Error:', error.message);
+            throw error;
+        }
+    },
+
+    async addRow(spreadsheetId, values = [], preferredSheetName) {
+        const sheets = getSheetsClient();
+        if (!sheets) return { success: false };
+
+        const finalId = (spreadsheetId || process.env.GOOGLE_SHEET_ID || '').trim();
+        const sheetName = preferredSheetName || await this.getTargetSheetName(finalId);
+
+        try {
+            await sheets.spreadsheets.values.append({
+                spreadsheetId: finalId,
+                range: `${sheetName}!A:A`,
+                valueInputOption: 'RAW',
+                requestBody: { values: [values] },
+            });
+            return { success: true, sheetName };
+        } catch (error) {
+            console.error('Google Sheets Add Row Error:', error.message);
+            throw error;
+        }
+    },
+
+    async addColumn(spreadsheetId, headerName, preferredSheetName) {
+        const sheets = getSheetsClient();
+        if (!sheets) return { success: false };
+
+        const finalId = (spreadsheetId || process.env.GOOGLE_SHEET_ID || '').trim();
+        const sheetName = preferredSheetName || await this.getTargetSheetName(finalId);
+
+        try {
+            const res = await sheets.spreadsheets.values.get({
+                spreadsheetId: finalId,
+                range: `${sheetName}!1:1`,
+            });
+            const headers = res.data.values?.[0] || [];
+            const nextColIndex = headers.length;
+            const colLetter = this.getColLetter(nextColIndex);
+
+            await sheets.spreadsheets.values.update({
+                spreadsheetId: finalId,
+                range: `${sheetName}!${colLetter}1`,
+                valueInputOption: 'RAW',
+                requestBody: { values: [[headerName]] },
+            });
+            return { success: true, sheetName };
+        } catch (error) {
+            console.error('Google Sheets Add Column Error:', error.message);
+            throw error;
+        }
+    },
+
+    async deleteRow(spreadsheetId, rowId, preferredSheetName) {
+        const sheets = getSheetsClient();
+        if (!sheets) return { success: false };
+
+        const finalId = (spreadsheetId || process.env.GOOGLE_SHEET_ID || '').trim();
+        
+        try {
+            const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: finalId });
+            const sheetName = preferredSheetName || await this.getTargetSheetName(finalId);
+            const sheet = spreadsheet.data.sheets.find(s => s.properties.title === sheetName);
+            const sheetId = sheet.properties.sheetId;
+
+            await sheets.spreadsheets.batchUpdate({
+                spreadsheetId: finalId,
+                requestBody: {
+                    requests: [
+                        {
+                            deleteDimension: {
+                                range: {
+                                    sheetId,
+                                    dimension: 'ROWS',
+                                    startIndex: rowId - 1,
+                                    endIndex: rowId
+                                }
+                            }
+                        }
+                    ]
+                }
+            });
+            return { success: true, sheetName };
+        } catch (error) {
+            console.error('Google Sheets Delete Row Error:', error.message);
+            throw error;
+        }
+    }
+};
+
+module.exports = GoogleSheetsService;
