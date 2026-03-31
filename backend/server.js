@@ -89,7 +89,7 @@ connectDB().then(() => {
         } catch (err) {
             console.error('Error in Google Calendar polling loop:', err.message);
         }
-    }, 5000); // Every 5 seconds
+    }, 60000); // Every 60 seconds
 
 }).catch(err => {
     console.error("Delayed Cron initialization due to DB issue:", err.message);

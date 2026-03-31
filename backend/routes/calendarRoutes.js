@@ -56,8 +56,14 @@ router.post('/disconnect-google', auth, async (req, res) => {
             }
         });
 
-        // Delete all events for this user that came from or were synced to Google
-        await Event.deleteMany({ userId: user._id, googleEventId: { $ne: null } });
+        // Mark all synced events as local-only instead of deleting them to prevent data loss
+        await Event.updateMany(
+            { userId: user._id, googleEventId: { $ne: null } },
+            { 
+                $unset: { googleEventId: 1 }, 
+                $set: { lastUpdatedFrom: 'local', origin: 'local' } 
+            }
+        );
 
         // Emit socket update to refresh everyone's view
         if (req.io) {
@@ -75,7 +81,7 @@ router.post('/disconnect-google', auth, async (req, res) => {
 // Get all events
 router.get('/', auth, async (req, res) => {
     try {
-        const query = req.user.role === 'admin' ? {} : { userId: req.user.id };
+        const query = {}; // Shared Studio Calendar visibility for everyone
         const events = await Event.find(query).sort({ start: 1 });
         res.json(events);
     } catch (error) {
@@ -89,25 +95,13 @@ router.post('/', auth, async (req, res) => {
         const { start, end, location } = req.body;
 
         // Check for overlapping events at the same location or same time
-        const overlapping = await Event.findOne({
-            $or: [
-                {
-                    start: { $lt: new Date(end) },
-                    end: { $gt: new Date(start) }
-                }
-            ]
-        });
-
-        if (overlapping) {
-            return res.status(400).json({ 
-                message: "Scheduling Conflict: Another event is already scheduled during this time.",
-                conflictingEvent: overlapping.title
-            });
-        }
+        // Overlap restriction removed to allow multiple events per day.
+        // The business layer now permits overlapping bookings for comprehensive studio mapping.
 
         const event = new Event({
             ...req.body,
-            userId: req.user.id // Associate event with user
+            userId: req.user.id, // Associate event with user
+            origin: 'local'      // Explicitly mark as born on website
         });
         await event.save();
 

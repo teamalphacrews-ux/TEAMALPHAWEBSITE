@@ -100,7 +100,14 @@ export default function EventForm({ onClose, onSave, onDelete, initialData }) {
                         <X size={20} />
                     </button>
                     <h2 className="font-serif text-4xl text-[#2d2d2d] mb-1">{isEditing ? "Edit Event" : "New Event"}</h2>
-                    <p className="text-[#2d2d2d]/40 text-[10px] font-bold uppercase tracking-[0.4em]">Studio Itinerary Coordination</p>
+                    <div className="flex items-center gap-3">
+                        <p className="text-[#2d2d2d]/40 text-[10px] font-bold uppercase tracking-[0.4em]">Studio Itinerary Coordination</p>
+                        {formData.isReadOnly && (
+                            <div className="bg-black/10 px-3 py-1 rounded-full flex items-center gap-2 border border-black/5">
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-[#2d2d2d]">🔒 Google Protected Event</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-10 space-y-8 overflow-y-auto custom-scrollbar relative z-10">
@@ -227,22 +234,43 @@ export default function EventForm({ onClose, onSave, onDelete, initialData }) {
                         />
                     </div>
 
-                    <div className="flex gap-4 pt-6 shrink-0 relative z-20">
-                        {isEditing && (
-                            <button
-                                type="button"
-                                onClick={() => onDelete(initialData._id)}
-                                className="flex-1 bg-[#F3F0E6] border-2 border-black/5 text-[#2d2d2d]/40 py-5 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all shadow-sm"
-                            >
-                                <Trash2 size={16} /> Delete Event
-                            </button>
+                    <div className="flex flex-col gap-4 pt-6 shrink-0 relative z-20">
+                        {formData.isReadOnly && (
+                            <div className="bg-red-50 border-2 border-red-100/50 p-4 rounded-2xl">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-red-400 text-center">
+                                    Managed by Google: Modification restricted through API.
+                                </p>
+                            </div>
                         )}
-                        <button
-                            type="submit"
-                            className="flex-1 bg-[#2d2d2d] text-white py-5 rounded-2xl flex items-center justify-center gap-4 text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-[#444] transition-all shadow-xl active:scale-[0.98]"
-                        >
-                            <Save size={18} /> {isEditing ? "Update Event" : "Establish Event"}
-                        </button>
+                        <div className="flex gap-4">
+                            {isEditing && (
+                                <button
+                                    type="button"
+                                    disabled={formData.isReadOnly}
+                                    onClick={() => onDelete(initialData._id)}
+                                    className={`
+                                        flex-1 py-5 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] transition-all shadow-sm
+                                        ${formData.isReadOnly 
+                                            ? 'bg-black/5 text-black/10 cursor-not-allowed border-none' 
+                                            : 'bg-[#F3F0E6] border-2 border-black/5 text-[#2d2d2d]/40 hover:bg-red-50 hover:text-red-500 hover:border-red-100'}
+                                    `}
+                                >
+                                    <Trash2 size={16} /> Delete Event
+                                </button>
+                            )}
+                            <button
+                                type="submit"
+                                disabled={formData.isReadOnly}
+                                className={`
+                                    flex-1 py-5 rounded-2xl flex items-center justify-center gap-4 text-[10px] font-bold uppercase tracking-[0.3em] transition-all shadow-xl active:scale-[0.98]
+                                    ${formData.isReadOnly 
+                                        ? 'bg-black/10 text-black/20 cursor-not-allowed shadow-none' 
+                                        : 'bg-[#2d2d2d] text-white hover:bg-[#444]'}
+                                `}
+                            >
+                                <Save size={18} /> {isEditing ? "Update Event" : "Add Event"}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </motion.div>

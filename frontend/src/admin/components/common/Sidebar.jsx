@@ -26,7 +26,7 @@ const menuItems = [
 export default function Sidebar({ onClose }) {
   const navigate = useNavigate();
   return (
-    <div className="w-64 h-full bg-white border-r border-[#e6e3df] px-6 py-10 flex flex-col shadow-xl lg:shadow-none">
+    <div className="w-64 h-full bg-white/70 backdrop-blur-md border-r border-[#e6e3df] px-6 py-10 flex flex-col shadow-xl lg:shadow-none relative z-50">
       <div className="flex justify-between items-center mb-12 px-2">
         <Link to="/" className="flex flex-col gap-4 group transition-transform hover:scale-[1.02]">
           {/* Logo added here */}

@@ -3,6 +3,9 @@ const { v4: uuidv4 } = require('uuid');
 const User = require('../models/User');
 const Event = require('../models/Event');
 
+// Concurrent sync lock - prevents race conditions
+const syncingUsers = new Set();
+
 /**
  * Gets an authenticated Google Calendar API client for a user.
  */
@@ -86,6 +89,12 @@ async function syncToGoogle(event, action, userId) {
             return;
         }
 
+        // Abort if event is read-only (e.g. Google Birthday)
+        if (event.isReadOnly) {
+            console.log(`🛡️ Sync aborted: [Event: ${event.title}] is Google-managed and Read-Only.`);
+            return;
+        }
+
         const calendar = await getCalendarClient(user);
         const calendarId = user.googleCalendarId || 'primary';
 
@@ -140,13 +149,20 @@ async function syncToGoogle(event, action, userId) {
  * Polls Google Calendar for updates and syncs them locally.
  */
 async function pollGoogleCalendar(user, io) {
+    if (!user || syncingUsers.has(user._id.toString())) {
+        console.log(`⏳ Sync already in progress for ${user.googleEmail || user.email}. Skipping redundant request.`);
+        return;
+    }
+
     try {
+        syncingUsers.add(user._id.toString());
         const calendar = await getCalendarClient(user);
         const calendarId = user.googleCalendarId || 'primary';
 
         const response = await calendar.events.list({
             calendarId,
             timeMin: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Past 24 hours
+            timeMax: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // Next 365 days
             singleEvents: true,
             orderBy: 'startTime',
             showDeleted: true // Important: include deleted events to sync deletes
@@ -162,13 +178,40 @@ async function pollGoogleCalendar(user, io) {
 
         // 1. Update/Create Local Events from Google
         for (const gEvent of googleEvents) {
-            const localEvent = await Event.findOne({ googleEventId: gEvent.id });
+            let localEvent = await Event.findOne({ googleEventId: gEvent.id });
+
+            // Deduplication Fallback: Search by title and start time if the Google ID link is missing
+            if (!localEvent && gEvent.status !== 'cancelled') {
+                const gStart = new Date(gEvent.start.dateTime || gEvent.start.date);
+                localEvent = await Event.findOne({
+                    title: gEvent.summary || 'Untitled Event',
+                    start: gStart,
+                    userId: user._id
+                });
+
+                if (localEvent) {
+                    console.log(`🔗 Deduplication: Linking existing website event "${localEvent.title}" to Google ID: ${gEvent.id}`);
+                    localEvent.googleEventId = gEvent.id;
+                    localEvent.lastUpdatedFrom = 'google';
+                    await localEvent.save();
+                    hasChanges = true;
+                }
+            }
 
             if (gEvent.status === 'cancelled') {
                 if (localEvent) {
-                    await Event.findByIdAndDelete(localEvent._id);
-                    console.log(`❌ Deleted local event ${localEvent.title} (Reason: Google-sync status: cancelled)`);
-                    hasChanges = true;
+                    if (localEvent.origin === 'google') {
+                        await Event.findByIdAndDelete(localEvent._id);
+                        console.log(`❌ Deleted local event ${localEvent.title} (Reason: Google-sync status: cancelled)`);
+                        hasChanges = true;
+                    } else {
+                        // For website-first events, just break the link instead of deleting
+                        localEvent.googleEventId = null;
+                        localEvent.lastUpdatedFrom = 'local';
+                        await localEvent.save();
+                        console.log(`📡 Persist: Website event ${localEvent.title} kept as local-only (Cancelled in Google)`);
+                        hasChanges = true;
+                    }
                 }
                 continue;
             }
@@ -181,8 +224,14 @@ async function pollGoogleCalendar(user, io) {
                 location: gEvent.location || '',
                 userId: user._id,
                 googleEventId: gEvent.id,
+                googleEventType: gEvent.eventType || 'default',
+                type: gEvent.eventType === 'birthday' ? 'Birthday' : 'Other',
+                isReadOnly: gEvent.eventType !== 'default',
                 lastUpdatedFrom: 'google'
             };
+            
+            // Note: We intentionally DO NOT include 'origin' in eventData for updates
+            // so that we don't accidentally claim a website-born event as Google-born.
 
             if (localEvent) {
                 // Update local event if Google version is newer
@@ -194,7 +243,10 @@ async function pollGoogleCalendar(user, io) {
                 }
             } else {
                 // Create local event since it does not exist
-                const newEvent = new Event(eventData);
+                const newEvent = new Event({
+                    ...eventData,
+                    origin: 'google' // Created from Google sync
+                });
                 await newEvent.save();
                 console.log(`➕ Created local event: ${eventData.title} (Reason: Google-sync)`);
                 hasChanges = true;
@@ -202,13 +254,31 @@ async function pollGoogleCalendar(user, io) {
         }
 
         // 2. Cleanup Orphaned Local Events (Orphans: local exists with googleEventId but NOT in gEvents list)
-        // This is a fallback for showDeleted: true
-        const localSyncedEvents = await Event.find({ userId: user._id, googleEventId: { $ne: null } });
+        // SAFETY: Only delete if the orphan falls within the time range we just polled!
+        // This prevents the deletion of 2027+ events that aren't in the current 365-day window.
+        const timeMin = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const timeMax = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+        const localSyncedEvents = await Event.find({ 
+            userId: user._id, 
+            googleEventId: { $ne: null },
+            start: { $gte: timeMin, $lte: timeMax } // CRITICAL: Only cleanup within the polled window
+        });
+
         for (const lEvent of localSyncedEvents) {
             if (!googleEventIds.includes(lEvent.googleEventId)) {
-                await Event.findByIdAndDelete(lEvent._id);
-                console.log(`🗑️ Cleanup: Deleted orphaned local event ${lEvent.title} (Not found in Google)`);
-                hasChanges = true;
+                if (lEvent.origin === 'google') {
+                    await Event.findByIdAndDelete(lEvent._id);
+                    console.log(`🗑️ Cleanup: Deleted orphaned local event ${lEvent.title} (Originally from Google)`);
+                    hasChanges = true;
+                } else {
+                    // Website-first event: just disconnect from Google instead of deleting
+                    lEvent.googleEventId = null;
+                    lEvent.lastUpdatedFrom = 'local';
+                    await lEvent.save();
+                    console.log(`📡 Persist: Orphaned website event ${lEvent.title} kept as local-only`);
+                    hasChanges = true;
+                }
             }
         }
 
@@ -217,6 +287,8 @@ async function pollGoogleCalendar(user, io) {
         }
     } catch (error) {
         console.error(`❌ Error polling Google Calendar for user ${user.googleEmail || user.email}:`, error.message);
+    } finally {
+        syncingUsers.delete(user._id.toString());
     }
 }
 

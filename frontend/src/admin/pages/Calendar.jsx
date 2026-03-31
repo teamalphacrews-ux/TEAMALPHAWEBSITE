@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, parseISO, startOfDay } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, MapPin, Filter, Users, RefreshCw, LogOut } from "lucide-react";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, parseISO, startOfDay, addDays } from "date-fns";
+import { X, Calendar as CalendarIcon, MapPin, Users, Clock, Save, Trash2, LogOut, ChevronLeft, ChevronRight, Plus, RefreshCw, Filter, Settings, Search, Lock } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import EventForm from "../components/calendar/EventForm";
@@ -32,6 +32,7 @@ const EVENT_TYPE_COLORS = {
     'Pre-Wedding': PASTEL_COLORS.purple,
     'Meeting': PASTEL_COLORS.blue,
     'Engagement': PASTEL_COLORS.yellow,
+    'Birthday': PASTEL_COLORS.yellow,
     'Other': PASTEL_COLORS.neutral
 };
 
@@ -230,7 +231,14 @@ export default function Calendar() {
     const blanks = Array(startDayIndex).fill(null);
 
     const upcomingEvents = events
-        .filter(e => new Date(e.start) >= startOfDay(new Date()))
+        .filter(e => {
+            const eventDate = new Date(e.start);
+            const now = startOfDay(new Date());
+            const ninetyDaysFromNow = new Date();
+            ninetyDaysFromNow.setDate(now.getDate() + 90);
+            
+            return eventDate >= now && eventDate <= ninetyDaysFromNow;
+        })
         .sort((a, b) => new Date(a.start) - new Date(b.start))
         .slice(0, 3);
 
@@ -257,7 +265,7 @@ export default function Calendar() {
     const [isRegistryOpen, setIsRegistryOpen] = useState(false);
 
     return (
-        <div style={{ backgroundColor: PASTEL_COLORS.background }} className="min-h-screen text-[#2d2d2d] px-4 md:px-12 pb-20 animate-in fade-in duration-1000 overflow-x-hidden">
+        <div className="min-h-screen text-[#2d2d2d] px-4 md:px-12 pb-20 animate-in fade-in duration-1000 overflow-x-hidden">
             {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 py-12">
                 <div>
@@ -416,12 +424,13 @@ export default function Calendar() {
                                         }}
                                         transition={{ type: "spring", stiffness: 500, damping: 45 }}
                                         onClick={() => {
-                                            if (!isCurrentMonth) return; // Disable click on Ghost Days
-                                            if (dayEvents.length > 0) {
-                                                setSelectedEvent(dayEvents[0]);
-                                            } else {
-                                                setSelectedEvent({ start: day.toISOString(), end: day.toISOString(), title: "" });
-                                            }
+                                            if (!isCurrentMonth) return; 
+                                            setSelectedEvent({ 
+                                                start: day.toISOString(), 
+                                                end: day.toISOString(), 
+                                                title: "",
+                                                type: 'Wedding'
+                                            });
                                             setIsModalOpen(true);
                                         }}
                                         style={{ backgroundColor: cardColor }}
@@ -440,34 +449,52 @@ export default function Calendar() {
                                             <span className="text-sm font-bold text-[#2d2d2d]">{format(day, 'd')}</span>
                                             {isTodayDate && <div className="w-1.5 h-1.5 rounded-full bg-black/40" />}
                                             {!isCurrentMonth && <span className="text-[7px] font-bold opacity-30 text-black uppercase tracking-tighter">{format(day, 'MMM')}</span>}
+                                            
+                                            {/* Quick-Add Button */}
+                                            {isCurrentMonth && (
+                                                <motion.button
+                                                    whileHover={{ scale: 1.1, backgroundColor: 'rgba(0,0,0,0.1)' }}
+                                                    whileTap={{ scale: 0.9 }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedEvent({ 
+                                                            start: day.toISOString(), 
+                                                            end: day.toISOString(), 
+                                                            title: "",
+                                                            type: 'Wedding' 
+                                                        });
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    className="absolute -top-2 -right-2 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 hover:text-black text-[#2d2d2d]/30"
+                                                >
+                                                    <Plus size={14} />
+                                                </motion.button>
+                                            )}
                                         </div>
 
-                                        <div className="flex flex-col gap-1 w-full overflow-hidden relative z-10">
-                                            {dayEvents.slice(0, 1).map(event => (
-                                                <div key={event._id} className="w-full">
-                                                    <motion.div 
-                                                        animate={{ fontSize: isHovered ? "14px" : "10px" }}
-                                                        className="font-bold text-[#2d2d2d] leading-tight truncate"
-                                                    >
+                                        <div className="flex flex-col gap-1 w-full overflow-hidden relative z-10 flex-1">
+                                            {dayEvents.slice(0, 3).map(event => (
+                                                <motion.div 
+                                                    key={event._id}
+                                                    whileHover={{ scale: 1.02, x: 2 }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedEvent(event);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    className="w-full px-2 py-1 rounded-lg bg-white/30 hover:bg-white/50 backdrop-blur-sm border border-black/5 flex items-center gap-1.5 cursor-pointer transition-colors"
+                                                >
+                                                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: EVENT_TYPE_COLORS[event.type] || '#2d2d2d' }} />
+                                                    <span className="text-[10px] font-black text-[#2d2d2d] leading-none truncate uppercase tracking-tighter">
                                                         {event.title}
-                                                    </motion.div>
-                                                    <motion.div 
-                                                        animate={{ fontSize: isHovered ? "11px" : "9px" }}
-                                                        className="text-[#2d2d2d]/50 font-medium"
-                                                    >
-                                                        {format(parseISO(event.start), 'hh:mm a')}
-                                                    </motion.div>
-                                                    {isHovered && event.location && (
-                                                        <motion.div 
-                                                            initial={{ opacity: 0, height: 0 }}
-                                                            animate={{ opacity: 1, height: 'auto' }}
-                                                            className="text-[9px] text-[#2d2d2d]/40 font-bold uppercase tracking-wider mt-2 flex items-center gap-1.5"
-                                                        >
-                                                            <MapPin size={10} /> {event.location}
-                                                        </motion.div>
-                                                    )}
-                                                </div>
+                                                    </span>
+                                                </motion.div>
                                             ))}
+                                            {dayEvents.length > 3 && (
+                                                <div className="text-[8px] font-black text-black/40 uppercase pl-1 pt-0.5">
+                                                    + {dayEvents.length - 3} more
+                                                </div>
+                                            )}
                                         </div>
                                     </motion.div>
                                 );
@@ -509,7 +536,10 @@ export default function Calendar() {
                                             <span className="text-2xl font-bold leading-none text-[#2d2d2d]">{format(parseISO(event.start), 'dd')}</span>
                                         </div>
                                         <div className="flex-1">
-                                            <h5 className="text-lg font-bold text-[#2d2d2d] leading-tight mb-2 tracking-tight group-hover:text-black transition-colors">{event.title}</h5>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <h5 className="text-lg font-bold text-[#2d2d2d] leading-tight tracking-tight group-hover:text-black transition-colors">{event.title}</h5>
+                                                {event.isReadOnly && <Lock size={12} className="text-[#2d2d2d]/30" />}
+                                            </div>
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-2 text-[10px] text-[#2d2d2d]/40 font-bold uppercase tracking-widest">
                                                     <Clock size={12} /> {format(parseISO(event.start), 'hh:mm a')}
@@ -612,6 +642,13 @@ export default function Calendar() {
                             <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
                                 <div className="space-y-12">
                                     {events
+                                        .filter(e => {
+                                            const eventDate = new Date(e.start);
+                                            const now = startOfDay(new Date());
+                                            const yearFromNow = new Date();
+                                            yearFromNow.setFullYear(now.getFullYear() + 1);
+                                            return eventDate >= now && eventDate <= yearFromNow;
+                                        })
                                         .sort((a, b) => new Date(a.start) - new Date(b.start))
                                         .map((event, i) => (
                                             <motion.div 
@@ -627,7 +664,10 @@ export default function Calendar() {
                                                     <span className="text-5xl font-serif text-[#2d2d2d] leading-none">{format(parseISO(event.start), 'dd')}</span>
                                                 </div>
                                                 <div className="col-span-7 bg-white/60 p-8 rounded-[2rem] border-2 border-black/5 group-hover:border-black/20 transition-all shadow-sm">
-                                                    <h3 className="text-2xl font-bold text-[#2d2d2d] mb-2">{event.title}</h3>
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <h3 className="text-2xl font-bold text-[#2d2d2d]">{event.title}</h3>
+                                                        {event.isReadOnly && <Lock size={16} className="text-[#2d2d2d]/20" />}
+                                                    </div>
                                                     <div className="flex gap-6 text-[10px] font-bold uppercase tracking-widest opacity-60">
                                                         <span className="flex items-center gap-2"><Clock size={14}/> {format(parseISO(event.start), 'hh:mm a')}</span>
                                                         <span className="flex items-center gap-2"><MapPin size={14}/> {event.location || 'Studio HQ'}</span>

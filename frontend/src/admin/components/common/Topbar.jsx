@@ -155,7 +155,7 @@ export default function Topbar({ onMenuClick }) {
 
     return (
         <>
-            <header className={`h-16 md:h-20 px-3 md:px-8 flex items-center justify-between border-b border-[#e6e3df] bg-white/95 backdrop-blur-md sticky top-0 z-30 w-full transition-all duration-300 ease-in-out ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"} ${isScrolled ? "shadow-md border-transparent" : "shadow-none"}`}>
+            <header className={`h-16 md:h-20 px-3 md:px-8 flex items-center justify-between border-b border-[#e6e3df] bg-white/70 backdrop-blur-md sticky top-0 z-30 w-full transition-all duration-300 ease-in-out ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"} ${isScrolled ? "shadow-md border-transparent" : "shadow-none"}`}>
                 <div className="flex items-center gap-2 md:gap-4 flex-1">
                     <button
                         onClick={onMenuClick}

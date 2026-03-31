@@ -12,7 +12,19 @@ export default function Layout() {
     const [isFocusMode, setIsFocusMode] = useState(false);
 
     return (
-        <div className="flex bg-ivory min-h-screen font-sans selection:bg-mutedbrown/20 relative">
+        <div 
+            className="flex min-h-screen font-sans selection:bg-mutedbrown/20 relative"
+            style={{
+                background: `
+                    radial-gradient(circle at top left, #CFE8D5 0%, transparent 40%),
+                    radial-gradient(circle at top right, #F6E6B4 0%, transparent 40%),
+                    radial-gradient(circle at bottom left, #D9CDEB 0%, transparent 40%),
+                    #FFFFFF
+                `,
+                backgroundRepeat: 'no-repeat',
+                backgroundAttachment: 'fixed'
+            }}
+        >
             {/* Desktop Sidebar */}
             {!isFocusMode && (
                 <div className="hidden lg:block fixed left-0 top-0 h-screen overflow-hidden">
