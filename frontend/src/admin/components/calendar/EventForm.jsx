@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
 import { X, Calendar as CalendarIcon, MapPin, Users, Clock, Save, Trash2 } from "lucide-react";
 import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
+
+const TYPE_COLORS = {
+    "Wedding": "#FDE68A",
+    "Pre-Wedding": "#FCA5A5",
+    "Engagement": "#7DD3FC",
+    "Meeting": "#C4B5FD",
+    "Other": "#E5E7EB"
+};
+
+const TEAM_INITIAL_COLORS = ["#FCA5A5", "#FDE68A", "#7DD3FC", "#C4B5FD", "#A9AC83", "#E8D0DC"];
 
 export default function EventForm({ onClose, onSave, onDelete, initialData }) {
     const [formData, setFormData] = useState({
@@ -10,18 +21,15 @@ export default function EventForm({ onClose, onSave, onDelete, initialData }) {
         type: "Wedding",
         location: "",
         description: "",
+        teamMembers: [],
         ...initialData
     });
 
     const isEditing = !!initialData?._id;
 
-    // Helper to format date for input type="datetime-local"
-    // Valid for inputs: YYYY-MM-DDTHH:mm
     const formatDateForInput = (dateString) => {
         if (!dateString) return "";
         const date = new Date(dateString);
-        // Adjust to local ISO string roughly or use a library. 
-        // Simple hack for local time:
         const offset = date.getTimezoneOffset() * 60000;
         const localISOTime = (new Date(date - offset)).toISOString().slice(0, 16);
         return localISOTime;
@@ -34,7 +42,8 @@ export default function EventForm({ onClose, onSave, onDelete, initialData }) {
             setFormData({
                 ...initialData,
                 start: formatDateForInput(initialData.start),
-                end: formatDateForInput(initialData.end)
+                end: formatDateForInput(initialData.end),
+                teamMembers: initialData.teamMembers || []
             });
         }
         fetchPhotographers();
@@ -68,124 +77,181 @@ export default function EventForm({ onClose, onSave, onDelete, initialData }) {
     };
 
     return (
-        <div className="fixed inset-0 bg-charcoal/60 backdrop-blur-md z-100 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden border border-ivory flex flex-col max-h-[90vh]">
-                <div className="bg-charcoal text-white p-6 relative shrink-0">
+        <div className="fixed inset-0 bg-[#2d2d2d]/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="bg-[#f8f5f2] rounded-3xl w-full max-w-xl shadow-2xl relative overflow-hidden border border-white/50 flex flex-col max-h-[90vh]"
+            >
+                {/* Scrapbook Solid Bold Border Overlay */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-3xl overflow-hidden z-20">
+                    <rect width="100%" height="100%" fill="none" rx="24" ry="24" stroke="rgba(0,0,0,0.08)" strokeWidth="4" />
+                </svg>
+
+                {/* Adaptive Header */}
+                <div 
+                    style={{ backgroundColor: TYPE_COLORS[formData.type] || "#BB998B" }} 
+                    className="p-10 relative shrink-0 transition-colors duration-500"
+                >
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                        className="absolute top-8 right-8 p-3 bg-black/5 hover:bg-black/10 rounded-full transition-all text-[#2d2d2d]"
                     >
-                        <X size={18} />
+                        <X size={20} />
                     </button>
-                    <h2 className="font-serif text-2xl">{isEditing ? "Edit Event" : "Schedule Event"}</h2>
-                    <p className="text-white/60 text-xs uppercase tracking-widest mt-1">Manage studio itinerary</p>
+                    <h2 className="font-serif text-4xl text-[#2d2d2d] mb-1">{isEditing ? "Edit Event" : "New Event"}</h2>
+                    <p className="text-[#2d2d2d]/40 text-[10px] font-bold uppercase tracking-[0.4em]">Studio Itinerary Coordination</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto custom-scrollbar">
-
-                    <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Event Title</label>
+                <form onSubmit={handleSubmit} className="p-10 space-y-8 overflow-y-auto custom-scrollbar relative z-10">
+                    {/* Event Title */}
+                    <div className="space-y-3">
+                        <label className="text-[10px] uppercase font-bold tracking-[0.3em] text-[#2d2d2d]/40 ml-1">Event Reference</label>
                         <input
                             required
                             type="text"
                             value={formData.title}
                             onChange={e => setFormData({ ...formData, title: e.target.value })}
-                            className="w-full bg-ivory/50 border border-[#e6e3df] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mutedbrown transition-colors font-medium text-charcoal"
-                            placeholder="e.g. Wedding: Sarah & Kevin"
+                            className="w-full bg-white border-2 border-black/5 rounded-2xl px-6 py-4 text-sm focus:outline-none focus:border-black/10 transition-colors font-bold text-[#2d2d2d] shadow-sm"
+                            placeholder="Enter Event Title..."
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Start Date</label>
+                    {/* Timeline */}
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                            <label className="text-[10px] uppercase font-bold tracking-[0.3em] text-[#2d2d2d]/40 ml-1">Commencement</label>
                             <input
                                 required
                                 type="datetime-local"
                                 value={formData.start}
                                 onChange={e => setFormData({ ...formData, start: e.target.value })}
-                                className="w-full bg-ivory/50 border border-[#e6e3df] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mutedbrown transition-colors"
+                                className="w-full bg-white border-2 border-black/5 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-black/10 transition-colors text-[#2d2d2d]/60 uppercase"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">End Date</label>
+                        <div className="space-y-3">
+                            <label className="text-[10px] uppercase font-bold tracking-[0.3em] text-[#2d2d2d]/40 ml-1">Conclusion</label>
                             <input
                                 required
                                 type="datetime-local"
                                 value={formData.end}
                                 onChange={e => setFormData({ ...formData, end: e.target.value })}
-                                className="w-full bg-ivory/50 border border-[#e6e3df] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mutedbrown transition-colors"
+                                className="w-full bg-white border-2 border-black/5 rounded-2xl px-6 py-4 text-xs font-bold focus:outline-none focus:border-black/10 transition-colors text-[#2d2d2d]/60 uppercase"
                             />
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Event Type</label>
-                        <select
-                            value={formData.type}
-                            onChange={e => setFormData({ ...formData, type: e.target.value })}
-                            className="w-full bg-ivory/50 border border-[#e6e3df] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-mutedbrown transition-colors appearance-none"
-                        >
-                            <option>Wedding</option>
-                            <option>Pre-Wedding</option>
-                            <option>Engagement</option>
-                            <option>Meeting</option>
-                            <option>Other</option>
-                        </select>
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Type Selector */}
+                        <div className="space-y-3">
+                            <label className="text-[10px] uppercase font-bold tracking-[0.3em] text-[#2d2d2d]/40 ml-1">Category</label>
+                            <div className="relative">
+                                <select
+                                    value={formData.type}
+                                    onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                    className="w-full bg-white border-2 border-black/5 rounded-2xl px-6 py-4 text-xs font-bold uppercase tracking-widest focus:outline-none focus:border-black/10 transition-colors appearance-none text-[#2d2d2d]"
+                                >
+                                    <option>Wedding</option>
+                                    <option>Pre-Wedding</option>
+                                    <option>Engagement</option>
+                                    <option>Meeting</option>
+                                    <option>Other</option>
+                                </select>
+                                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none opacity-20">
+                                    <ChevronDown size={14} />
+                                </div>
+                            </div>
+                        </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Location</label>
-                        <div className="flex items-center gap-2 bg-ivory/50 border border-[#e6e3df] rounded-xl px-4 py-3 focus-within:border-mutedbrown transition-colors">
-                            <MapPin size={16} className="text-mutedbrown" />
-                            <input
-                                type="text"
-                                value={formData.location}
-                                onChange={e => setFormData({ ...formData, location: e.target.value })}
-                                className="w-full bg-transparent text-sm focus:outline-none font-medium text-charcoal"
-                                placeholder="e.g. Taj Palace, Mumbai"
-                            />
+                        {/* Location */}
+                        <div className="space-y-3">
+                            <label className="text-[10px] uppercase font-bold tracking-[0.3em] text-[#2d2d2d]/40 ml-1">Coordinates</label>
+                            <div className="flex items-center gap-3 bg-white border-2 border-black/5 rounded-2xl px-6 py-4 focus-within:border-black/10 transition-colors shadow-sm">
+                                <MapPin size={16} className="text-[#2d2d2d]/20" />
+                                <input
+                                    type="text"
+                                    value={formData.location}
+                                    onChange={e => setFormData({ ...formData, location: e.target.value })}
+                                    className="w-full bg-transparent text-sm focus:outline-none font-bold text-[#2d2d2d] placeholder:text-[#2d2d2d]/20"
+                                    placeholder="Location details..."
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Team Members</label>
-                        <div className="max-h-32 overflow-y-auto border border-[#e6e3df] rounded-xl p-2 space-y-1 bg-ivory/30">
-                            {photographers.map(dg => (
-                                <label key={dg._id} className="flex items-center gap-3 p-2 hover:bg-ivory/50 rounded-lg cursor-pointer transition-colors">
-                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${formData.teamMembers?.includes(dg.name) ? 'bg-charcoal border-charcoal' : 'border-gray-300'}`}>
-                                        {formData.teamMembers?.includes(dg.name) && <div className="w-2 h-2 bg-white rounded-sm" />}
-                                    </div>
-                                    <input
-                                        type="checkbox"
-                                        className="hidden"
-                                        checked={formData.teamMembers?.includes(dg.name) || false}
-                                        onChange={() => handleTeamMemberToggle(dg.name)}
-                                    />
-                                    <span className="text-sm font-medium text-charcoal">{dg.name} <span className="text-[10px] text-warmgray uppercase tracking-wider ml-1">{dg.specialty}</span></span>
-                                </label>
-                            ))}
+                    {/* Team Members Initials Badge Grid */}
+                    <div className="space-y-4">
+                        <label className="text-[10px] uppercase font-bold tracking-[0.3em] text-[#2d2d2d]/40 ml-1">Operating Team</label>
+                        <div className="flex flex-wrap gap-3">
+                            {photographers.map((dg, idx) => {
+                                const isSelected = formData.teamMembers?.includes(dg.name);
+                                const initials = dg.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                                const badgeColor = TEAM_INITIAL_COLORS[idx % TEAM_INITIAL_COLORS.length];
+
+                                return (
+                                    <motion.button
+                                        key={dg._id}
+                                        type="button"
+                                        whileTap={{ scale: 0.9 }}
+                                        onClick={() => handleTeamMemberToggle(dg.name)}
+                                        style={{ 
+                                            backgroundColor: isSelected ? badgeColor : 'white',
+                                            borderColor: isSelected ? 'transparent' : 'rgba(0,0,0,0.08)'
+                                        }}
+                                        className={`
+                                            w-12 h-12 rounded-full border-2 flex items-center justify-center 
+                                            transition-all duration-300 group relative
+                                        `}
+                                    >
+                                        <span className={`text-xs font-bold ${isSelected ? 'text-[#2d2d2d]' : 'text-[#2d2d2d]/20'}`}>
+                                            {initials}
+                                        </span>
+                                        {/* Tooltip on hover */}
+                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#2d2d2d] text-white text-[8px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none uppercase tracking-widest">
+                                            {dg.name}
+                                        </div>
+                                    </motion.button>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    <div className="flex gap-3 pt-2 shrink-0">
+                    {/* Remarks/Description */}
+                    <div className="space-y-3">
+                        <label className="text-[10px] uppercase font-bold tracking-[0.3em] text-[#2d2d2d]/40 ml-1">Operational Remarks</label>
+                        <textarea
+                            value={formData.description}
+                            onChange={e => setFormData({ ...formData, description: e.target.value })}
+                            className="w-full bg-white border-2 border-black/5 rounded-2xl px-6 py-5 text-sm focus:outline-none focus:border-black/10 transition-colors font-medium text-[#2d2d2d] min-h-[120px] resize-none shadow-sm"
+                            placeholder="Detailed requirements, specialized logistics..."
+                        />
+                    </div>
+
+                    <div className="flex gap-4 pt-6 shrink-0 relative z-20">
                         {isEditing && (
                             <button
                                 type="button"
                                 onClick={() => onDelete(initialData._id)}
-                                className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-red-100 transition-all"
+                                className="flex-1 bg-[#F3F0E6] border-2 border-black/5 text-[#2d2d2d]/40 py-5 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all shadow-sm"
                             >
-                                <Trash2 size={16} /> Delete
+                                <Trash2 size={16} /> Delete Event
                             </button>
                         )}
                         <button
                             type="submit"
-                            className="flex-1 bg-charcoal text-white py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-mutedbrown transition-all shadow-lg active:scale-[0.98]"
+                            className="flex-1 bg-[#2d2d2d] text-white py-5 rounded-2xl flex items-center justify-center gap-4 text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-[#444] transition-all shadow-xl active:scale-[0.98]"
                         >
-                            <Save size={16} /> {isEditing ? "Update Event" : "Save Event"}
+                            <Save size={18} /> {isEditing ? "Update Event" : "Establish Event"}
                         </button>
                     </div>
                 </form>
-            </div>
+            </motion.div>
         </div>
+    );
+}
+
+function ChevronDown({ size }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
     );
 }

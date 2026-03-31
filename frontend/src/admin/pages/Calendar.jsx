@@ -1,12 +1,42 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, parseISO, startOfDay } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, MapPin, Filter, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, MapPin, Filter, Users, RefreshCw, LogOut } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import EventForm from "../components/calendar/EventForm";
+import { io } from "socket.io-client";
+import { motion, AnimatePresence } from "framer-motion";
+
+const PASTEL_COLORS = {
+    yellow: "#FDE68A",
+    red: "#FCA5A5",
+    blue: "#7DD3FC",
+    purple: "#C4B5FD",
+    neutral: "#E5E7EB",
+    empty: "#f3f4f6", // For blank/empty day cards
+    background: "#f8f5f2",
+    text: "#2d2d2d"
+};
+
+const STICKY_COLORS = [
+    PASTEL_COLORS.yellow,
+    PASTEL_COLORS.red,
+    PASTEL_COLORS.blue,
+    PASTEL_COLORS.purple,
+    PASTEL_COLORS.neutral
+];
+
+const EVENT_TYPE_COLORS = {
+    'Wedding': PASTEL_COLORS.red,
+    'Pre-Wedding': PASTEL_COLORS.purple,
+    'Meeting': PASTEL_COLORS.blue,
+    'Engagement': PASTEL_COLORS.yellow,
+    'Other': PASTEL_COLORS.neutral
+};
 
 export default function Calendar() {
+    const [selectedDate, setSelectedDate] = useState(null);
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
     const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -15,17 +45,92 @@ export default function Calendar() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [syncStatus, setSyncStatus] = useState({ isSynced: false, email: "" });
+    const [isSyncing, setIsSyncing] = useState(false);
 
     const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+    const socketRef = useRef(null);
+
     useEffect(() => {
         fetchEvents();
+        handleFetchSyncStatus();
+
+        // --- Real-Time Authorized Socket Connection ---
+        const socket = io(API, { auth: { token } });
+        socketRef.current = socket;
+
+        socket.on('calendar_update', (data) => {
+            console.log("⚡ Real-time update received:", data);
+            if (data.action === 'DISCONNECT') {
+                setSyncStatus({ isSynced: false, email: "" });
+            }
+            
+            // Instantly update UI for local database changes
+            fetchEvents();
+            handleFetchSyncStatus();
+        });
+
+        // Handle sync status from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('sync') === 'success') {
+            toast.success("Google Calendar connected successfully!");
+            window.history.replaceState({}, document.title, window.location.pathname);
+            fetchEvents();
+            handleFetchSyncStatus();
+        } else if (urlParams.get('sync') === 'error') {
+            toast.error("Failed to connect Google Calendar.");
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        return () => {
+            if (socketRef.current) socketRef.current.disconnect();
+        };
     }, []);
 
-    const fetchEvents = async () => {
-        setLoading(true);
+    const handleFetchSyncStatus = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/calendar`, authHeader);
+            const res = await axios.get(`${API}/api/calendar/sync-status`, authHeader);
+            setSyncStatus(res.data);
+        } catch (error) {
+            console.error("Failed to fetch sync status", error);
+        }
+    };
+
+    const handleSyncNow = async () => {
+        setIsSyncing(true);
+        const toastId = toast.loading("Synchronizing with Google...");
+        try {
+            await axios.get(`${API}/api/calendar/sync-now`, authHeader);
+            toast.success("Calendar synced", { id: toastId });
+            fetchEvents();
+        } catch (error) {
+            toast.error("Sync failed", { id: toastId });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    const handleDisconnect = async () => {
+        if (!window.confirm("Are you sure you want to disconnect Google Calendar? All synced events will be removed from the website.")) return;
+
+        const toastId = toast.loading("Disconnecting...");
+        try {
+            await axios.post(`${API}/api/calendar/disconnect-google`, {}, authHeader);
+            toast.success("Disconnected successfully", { id: toastId });
+            setSyncStatus({ isSynced: false, email: "" });
+            fetchEvents();
+        } catch (error) {
+            toast.error("Failed to disconnect", { id: toastId });
+        }
+    };
+
+    const fetchEvents = async () => {
+        // Only show loading if we don't have events yet (for smoother background updates)
+        if (events.length === 0) setLoading(true);
+        try {
+            const res = await axios.get(`${API}/api/calendar`, authHeader);
+            console.log("📅 Events from backend:", res.data);
             setEvents(res.data);
         } catch (error) {
             console.error("Failed to fetch events", error);
@@ -36,36 +141,81 @@ export default function Calendar() {
     };
 
     const handleSaveEvent = async (formData) => {
+        // --- Optimistic UI Update ---
+        const isUpdate = selectedEvent && selectedEvent._id;
+        const tempId = isUpdate ? selectedEvent._id : `temp-${Date.now()}`;
+        const optimisticEvent = {
+            ...formData,
+            _id: tempId,
+            isOptimistic: true // Flag to show it's pending
+        };
+
+        const previousEvents = [...events];
+        if (isUpdate) {
+            setEvents(events.map(e => e._id === tempId ? optimisticEvent : e));
+        } else {
+            setEvents([...events, optimisticEvent]);
+        }
+
+        setIsModalOpen(false);
+
         try {
-            if (selectedEvent) {
-                // Update
-                const res = await axios.patch(`${import.meta.env.VITE_API_URL || ""}/api/calendar/${selectedEvent._id}`, formData, authHeader);
-                setEvents(events.map(e => e._id === res.data._id ? res.data : e));
-                toast.success("Event updated");
+            if (isUpdate) {
+                const res = await axios.patch(`${API}/api/calendar/${selectedEvent._id}`, formData, authHeader);
+                setEvents(prev => prev.map(e => e._id === tempId ? res.data : e));
+
+                if (res.data.syncWarning) {
+                    toast.error(res.data.syncWarning, { duration: 5000 });
+                } else {
+                    toast.success("Event updated & synced with Google");
+                }
             } else {
-                // Create
-                const res = await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/calendar`, formData, authHeader);
-                setEvents([...events, res.data]);
-                toast.success("Event scheduled");
+                const res = await axios.post(`${API}/api/calendar`, formData, authHeader);
+                setEvents(prev => prev.map(e => e._id === tempId ? res.data : e));
+
+                if (res.data.syncWarning) {
+                    toast.error(res.data.syncWarning, { duration: 5000 });
+                } else {
+                    toast.success("Event scheduled & synced with Google");
+                }
             }
-            setIsModalOpen(false);
             setSelectedEvent(null);
         } catch (error) {
             console.error(error);
-            toast.error("Failed to save event");
+            setEvents(previousEvents); // Rollback on error
+            toast.error(error.response?.data?.message || "Failed to save event");
         }
     };
 
     const handleDeleteEvent = async (id) => {
         if (!window.confirm("Are you sure you want to remove this event?")) return;
+
+        // --- Optimistic UI Update ---
+        const previousEvents = [...events];
+        setEvents(events.filter(e => e._id !== id));
+        setIsModalOpen(false);
+        setSelectedEvent(null);
+
+        const toastId = toast.loading("Removing event...");
         try {
-            await axios.delete(`${import.meta.env.VITE_API_URL || ""}/api/calendar/${id}`, authHeader);
-            setEvents(events.filter(e => e._id !== id));
-            toast.success("Event removed");
-            setIsModalOpen(false);
-            setSelectedEvent(null);
+            await axios.delete(`${API}/api/calendar/${id}`, authHeader);
+            toast.success("Event removed", { id: toastId });
         } catch (error) {
-            toast.error("Failed to delete event");
+            console.error(error);
+            setEvents(previousEvents); // Rollback on error
+            toast.error("Failed to delete event", { id: toastId });
+        }
+    };
+
+    const handleConnectGoogle = async () => {
+        try {
+            const res = await axios.get(`${API}/api/auth/google`, authHeader);
+            if (res.data.url) {
+                window.location.href = res.data.url;
+            }
+        } catch (error) {
+            console.error("Failed to get Google OAuth URL", error);
+            toast.error("Could not initiate Google connection");
         }
     };
 
@@ -73,23 +223,10 @@ export default function Calendar() {
     const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
     const jumpToToday = () => setCurrentDate(new Date());
 
-    // Generate days for the grid
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(monthStart);
-    // Find the starting Monday (even if it's in prev month)
-    // simplistic approach: just fill days of month, maybe handle empty cells for offset?
-    // Better: just list 1..31 and let user know DOW, or align properly. 
-    // The previous design had a simple 7-col grid. Let's stick to generating days of current month 
-    // and maybe padding start if we want to align with "Mon".
-    // For simplicity and matching the reference image which looked like a simple list of boxes 
-    // (the ref image started at 01 on Mon, so it was perfectly aligned or hypothetical).
-
-    // Let's do a proper calendar alignment:
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-    // We need to pad the start to match the first day of the week (Mon=0 in our array?)
-    // date-fns getDay: Sun=0, Mon=1...Sat=6.
-    // We want Mon as start.
-    const startDayIndex = (monthStart.getDay() + 6) % 7; // Mon=0, Tue=1... Sun=6
+    const startDayIndex = (monthStart.getDay() + 6) % 7;
     const blanks = Array(startDayIndex).fill(null);
 
     const upcomingEvents = events
@@ -115,210 +252,411 @@ export default function Calendar() {
         setIsModalOpen(true);
     };
 
+    const [hoveredIdx, setHoveredIdx] = useState(null);
     const navigate = useNavigate();
+    const [isRegistryOpen, setIsRegistryOpen] = useState(false);
 
     return (
-        <div className="space-y-8 md:space-y-12 text-charcoal px-4 md:px-0 pb-20 animate-in fade-in duration-1500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mt-4 animate-in slide-in-from-top-8 duration-1000 fill-mode-forwards">
+        <div style={{ backgroundColor: PASTEL_COLORS.background }} className="min-h-screen text-[#2d2d2d] px-4 md:px-12 pb-20 animate-in fade-in duration-1000 overflow-x-hidden">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 py-12">
                 <div>
-                    <h1 className="font-serif text-3xl md:text-5xl animate-gentle-fade">Studio Itinerary</h1>
-                    <p className="text-[10px] md:text-xs text-warmgray mt-3 font-bold uppercase tracking-[0.4em]">Coordinating luxury moments across the globe.</p>
+                    <h1 className="font-serif text-4xl md:text-6xl text-[#2d2d2d] tracking-tight">Studio Calendar</h1>
+                    <p className="text-[10px] md:text-xs text-[#BB998B] mt-4 font-bold uppercase tracking-[0.4em] opacity-80">
+                        Coordinating luxury moments across the globe
+                    </p>
                 </div>
-                <div className="flex gap-4 w-full md:w-auto relative z-20">
+
+                <div className="flex flex-wrap items-center gap-4 w-full md:w-auto relative z-20">
+                    {/* Sync Status Pill - High Visibility */}
+                    <div className={`
+                        inline-flex items-center gap-3 px-6 py-3.5 rounded-full border-2 border-black/5
+                        ${syncStatus.isSynced ? 'bg-white text-[#5B6A57]' : 'bg-red-50 text-red-400'}
+                        transition-all duration-700 shadow-sm hover:shadow-md cursor-help group
+                    `}>
+                        <div className="relative">
+                            <span className={`block w-2.5 h-2.5 rounded-full ${syncStatus.isSynced ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`}></span>
+                            {syncStatus.isSynced && (
+                                <span className="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-25"></span>
+                            )}
+                        </div>
+                        <div className="flex flex-col overflow-hidden">
+                            <span className="text-[8px] font-bold uppercase tracking-[0.2em] opacity-40 leading-none mb-0.5">
+                                {syncStatus.isSynced ? 'Google Live' : 'Offline Mode'}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider truncate max-w-[140px] leading-none">
+                                {syncStatus.isSynced ? syncStatus.email : 'No Sync Active'}
+                            </span>
+                        </div>
+                    </div>
+
                     <button
-                        onClick={() => navigate('/admin/crm')}
-                        className="flex-1 md:flex-none flex items-center justify-center gap-3 border border-ivory/50 bg-white px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 hover:shadow-md transition-all shadow-sm"
+                        onClick={handleSyncNow}
+                        disabled={isSyncing || loading}
+                        className="bg-white border-2 border-gray-100 px-7 py-4 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center gap-2 shadow-sm active:scale-95"
                     >
-                        <Users size={18} /> Teams
+                        <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} /> REFRESH
                     </button>
                     <button
-                        onClick={() => { setSelectedEvent(null); setIsModalOpen(true); }}
-                        className="flex-1 md:flex-none flex items-center justify-center gap-3 bg-charcoal text-white px-8 py-4 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-mutedbrown transition-all shadow-xl hover:shadow-2xl"
+                        onClick={syncStatus.isSynced ? handleDisconnect : handleConnectGoogle}
+                        className={`
+                            ${syncStatus.isSynced ? 'bg-[#D1C4D1] hover:bg-[#C4B5CD]' : 'bg-white border-2 border-gray-100 hover:bg-gray-50'} 
+                            text-[#2d2d2d] px-7 py-4 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm active:scale-95
+                        `}
                     >
-                        <Plus size={18} /> Event
+                        {syncStatus.isSynced ? <LogOut size={14} /> : <Plus size={14} />}
+                        {syncStatus.isSynced ? 'DISCONNECT' : 'SYNC GOOGLE'}
+                    </button>
+                    <button
+                        onClick={() => navigate('/admin/crm')}
+                        className="bg-white border border-gray-200 px-7 py-4 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center gap-2 shadow-sm active:scale-95"
+                    >
+                        <Users size={14} /> TEAMS
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-10 lg:gap-12 animate-in fade-in slide-in-from-bottom-12 duration-[1500ms] delay-200 fill-mode-backwards">
-                {/* Calendar Grid */}
-                <div className="xl:col-span-2 bg-white rounded-3xl sm:rounded-[2.5rem] border border-ivory shadow-sm p-4 sm:p-6 md:p-12 relative overflow-hidden transition-all duration-700 hover:shadow-xl group/cal">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
-                        <div className="flex items-center gap-4">
-                            <h3 className="font-serif text-3xl md:text-4xl min-w-[200px]">{format(currentDate, 'MMMM yyyy')}</h3>
-                            <div className="flex bg-ivory/50 p-1 rounded-xl border border-ivory">
-                                <button onClick={prevMonth} className="p-2 hover:bg-white rounded-lg transition-all text-warmgray hover:text-charcoal shadow-sm">
-                                    <ChevronLeft size={16} />
-                                </button>
-                                <button onClick={nextMonth} className="p-2 hover:bg-white rounded-lg transition-all text-warmgray hover:text-charcoal shadow-sm">
-                                    <ChevronRight size={16} />
-                                </button>
-                            </div>
+            {/* Main Application Interface */}
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+                
+                {/* 1. THE CALENDAR BOARD */}
+                <div className="xl:col-span-8 bg-white/40 backdrop-blur-xl rounded-3xl p-12 border-4 border-black/5 shadow-2xl shadow-black/5 flex flex-col gap-12 transition-all">
+                    
+                    {/* Board Header: Month & Year */}
+                    <div className="flex justify-between items-center px-4">
+                        <div className="flex items-baseline gap-4">
+                            <h3 className="font-serif text-5xl text-[#2d2d2d]">{format(currentDate, 'MMMM')}</h3>
+                            <span className="text-2xl font-bold text-[#2d2d2d]/20 tracking-[0.2em]">{format(currentDate, 'yyyy')}</span>
                         </div>
-                        <div className="flex gap-4 w-full sm:w-auto relative">
-                            <button onClick={jumpToToday} className="flex-1 sm:flex-none text-[9px] font-bold uppercase tracking-widest bg-ivory/50 hover:bg-ivory px-6 py-2.5 rounded-full border border-ivory transition-colors">Today</button>
-
-                            <button
-                                onClick={() => setShowFilterMenu(!showFilterMenu)}
-                                className={`flex-1 sm:flex-none p-2.5 border border-ivory rounded-full hover:bg-ivory transition-colors ${filter !== 'All' ? 'bg-charcoal text-white hover:bg-mutedbrown' : 'text-warmgray'}`}
-                            >
-                                <Filter size={18} />
+                        <div className="flex items-center gap-3">
+                            <button onClick={jumpToToday} className="text-[10px] font-bold uppercase tracking-widest bg-white/60 hover:bg-white px-6 py-3.5 rounded-2xl transition-all shadow-sm mr-2 border border-black/5">Today</button>
+                            <button onClick={prevMonth} className="p-3.5 bg-white/60 hover:bg-white rounded-2xl transition-all shadow-sm border border-black/5">
+                                <ChevronLeft size={22} className="text-[#2d2d2d]" />
                             </button>
-
-                            {showFilterMenu && (
-                                <div className="absolute top-12 right-0 bg-white rounded-2xl shadow-xl border border-ivory p-2 z-50 min-w-[150px] animate-in fade-in zoom-in-95 duration-200">
-                                    {["All", "Wedding", "Pre-Wedding", "Meeting", "Engagement"].map(f => (
-                                        <button
-                                            key={f}
-                                            onClick={() => { setFilter(f); setShowFilterMenu(false); }}
-                                            className={`w-full text-left px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-ivory transition-colors ${filter === f ? 'bg-ivory text-charcoal' : 'text-warmgray'}`}
-                                        >
-                                            {f}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            <button onClick={nextMonth} className="p-3.5 bg-white/60 hover:bg-white rounded-2xl transition-all shadow-sm border border-black/5">
+                                <ChevronRight size={22} className="text-[#2d2d2d]" />
+                            </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-7 gap-px bg-ivory/40 rounded-3xl overflow-hidden border border-ivory shadow-inner">
-                        {weekDays.map((day, dIdx) => (
-                            <div key={day} className="bg-ivory/20 py-2 sm:py-5 px-1 sm:px-5 text-[7px] sm:text-[10px] uppercase tracking-widest sm:tracking-[0.2em] text-mutedbrown font-bold text-center border-b border-ivory">
+                    {/* Branded Day Labels Row */}
+                    <div className="grid grid-cols-7 gap-6 px-4">
+                        {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(day => (
+                            <div key={day} className="text-[9px] font-bold text-[#2d2d2d]/40 tracking-[0.5em] text-center pb-4 border-b-2 border-black/5">
                                 {day}
                             </div>
                         ))}
+                    </div>
 
-                        {blanks.map((_, i) => (
-                            <div key={`blank-${i}`} className="bg-ivory/5 min-h-[60px] sm:min-h-[100px] md:min-h-[140px] border-r border-b border-ivory/30"></div>
-                        ))}
+                    {/* Interactive Days Grid */}
+                    <div className="grid grid-cols-7 gap-6 relative px-2">
+                        {(() => {
+                            const monthStart = startOfMonth(currentDate);
+                            const monthEnd = endOfMonth(monthStart);
+                            
+                            // Calculate leading days from previous month
+                            const startDay = monthStart.getDay(); 
+                            const adjustedStartDay = (startDay === 0 ? 6 : startDay - 1); // MON=0, SUN=6
+                            const prevMonthDays = Array.from({ length: adjustedStartDay }, (_, i) => {
+                                const d = new Date(monthStart);
+                                d.setDate(d.getDate() - (adjustedStartDay - i));
+                                return d;
+                            });
 
-                        {daysInMonth.map((day, i) => {
-                            const isTodayDate = isToday(day);
-                            const dayEvents = filteredEvents.filter(e => isSameDay(parseISO(e.start), day));
+                            // Current month days
+                            const currentMonthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-                            return (
-                                <div
-                                    key={day}
-                                    onClick={() => {
-                                        // Optional: click to create logic if desired
-                                        // setSelectedEvent({ start: day.toISOString(), end: day.toISOString() }); 
-                                        // setIsModalOpen(true);
-                                    }}
-                                    className={`bg-white min-h-[60px] sm:min-h-[100px] md:min-h-[140px] p-1 sm:p-2 md:p-3 hover:bg-ivory/10 transition-all group relative cursor-pointer border-r border-b border-ivory/30 ${isTodayDate ? 'bg-ivory/10' : ''}`}
-                                >
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className={`text-[9px] sm:text-[11px] font-bold tracking-widest flex items-center justify-center rounded-xl ${isTodayDate ? 'bg-charcoal text-white w-5 h-5 sm:w-7 sm:h-7 shadow-lg' : 'text-warmgray group-hover:text-charcoal'}`}>
-                                            {format(day, 'dd')}
-                                        </span>
-                                        {dayEvents.length > 0 && <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse"></div>}
-                                    </div>
+                            // Calculate trailing days to fill 42 cells (7x6)
+                            const remaining = 42 - (prevMonthDays.length + currentMonthDays.length);
+                            const nextMonthDays = Array.from({ length: remaining }, (_, i) => {
+                                const d = new Date(monthEnd);
+                                d.setDate(d.getDate() + (i + 1));
+                                return d;
+                            });
 
-                                    <div className="space-y-1.5">
-                                        {dayEvents.map(event => (
-                                            <div
-                                                key={event._id}
-                                                onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); setIsModalOpen(true); }}
-                                                className={`p-1 sm:p-2 rounded-lg sm:rounded-xl text-[7px] sm:text-[9px] border-l-2 leading-tight shadow-sm hover:scale-[1.02] transition-transform ${event.type === 'Wedding' ? 'bg-charcoal text-white border-gold' :
-                                                    event.type === 'Pre-Wedding' ? 'bg-ivory text-charcoal border-mutedbrown border' :
-                                                        'bg-gray-50 text-gray-600 border-gray-300'
-                                                    }`}
-                                            >
-                                                <span className="font-bold uppercase tracking-widest block truncate">{event.type}</span>
-                                                <span className="opacity-70 block truncate font-medium">{event.title}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        })}
+                            const allDisplayDays = [...prevMonthDays, ...currentMonthDays, ...nextMonthDays];
+
+                            return allDisplayDays.map((day, gridIdx) => {
+                                const isHovered = hoveredIdx === gridIdx;
+                                const isCurrentMonth = isSameMonth(day, currentDate);
+                                
+                                // Localized Bump Logic
+                                const isTop = hoveredIdx !== null && gridIdx === hoveredIdx - 7;
+                                const isBottom = hoveredIdx !== null && gridIdx === hoveredIdx + 7;
+                                const isLeft = hoveredIdx !== null && gridIdx === hoveredIdx - 1 && hoveredIdx % 7 !== 0;
+                                const isRight = hoveredIdx !== null && gridIdx === hoveredIdx + 1 && hoveredIdx % 7 !== 6;
+
+                                let x = 0, y = 0;
+                                if (isLeft) x = -40;
+                                if (isRight) x = 40;
+                                if (isTop) y = -40;
+                                if (isBottom) y = 40;
+
+                                const isTodayDate = isToday(day);
+                                const dayEvents = filteredEvents.filter(e => isSameDay(parseISO(e.start), day));
+                                
+                                let cardColor = PASTEL_COLORS.empty;
+                                if (dayEvents.length > 0) {
+                                    cardColor = EVENT_TYPE_COLORS[dayEvents[0].type] || PASTEL_COLORS.neutral;
+                                } else {
+                                    cardColor = STICKY_COLORS[gridIdx % STICKY_COLORS.length];
+                                }
+
+                                return (
+                                    <motion.div
+                                        key={day.toISOString()}
+                                        layout
+                                        onMouseEnter={() => setHoveredIdx(gridIdx)}
+                                        onMouseLeave={() => setHoveredIdx(null)}
+                                        animate={{
+                                            x, y,
+                                            scale: isHovered ? 1.5 : 1,
+                                            zIndex: isHovered ? 50 : (isTop || isBottom || isLeft || isRight ? 40 : 1),
+                                            boxShadow: isHovered ? "0 30px 60px -15px rgba(0,0,0,0.15)" : "0 4px 6px -1px rgba(0,0,0,0.02)"
+                                        }}
+                                        transition={{ type: "spring", stiffness: 500, damping: 45 }}
+                                        onClick={() => {
+                                            if (!isCurrentMonth) return; // Disable click on Ghost Days
+                                            if (dayEvents.length > 0) {
+                                                setSelectedEvent(dayEvents[0]);
+                                            } else {
+                                                setSelectedEvent({ start: day.toISOString(), end: day.toISOString(), title: "" });
+                                            }
+                                            setIsModalOpen(true);
+                                        }}
+                                        style={{ backgroundColor: cardColor }}
+                                        className={`
+                                            min-h-[110px] p-5 rounded-2xl cursor-pointer relative group flex flex-col items-start
+                                            ${!isCurrentMonth ? 'opacity-25 grayscale shadow-none pointer-events-none' : ''}
+                                            ${isTodayDate ? 'ring-4 ring-black/10 ring-offset-4 ring-offset-transparent' : ''}
+                                        `}
+                                    >
+                                        {/* High-Contrast Bold Solid Border */}
+                                        <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-2xl overflow-hidden">
+                                            <rect width="100%" height="100%" fill="none" rx="14" ry="14" stroke="rgba(0,0,0,0.08)" strokeWidth="2.5" />
+                                        </svg>
+
+                                        <div className="flex w-full justify-between items-start mb-2 group-hover:scale-110 transition-transform origin-left relative z-10">
+                                            <span className="text-sm font-bold text-[#2d2d2d]">{format(day, 'd')}</span>
+                                            {isTodayDate && <div className="w-1.5 h-1.5 rounded-full bg-black/40" />}
+                                            {!isCurrentMonth && <span className="text-[7px] font-bold opacity-30 text-black uppercase tracking-tighter">{format(day, 'MMM')}</span>}
+                                        </div>
+
+                                        <div className="flex flex-col gap-1 w-full overflow-hidden relative z-10">
+                                            {dayEvents.slice(0, 1).map(event => (
+                                                <div key={event._id} className="w-full">
+                                                    <motion.div 
+                                                        animate={{ fontSize: isHovered ? "14px" : "10px" }}
+                                                        className="font-bold text-[#2d2d2d] leading-tight truncate"
+                                                    >
+                                                        {event.title}
+                                                    </motion.div>
+                                                    <motion.div 
+                                                        animate={{ fontSize: isHovered ? "11px" : "9px" }}
+                                                        className="text-[#2d2d2d]/50 font-medium"
+                                                    >
+                                                        {format(parseISO(event.start), 'hh:mm a')}
+                                                    </motion.div>
+                                                    {isHovered && event.location && (
+                                                        <motion.div 
+                                                            initial={{ opacity: 0, height: 0 }}
+                                                            animate={{ opacity: 1, height: 'auto' }}
+                                                            className="text-[9px] text-[#2d2d2d]/40 font-bold uppercase tracking-wider mt-2 flex items-center gap-1.5"
+                                                        >
+                                                            <MapPin size={10} /> {event.location}
+                                                        </motion.div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                );
+                            });
+                        })()}
                     </div>
                 </div>
 
-                {/* Sidebar */}
-                <div className="space-y-8 md:space-y-10">
+                {/* 2. SIDEBAR COMPONENT */}
+                <div className="xl:col-span-4 flex flex-col gap-10">
                     {/* Upcoming Registry */}
-                    <div className="bg-white rounded-3xl sm:rounded-[2.5rem] border border-ivory shadow-sm p-6 sm:p-8 md:p-10 relative overflow-hidden group hover:shadow-xl transition-all duration-700 hover:-translate-y-2">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-ivory rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-beige/50 transition-colors duration-[2000ms] animate-slow-spin"></div>
-                        <h4 className="font-serif text-2xl md:text-3xl mb-10 relative z-10 transition-transform duration-700 group-hover:translate-x-2">Upcoming Registry</h4>
+                    <div className="bg-white/40 backdrop-blur-xl rounded-3xl border-4 border-black/5 p-10 shadow-sm flex flex-col relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-8 opacity-5">
+                            <CalendarIcon size={80} />
+                        </div>
+                        <h4 className="font-serif text-3xl mb-12 text-[#2d2d2d] relative z-10">Upcoming Events</h4>
 
-                        <div className="space-y-10 relative z-10 min-h-[200px]">
-                            {loading ? <p className="text-sm text-warmgray italic">Loading schedule...</p> :
-                                upcomingEvents.length > 0 ? (
-                                    upcomingEvents.map(event => (
-                                        <div key={event._id} className="group/item cursor-pointer" onClick={() => { setSelectedEvent(event); setIsModalOpen(true); }}>
-                                            <div className="flex gap-6">
-                                                <div className="flex flex-col items-center justify-center w-14 h-16 bg-ivory rounded-2xl border border-ivory shadow-sm group-hover/item:bg-charcoal group-hover/item:text-white transition-all duration-500">
-                                                    <span className="text-[10px] uppercase font-bold tracking-widest opacity-60">{format(parseISO(event.start), 'MMM')}</span>
-                                                    <span className="text-2xl font-serif">{format(parseISO(event.start), 'dd')}</span>
+                        <div className="space-y-6 mb-12 relative z-10 min-h-[300px]">
+                            {loading ? (
+                                <div className="space-y-6">
+                                    {[1,2,3].map(i => (
+                                        <div key={i} className="bg-black/5 animate-pulse rounded-[1.5rem] h-32 w-full" />
+                                    ))}
+                                </div>
+                            ) : upcomingEvents.length > 0 ? (
+                                upcomingEvents.map((event, idx) => (
+                                    <motion.div 
+                                        key={event._id} 
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: idx * 0.1 }}
+                                        whileHover={{ x: -10, scale: 1.02 }}
+                                        className="rounded-[1.5rem] p-6 flex items-center gap-6 shadow-sm border border-black/5 cursor-pointer group relative overflow-hidden"
+                                        style={{ backgroundColor: EVENT_TYPE_COLORS[event.type] || PASTEL_COLORS.neutral }}
+                                        onClick={() => { setSelectedEvent(event); setIsModalOpen(true); }}
+                                    >
+                                        <div className="w-20 h-20 bg-white/40 rounded-full border border-white/40 flex flex-col items-center justify-center shrink-0 shadow-inner">
+                                            <span className="text-[10px] font-bold uppercase opacity-40 mb-1">{format(parseISO(event.start), 'MMM')}</span>
+                                            <span className="text-2xl font-bold leading-none text-[#2d2d2d]">{format(parseISO(event.start), 'dd')}</span>
+                                        </div>
+                                        <div className="flex-1">
+                                            <h5 className="text-lg font-bold text-[#2d2d2d] leading-tight mb-2 tracking-tight group-hover:text-black transition-colors">{event.title}</h5>
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2 text-[10px] text-[#2d2d2d]/40 font-bold uppercase tracking-widest">
+                                                    <Clock size={12} /> {format(parseISO(event.start), 'hh:mm a')}
                                                 </div>
-                                                <div className="flex-1 space-y-3">
-                                                    <h5 className="text-sm font-bold text-charcoal group-hover/item:text-mutedbrown transition-colors truncate">
-                                                        {event.title}
-                                                    </h5>
-                                                    <div className="flex flex-col gap-2">
-                                                        <div className="flex items-center gap-2.5 text-[10px] text-warmgray font-bold uppercase tracking-widest">
-                                                            <Clock size={12} className="text-gold" /> {format(parseISO(event.start), 'hh:mm a')}
-                                                        </div>
-                                                        {event.location && (
-                                                            <div className="flex items-center gap-2.5 text-[10px] text-warmgray font-bold uppercase tracking-widest">
-                                                                <MapPin size={12} className="text-gold" /> {event.location}
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                <div className="flex items-center gap-2 text-[10px] text-[#2d2d2d]/40 font-bold uppercase tracking-widest">
+                                                    <MapPin size={12} /> {event.location || 'Studio HQ'}
                                                 </div>
                                             </div>
                                         </div>
-                                    ))
-                                ) : (
-                                    <p className="text-sm text-warmgray italic">No upcoming events found.</p>
-                                )}
+                                        {/* Type Badge */}
+                                        <div className="absolute top-4 right-4 bg-black/5 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest opacity-40">
+                                            {event.type}
+                                        </div>
+                                    </motion.div>
+                                ))
+                            ) : (
+                                <div className="h-64 flex flex-col items-center justify-center text-center opacity-30 border-2 border-dashed border-black/10 rounded-[2rem]">
+                                    <CalendarIcon size={32} className="mb-4" />
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.3em]">No upcoming events</p>
+                                </div>
+                            )}
                         </div>
 
-                        <button
-                            onClick={() => { setFilter("All"); jumpToToday(); }}
-                            className="w-full mt-12 py-5 bg-white border border-ivory rounded-2xl text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-ivory hover:shadow-md transition-all shadow-sm relative z-20"
+                        <motion.button 
+                            whileHover={{ scale: 1.02, backgroundColor: "#EBE7D8" }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setIsRegistryOpen(true)}
+                            className="w-full py-5 bg-[#F3F0E6] border-2 border-dashed border-black/5 rounded-[1.5rem] text-[10px] font-bold uppercase tracking-[0.3em] transition-all text-[#2d2d2d] outline-none shadow-sm relative z-10"
                         >
-                            View Full Studio Schedule
-                        </button>
+                            FULL STUDIO SCHEDULE
+                        </motion.button>
                     </div>
 
                     {/* Team Sync Card */}
-                    <div className="bg-charcoal text-white rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 md:p-10 shadow-2xl relative overflow-hidden group hover:-translate-y-2 transition-transform duration-700">
-                        <div className="absolute inset-0 bg-linear-to-tr from-white/5 to-transparent pointer-events-none"></div>
-                        <h4 className="font-serif text-2xl md:text-3xl mb-6 relative z-10 transition-transform duration-700 group-hover:translate-x-2">Team Sync</h4>
-                        <p className="text-[11px] text-white/50 leading-relaxed mb-10 font-medium relative z-10">
-                            Teams are synchronized for the upcoming week. Global coordination is active.
-                        </p>
-                        <div className="flex -space-x-4 relative z-10 mb-10">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="w-12 h-12 rounded-[1.25rem] border-2 border-charcoal bg-white/10 backdrop-blur-md flex items-center justify-center text-xs text-white font-bold hover:translate-y-[-5px] transition-transform cursor-pointer">
-                                    {String.fromCharCode(64 + i)}
-                                </div>
-                            ))}
-                            <div className="w-12 h-12 rounded-[1.25rem] border-2 border-charcoal bg-gold flex items-center justify-center text-[10px] text-white font-bold shadow-lg">
-                                +{Math.max(0, upcomingEvents.length)}
-                            </div>
+                    <div className="bg-white/40 backdrop-blur-xl rounded-3xl border-4 border-black/5 p-10 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-8 opacity-5">
+                            <Users size={80} />
                         </div>
-                        <button
-                            onClick={handleTeamSync}
-                            className="w-full py-5 bg-white/10 border border-white/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-white/20 transition-all relative z-20 shadow-md"
+                        <h4 className="font-serif text-3xl mb-8 text-[#2d2d2d] relative z-10">Team Sync</h4>
+                        <p className="text-[11px] text-[#2d2d2d]/60 leading-relaxed mb-10 font-medium relative z-10">
+                            Standard synchronization active across all specialized units. 
+                        </p>
+                        <div className="flex flex-wrap gap-3 mb-12 relative z-10">
+                            {[
+                                { n: 'A', c: '#FCA5A5' }, { n: 'S', c: '#FDE68A' }, { n: 'H', c: '#7DD3FC' }, 
+                                { n: 'H', c: '#C4B5FD' }, { n: 'VB', c: '#A9AC83' }, { n: 'JP', c: '#E8D0DC' }
+                            ].map((team, i) => (
+                                <motion.div 
+                                    key={i} 
+                                    style={{ backgroundColor: team.c }}
+                                    animate={{ scale: [1, 1.05, 1] }}
+                                    transition={{ duration: 4, repeat: Infinity, delay: i * 0.5 }}
+                                    whileHover={{ scale: 1.2, rotate: 5, zIndex: 10 }}
+                                    className="w-12 h-12 rounded-full flex items-center justify-center text-xs font-bold text-[#2d2d2d] border-2 border-white/80 shadow-sm cursor-pointer"
+                                >
+                                    {team.n}
+                                </motion.div>
+                            ))}
+                        </div>
+                        <motion.button 
+                            whileHover={{ scale: 1.02, backgroundColor: "#EBE7D8" }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={handleTeamSync} 
+                            className="w-full py-5 bg-[#F3F0E6] border-2 border-dashed border-black/5 rounded-[1.5rem] text-[10px] font-bold uppercase tracking-[0.3em] transition-all text-[#2d2d2d] outline-none shadow-sm relative z-10"
                         >
-                            Assign Lead Team
-                        </button>
+                            COORDINATE LEAD TEAM
+                        </motion.button>
                     </div>
                 </div>
             </div>
 
-            {/* Modal */}
-            {isModalOpen && (
-                <EventForm
-                    onClose={() => { setIsModalOpen(false); setSelectedEvent(null); }}
-                    onSave={handleSaveEvent}
-                    onDelete={handleDeleteEvent}
-                    initialData={selectedEvent}
-                />
-            )}
+            {/* Registry Modal Overlay */}
+            <AnimatePresence>
+                {isRegistryOpen && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-12 overflow-hidden"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 50, opacity: 0 }}
+                            animate={{ scale: 1, y: 0, opacity: 1 }}
+                            exit={{ scale: 0.9, y: 50, opacity: 0 }}
+                            className="bg-white/80 backdrop-blur-3xl w-full max-w-6xl h-full rounded-[3rem] border-8 border-black/5 shadow-2xl overflow-hidden flex flex-col"
+                        >
+                            <div className="p-12 border-b border-black/5 flex justify-between items-center">
+                                <div>
+                                    <h2 className="font-serif text-5xl text-[#2d2d2d]">Studio Schedule</h2>
+                                    <p className="text-xs text-[#BB998B] mt-3 font-bold uppercase tracking-widest">A chronological record of every production moment</p>
+                                </div>
+                                <button 
+                                    onClick={() => setIsRegistryOpen(false)}
+                                    className="p-5 hover:bg-black/5 rounded-full transition-colors"
+                                >
+                                    <LogOut className="rotate-180" size={32} />
+                                </button>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+                                <div className="space-y-12">
+                                    {events
+                                        .sort((a, b) => new Date(a.start) - new Date(b.start))
+                                        .map((event, i) => (
+                                            <motion.div 
+                                                key={event._id}
+                                                initial={{ x: -20, opacity: 0 }}
+                                                animate={{ x: 0, opacity: 1 }}
+                                                transition={{ delay: i * 0.05 }}
+                                                className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center group cursor-help"
+                                                onClick={() => { setSelectedEvent(event); setIsModalOpen(true); }}
+                                            >
+                                                <div className="col-span-2 text-center md:text-left">
+                                                    <span className="text-[10px] font-bold uppercase tracking-[0.4em] opacity-40 block mb-2">{format(parseISO(event.start), 'MMMM')}</span>
+                                                    <span className="text-5xl font-serif text-[#2d2d2d] leading-none">{format(parseISO(event.start), 'dd')}</span>
+                                                </div>
+                                                <div className="col-span-7 bg-white/60 p-8 rounded-[2rem] border-2 border-black/5 group-hover:border-black/20 transition-all shadow-sm">
+                                                    <h3 className="text-2xl font-bold text-[#2d2d2d] mb-2">{event.title}</h3>
+                                                    <div className="flex gap-6 text-[10px] font-bold uppercase tracking-widest opacity-60">
+                                                        <span className="flex items-center gap-2"><Clock size={14}/> {format(parseISO(event.start), 'hh:mm a')}</span>
+                                                        <span className="flex items-center gap-2"><MapPin size={14}/> {event.location || 'Studio HQ'}</span>
+                                                        <span className="px-3 py-1 rounded-full bg-black/5 text-[8px]">{event.type}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-3 text-right hidden md:block">
+                                                    <button className="text-[10px] font-bold uppercase tracking-widest p-4 rounded-full border border-black/10 opacity-0 group-hover:opacity-100 transition-all">VIEW DETAILS</button>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Event Management Brief (Modal) */}
+            <AnimatePresence>
+                {isModalOpen && (
+                    <EventForm
+                        onClose={() => { setIsModalOpen(false); setSelectedEvent(null); }}
+                        onSave={handleSaveEvent}
+                        onDelete={handleDeleteEvent}
+                        initialData={selectedEvent}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

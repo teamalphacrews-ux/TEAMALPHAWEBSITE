@@ -97,4 +97,56 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// @route    GET api/auth/google
+// @desc     Redirect to Google OAuth consent screen
+// @access   Private
+const { google } = require('googleapis');
+const auth = require('../middleware/auth');
+
+router.get('/google', auth, (req, res) => {
+    const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
+    );
+
+    const scopes = ['https://www.googleapis.com/auth/calendar'];
+    const url = oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        prompt: 'consent',
+        scope: scopes,
+        state: req.user.id
+    });
+
+    res.json({ url });
+});
+
+// @route    GET api/auth/google/callback
+// @desc     Handle Google OAuth callback
+// @access   Public
+router.get('/google/callback', async (req, res) => {
+    const { code, state: userId } = req.query;
+    try {
+        const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+            process.env.GOOGLE_REDIRECT_URI
+        );
+
+        const { tokens } = await oauth2Client.getToken(code);
+        
+        await User.findByIdAndUpdate(userId, {
+            googleAccessToken: tokens.access_token,
+            googleRefreshToken: tokens.refresh_token,
+            googleTokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null
+        });
+
+        // Redirect back to frontend calendar page
+        res.redirect(`${process.env.FRONTEND_URL}/admin/calendar?sync=success`);
+    } catch (err) {
+        console.error('Callback error:', err.message);
+        res.redirect(`${process.env.FRONTEND_URL}/admin/calendar?sync=error`);
+    }
+});
+
 module.exports = router;

@@ -73,6 +73,24 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 connectDB().then(() => {
     console.log("Database connection sequence complete.");
     initCronJobs();
+
+    // --- Google Calendar Polling ---
+    const { pollGoogleCalendar } = require('./services/googleCalendarService');
+    const User = require('./models/User');
+
+    setInterval(async () => {
+        try {
+            const connectedUsers = await User.find({ 
+                googleAccessToken: { $exists: true, $ne: null } 
+            });
+            for (const user of connectedUsers) {
+                await pollGoogleCalendar(user, io);
+            }
+        } catch (err) {
+            console.error('Error in Google Calendar polling loop:', err.message);
+        }
+    }, 5000); // Every 5 seconds
+
 }).catch(err => {
     console.error("Delayed Cron initialization due to DB issue:", err.message);
 });
@@ -142,6 +160,99 @@ authRouter.get('/me', auth, async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
+    }
+});
+
+// Google OAuth Routes
+const { google } = require('googleapis');
+
+authRouter.get('/google', auth, (req, res) => {
+    try {
+        const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+            process.env.GOOGLE_REDIRECT_URI
+        );
+
+        const scopes = [
+            'https://www.googleapis.com/auth/calendar',
+            'https://www.googleapis.com/auth/userinfo.email',
+            'https://www.googleapis.com/auth/userinfo.profile'
+        ];
+        const url = oauth2Client.generateAuthUrl({
+            access_type: 'offline',
+            prompt: 'consent',
+            scope: scopes,
+            state: req.user.id
+        });
+
+        res.json({ url });
+    } catch (error) {
+        console.error('Google OAuth URL generation error:', error);
+        res.status(500).json({ msg: "Failed to generate Google OAuth URL" });
+    }
+});
+
+authRouter.post('/google/webhook', async (req, res) => {
+    const resourceId = req.headers['x-goog-resource-id'];
+    const channelId = req.headers['x-goog-channel-id'];
+    const syncState = req.headers['x-goog-resource-state'];
+
+    console.log(`📩 Google Webhook Received: [Resource: ${resourceId}] [State: ${syncState}]`);
+
+    if (syncState === 'sync') {
+        return res.sendStatus(200); // Initial sync notification
+    }
+
+    try {
+        const { pollGoogleCalendar } = require('./services/googleCalendarService');
+        const user = await User.findOne({ googleResourceId: resourceId, googleWebhookId: channelId });
+        if (user) {
+            console.log(`🔄 Triggering Instant Sync for ${user.email}`);
+            await pollGoogleCalendar(user, req.app.get('io'));
+        }
+        res.sendStatus(200);
+    } catch (error) {
+        console.error('Webhook processing error:', error.message);
+        res.sendStatus(500);
+    }
+});
+
+authRouter.get('/google/callback', async (req, res) => {
+    const { code, state: userId } = req.query;
+    try {
+        const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+            process.env.GOOGLE_REDIRECT_URI
+        );
+
+        const { tokens } = await oauth2Client.getToken(code);
+        oauth2Client.setCredentials(tokens);
+
+        // Fetch Google User Info (specifically email)
+        const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+        const userInfo = await oauth2.userinfo.get();
+        const googleEmail = userInfo.data.email;
+        
+        const user = await User.findByIdAndUpdate(userId, {
+            googleAccessToken: tokens.access_token,
+            googleRefreshToken: tokens.refresh_token,
+            googleTokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+            googleEmail: googleEmail
+        }, { new: true });
+
+        // Register Webhook Channel
+        const { setupGoogleWebhook } = require('./services/googleCalendarService');
+        await setupGoogleWebhook(user);
+
+        // Redirect back to frontend calendar page
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        res.redirect(`${frontendUrl}/admin/calendar?sync=success`);
+    } catch (err) {
+        console.error('Callback error:', err.message);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        res.redirect(`${frontendUrl}/admin/calendar?sync=error`);
     }
 });
 

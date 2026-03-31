@@ -13,7 +13,14 @@ const UserSchema = new mongoose.Schema({
     clearedChats: [{
         contactId: String, // userId or 'admin'
         clearedAt: { type: Date, default: Date.now }
-    }]
-});
+    }],
+    googleAccessToken: String,
+    googleRefreshToken: String,
+    googleTokenExpiry: Date,
+    googleCalendarId: { type: String, default: 'primary' },
+    googleEmail: String,
+    googleWebhookId: String,
+    googleResourceId: String
+}, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);
