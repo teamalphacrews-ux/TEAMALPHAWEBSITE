@@ -23,14 +23,14 @@ const Breadcrumbs = () => {
   };
 
   return (
-    <nav className="flex mb-8 overflow-x-auto whitespace-nowrap py-3 px-1 border-b border-[#e6e3df]/30" aria-label="Breadcrumb">
-      <ol className="inline-flex items-center space-x-2 md:space-x-4">
+    <nav className="flex mb-4 overflow-x-auto whitespace-nowrap py-3 px-1" aria-label="Breadcrumb">
+      <ol className="inline-flex items-center space-x-2 md:space-x-3 bg-white/60 backdrop-blur-md px-6 py-2.5 rounded-[20px] border border-white/40 shadow-[0_4px_15px_rgba(0,0,0,0.03)]">
         <li className="inline-flex items-center">
           <Link
             to="/"
-            className="inline-flex items-center text-[10px] font-black uppercase tracking-[0.2em] text-warmgray hover:text-gold transition-all duration-300 px-3 py-1.5 rounded-lg bg-ivory/50 border border-transparent hover:border-gold/20"
+            className="inline-flex items-center text-[13px] font-medium tracking-tight text-[#8a8a8a] hover:text-[#2d2d2d] transition-all duration-300"
           >
-            <Home className="w-3.5 h-3.5 mr-2" />
+            <Home className="w-4 h-4 mr-2 opacity-60" />
             Home
           </Link>
         </li>
@@ -41,15 +41,15 @@ const Breadcrumbs = () => {
           return (
             <li key={to} className="animate-in fade-in slide-in-from-left-2 duration-500" style={{ animationDelay: `${index * 100}ms` }}>
               <div className="flex items-center">
-                <ChevronRight className="w-3 h-3 text-warmgray/40 mx-1 md:mx-2" />
+                <ChevronRight className="w-4 h-4 text-[#8a8a8a] opacity-40 mx-1" />
                 {last ? (
-                  <span className="ml-1 text-[10px] font-black uppercase tracking-[0.2em] text-charcoal md:ml-2 bg-white px-3 py-1.5 rounded-lg shadow-sm border border-[#e6e3df]">
+                  <span className="ml-1 text-[13px] font-medium text-[#2d2d2d] bg-black/[0.04] px-2.5 py-1 rounded-[10px]">
                     {getBreadcrumbName(value)}
                   </span>
                 ) : (
                   <Link
                     to={to}
-                    className="ml-1 text-[10px] font-black uppercase tracking-[0.2em] text-warmgray hover:text-gold md:ml-2 transition-all duration-300 hover:bg-ivory/30 px-2 py-1.5 rounded-lg"
+                    className="ml-1 text-[13px] font-medium text-[#8a8a8a] hover:text-[#2d2d2d] transition-all duration-300 px-2 py-1 rounded-[10px] hover:bg-black/[0.02]"
                   >
                     {getBreadcrumbName(value)}
                   </Link>

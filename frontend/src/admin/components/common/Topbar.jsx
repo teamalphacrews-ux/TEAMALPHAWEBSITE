@@ -1,5 +1,5 @@
+import { memo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
 import { Bell, Search, User, Instagram, Menu, MessageCircle, X, Check, Trash2, Clock, LogOut } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
@@ -8,7 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 
 import { useAuth } from "../../../context/AuthContext";
 
-export default function Topbar({ onMenuClick }) {
+const Topbar = memo(function Topbar({ onMenuClick, isVisibleProp }) {
     const navigate = useNavigate();
     const { user: adminProfile, logout, updateUser } = useAuth();
     const [showProfileModal, setShowProfileModal] = useState(false);
@@ -19,7 +19,23 @@ export default function Topbar({ onMenuClick }) {
     const lastScrollY = useRef(0);
     const ticking = useRef(false);
 
+    // Sync with external visibility prop if provided
     useEffect(() => {
+        if (isVisibleProp !== undefined) {
+            setIsVisible(isVisibleProp);
+        }
+    }, [isVisibleProp]);
+
+    useEffect(() => {
+        // Only use internal scroll listener if no external prop is passed
+        if (isVisibleProp !== undefined) {
+            const handleScrollSimple = () => {
+                setIsScrolled(window.scrollY > 10);
+            };
+            window.addEventListener("scroll", handleScrollSimple, { passive: true });
+            return () => window.removeEventListener("scroll", handleScrollSimple);
+        }
+
         const updateHeader = () => {
             const currentScrollY = window.scrollY;
             
@@ -49,7 +65,7 @@ export default function Topbar({ onMenuClick }) {
 
         window.addEventListener("scroll", handleScroll, { passive: true });
         return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+    }, [isVisibleProp]);
 
     // Notifications State
     const [showNotifications, setShowNotifications] = useState(false);
@@ -76,15 +92,21 @@ export default function Topbar({ onMenuClick }) {
                 setNotifications([]);
             }
         } catch (err) {
+            console.error("Topbar notifications error:", err);
+            if (err.response?.status === 401) {
+                // Halt polling on unauthorized to prevent infinite loops
+                localStorage.removeItem("token");
+                navigate('/auth');
+            }
             setNotifications([]);
         }
     };
 
     useEffect(() => {
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 5000);
+        const interval = setInterval(fetchNotifications, 10000); // Efficient background polling
         return () => clearInterval(interval);
-    }, []);
+    }, [navigate]);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -155,42 +177,27 @@ export default function Topbar({ onMenuClick }) {
 
     return (
         <>
-            <header className={`h-16 md:h-20 px-3 md:px-8 flex items-center justify-between border-b border-[#e6e3df] bg-white/70 backdrop-blur-md sticky top-0 z-30 w-full transition-all duration-300 ease-in-out ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"} ${isScrolled ? "shadow-md border-transparent" : "shadow-none"}`}>
-                <div className="flex items-center gap-2 md:gap-4 flex-1">
+            <header className={`h-[60px] px-4 flex items-center gap-4 bg-white/60 backdrop-blur-[14px] rounded-[18px] border border-white/40 shadow-[0_8px_25px_rgba(0,0,0,0.05)] relative z-30 transition-all duration-300 ease-in-out ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-10 opacity-0 pointer-events-none"}`}>
+                {/* Icons Area */}
+                <div className="flex items-center gap-3">
                     <button
                         onClick={onMenuClick}
-                        className="lg:hidden p-1.5 md:p-2 hover:bg-ivory rounded-xl transition-all text-charcoal shadow-sm border border-ivory bg-white"
+                        className="lg:hidden w-9 h-9 flex items-center justify-center rounded-full bg-white/50 backdrop-blur-[8px] text-[#5f5f5f] hover:bg-black/5 hover:text-[#2d2d2d] transition-all duration-200"
                     >
-                        <Menu size={18} className="md:w-5 md:h-5" />
+                        <X size={18} />
                     </button>
-                    {/* Search bar removed per request */}
-                </div>
 
-                <div className="flex items-center gap-2 md:gap-6">
-                    <div className="flex items-center gap-1 sm:gap-3 md:border-r border-[#e6e3df] pr-2 sm:pr-4">
-                        {/* Logout Button */}
-                        <button
-                            onClick={() => {
-                                if (window.confirm("Are you sure you want to log out?")) {
-                                    logout();
-                                }
-                            }}
-                            className="text-warmgray hover:text-red-500 transition-all p-1.5 md:p-2 hover:bg-red-50 rounded-full group shrink-0"
-                            title="Sign Out"
-                        >
-                            <LogOut size={18} className="md:w-5 md:h-5" strokeWidth={1.5} />
-                        </button>
-
-                        {/* Notifications Module */}
+                    <div className="flex items-center gap-2">
+                        {/* Notifications */}
                         <div className="relative" ref={notifRef}>
                             <button
                                 onClick={() => setShowNotifications(!showNotifications)}
-                                className="relative text-warmgray hover:text-charcoal transition-all p-1.5 md:p-2 hover:bg-ivory rounded-full group shrink-0"
+                                className="relative text-warmgray hover:text-charcoal transition-all p-2.5 bg-black/5 hover:bg-ivory rounded-full group shrink-0 hover:-translate-y-0.5 flex items-center justify-center"
                                 title="Recent Activity & Notifications"
                             >
-                                <Bell size={18} className={`md:w-5 md:h-5 ${unseenCount > 0 ? "text-charcoal group-hover:scale-110 transition-transform" : ""}`} strokeWidth={1.5} />
+                                <Bell size={20} className={`${unseenCount > 0 ? "text-charcoal" : ""}`} strokeWidth={1.5} />
                                 {unseenCount > 0 && (
-                                    <span className="absolute top-1 md:top-1.5 right-1 md:right-1.5 w-1.5 h-1.5 md:w-2 md:h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>
+                                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse"></span>
                                 )}
                             </button>
 
@@ -271,17 +278,17 @@ export default function Topbar({ onMenuClick }) {
                         <div className="flex gap-1 md:gap-4 md:border-l border-[#e6e3df] pl-1 md:pl-4">
                             <button
                                 onClick={() => window.open('https://www.instagram.com/teamalpha_crew/', '_blank')}
-                                className="text-warmgray hover:text-charcoal transition-all p-1.5 md:p-2 hover:bg-ivory rounded-full shrink-0"
+                                className="text-warmgray hover:text-charcoal transition-all p-2.5 bg-black/5 hover:bg-ivory rounded-full shrink-0 hover:-translate-y-0.5 flex items-center justify-center"
                                 title="Visit Team Alpha Instagram"
                             >
-                                <Instagram size={18} className="md:w-5 md:h-5" strokeWidth={1.5} />
+                                <Instagram size={20} strokeWidth={1.5} />
                             </button>
                             <button
                                 onClick={() => window.open('https://wa.me/919110603953', '_blank')}
-                                className="text-warmgray hover:text-[#25D366] transition-all p-1.5 md:p-2 hover:bg-ivory rounded-full shrink-0"
+                                className="text-warmgray hover:text-[#25D366] transition-all p-2.5 bg-black/5 hover:bg-ivory rounded-full shrink-0 hover:-translate-y-0.5 flex items-center justify-center"
                                 title="Contact Admin via WhatsApp"
                             >
-                                <MessageCircle size={18} className="md:w-5 md:h-5" strokeWidth={1.5} />
+                                <MessageCircle size={20} strokeWidth={1.5} />
                             </button>
                         </div>
                     </div>
@@ -314,4 +321,6 @@ export default function Topbar({ onMenuClick }) {
             )}
         </>
     );
-}
+});
+
+export default Topbar;

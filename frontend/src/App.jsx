@@ -1,16 +1,19 @@
 import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import About from './components/About';
-import Services from './components/Services';
-import Gallery from './components/Gallery';
-import Testimonials from './components/Testimonials';
-import Contact from './components/Contact';
-import GetQuote from './components/GetQuote';
-import AuthPage from './components/AuthPage';
-import Footer from './components/Footer';
+
+// Website imports (Lazy loaded for performance)
+const Navbar = lazy(() => import('./components/Navbar'));
+const Hero = lazy(() => import('./components/Hero'));
+const About = lazy(() => import('./components/About'));
+const Services = lazy(() => import('./components/Services'));
+const Gallery = lazy(() => import('./components/Gallery'));
+const Testimonials = lazy(() => import('./components/Testimonials'));
+const Contact = lazy(() => import('./components/Contact'));
+const Footer = lazy(() => import('./components/Footer'));
+const GetQuote = lazy(() => import('./components/GetQuote'));
+const AuthPage = lazy(() => import('./components/AuthPage'));
+
 import ProtectedRoute from './components/ProtectedRoute';
 import Breadcrumbs from './components/common/Breadcrumbs';
 import PageTransition from './components/common/PageTransition';
@@ -40,7 +43,9 @@ const PortalLayout = () => {
       <main className="content p-4 md:p-8 lg:p-12 max-w-7xl mx-auto w-full">
         <Breadcrumbs />
         <PageTransition>
-          <Outlet />
+          <Suspense fallback={<div className="flex h-64 w-full items-center justify-center text-xl opacity-50">Loading Portal...</div>}>
+            <Outlet />
+          </Suspense>
         </PageTransition>
       </main>
       <ClientFooter />
@@ -58,7 +63,7 @@ function App() {
       <Toaster position="top-right" />
       <Suspense fallback={<div className="flex h-screen w-full items-center justify-center text-xl">Loading...</div>}>
         <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
+          <Routes location={location}>
             {/* Main Website Routes */}
             <Route path="/" element={
               <>

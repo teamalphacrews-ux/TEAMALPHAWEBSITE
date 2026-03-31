@@ -4,6 +4,12 @@ const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+let compression;
+try {
+    compression = require('compression'); 
+} catch (error) {
+    console.warn('⚠️ Performance warning: `compression` module not found. Run `npm install compression` in the backend directory.');
+}
 require('dotenv').config();
 
 const User = require('./models/User');
@@ -22,6 +28,7 @@ const auth = require('./middleware/auth');
 const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
+app.use(compression()); // Compress all responses
 const server = require('http').createServer(app);
 const io = require('socket.io')(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
@@ -68,7 +75,10 @@ io.on('connection', (socket) => {
 
 app.set('io', io);
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    maxAge: '7d', // Cache for 7 days
+    etag: true
+}));
 
 connectDB().then(() => {
     console.log("Database connection sequence complete.");

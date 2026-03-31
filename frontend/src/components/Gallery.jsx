@@ -2,18 +2,18 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Grid, LayoutTemplate, Loader2, ImageOff } from 'lucide-react';
 
-// Dynamic imports for all categories
+// Dynamic imports for all categories (Lazy loaded)
 const localImages = {
-    "Wedding": Object.values(import.meta.glob('../assets/wedding/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' })),
-    "Engagement": Object.values(import.meta.glob('../assets/engagement/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' })),
-    "Pre Wedding": Object.values(import.meta.glob('../assets/pre_wedding/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' })),
-    "Haldi": Object.values(import.meta.glob('../assets/haldi/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' })),
-    "Reception": Object.values(import.meta.glob('../assets/reception/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' })),
-    "Mehendi": Object.values(import.meta.glob('../assets/mehendi/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' }))
+    "Wedding": Object.values(import.meta.glob('../assets/wedding/*.{jpg,jpeg,png,webp}', { import: 'default' })),
+    "Engagement": Object.values(import.meta.glob('../assets/engagement/*.{jpg,jpeg,png,webp}', { import: 'default' })),
+    "Pre Wedding": Object.values(import.meta.glob('../assets/pre_wedding/*.{jpg,jpeg,png,webp}', { import: 'default' })),
+    "Haldi": Object.values(import.meta.glob('../assets/haldi/*.{jpg,jpeg,png,webp}', { import: 'default' })),
+    "Reception": Object.values(import.meta.glob('../assets/reception/*.{jpg,jpeg,png,webp}', { import: 'default' })),
+    "Mehendi": Object.values(import.meta.glob('../assets/mehendi/*.{jpg,jpeg,png,webp}', { import: 'default' }))
 };
 
-// Cover images (DPs)
-const localCovers = import.meta.glob('../assets/covers/*.{jpg,jpeg,png,webp}', { eager: true, import: 'default' });
+// Cover images (Lazy loaded)
+const localCovers = import.meta.glob('../assets/covers/*.{jpg,jpeg,png,webp}', { import: 'default' });
 
 // Fallback images if folders are empty
 const defaultImages = {
@@ -75,7 +75,7 @@ const Gallery = () => {
 
                         if (data && data.resources && data.resources.length > 0) {
                             newCloudData[cat.id] = data.resources.map(res =>
-                                `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/v${res.version}/${res.public_id}.${res.format}`
+                                `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto,f_auto,w_800/v${res.version}/${res.public_id}.${res.format}`
                             );
                         }
                     } catch (err) {
