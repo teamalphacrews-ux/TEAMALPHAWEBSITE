@@ -308,4 +308,68 @@ router.get('/pending-payments', auth, async (req, res) => {
     }
 });
 
+// Get Monthly Performance Data (Revenue vs Expenses vs Cash Flow)
+router.get('/monthly-performance', auth, async (req, res) => {
+    try {
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const now = new Date();
+        const performanceData = [];
+
+        // Calculate the range: 6 months ago to now
+        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+        // Aggregation for Invoices
+        const invoiceAgg = await Invoice.aggregate([
+            { $match: { status: 'Paid', invoiceDate: { $gte: sixMonthsAgo } } },
+            { $group: {
+                _id: { month: { $month: "$invoiceDate" }, year: { $year: "$invoiceDate" } },
+                total: { $sum: "$total" }
+            }}
+        ]);
+
+        // Aggregation for Leads
+        const leadAgg = await Lead.aggregate([
+            { $match: { paymentStatus: { $in: ['Deposit Paid', 'Paid'] }, createdAt: { $gte: sixMonthsAgo } } },
+            { $group: {
+                _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+                total: { $sum: { $cond: [{ $eq: ["$paymentStatus", "Paid"] }, "$totalAmount", "$depositAmount"] } }
+            }}
+        ]);
+
+        // Aggregation for Expenses
+        const expenseAgg = await Finance.aggregate([
+            { $match: { type: 'expense', date: { $gte: sixMonthsAgo } } },
+            { $group: {
+                _id: { month: { $month: "$date" }, year: { $year: "$date" } },
+                total: { $sum: "$amount" }
+            }}
+        ]);
+
+        // Combine into 6 months response
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const m = d.getMonth() + 1;
+            const y = d.getFullYear();
+
+            const invoiceTotal = invoiceAgg.find(a => a._id.month === m && a._id.year === y)?.total || 0;
+            const leadTotal = leadAgg.find(a => a._id.month === m && a._id.year === y)?.total || 0;
+            const expenseTotal = expenseAgg.find(a => a._id.month === m && a._id.year === y)?.total || 0;
+
+            const revenueTotal = invoiceTotal + leadTotal;
+
+            performanceData.push({
+                name: months[d.getMonth()],
+                revenue: revenueTotal,
+                expenses: expenseTotal,
+                cashFlow: revenueTotal - expenseTotal
+            });
+        }
+
+        res.json(performanceData);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
+

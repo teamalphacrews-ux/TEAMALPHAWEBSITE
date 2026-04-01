@@ -209,24 +209,24 @@ export default function Chats() {
     if (loading) return <div className="flex h-screen items-center justify-center">Loading encrypted channel...</div>;
 
     return (
-        <div className="flex flex-col h-[85vh] max-w-4xl mx-auto my-8 bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 animate-in fade-in duration-500">
+        <div className="flex flex-col h-[85vh] max-w-4xl mx-auto my-8 bg-white/95 backdrop-blur-md rounded-[20px] shadow-[0_10px_30px_rgba(0,0,0,0.08)] overflow-hidden border border-white/50 animate-in fade-in duration-500 relative">
             {/* Header */}
-            <div className="bg-[#1C1C1C] p-6 flex items-center justify-between text-white">
+            <div className="bg-white/60 backdrop-blur-xl p-6 flex items-center justify-between text-[#1a1a1a] border-b border-stone-100 z-10 rounded-t-[20px]">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center font-serif text-xl">A</div>
+                    <div className="w-12 h-12 bg-stone-100/50 rounded-2xl flex items-center justify-center font-serif text-xl border border-stone-200/50 shadow-sm text-stone-600 font-bold">A</div>
                     <div>
-                        <h2 className="font-serif text-xl">Personal Assistant</h2>
-                        <div className="flex items-center gap-2">
-                           <div className={`w-2 h-2 rounded-full ${isTyping ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
-                           <p className="text-xs opacity-70 uppercase tracking-widest">{isTyping ? 'Typing...' : 'Online'}</p>
+                        <h2 className="font-serif text-xl font-bold tracking-tight">Personal Assistant</h2>
+                        <div className="flex items-center gap-2 mt-0.5">
+                           <div className={`w-2 h-2 rounded-full ${isTyping ? 'bg-emerald-400 animate-pulse' : 'bg-stone-300'}`}></div>
+                           <p className="text-[9px] text-[#555] font-bold uppercase tracking-widest">{isTyping ? 'Synchronizing...' : 'Online'}</p>
                         </div>
                     </div>
                 </div>
-                <button className="p-2 hover:bg-white/10 rounded-xl transition-all"><MoreVertical size={20} /></button>
+                <button className="p-2 hover:bg-stone-50 rounded-xl transition-all text-stone-400 hover:text-stone-700 shadow-sm"><MoreVertical size={20} /></button>
             </div>
 
             {/* Messages */}
-            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 bg-[#F8F7F4] custom-scrollbar">
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-white/30 backdrop-blur-sm custom-scrollbar scroll-smooth">
                 {messages.map((msg, idx) => {
                     const isOwn = msg.sender === user.id;
                     const showDate = idx === 0 || new Date(messages[idx-1].timestamp).toDateString() !== new Date(msg.timestamp).toDateString();
@@ -235,29 +235,31 @@ export default function Chats() {
                         <React.Fragment key={msg._id}>
                             {showDate && (
                                 <div className="flex justify-center my-4">
-                                    <span className="px-4 py-1 bg-gray-200/50 text-[10px] font-bold uppercase tracking-widest text-gray-500 rounded-full">
-                                        {format(new Date(msg.timestamp), 'MMMM dd, yyyy')}
+                                    <span className="px-4 py-1.5 bg-stone-50 border border-stone-100 text-[9px] font-bold uppercase tracking-[0.2em] text-[#B0B0B0] rounded-full shadow-sm">
+                                        {format(new Date(msg.timestamp), 'EEEE, MMM dd')}
                                     </span>
                                 </div>
                             )}
                             
                             <div className={`flex w-full ${isOwn ? "justify-end" : "justify-start"}`}>
-                                <div className="relative group max-w-[75%]">
+                                <div className={`relative group max-w-[75%] flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
                                     <div 
                                         onClick={() => setActiveMenuId(activeMenuId === msg._id ? null : msg._id)}
-                                        className={`px-4 py-3 rounded-2xl shadow-sm cursor-pointer transition-all hover:shadow-md ${
-                                            isOwn ? "bg-[#1C1C1C] text-white rounded-tr-none" : "bg-white text-gray-800 rounded-tl-none border border-gray-200"
+                                        className={`px-5 py-3.5 rounded-2xl shadow-sm cursor-pointer transition-all duration-300 hover:-translate-y-0.5 ${
+                                            isOwn 
+                                                ? "bg-gradient-to-br from-[#1a1a1a] to-[#333] text-white rounded-[16px_16px_4px_16px] shadow-md border-t border-white/10" 
+                                                : "bg-[#f3f4f6] text-[#1a1a1a] rounded-[16px_16px_16px_4px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-stone-200/50"
                                         }`}
                                     >
                                         {msg.replyTo && (
-                                            <div className={`mb-2 p-2 rounded-xl text-xs border-l-4 opacity-70 ${isOwn ? 'bg-white/10 border-white/20' : 'bg-gray-50 border-gray-300'}`}>
-                                                <p className="font-bold text-[10px] mb-1">Reference</p>
-                                                <p className="truncate">{msg.replyTo.text}</p>
+                                            <div className={`mb-2 p-2 rounded-xl text-xs border-l-4 opacity-70 ${isOwn ? 'bg-white/10 border-white/20' : 'bg-[#f0f0f0] border-stone-400'}`}>
+                                                <p className="font-bold text-[9px] mb-1 uppercase tracking-widest flex items-center gap-1.5"><Reply size={10} strokeWidth={3} /> Reference</p>
+                                                <p className="truncate italic">{msg.replyTo.text}</p>
                                             </div>
                                         )}
                                         <p className="text-[14px] leading-relaxed mb-1">{msg.text}</p>
                                         
-                                        <div className="flex items-center justify-end gap-1 opacity-50 text-[10px]">
+                                        <div className={`flex items-center gap-1 opacity-50 text-[9px] font-bold uppercase tracking-widest mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                                             <span>{format(new Date(msg.timestamp), 'hh:mm a')}</span>
                                             {isOwn && !msg.isDeletedEveryone && (
                                                 <span>
@@ -269,9 +271,9 @@ export default function Chats() {
                                         </div>
 
                                         {msg.reactions?.length > 0 && (
-                                            <div className="absolute -bottom-2 translate-y-1/2 flex gap-1 left-3">
+                                            <div className={`absolute -bottom-2 translate-y-1/2 flex gap-1 animate-in zoom-in duration-300 z-10 ${isOwn ? 'right-3' : 'left-3'}`}>
                                                 {msg.reactions.map((r, i) => (
-                                                    <span key={i} className="bg-white border border-gray-100 rounded-full px-1.5 py-0.5 text-xs shadow-sm">{r.emoji}</span>
+                                                    <span key={i} className="bg-white border border-[#f0f0f0] rounded-full px-1.5 py-0.5 text-xs shadow-sm ring-2 ring-[#fafafa] font-normal">{r.emoji}</span>
                                                 ))}
                                             </div>
                                         )}
@@ -279,19 +281,19 @@ export default function Chats() {
 
                                     {/* Action Menu */}
                                     {activeMenuId === msg._id && (
-                                        <div ref={menuRef} className={`absolute top-0 w-48 bg-white shadow-2xl rounded-2xl py-1 z-50 border border-gray-100 animate-in zoom-in-95 ${isOwn ? "right-[105%]" : "left-[105%]"}`}>
-                                            <button onClick={() => { setReplyingTo(msg); setActiveMenuId(null); }} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 text-sm"><Reply size={16} className="opacity-40" /> Reply</button>
-                                            <div className="px-3 py-2 border-y border-gray-50 flex justify-between">
+                                        <div ref={menuRef} className={`absolute top-0 mt-2 w-48 bg-white shadow-[0_15px_40px_rgba(0,0,0,0.12)] rounded-2xl py-2 z-50 border border-[#f8f8f8] animate-in zoom-in-95 duration-150 ${isOwn ? "right-full mr-2" : "left-full ml-2"}`}>
+                                            <button onClick={() => { setReplyingTo(msg); setActiveMenuId(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fafafa] text-[12px] font-bold text-charcoal/80"><Reply size={14} className="opacity-40" /> Reply</button>
+                                            <div className="px-3 py-1.5 border-y border-[#f9f9f9] flex justify-between">
                                                 {REACTION_EMOJIS.map(emoji => (
-                                                    <button key={emoji} onClick={() => handleReact(msg._id, emoji)} className="hover:scale-125 transition-transform">{emoji}</button>
+                                                    <button key={emoji} onClick={() => handleReact(msg._id, emoji)} className="hover:scale-125 transition-transform text-lg">{emoji}</button>
                                                 ))}
                                             </div>
-                                            <button onClick={() => { navigator.clipboard.writeText(msg.text); setActiveMenuId(null); }} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 text-sm"><Copy size={16} className="opacity-40" /> Copy</button>
+                                            <button onClick={() => { navigator.clipboard.writeText(msg.text); setActiveMenuId(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fafafa] text-[12px] font-bold text-charcoal/80"><Copy size={14} className="opacity-40" /> Copy Text</button>
                                             {isOwn && (
-                                                <>
-                                                    <button onClick={() => handleDelete(msg._id, 'me')} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 text-sm text-red-500"><Trash2 size={16} /> Delete for me</button>
-                                                    <button onClick={() => handleDelete(msg._id, 'everyone')} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 text-sm text-red-500"><Trash2 size={16} /> Delete for everyone</button>
-                                                </>
+                                                <div className="mt-1 flex flex-col">
+                                                    <button onClick={() => handleDelete(msg._id, 'me')} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 text-[10px] uppercase font-black text-red-500"><Trash2 size={14} /> Remove for me</button>
+                                                    <button onClick={() => handleDelete(msg._id, 'everyone')} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 text-[10px] uppercase font-black text-red-500"><Trash2 size={14} /> Wipe for everyone</button>
+                                                </div>
                                             )}
                                         </div>
                                     )}
@@ -304,21 +306,23 @@ export default function Chats() {
             </div>
 
             {/* Input Area */}
-            <div className="p-6 bg-white border-t border-gray-100 relative">
+            <div className="p-4 md:p-6 bg-gradient-to-t from-white/80 to-transparent relative z-20 rounded-b-[20px]">
                 {replyingTo && (
-                    <div className="absolute bottom-full left-6 right-6 mb-2 bg-white border border-gray-200 rounded-2xl p-3 shadow-xl flex items-center justify-between animate-in slide-in-from-bottom-2">
-                        <div className="border-l-4 border-[#1C1C1C] pl-3 overflow-hidden">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">In reply to</p>
-                            <p className="text-sm text-gray-600 truncate">{replyingTo.text}</p>
+                    <div className="absolute bottom-[calc(100%+8px)] left-6 right-6 bg-stone-50 border-l-4 border-stone-800 rounded-xl p-3 flex items-center justify-between shadow-lg animate-in fade-in slide-in-from-bottom-2 border-y border-r border-[#f0f0f0]">
+                        <div className="min-w-0 pr-4">
+                            <p className="text-[9px] font-bold text-stone-500 mb-0.5 uppercase tracking-widest">In reply to</p>
+                            <p className="text-[12px] text-stone-800 font-medium truncate opacity-90">{replyingTo.text}</p>
                         </div>
-                        <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-gray-100 rounded-full"><X size={18} /></button>
+                        <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-[#e0e0e0] rounded-full transition-colors text-stone-500"><X size={14} /></button>
                     </div>
                 )}
 
-                <div className="flex items-center gap-4">
-                    <button className="p-3 bg-gray-50 text-gray-400 rounded-2xl hover:bg-gray-100 transition-all"><Paperclip size={20} /></button>
+                <div className="flex items-center gap-3 bg-white/95 backdrop-blur-2xl rounded-[24px] shadow-[0_5px_15px_rgba(0,0,0,0.08)] border border-stone-100 p-2 relative">
+                    <button className="w-11 h-11 flex items-center justify-center hover:bg-stone-50 rounded-[14px] transition-all text-stone-400 hover:text-stone-700">
+                        <Paperclip size={18} />
+                    </button>
                     
-                    <div className="flex-1 relative">
+                    <div className="flex-1 relative flex items-center">
                         <input 
                             ref={inputRef}
                             type="text" 
@@ -326,18 +330,18 @@ export default function Chats() {
                             value={newMessage}
                             onChange={handleTyping}
                             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                            className="w-full bg-gray-50 border-none rounded-2xl py-3.5 pl-5 pr-12 text-sm focus:ring-2 focus:ring-[#1C1C1C]/10 transition-all font-medium"
+                            className="w-full bg-transparent border-none py-3.5 pl-3 pr-10 text-[14px] min-h-[48px] focus:outline-none focus:ring-0 transition-all font-medium placeholder:text-stone-300"
                         />
                         <button 
                             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                            className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${showEmojiPicker ? 'bg-[#1C1C1C] text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                            className={`absolute right-1 p-2 rounded-full transition-all ${showEmojiPicker ? 'bg-stone-100 text-stone-800' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-50'}`}
                         >
                             <Smile size={20} />
                         </button>
                         
                         {showEmojiPicker && (
-                            <div className="absolute bottom-full right-0 mb-4 z-[100] shadow-2xl rounded-2xl overflow-hidden animate-in zoom-in-95">
-                                <EmojiPicker onEmojiClick={handleEmojiClick} width={300} height={400} />
+                            <div className="absolute bottom-[calc(100%+16px)] right-0 mb-4 z-[100] shadow-2xl rounded-2xl overflow-hidden animate-in zoom-in-95 border border-stone-100">
+                                <EmojiPicker onEmojiClick={handleEmojiClick} width={300} height={400} theme="light" skinTonesDisabled />
                             </div>
                         )}
                     </div>
@@ -345,9 +349,9 @@ export default function Chats() {
                     <button 
                         onClick={handleSend}
                         disabled={!newMessage.trim()}
-                        className="bg-[#1C1C1C] text-white p-4 rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-20 disabled:scale-100"
+                        className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-stone-800 to-stone-900 rounded-[18px] text-white transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
                     >
-                        <Send size={20} />
+                        <Send size={18} className="translate-x-[1px] translate-y-[1px]" />
                     </button>
                 </div>
             </div>

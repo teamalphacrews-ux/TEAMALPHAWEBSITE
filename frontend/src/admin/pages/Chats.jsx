@@ -258,7 +258,17 @@ export default function Chats() {
   const backToList = () => { setIsMobileThreadView(false); setShowOptionsMenu(false); };
 
   return (
-    <div className="p-1 h-[calc(100vh-140px)] flex flex-col animate-in fade-in duration-700 max-w-[1300px] mx-auto w-full font-sans text-charcoal bg-[#FDFDFD]">
+    <div className="h-[calc(100vh-100px)] flex flex-col gap-6 animate-in fade-in duration-700 max-w-[1400px] mx-auto w-full font-sans text-[#5a5a5a] overflow-hidden">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end px-2 sm:px-4">
+        <div>
+          <h1 className="font-luxury text-4xl md:text-5xl text-[#2d2d2d] tracking-tight">Communication Hub</h1>
+          <p className="text-[11px] md:text-[13px] text-[#7a7a7a] mt-3 font-medium uppercase tracking-[1px]">
+            Direct client engagement and message registry
+          </p>
+        </div>
+      </div>
+
       {/* Modals */}
       {showClearModal && (
         <div className="fixed inset-0 bg-charcoal/30 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
@@ -274,35 +284,34 @@ export default function Chats() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-12 flex-1 overflow-hidden bg-white shadow-[0_15px_60px_rgba(0,0,0,0.04)] rounded-[28px] border border-[#f2f2f2]">
+      <div className="grid grid-cols-1 md:grid-cols-12 flex-1 overflow-hidden bg-gradient-to-br from-[#f8f6f2] via-[#f3efe7] to-[#fdfaf6] shadow-[0_10px_30px_rgba(0,0,0,0.06)] rounded-[22px] border border-white/60 p-4 gap-3">
         {/* Sidebar */}
-        <div className={`${isMobileThreadView ? 'hidden md:flex' : 'flex'} md:col-span-4 lg:col-span-3 border-r border-[#f8f8f8] flex flex-col p-3 overflow-hidden`}>
-          <div className="flex flex-col gap-3 mb-5 pt-1">
-            <h2 className="text-[19px] font-serif text-charcoal px-1.5 opacity-90">Messages</h2>
+        <div className={`${isMobileThreadView ? 'hidden md:flex' : 'flex'} md:col-span-4 lg:col-span-3 flex flex-col overflow-hidden`}>
+          <div className="flex flex-col gap-1 mb-3 pt-1">
+            <h2 className="text-[20px] font-serif text-[#2c2c2c] mb-3 px-2">Messages</h2>
             <div className="relative">
-              <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lightgray opacity-40" />
               <input 
-                type="text" placeholder="Locate conversation..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-[#f9f9f9] border-none rounded-xl text-[11px] focus:ring-1 focus:ring-neutral-100 transition-all font-medium placeholder:text-lightgray/50"
+                type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                className="mb-3 px-4 py-2 rounded-xl bg-[#f8f8f8] text-[12px] outline-none w-full placeholder:text-lightgray/50"
               />
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 pr-0.5">
+          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
             {conversations.filter(c => c.userName?.toLowerCase().includes(searchTerm.toLowerCase())).map((conv) => (
                 <button
                   key={conv.userId} onClick={() => selectConversation(conv)}
-                  className={`w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all group ${selectedUser?.userId === conv.userId ? 'bg-charcoal text-white shadow-xl' : 'hover:bg-[#fafafa]'}`}
+                  className={`w-full flex items-center gap-3 p-3 rounded-[16px] transition-all duration-[250ms] group ${selectedUser?.userId === conv.userId ? 'bg-gradient-to-br from-[#e8dfd1] to-[#f5ebe0] text-[#2c2c2c] shadow-sm' : 'bg-[#ffffff] hover:bg-[#f7f5f2] shadow-sm border border-transparent hover:border-[#f0f0f0]'}`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-serif text-base shrink-0 transition-all ${selectedUser?.userId === conv.userId ? 'bg-white/10 text-white' : 'bg-ivory text-mutedbrown shadow-sm group-hover:scale-105 font-bold'}`}>
+                  <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center font-bold shrink-0 transition-all ${selectedUser?.userId === conv.userId ? 'bg-white/40 text-[#2c2c2c]' : 'bg-[#f7f5f2] text-[#5a5a5a]'}`}>
                     {conv.userName?.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0 text-left">
-                    <div className="flex justify-between items-center mb-0.5">
-                      <h3 className={`text-[13px] font-bold truncate ${selectedUser?.userId === conv.userId ? 'text-white' : 'text-charcoal'}`}>{conv.userName}</h3>
+                    <div className="flex justify-between items-center">
+                      <h3 className={`text-[13px] font-semibold truncate ${selectedUser?.userId === conv.userId ? 'text-[#2c2c2c]' : 'text-[#2c2c2c]'}`}>{conv.userName}</h3>
                       <span className="text-[9px] opacity-40 uppercase font-black">{conv.timestamp ? format(new Date(conv.timestamp), 'hh:mm a') : ''}</span>
                     </div>
-                    <p className={`text-[11px] truncate opacity-50 font-medium ${selectedUser?.userId === conv.userId ? 'text-white/70' : 'text-warmgray leading-tight'}`}>{conv.lastMessage}</p>
+                    <p className={`text-[11px] truncate opacity-60 ${selectedUser?.userId === conv.userId ? 'text-[#5a5a5a]' : 'text-[#5a5a5a]'}`}>{conv.lastMessage}</p>
                   </div>
                   {conv.unreadCount > 0 && selectedUser?.userId !== conv.userId && (
                     <div className="w-4 h-4 bg-mutedbrown text-white text-[9px] flex items-center justify-center rounded-full font-black shadow-sm ring-2 ring-white">
@@ -315,16 +324,16 @@ export default function Chats() {
         </div>
 
         {/* Messaging Area */}
-        <div className={`${isMobileThreadView ? 'flex' : 'hidden md:flex'} md:col-span-8 lg:col-span-9 flex flex-col overflow-hidden relative bg-white`}>
+        <div className={`${isMobileThreadView ? 'flex' : 'hidden md:flex'} md:col-span-8 lg:col-span-9 flex flex-col overflow-hidden relative`}>
           {selectedUser ? (
             <>
               {/* Header */}
-              <div className="p-3.5 border-b border-[#f8f8f8] flex items-center justify-between z-10 bg-white/40 backdrop-blur-xl">
+              <div className="px-5 py-4 border-b border-[#f2f2f2] flex items-center justify-between z-10 bg-[rgba(255,255,255,0.4)] backdrop-blur-xl rounded-t-[22px]">
                 <div className="flex items-center gap-3">
-                  <button onClick={backToList} className="md:hidden p-1 hover:bg-[#fafafa] rounded-lg text-charcoal"><ChevronLeft size={18} /></button>
-                  <div className="w-8 h-8 bg-ivory rounded-lg flex items-center justify-center text-charcoal font-serif text-sm border border-[#f2f2f2]">{selectedUser.userName?.charAt(0)}</div>
+                  <button onClick={backToList} className="md:hidden p-1 hover:bg-[#fafafa] rounded-lg text-[#2c2c2c]"><ChevronLeft size={18} /></button>
+                  <div className="w-8 h-8 bg-white/60 rounded-lg flex items-center justify-center text-[#2c2c2c] font-serif text-sm border border-white shrink-0">{selectedUser.userName?.charAt(0)}</div>
                   <div className="flex flex-col">
-                    <h3 className="font-serif text-[15px] text-charcoal leading-none mb-1">{selectedUser.userName}</h3>
+                    <h3 className="font-serif text-[15px] text-[#2c2c2c] leading-none mb-1">{selectedUser.userName}</h3>
                     <div className="flex items-center gap-1.5 opacity-50">
                       <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
                       <span className="text-[8px] font-bold uppercase tracking-widest">Active session</span>
@@ -348,7 +357,7 @@ export default function Chats() {
               </div>
 
               {/* Chat Canvas */}
-              <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-5 md:p-8 flex flex-col gap-5 custom-scrollbar scroll-smooth bg-[#FAFAFA]/40">
+              <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 custom-scrollbar scroll-smooth bg-transparent">
                 {messages.map((msg, idx) => {
                   const isSentByAdmin = (adminProfile?.id || adminProfile?._id) && (String(msg.sender) === String(adminProfile.id || adminProfile._id) || msg.sender === 'admin');
                   const showDateHeader = idx === 0 || new Date(messages[idx-1].timestamp).toDateString() !== new Date(msg.timestamp).toDateString();
@@ -371,18 +380,16 @@ export default function Chats() {
                           <div className={`flex items-start gap-2 ${isSentByAdmin ? 'flex-row-reverse' : 'flex-row'}`}>
                             {/* Message Bubble Container */}
                             <div 
-                                className={`px-4 py-3 shadow-sm text-[13px] leading-relaxed relative flex flex-col gap-1.5 transition-all ${
+                                className={`px-4 py-3 text-[13px] relative flex flex-col gap-1.5 transition-all duration-[250ms] hover:-translate-y-[2px] ${
                                 isSentByAdmin 
-                                    ? "bg-charcoal text-white rounded-[20px] rounded-tr-none shadow-md" 
-                                    : "bg-white border border-[#f0f0f0] text-charcoal rounded-[20px] rounded-tl-none font-medium shadow-sm"
+                                    ? "bg-gradient-to-br from-[#e8dfd1] to-[#f5ebe0] text-[#2c2c2c] rounded-[16px_16px_4px_16px] shadow-sm" 
+                                    : "bg-[#ffffff] text-[#333333] border border-[#eeeeee] rounded-[16px_16px_16px_4px] shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
                                 }`}
                             >
-                                {/* Message Tail */}
-                                <div className={`absolute top-0 w-2 h-2 ${isSentByAdmin ? '-right-1.5 bg-charcoal' : '-left-1.5 bg-white border-l border-t border-[#f0f0f0]'}`} style={{ clipPath: isSentByAdmin ? 'polygon(0 0, 0% 100%, 100% 0)' : 'polygon(0 0, 100% 0, 100% 100%)' }}></div>
 
                                 {msg.replyTo && (
-                                    <div className={`p-2 rounded-[14px] text-[11px] mb-1 line-clamp-2 border-l-4 transition-all opacity-80 ${isSentByAdmin ? 'bg-white/10 border-white/20' : 'bg-[#f7f7f7] border-mutedbrown shadow-inner'}`}>
-                                        <p className="font-black opacity-40 mb-0.5 text-[9px] uppercase tracking-widest flex items-center gap-1.5">
+                                    <div className={`p-2 rounded-[14px] text-[11px] mb-1 line-clamp-2 border-l-4 transition-all opacity-80 ${isSentByAdmin ? 'bg-white/40 border-[#d6cfc4]' : 'bg-[#f7f5f2] border-[#e8dfd1] shadow-inner'}`}>
+                                        <p className="font-black opacity-60 mb-0.5 text-[9px] uppercase tracking-widest flex items-center gap-1.5">
                                             <Reply size={10} strokeWidth={3} /> Quoted message
                                         </p>
                                         <p className="italic font-medium">{msg.replyTo.text}</p>
@@ -471,38 +478,38 @@ export default function Chats() {
                     </React.Fragment>
                   );
                 })}
-                {isTyping && <div className="text-[8px] text-warmgray uppercase font-bold tracking-[0.3em] pl-4 opacity-40 animate-pulse">Synchronizing...</div>}
+                {isTyping && <div className="text-[10px] text-stone-500 uppercase font-bold tracking-[0.3em] pl-4 opacity-50 animate-pulse">Typing...</div>}
                 <div ref={messagesEndRef} className="h-4" />
               </div>
 
               {/* Input Area */}
-              <div className="p-4 md:p-5 bg-white border-t border-[#f8f8f8] relative">
+              <div className="p-4 bg-transparent relative z-20">
                 {replyingTo && (
-                    <div className="absolute bottom-[calc(100%+10px)] left-5 right-5 bg-white border-l-4 border-charcoal rounded-lg p-2.5 flex items-center justify-between shadow-xl animate-in fade-in slide-in-from-bottom-2 border border-[#f0f0f0]">
+                    <div className="absolute bottom-[calc(100%+8px)] left-6 right-6 bg-[#ffffff] border border-[#eeeeee] rounded-xl p-3 flex items-center justify-between shadow-[0_4px_12px_rgba(0,0,0,0.04)] animate-in fade-in slide-in-from-bottom-2">
                         <div className="min-w-0 pr-4">
-                            <p className="text-[8px] font-bold text-mutedbrown mb-0.5 uppercase tracking-widest">In reply to</p>
-                            <p className="text-[11px] text-charcoal font-medium truncate opacity-80">{replyingTo.text}</p>
+                            <p className="text-[9px] font-bold text-[#5a5a5a] mb-0.5 uppercase tracking-widest">In reply to</p>
+                            <p className="text-[12px] text-[#2c2c2c] font-medium truncate opacity-90">{replyingTo.text}</p>
                         </div>
-                        <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-[#f0f0f0] rounded-full transition-colors"><X size={14} /></button>
+                        <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-[#f7f5f2] rounded-full transition-colors text-[#5a5a5a]"><X size={14} /></button>
                     </div>
                 )}
 
-                <div className="flex items-center gap-2.5">
-                   <button onClick={() => fileInputRef.current?.click()} className="w-9 h-9 flex items-center justify-center bg-[#f9f9f9] hover:bg-ivory rounded-lg transition-all border border-[#f2f2f2]">
-                     <Paperclip size={16} className="text-warmgray opacity-60" />
+                <div className="flex items-center gap-3 bg-[#ffffff] shadow-[0_5px_15px_rgba(0,0,0,0.06)] rounded-[20px] px-3 py-2 relative">
+                   <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 flex items-center justify-center hover:bg-[#f7f5f2] rounded-[14px] transition-all text-[#a3a3a3] hover:text-[#5a5a5a]">
+                     <Paperclip size={18} />
                    </button>
                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
 
                     <div className="flex-1 relative flex items-center">
                       <textarea 
-                         ref={inputRef} placeholder="Enter transmission..." value={newMessage} onChange={handleTyping}
+                         ref={inputRef} placeholder="Type a message..." value={newMessage} onChange={handleTyping}
                          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
-                         className="w-full bg-[#f9f9f9] border-none rounded-[24px] py-3 pl-5 pr-12 text-[13px] min-h-[44px] max-h-32 resize-none custom-scrollbar focus:ring-1 focus:ring-neutral-100 transition-all font-medium placeholder:text-lightgray/40 shadow-inner"
+                         className="w-full bg-transparent border-none py-2 pl-2 pr-10 text-[13px] min-h-[40px] max-h-32 resize-none focus:outline-none focus:ring-0 transition-all placeholder:text-[#a3a3a3] text-[#2c2c2c]"
                          rows={1} onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
                       />
-                      <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-3 p-1.5 rounded-full transition-all ${showEmojiPicker ? 'bg-charcoal text-white shadow-lg' : 'text-warmgray hover:bg-[#efefef] opacity-60'}`}><Smile size={18} /></button>
+                      <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-1 p-2 rounded-full transition-all ${showEmojiPicker ? 'bg-[#f7f5f2] text-[#2c2c2c]' : 'text-[#a3a3a3] hover:text-[#5a5a5a] hover:bg-[#f7f5f2]'}`}><Smile size={20} /></button>
                      {showEmojiPicker && (
-                        <div className="absolute bottom-[calc(100%+16px)] right-0 z-50 shadow-2xl rounded-2xl overflow-hidden animate-in zoom-in-95">
+                        <div className="absolute bottom-[calc(100%+16px)] right-0 z-50 shadow-2xl rounded-2xl overflow-hidden animate-in zoom-in-95 border border-[#eeeeee]">
                             <EmojiPicker onEmojiClick={handleEmojiClick} width={300} height={380} theme="light" skinTonesDisabled />
                         </div>
                      )}
@@ -510,10 +517,9 @@ export default function Chats() {
                    
                    <button 
                     onClick={handleSend} disabled={!newMessage.trim() && !attachmentsPreview}
-                    className="flex items-center gap-2 bg-[#A8A8A8] hover:bg-charcoal px-5 h-10 rounded-xl text-white font-bold transition-all shadow-md active:scale-95 disabled:opacity-20 group"
+                    className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-[#d6cfc4] to-[#e8dfd1] text-[#2c2c2c] rounded-[14px] transition-all duration-250 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 shadow-sm"
                    >
-                     <span className="text-[12px]">Send</span>
-                     <Send size={15} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                     <Send size={16} className="translate-x-[1px] translate-y-[1px]" />
                    </button>
                 </div>
 
@@ -526,9 +532,9 @@ export default function Chats() {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-12 opacity-25 gap-6">
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-6">
               <div className="w-16 h-16 bg-[#f9f9f9] rounded-[24px] flex items-center justify-center border border-[#f2f2f2] shadow-inner"><MessageSquare size={24} className="text-charcoal" /></div>
-              <div className="max-w-xs space-y-1.5"><h3 className="text-xl font-serif text-charcoal">Registry Hub</h3><p className="text-[9px] uppercase tracking-[0.4em] font-bold">Awaiting client selection</p></div>
+              <div className="max-w-xs space-y-1.5"><h3 className="text-xl font-serif text-charcoal">Select a chat</h3></div>
             </div>
           )}
         </div>
