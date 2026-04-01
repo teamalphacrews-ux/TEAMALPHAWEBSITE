@@ -35,6 +35,8 @@ const AdminFinance = lazy(() => import('./admin/pages/Finance'));
 const AdminCalendarPage = lazy(() => import('./admin/pages/Calendar'));
 const AdminActivityLog = lazy(() => import('./admin/pages/ActivityLog'));
 const AdminChats = lazy(() => import('./admin/pages/Chats'));
+const AdminDriveGalleryDetail = lazy(() => import('./admin/pages/DriveGalleryDetail'));
+const AdminClientEvents = lazy(() => import('./admin/pages/ClientEvents'));
 
 const PortalLayout = () => {
   return (
@@ -96,6 +98,8 @@ function App() {
                 <Route index element={<AdminDashboard />} />
                 <Route path="crm" element={<AdminCRM />} />
                 <Route path="gallery" element={<AdminSmartGallery />} />
+                <Route path="gallery/:id" element={<AdminClientEvents />} />
+                <Route path="gallery/event/:eventId" element={<AdminDriveGalleryDetail />} />
                 <Route path="finance" element={<AdminFinance />} />
                 <Route path="calendar" element={<AdminCalendarPage />} />
                 <Route path="activity-log" element={<AdminActivityLog />} />

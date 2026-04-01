@@ -132,3 +132,20 @@ html {
 .add-btn { border-radius: 999px; padding: 10px 18px; background: linear-gradient(135deg, #cfe8d5, #d9cdeb); font-weight: 500; transition: all 0.25s ease; }
 .add-btn:hover { transform: translateY(-2px) scale(1.03); }
 .page-title { font-family: 'Playfair Display', serif; font-size: 34px; }
+
+/* Masonry Layout Grid (Spaced Layout) */
+.my-masonry-grid {
+  display: flex;
+  margin-left: -12px; /* Gutter width offset (negative margin) */
+  width: auto;
+}
+
+.my-masonry-grid_column {
+  padding-left: 12px; /* Gutter width */
+  background-clip: padding-box;
+}
+
+/* Item Spacing */
+.my-masonry-grid_column > div {
+  margin-bottom: 12px; /* Vertical gap between items */
+}

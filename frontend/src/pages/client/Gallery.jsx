@@ -1,21 +1,13 @@
 import React, { useState, useEffect } from "react";
 
-// CRITICAL: Ensure CLOUD_NAME is correct
-const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "djkb4eiqf";
-const CLIENT_TAG = "cclient";
-
 export default function Gallery() {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [user, setUser] = useState(null);
-  const [displayTag, setDisplayTag] = useState(CLIENT_TAG);
 
   useEffect(() => {
     const fetchUserAndImages = async () => {
-      let currentTag = CLIENT_TAG;
-
-      // 1. Fetch User Info
       try {
         const token = localStorage.getItem('token');
         if (token) {
@@ -23,74 +15,12 @@ export default function Gallery() {
             headers: { 'x-auth-token': token }
           });
           if (res.ok) {
-            const textData = await res.text();
-            if (textData) {
-              const userData = JSON.parse(textData);
-              setUser(userData);
-              // Use specific galleryTag if set, otherwise fallback to firstName (lowercase)
-              currentTag = (userData.galleryTag && userData.galleryTag.trim() !== "") 
-                           ? userData.galleryTag 
-                           : userData.firstName.toLowerCase();
-              setDisplayTag(currentTag);
-            }
+            const userData = await res.json();
+            setUser(userData);
           }
         }
       } catch (err) {
-        
-      }
-
-      if (CLOUD_NAME === "YOUR_CLOUD_NAME_HERE") {
-        setLoading(false);
-        return;
-      }
-
-      // 2. Fetch both images and videos tagged with currentTag
-      const fetchByTag = async (resourceType) => {
-        try {
-          // Cloudinary client-side list feature
-          const response = await fetch(
-            `https://res.cloudinary.com/${CLOUD_NAME}/${resourceType}/list/${currentTag}.json`
-          );
-          if (response.ok) {
-            try {
-              const text = await response.text();
-              if (text) {
-                const json = JSON.parse(text);
-                return json.resources.map(res => {
-                  const type = res.type || "upload";
-                  const encodedPublicId = res.public_id.split('/').map(encodeURIComponent).join('/');
-                  const url = `https://res.cloudinary.com/${CLOUD_NAME}/${resourceType}/${type}/v${res.version}/${encodedPublicId}.${res.format}`;
-                  return { type: resourceType, src: url, publicId: res.public_id };
-                });
-              }
-            } catch (e) {
-              
-            }
-          }
-
-        } catch (err) {
-          
-        }
-        return [];
-      };
-
-      try {
-        const [imgs, vids] = await Promise.all([
-          fetchByTag("image"),
-          fetchByTag("video")
-        ]);
-
-        const fetchedImages = [...imgs, ...vids];
-        if (fetchedImages.length > 0) {
-          // Randomly shuffle images
-          for (let i = fetchedImages.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [fetchedImages[i], fetchedImages[j]] = [fetchedImages[j], fetchedImages[i]];
-          }
-          setImages(fetchedImages);
-        }
-      } catch (error) {
-        
+        console.error("Failed to fetch user:", err);
       } finally {
         setLoading(false);
       }
@@ -100,7 +30,7 @@ export default function Gallery() {
   }, []);
 
   // Prevent background scroll when modal is open
-  useEffect(() => {
+    useEffect(() => {
     if (selectedMedia) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -122,7 +52,7 @@ export default function Gallery() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      
+      console.error("Download failed:", error);
     }
   };
 
@@ -143,9 +73,6 @@ export default function Gallery() {
         <h2>Our Gallery</h2>
         <div className="header-line"></div>
         <p>A curated collection of captured emotions and timeless stories.</p>
-        <p style={{fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "16px", opacity: 0.7}}>
-          (Admin Note: To inject Cloudinary images here, assign them the tag <strong>{displayTag}</strong>)
-        </p>
       </header>
 
       <main className="gallery-grid-wrapper">
@@ -456,7 +383,7 @@ function ImageModal({ media, onClose, onDownload }) {
         <div className="modal-media-wrapper">
           {media.type === "image" ? (
             <img 
-              src={media.src.replace('/upload/', '/upload/q_auto,f_auto/')} 
+              src={media.src} 
               className="modal-media" 
               alt="Luxury Capture" 
             />
@@ -468,7 +395,7 @@ function ImageModal({ media, onClose, onDownload }) {
         <div className="modal-content-footer">
           <button
             className="modal-btn"
-            onClick={() => onDownload(media.src, `${media.publicId}.${media.src.split('.').pop()}`)}
+            onClick={() => onDownload(media.src, 'memory-capture')}
           >
             Save Memory
           </button>

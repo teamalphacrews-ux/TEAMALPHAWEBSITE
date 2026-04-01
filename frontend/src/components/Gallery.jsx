@@ -37,81 +37,21 @@ const CATEGORIES = [
 const Gallery = () => {
     const [selectedAlbum, setSelectedAlbum] = useState(null);
     const [viewMode, setViewMode] = useState('grid');
-    const [cloudData, setCloudData] = useState({});
-    const [loading, setLoading] = useState(true);
-
-    // Active Category Filter
+    const [loading, setLoading] = useState(false);
     const [activeFilter, setActiveFilter] = useState("All");
 
-    // Cloudinary Configuration
-    const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "djkb4eiqf";
-
-    useEffect(() => {
-        const fetchAllCategories = async () => {
-            setLoading(true);
-            const newCloudData = {};
-
-            await Promise.all(
-                CATEGORIES.map(async (cat) => {
-                    try {
-                        const response = await fetch(`https://res.cloudinary.com/${CLOUD_NAME}/image/list/${cat.tag}.json`);
-
-                        // If response is not ok (e.g. 404 Not Found), skip this category gracefully
-                        if (!response.ok) {
-                            return;
-                        }
-
-                        const text = await response.text();
-                        if (!text) return;
-
-                        // Safely parse JSON from the response
-                        let data;
-                        try {
-                            data = JSON.parse(text);
-                        } catch (parseError) {
-                            
-                            return;
-                        }
-
-                        if (data && data.resources && data.resources.length > 0) {
-                            newCloudData[cat.id] = data.resources.map(res =>
-                                `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto,f_auto,w_800/v${res.version}/${res.public_id}.${res.format}`
-                            );
-                        }
-                    } catch (err) {
-                        // Ignore individual network fetch errors without breaking the interface
-                        
-                    }
-                })
-            );
-
-            setCloudData(newCloudData);
-            setLoading(false);
-        };
-
-        if (CLOUD_NAME) {
-            fetchAllCategories();
-        } else {
-            setLoading(false);
-        }
-    }, [CLOUD_NAME]);
-
-    // get images for a category (Cloud -> Local -> Default)
+    // get images for a category (Local -> Default)
     const getImages = (id) => {
-        const cloud = cloudData[id];
-        if (cloud && cloud.length > 0) return cloud;
-
         const local = localImages[id];
         if (local && local.length > 0) return local;
 
         return defaultImages[id] ? [defaultImages[id]] : [];
     };
 
-    // get cover image (Local Cover -> Cloud Album[0] -> Local Album[0] -> Default)
+    // get cover image (Local Cover -> Local Album[0] -> Default)
     const getCover = (id) => {
         const normalizedId = id.toLowerCase().replace(' ', '_');
 
-        // Strict match: filename (without path/extension) must equal normalizedId
         const key = Object.keys(localCovers).find(k => {
             const filename = k.split('/').pop().split('.')[0];
             return filename.toLowerCase() === normalizedId;
@@ -120,7 +60,7 @@ const Gallery = () => {
         if (key) return localCovers[key];
 
         const images = getImages(id);
-        return images.length > 0 ? images[0] : '';
+        return images.length > 0 ? images[0] : (defaultImages[id] || '');
     };
 
     const openAlbum = (category) => setSelectedAlbum(category);

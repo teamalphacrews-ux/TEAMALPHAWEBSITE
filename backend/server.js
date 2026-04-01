@@ -278,6 +278,8 @@ app.use('/api/invoices', invoiceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/google-sheets', require('./routes/googleSheetRoutes'));
+app.use('/api/media', require('./routes/media'));
+app.use('/api/drive-gallery', require('./routes/driveGalleryRoutes'));
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
