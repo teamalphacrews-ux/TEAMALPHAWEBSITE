@@ -3,7 +3,7 @@ import axios from "axios";
 import { io } from "socket.io-client";
 import { 
   Send, Check, CheckCheck, MoreVertical, Trash2, 
-  Smile, Paperclip, X, Reply, Copy, ArrowLeft
+  Smile, Paperclip, X, Reply, Copy, ArrowLeft, MessageSquare, ShieldCheck, Sparkles
 } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { format } from "date-fns";
@@ -21,7 +21,6 @@ export default function Chats() {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [activeMenuId, setActiveMenuId] = useState(null);
     const [replyingTo, setReplyingTo] = useState(null);
-    const [attachmentsPreview, setAttachmentsPreview] = useState(null);
 
     const messagesEndRef = useRef(null);
     const chatContainerRef = useRef(null);
@@ -127,7 +126,7 @@ export default function Chats() {
 
     const handleSend = async (e) => {
         if (e) e.preventDefault();
-        if (!newMessage.trim() && !attachmentsPreview) return;
+        if (!newMessage.trim()) return;
 
         const tempId = Date.now().toString();
         const optimisticMsg = {
@@ -158,32 +157,6 @@ export default function Chats() {
         }
     };
 
-    const handleReact = async (messageId, emoji) => {
-        try {
-            const token = localStorage.getItem("token");
-            const res = await axios.post(`${API_URL}/api/chats/react/${messageId}`, { emoji }, {
-                headers: { "x-auth-token": token }
-            });
-            setMessages(prev => prev.map(m => m._id === messageId ? { ...m, reactions: res.data } : m));
-            setActiveMenuId(null);
-        } catch (err) { }
-    };
-
-    const handleDelete = async (messageId, mode) => {
-        try {
-            const token = localStorage.getItem("token");
-            await axios.delete(`${API_URL}/api/chats/${messageId}/${mode}`, {
-                headers: { "x-auth-token": token }
-            });
-            if (mode === 'everyone') {
-                setMessages(prev => prev.map(m => m._id === messageId ? { ...m, text: 'This message was deleted', isDeletedEveryone: true } : m));
-            } else {
-                setMessages(prev => prev.filter(m => m._id !== messageId));
-            }
-            setActiveMenuId(null);
-        } catch (err) { }
-    };
-
     const handleTyping = (e) => {
         setNewMessage(e.target.value);
         if (!socketRef.current) return;
@@ -198,161 +171,117 @@ export default function Chats() {
         setNewMessage(prev => prev + emojiData.emoji);
     };
 
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) setActiveMenuId(null);
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    if (loading) return <div className="flex h-screen items-center justify-center">Loading encrypted channel...</div>;
+    if (loading) return (
+        <div className="flex flex-1 items-center justify-center">
+            <div className="text-center">
+                <div className="animate-spin mb-4 text-luxury-gold mx-auto"><ShieldCheck size={40} /></div>
+                <p className="text-sm uppercase tracking-widest text-luxury-gold">Establishing Encrypted Channel...</p>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="flex flex-col h-[85vh] max-w-4xl mx-auto my-8 bg-white/95 backdrop-blur-md rounded-[20px] shadow-[0_10px_30px_rgba(0,0,0,0.08)] overflow-hidden border border-white/50 animate-in fade-in duration-500 relative">
-            {/* Header */}
-            <div className="bg-white/60 backdrop-blur-xl p-6 flex items-center justify-between text-[#1a1a1a] border-b border-stone-100 z-10 rounded-t-[20px]">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-stone-100/50 rounded-2xl flex items-center justify-center font-serif text-xl border border-stone-200/50 shadow-sm text-stone-600 font-bold">A</div>
-                    <div>
-                        <h2 className="font-serif text-xl font-bold tracking-tight">Personal Assistant</h2>
-                        <div className="flex items-center gap-2 mt-0.5">
-                           <div className={`w-2 h-2 rounded-full ${isTyping ? 'bg-emerald-400 animate-pulse' : 'bg-stone-300'}`}></div>
-                           <p className="text-[9px] text-[#555] font-bold uppercase tracking-widest">{isTyping ? 'Synchronizing...' : 'Online'}</p>
+        <div className="flex flex-col w-full animate-fade-up">
+            {/* Page Header */}
+            <header className="text-left mb-10">
+                <h1 className="text-4xl md:text-5xl mb-4 uppercase tracking-[8px] font-light text-stone-800">Studio Concierge</h1>
+                <div className="h-1 w-20 bg-gradient-to-r from-luxury-gold to-luxury-gold/20 rounded-full"></div>
+                <p className="text-luxury-text-muted italic max-w-2xl text-base mt-6">
+                    Direct access to our creative team for seamless collaboration and legacy planning.
+                </p>
+            </header>
+
+            <div className="w-full max-w-[950px] h-[70vh] mx-auto glass-card flex flex-col overflow-hidden relative shadow-2xl border border-white/40 !p-0">
+                
+                {/* Header */}
+                <header className="p-6 border-b border-black/5 bg-white/20 backdrop-blur-xl flex items-center justify-between sticky top-0 z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="icon-wrapper !w-12 !h-12">
+                            <MessageSquare size={20} strokeWidth={1.5} className="text-luxury-gold" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-medium tracking-tight text-stone-800">Studio Concierge</h2>
+                            <p className="text-[9px] uppercase tracking-[3px] text-luxury-text-muted font-bold">
+                                {isTyping ? "Writing a reply..." : "Always here for you"}
+                            </p>
                         </div>
                     </div>
-                </div>
-                <button className="p-2 hover:bg-stone-50 rounded-xl transition-all text-stone-400 hover:text-stone-700 shadow-sm"><MoreVertical size={20} /></button>
-            </div>
+                </header>
 
-            {/* Messages */}
-            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 bg-white/30 backdrop-blur-sm custom-scrollbar scroll-smooth">
-                {messages.map((msg, idx) => {
-                    const isOwn = msg.sender === user.id;
-                    const showDate = idx === 0 || new Date(messages[idx-1].timestamp).toDateString() !== new Date(msg.timestamp).toDateString();
-                    
-                    return (
-                        <React.Fragment key={msg._id}>
-                            {showDate && (
-                                <div className="flex justify-center my-4">
-                                    <span className="px-4 py-1.5 bg-stone-50 border border-stone-100 text-[9px] font-bold uppercase tracking-[0.2em] text-[#B0B0B0] rounded-full shadow-sm">
-                                        {format(new Date(msg.timestamp), 'EEEE, MMM dd')}
-                                    </span>
-                                </div>
-                            )}
-                            
-                            <div className={`flex w-full ${isOwn ? "justify-end" : "justify-start"}`}>
-                                <div className={`relative group max-w-[75%] flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
+                {/* Messages Area */}
+                <div 
+                    ref={chatContainerRef}
+                    className="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col gap-4 custom-scrollbar bg-white/5"
+                >
+                    {messages.length === 0 && !loading && (
+                        <div className="mt-20 text-center opacity-40 animate-breathe">
+                            <Sparkles className="mx-auto mb-4 text-luxury-gold" size={32} />
+                            <p className="text-xs uppercase tracking-[4px]">Begin your legacy conversation</p>
+                        </div>
+                    )}
+
+                    {messages.map((msg, idx) => {
+                        const isOwn = msg.sender === user.id;
+                        return (
+                            <div key={msg._id} className={`flex w-full ${isOwn ? "justify-end" : "justify-start"} animate-fade-up`}>
+                                <div className={`max-w-[75%] flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
                                     <div 
-                                        onClick={() => setActiveMenuId(activeMenuId === msg._id ? null : msg._id)}
-                                        className={`px-5 py-3.5 rounded-2xl shadow-sm cursor-pointer transition-all duration-300 hover:-translate-y-0.5 ${
+                                        className={`px-5 py-3.5 rounded-2xl shadow-sm relative text-sm leading-relaxed ${
                                             isOwn 
-                                                ? "bg-gradient-to-br from-[#1a1a1a] to-[#333] text-white rounded-[16px_16px_4px_16px] shadow-md border-t border-white/10" 
-                                                : "bg-[#f3f4f6] text-[#1a1a1a] rounded-[16px_16px_16px_4px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-stone-200/50"
+                                                ? "bg-gradient-to-br from-stone-800 to-black text-white rounded-tr-sm" 
+                                                : "bg-white/70 backdrop-blur-md text-stone-800 rounded-tl-sm border border-white/60"
                                         }`}
                                     >
-                                        {msg.replyTo && (
-                                            <div className={`mb-2 p-2 rounded-xl text-xs border-l-4 opacity-70 ${isOwn ? 'bg-white/10 border-white/20' : 'bg-[#f0f0f0] border-stone-400'}`}>
-                                                <p className="font-bold text-[9px] mb-1 uppercase tracking-widest flex items-center gap-1.5"><Reply size={10} strokeWidth={3} /> Reference</p>
-                                                <p className="truncate italic">{msg.replyTo.text}</p>
-                                            </div>
-                                        )}
-                                        <p className="text-[14px] leading-relaxed mb-1">{msg.text}</p>
-                                        
-                                        <div className={`flex items-center gap-1 opacity-50 text-[9px] font-bold uppercase tracking-widest mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                                            <span>{format(new Date(msg.timestamp), 'hh:mm a')}</span>
-                                            {isOwn && !msg.isDeletedEveryone && (
-                                                <span>
-                                                    {msg.status === 'sent' && <Check size={12} />}
-                                                    {msg.status === 'delivered' && <CheckCheck size={12} />}
-                                                    {msg.status === 'seen' && <CheckCheck size={12} className="text-blue-400" />}
+                                        <p>{msg.text}</p>
+                                        <div className={`text-[8px] mt-2 opacity-50 uppercase tracking-[2px] font-bold ${isOwn ? "text-right" : "text-left"}`}>
+                                            {format(new Date(msg.timestamp), 'h:mm a')}
+                                            {isOwn && (
+                                                <span className="ml-2 inline-flex items-center">
+                                                    {msg.status === 'seen' ? <CheckCheck size={10} className="text-luxury-gold inline" /> : <Check size={10} className="inline" />}
                                                 </span>
                                             )}
                                         </div>
-
-                                        {msg.reactions?.length > 0 && (
-                                            <div className={`absolute -bottom-2 translate-y-1/2 flex gap-1 animate-in zoom-in duration-300 z-10 ${isOwn ? 'right-3' : 'left-3'}`}>
-                                                {msg.reactions.map((r, i) => (
-                                                    <span key={i} className="bg-white border border-[#f0f0f0] rounded-full px-1.5 py-0.5 text-xs shadow-sm ring-2 ring-[#fafafa] font-normal">{r.emoji}</span>
-                                                ))}
-                                            </div>
-                                        )}
                                     </div>
-
-                                    {/* Action Menu */}
-                                    {activeMenuId === msg._id && (
-                                        <div ref={menuRef} className={`absolute top-0 mt-2 w-48 bg-white shadow-[0_15px_40px_rgba(0,0,0,0.12)] rounded-2xl py-2 z-50 border border-[#f8f8f8] animate-in zoom-in-95 duration-150 ${isOwn ? "right-full mr-2" : "left-full ml-2"}`}>
-                                            <button onClick={() => { setReplyingTo(msg); setActiveMenuId(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fafafa] text-[12px] font-bold text-charcoal/80"><Reply size={14} className="opacity-40" /> Reply</button>
-                                            <div className="px-3 py-1.5 border-y border-[#f9f9f9] flex justify-between">
-                                                {REACTION_EMOJIS.map(emoji => (
-                                                    <button key={emoji} onClick={() => handleReact(msg._id, emoji)} className="hover:scale-125 transition-transform text-lg">{emoji}</button>
-                                                ))}
-                                            </div>
-                                            <button onClick={() => { navigator.clipboard.writeText(msg.text); setActiveMenuId(null); }} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fafafa] text-[12px] font-bold text-charcoal/80"><Copy size={14} className="opacity-40" /> Copy Text</button>
-                                            {isOwn && (
-                                                <div className="mt-1 flex flex-col">
-                                                    <button onClick={() => handleDelete(msg._id, 'me')} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 text-[10px] uppercase font-black text-red-500"><Trash2 size={14} /> Remove for me</button>
-                                                    <button onClick={() => handleDelete(msg._id, 'everyone')} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 text-[10px] uppercase font-black text-red-500"><Trash2 size={14} /> Wipe for everyone</button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
                                 </div>
                             </div>
-                        </React.Fragment>
-                    );
-                })}
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input Area */}
-            <div className="p-4 md:p-6 bg-gradient-to-t from-white/80 to-transparent relative z-20 rounded-b-[20px]">
-                {replyingTo && (
-                    <div className="absolute bottom-[calc(100%+8px)] left-6 right-6 bg-stone-50 border-l-4 border-stone-800 rounded-xl p-3 flex items-center justify-between shadow-lg animate-in fade-in slide-in-from-bottom-2 border-y border-r border-[#f0f0f0]">
-                        <div className="min-w-0 pr-4">
-                            <p className="text-[9px] font-bold text-stone-500 mb-0.5 uppercase tracking-widest">In reply to</p>
-                            <p className="text-[12px] text-stone-800 font-medium truncate opacity-90">{replyingTo.text}</p>
-                        </div>
-                        <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-[#e0e0e0] rounded-full transition-colors text-stone-500"><X size={14} /></button>
-                    </div>
-                )}
-
-                <div className="flex items-center gap-3 bg-white/95 backdrop-blur-2xl rounded-[24px] shadow-[0_5px_15px_rgba(0,0,0,0.08)] border border-stone-100 p-2 relative">
-                    <button className="w-11 h-11 flex items-center justify-center hover:bg-stone-50 rounded-[14px] transition-all text-stone-400 hover:text-stone-700">
-                        <Paperclip size={18} />
-                    </button>
+                        );
+                    })}
                     
-                    <div className="flex-1 relative flex items-center">
+                    {isTyping && (
+                        <div className="flex justify-start animate-fade-up">
+                            <div className="bg-white/40 backdrop-blur-md px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5">
+                                <div className="w-1.5 h-1.5 bg-luxury-gold/40 rounded-full animate-bounce"></div>
+                                <div className="w-1.5 h-1.5 bg-luxury-gold/40 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                <div className="w-1.5 h-1.5 bg-luxury-gold/40 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                            </div>
+                        </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input Area */}
+                <div className="p-6 bg-white/20 backdrop-blur-md border-t border-black/5 sticky bottom-0">
+                    <div className="bg-white/60 rounded-full p-2 flex items-center gap-2 border border-white shadow-inner">
+                        <button className="w-10 h-10 flex items-center justify-center text-stone-400 hover:text-luxury-gold transition-colors">
+                            <Paperclip size={18} strokeWidth={1.5} />
+                        </button>
                         <input 
                             ref={inputRef}
                             type="text" 
-                            placeholder="Type a message..."
+                            placeholder="Share your thoughts..."
                             value={newMessage}
                             onChange={handleTyping}
                             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                            className="w-full bg-transparent border-none py-3.5 pl-3 pr-10 text-[14px] min-h-[48px] focus:outline-none focus:ring-0 transition-all font-medium placeholder:text-stone-300"
+                            className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 px-2 text-stone-800 placeholder:text-stone-400"
                         />
                         <button 
-                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                            className={`absolute right-1 p-2 rounded-full transition-all ${showEmojiPicker ? 'bg-stone-100 text-stone-800' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-50'}`}
+                            onClick={handleSend}
+                            disabled={!newMessage.trim()}
+                            className="bg-black text-white w-10 h-10 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-20 shadow-lg shadow-black/20"
                         >
-                            <Smile size={20} />
+                            <Send size={14} className="ml-0.5" />
                         </button>
-                        
-                        {showEmojiPicker && (
-                            <div className="absolute bottom-[calc(100%+16px)] right-0 mb-4 z-[100] shadow-2xl rounded-2xl overflow-hidden animate-in zoom-in-95 border border-stone-100">
-                                <EmojiPicker onEmojiClick={handleEmojiClick} width={300} height={400} theme="light" skinTonesDisabled />
-                            </div>
-                        )}
                     </div>
-
-                    <button 
-                        onClick={handleSend}
-                        disabled={!newMessage.trim()}
-                        className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-stone-800 to-stone-900 rounded-[18px] text-white transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
-                    >
-                        <Send size={18} className="translate-x-[1px] translate-y-[1px]" />
-                    </button>
                 </div>
             </div>
         </div>

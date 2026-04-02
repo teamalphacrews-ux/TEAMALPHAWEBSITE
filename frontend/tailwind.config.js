@@ -19,6 +19,12 @@ export default {
                 warmgray: '#B8B5B0',
                 mutedbrown: '#8C7B6D',
                 beige: '#F2EFE9',
+                "luxury-gold": "#D4AF37",
+                "luxury-beige": "#F5F5DC",
+                "luxury-cream": "#FFFDD0",
+                "luxury-lavender": "#E6E6FA",
+                "luxury-text-main": "#1A1A1A",
+                "luxury-text-muted": "#666666",
             }
         },
     },

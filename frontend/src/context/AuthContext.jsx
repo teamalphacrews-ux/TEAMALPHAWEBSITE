@@ -29,6 +29,13 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
+        // Clear gallery specific access
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('gallery_unlocked_')) {
+                localStorage.removeItem(key);
+            }
+        });
+        
         setToken(null);
         setUser(null);
         localStorage.removeItem('token');

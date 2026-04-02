@@ -8,6 +8,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 export default function EditClientModal({ isOpen, onClose, client, onSuccess }) {
   const [name, setName] = useState('');
   const [thumbnail, setThumbnail] = useState(null);
+  const [password, setPassword] = useState('');
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [availableClients, setAvailableClients] = useState([]);
   const [preview, setPreview] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -15,8 +18,22 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }) 
     if (client) {
       setName(client.name);
       setPreview(client.thumbnail);
+      setSelectedClientId(client.clientId || "");
+      fetchClients();
     }
   }, [client]);
+
+  const fetchClients = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API_BASE_URL}/api/drive-gallery/users/clients`, {
+            headers: { 'x-auth-token': token }
+        });
+        setAvailableClients(res.data);
+    } catch (err) {
+        console.error("Failed to fetch clients:", err);
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -33,6 +50,9 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }) 
       const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('name', name);
+      if (password) formData.append('password', password);
+      if (selectedClientId) formData.append('clientId', selectedClientId);
+      
       if (thumbnail) {
         formData.append('thumbnail', thumbnail);
       }
@@ -83,6 +103,34 @@ export default function EditClientModal({ isOpen, onClose, client, onSuccess }) 
                 className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#cfe8d5] focus:border-[#cfe8d5] outline-none transition-all font-medium"
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-[#8a8a8a] ml-1">Link Client Account</label>
+              <select 
+                value={selectedClientId}
+                onChange={(e) => setSelectedClientId(e.target.value)}
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#cfe8d5] focus:border-[#cfe8d5] outline-none transition-all font-medium appearance-none"
+              >
+                <option value="">Select a registered client (Optional)</option>
+                {availableClients.map(client => (
+                    <option key={client._id} value={client._id}>
+                        {client.firstName} {client.lastName} ({client.email})
+                    </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-[#8a8a8a] ml-1">Update Access Password</label>
+              <input
+                type="text"
+                placeholder="Leave blank to keep current"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#cfe8d5] focus:border-[#cfe8d5] outline-none transition-all font-medium"
+              />
+              <p className="text-[9px] text-[#8a8a8a] italic ml-1 leading-relaxed">Update the secure access code for this client.</p>
             </div>
 
             <div className="space-y-2">

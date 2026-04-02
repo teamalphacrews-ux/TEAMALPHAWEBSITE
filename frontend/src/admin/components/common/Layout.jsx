@@ -99,11 +99,11 @@ export default function Layout() {
 
             {/* Main Content Area */}
             <div className={`flex-1 transition-all duration-500 flex flex-col min-w-0 ${!isFocusMode ? "lg:ml-[280px]" : "ml-0"}`}>
-                <div className={`sticky top-0 z-40 transition-all duration-500 pt-8 px-10 pb-4 flex items-center justify-between ${isFocusMode || !isVisible ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"}`}>
+                <div className={`sticky top-0 z-40 transition-all duration-500 pt-8 px-4 md:px-10 pb-4 flex flex-wrap items-center justify-between gap-4 ${isFocusMode || !isVisible ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"}`}>
                     <div className={`floating-card-animation transition-all duration-700 ${isVisible ? "opacity-100 translate-y-[6px]" : "opacity-0 -translate-y-10 pointer-events-none"}`}>
                         {!isFocusMode && <Breadcrumbs />}
                     </div>
-                    <div className="floating-card-animation">
+                    <div className="floating-card-animation ml-auto">
                         <Topbar onMenuClick={() => setIsSidebarOpen(true)} isVisibleProp={isVisible} />
                     </div>
                 </div>

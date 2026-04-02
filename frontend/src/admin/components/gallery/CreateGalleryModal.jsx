@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, Link as LinkIcon, Info, Loader2 } from "lucide-react";
 import axios from "axios";
@@ -8,9 +8,29 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }) {
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [availableClients, setAvailableClients] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [thumbnailFile, setThumbnailFile] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+        fetchClients();
+    }
+  }, [isOpen]);
+
+  const fetchClients = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API_BASE_URL}/api/drive-gallery/users/clients`, {
+            headers: { 'x-auth-token': token }
+        });
+        setAvailableClients(res.data);
+    } catch (err) {
+        console.error("Failed to fetch clients:", err);
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -32,6 +52,9 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
     const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('name', name);
+    if (password) formData.append('password', password);
+    if (selectedClientId) formData.append('clientId', selectedClientId);
+    
     if (thumbnailFile) {
         formData.append('thumbnail', thumbnailFile);
     }
@@ -57,6 +80,8 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
 
   const resetForm = () => {
     setName("");
+    setPassword("");
+    setSelectedClientId("");
     setThumbnailFile(null);
     setThumbnailPreview(null);
   };
@@ -96,6 +121,33 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
                 value={name} onChange={(e) => setName(e.target.value)}
                 className="search-bar w-full py-4 px-6 focus:ring-4 focus:ring-[#cfe8d5]/40 outline-none transition-all placeholder:text-[#8a8a8a] text-sm"
               />
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] uppercase font-bold tracking-widest text-[#8a8a8a] ml-1">Link Client Account</label>
+              <select 
+                value={selectedClientId}
+                onChange={(e) => setSelectedClientId(e.target.value)}
+                className="search-bar w-full py-4 px-6 focus:ring-4 focus:ring-[#cfe8d5]/40 outline-none transition-all text-sm appearance-none bg-white/50"
+              >
+                <option value="">Select a registered client (Optional)</option>
+                {availableClients.map(client => (
+                    <option key={client._id} value={client._id}>
+                        {client.firstName} {client.lastName} ({client.email})
+                    </option>
+                ))}
+              </select>
+              <p className="text-[9px] text-[#8a8a8a] italic ml-1">Linking an account ensures the client sees this gallery immediately upon login.</p>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] uppercase font-bold tracking-widest text-[#8a8a8a] ml-1">Set Access Password</label>
+              <input 
+                type="text" placeholder="Secure code for client access"
+                value={password} onChange={(e) => setPassword(e.target.value)}
+                className="search-bar w-full py-4 px-6 focus:ring-4 focus:ring-[#cfe8d5]/40 outline-none transition-all placeholder:text-[#8a8a8a] text-sm"
+              />
+              <p className="text-[9px] text-[#8a8a8a] italic ml-1">This password will be required for the client to view their gallery.</p>
             </div>
 
             <div className="space-y-3">

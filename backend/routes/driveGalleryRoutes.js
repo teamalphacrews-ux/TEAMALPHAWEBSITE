@@ -4,6 +4,7 @@ const DriveGallery = require('../models/DriveGallery');
 const GalleryEvent = require('../models/GalleryEvent');
 const GoogleDriveService = require('../services/googleDriveService');
 const auth = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -30,6 +31,20 @@ const thumbnailStorage = new CloudinaryStorage({
 const upload = multer({ storage: thumbnailStorage });
 
 /**
+ * @route   GET /api/drive-gallery/users/clients
+ * @desc    List all registered client users for dropdown
+ */
+router.get('/users/clients', auth, async (req, res) => {
+    try {
+        const User = require('../models/User');
+        const clients = await User.find({ role: 'client' }).select('firstName lastName email');
+        res.json(clients);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * @route   POST /api/drive-gallery
  * @desc    Create a new Client Collection (Top Level)
  */
@@ -41,10 +56,17 @@ router.post('/', auth, (req, res) => {
         }
 
         try {
-            const { name } = req.body;
+            const { name, password, clientId } = req.body;
             
             if (!name) {
                 return res.status(400).json({ error: "Client name is required" });
+            }
+
+            // Optional: Hash access password
+            let passwordHash = "";
+            if (password) {
+                const salt = await bcrypt.genSalt(10);
+                passwordHash = await bcrypt.hash(password, salt);
             }
 
             // Thumbnail is optional
@@ -52,7 +74,9 @@ router.post('/', auth, (req, res) => {
 
             const client = new DriveGallery({
                 name,
-                thumbnail: thumbnailUrl
+                thumbnail: thumbnailUrl,
+                passwordHash,
+                clientId: clientId || null
             });
 
             await client.save();
@@ -186,6 +210,86 @@ router.get('/event/:eventId', auth, async (req, res) => {
 });
 
 /**
+ * @route   POST /api/drive-gallery/verify/search
+ * @desc    Search for a gallery by client name and verify password
+ */
+router.post('/verify/search', async (req, res) => {
+    try {
+        const { password, clientName, clientId } = req.body;
+        
+        let client;
+        
+        // Priority 1: Search by direct Account ID
+        if (clientId) {
+            client = await DriveGallery.findOne({ clientId });
+        }
+        
+        // Priority 2: Fallback to string matching for legacy/unlinked clients
+        if (!client && clientName) {
+            client = await DriveGallery.findOne({ 
+                name: { $regex: new RegExp('^' + clientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') } 
+            });
+        }
+
+        if (!client) {
+            return res.status(404).json({ error: "No gallery collection found for this account" });
+        }
+
+        // If no password set, access is granted
+        if (!client.passwordHash) {
+            return res.json({ success: true, message: "Access granted" });
+        }
+
+        if (!password) {
+            return res.status(400).json({ error: "Password is required" });
+        }
+
+        const isMatch = await bcrypt.compare(password, client.passwordHash);
+        if (!isMatch) {
+            return res.status(401).json({ error: "Invalid access password" });
+        }
+
+        res.json({ success: true, message: "Authorized", id: client._id });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * @route   POST /api/drive-gallery/verify/:id
+ * @desc    Verify gallery password for client access
+ */
+router.post('/verify/:id', async (req, res) => {
+    try {
+        const { password } = req.body;
+        const client = await DriveGallery.findById(req.params.id);
+
+        if (!client) {
+            return res.status(404).json({ error: "Client collection not found" });
+        }
+
+        // If no password set, access is granted
+        if (!client.passwordHash) {
+            return res.json({ success: true, message: "Access granted (no password required)" });
+        }
+
+        if (!password) {
+            return res.status(400).json({ error: "Password is required" });
+        }
+
+        const isMatch = await bcrypt.compare(password, client.passwordHash);
+        if (!isMatch) {
+            return res.status(401).json({ error: "Invalid access password" });
+        }
+
+        res.json({ success: true, message: "Authorized access granted" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+/**
  * @route   GET /api/drive-gallery/:id
  * @desc    Get client info
  */
@@ -204,10 +308,16 @@ router.get('/:id', auth, async (req, res) => {
  */
 router.patch('/:id', auth, upload.single('thumbnail'), async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, password, clientId } = req.body;
         const updateData = {};
         if (name) updateData.name = name;
         if (req.file) updateData.thumbnail = req.file.path;
+        if (clientId) updateData.clientId = clientId;
+        
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            updateData.passwordHash = await bcrypt.hash(password, salt);
+        }
 
         const client = await DriveGallery.findByIdAndUpdate(req.params.id, updateData, { new: true });
         res.json(client);

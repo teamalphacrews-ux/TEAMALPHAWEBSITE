@@ -1,36 +1,154 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Download, X, Maximize2, Play, Image as ImageIcon, Sparkles, Filter, Camera, Lock, ArrowRight, Loader2, Calendar, ChevronRight, ArrowLeft, Search, Box } from "lucide-react";
+import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import Masonry from "react-masonry-css";
 
 export default function Gallery() {
-  const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedMedia, setSelectedMedia] = useState(null);
   const [user, setUser] = useState(null);
+  
+  // Auth & State
+  const [isLocked, setIsLocked] = useState(true);
+  const [password, setPassword] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState("");
+  const [galleryId, setGalleryId] = useState(null);
+
+  // Views ('events' or 'masonry')
+  const [view, setView] = useState("events");
+  const [events, setEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  
+  // Masonry details
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  
+  // Preview
+  const [selectedMedia, setSelectedMedia] = useState(null);
 
   useEffect(() => {
-    const fetchUserAndImages = async () => {
+    const fetchUserAndInit = async () => {
+      setLoadingEvents(true);
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/me`, {
+          const userRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/me`, {
             headers: { 'x-auth-token': token }
           });
-          if (res.ok) {
-            const userData = await res.json();
+          if (userRes.ok) {
+            const userData = await userRes.json();
             setUser(userData);
+            
+            // Check if this gallery is already unlocked for this session
+            const storedId = localStorage.getItem(`gallery_id_${userData._id}`);
+            const isUnlocked = localStorage.getItem(`gallery_unlocked_${userData._id}`);
+            
+            if (isUnlocked === 'true' && storedId) {
+              setGalleryId(storedId);
+              setIsLocked(false);
+              await fetchEvents(storedId);
+            }
           }
         }
+        if (!localStorage.getItem('token')) setLoadingEvents(false);
       } catch (err) {
-        console.error("Failed to fetch user:", err);
-      } finally {
-        setLoading(false);
+        console.error("Failed to initialize gallery:", err);
+        setLoadingEvents(false);
       }
     };
 
-    fetchUserAndImages();
+    fetchUserAndInit();
   }, []);
 
-  // Prevent background scroll when modal is open
-    useEffect(() => {
+  const fetchEvents = async (cid) => {
+    setLoadingEvents(true);
+    try {
+      const token = localStorage.getItem('token');
+      const eventsRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/${cid}/events`, {
+        headers: { 'x-auth-token': token }
+      });
+      const eventsData = await eventsRes.json();
+      setEvents(eventsData || []);
+    } catch (err) {
+      console.error("Failed to fetch gallery events:", err);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  const handleUnlock = async (e) => {
+    e.preventDefault();
+    if (!password) return setError("Please enter your access code.");
+    
+    setVerifying(true);
+    setError("");
+    
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/verify/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          password,
+          clientId: user?._id, // Direct ID-based lookup
+          clientName: user?.firstName + " " + user?.lastName // Fallback match
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        setIsLocked(false);
+        setGalleryId(data.id);
+        localStorage.setItem(`gallery_unlocked_${user?._id}`, 'true');
+        localStorage.setItem(`gallery_id_${user?._id}`, data.id);
+        await fetchEvents(data.id);
+      } else {
+        setError(data.error || "Incorrect access code.");
+      }
+    } catch (err) {
+      setError("Authorization failed. Please try again.");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleOpenEvent = async (event) => {
+    setSelectedEvent(event);
+    setView("masonry");
+    setLoadingFiles(true);
+    setSearchQuery("");
+    setFilterType("all");
+    setFiles([]);
+    try {
+        const token = localStorage.getItem('token');
+        const filesRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/files/${event._id}`, {
+            headers: { 'x-auth-token': token }
+        });
+        const filesData = await filesRes.json();
+        setFiles(filesData || []);
+    } catch (err) {
+        console.error("Failed to fetch files for event", err);
+    } finally {
+        setLoadingFiles(false);
+    }
+  };
+
+  const filteredFiles = useMemo(() => {
+    return files.filter(f => {
+      const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFilter = 
+        filterType === "all" || 
+        (filterType === "images" && f.mimeType.startsWith('image/')) ||
+        (filterType === "videos" && f.mimeType.startsWith('video/')) ||
+        (filterType === "recent" && (new Date() - new Date(f.createdTime)) < (7 * 24 * 60 * 60 * 1000));
+      return matchesSearch && matchesFilter;
+    });
+  }, [files, searchQuery, filterType]);
+
+  useEffect(() => {
     if (selectedMedia) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -39,371 +157,401 @@ export default function Gallery() {
     return () => { document.body.style.overflow = 'auto'; };
   }, [selectedMedia]);
 
-  const downloadMedia = async (url, filename) => {
+  const downloadMedia = async (fileId, filename) => {
     try {
+      // Create a direct export/download link
+      const url = `https://drive.google.com/uc?export=download&id=${fileId}`;
       const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = filename || 'download';
+      link.download = filename || 'memory';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error("Download failed:", error);
+      // Fallback: open in new tab
+      window.open(`https://drive.google.com/uc?export=download&id=${fileId}`, '_blank');
     }
   };
 
-  if (loading) {
-    return (
-      <div className="loading-state">
-        <div className="loader-content">
-          <p>Curating your moments...</p>
-          <div className="shimmer-bar"></div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="gallery-container">
-      <header className="gallery-header">
-        <h2>Our Gallery</h2>
-        <div className="header-line"></div>
-        <p>A curated collection of captured emotions and timeless stories.</p>
-      </header>
-
-      <main className="gallery-grid-wrapper">
-        {images.length > 0 ? (
-          <div className="gallery-mosaic">
-            {images.map((item, index) => (
-              <div
-                key={index}
-                className="media-tile"
-                onClick={() => setSelectedMedia(item)}
-              >
-                {item.type === "image" ? (
-                  <img src={item.src} alt="Gallery item" loading="lazy" />
-                ) : (
-                  <video src={item.src} muted playsInline autoPlay loop />
-                )}
+    <div className="animate-in fade-in duration-700">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8">
+        
+        {isLocked ? (
+          <>
+            <header className="text-left mb-8 animate-fade-up">
+                <h1 className="text-4xl md:text-5xl mb-4 uppercase tracking-[8px] font-light text-stone-800">The Gallery</h1>
+                <div className="h-1 w-20 bg-gradient-to-r from-luxury-gold to-luxury-gold/20 rounded-full"></div>
+                <p className="text-luxury-text-muted italic max-w-2xl text-sm mt-4">
+                    Explore your curated collection of moments, captured with soul and preserved for eternity.
+                </p>
+            </header>
+            <div className="flex flex-col items-center justify-center py-20 animate-fade-up">
+              <div className="w-full max-w-md glass-card !p-12 text-center border-white/60 shadow-2xl relative overflow-hidden">
+                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-luxury-gold/10 rounded-full blur-3xl"></div>
+                  
+                  <div className="icon-wrapper !w-20 !h-20 mx-auto mb-10 bg-gradient-to-b from-luxury-gold/20 to-transparent shadow-xl">
+                      <Lock size={32} className="text-luxury-gold animate-pulse" strokeWidth={1} />
+                  </div>
+                  
+                  <h2 className="text-3xl font-light mb-4 uppercase tracking-[4px] text-stone-800">Secure Vault</h2>
+                  <p className="text-[10px] uppercase font-bold tracking-[3px] text-luxury-gold mb-10">Protected Gallery Access</p>
+                  
+                  <form onSubmit={handleUnlock} className="space-y-6 relative z-10">
+                      <div className="relative group">
+                          <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-300 group-focus-within:text-luxury-gold transition-colors" size={16} />
+                          <input 
+                              type="password"
+                              placeholder="Enter Access Code"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              className="w-full bg-white/50 border border-white/80 rounded-full py-4 pl-14 pr-6 focus:outline-none focus:ring-4 focus:ring-luxury-gold/5 focus:border-luxury-gold/20 transition-all font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal text-stone-800"
+                          />
+                      </div>
+                      
+                      {error && (
+                          <p className="text-red-500 text-[10px] font-bold uppercase tracking-widest animate-shake">
+                              {error}
+                          </p>
+                      )}
+                      
+                      <button 
+                          type="submit"
+                          disabled={verifying}
+                          className="btn-luxury-primary w-full flex items-center justify-center gap-3 py-4 shadow-xl shadow-luxury-gold/20"
+                      >
+                          {verifying ? (
+                              <Loader2 className="animate-spin" size={18} />
+                          ) : (
+                              <>
+                                  <span>Authorize Access</span>
+                                  <ArrowRight size={16} />
+                              </>
+                          )}
+                      </button>
+                      
+                      <p className="text-[9px] text-stone-400 font-medium uppercase tracking-[2px] pt-4">
+                          Provided by Studio Concierge
+                      </p>
+                  </form>
               </div>
-            ))}
-          </div>
+            </div>
+          </>
+        ) : view === "events" ? (
+          /* ========================================= */
+          /* EVENT FOLDERS VIEW (Like Admin Dashboard) */
+          /* ========================================= */
+          <>
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12 animate-fade-up">
+              <div className="space-y-1 text-left">
+                <h1 className="text-4xl md:text-5xl uppercase tracking-[8px] font-light text-stone-800">Your Collections</h1>
+                <p className="text-[10px] uppercase tracking-[0.4em] font-bold text-luxury-gold ml-1">Event Repositories</p>
+              </div>
+            </header>
+
+            {loadingEvents ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+                {[1,2,3,4].map(n => <div key={n} className="h-96 glass-card animate-pulse rounded-[32px] border border-white/60" />)}
+              </div>
+            ) : events.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+                {events.map((event, idx) => (
+                  <motion.div
+                    layout
+                    key={event._id}
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: 0.8,
+                      delay: idx * 0.1,
+                      ease: [0.22, 1, 0.36, 1]
+                    }}
+                    whileHover={{ y: -12 }}
+                    className="group relative aspect-[3.5/4.5] rounded-[32px] overflow-hidden bg-black shadow-2xl transition-all duration-500"
+                  >
+                    {/* Clickable Area for Navigation */}
+                    <div 
+                      className="absolute inset-0 z-10 cursor-pointer" 
+                      onClick={() => handleOpenEvent(event)}
+                    />
+
+                    {/* Full Image Background */}
+                    <motion.img 
+                      src={event.thumbnail || `https://source.unsplash.com/random/800x1200/?wedding,event`} 
+                      alt={event.name}
+                      whileHover={{ scale: 1.15 }}
+                      transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
+                    />
+
+                    {/* Gradient Overlays */}
+                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none z-20" />
+
+                    {/* Dynamic Text Content Overlay */}
+                    <div className="absolute inset-0 p-8 flex flex-col justify-end z-30 pointer-events-none text-left">
+                      <motion.div 
+                        initial={false}
+                        className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-1.5 w-fit mb-4 group-hover:bg-luxury-gold/20 group-hover:border-luxury-gold/40 transition-all duration-500"
+                      >
+                        <span className="text-[10px] text-white/90 group-hover:text-white font-bold uppercase tracking-[0.2em] flex items-center gap-2">
+                          <ImageIcon size={10} className="mb-0.5" />
+                          Event Folder
+                        </span>
+                      </motion.div>
+
+                      <h3 className="text-3xl font-bold text-white tracking-tight mb-2 group-hover:text-luxury-gold transition-colors duration-500">
+                        {event.name}
+                      </h3>
+
+                      <div className="flex items-center gap-3 text-white/50 group-hover:text-white/80 transition-colors duration-500">
+                        <Calendar size={12} className="shrink-0" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest pt-0.5">
+                          {new Date(event.eventDate).toLocaleDateString()}
+                        </span>
+                        <div className="h-px flex-1 bg-white/10 group-hover:bg-white/20 transition-all" />
+                        <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-500" />
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-40 animate-in fade-in zoom-in duration-1000">
+                <div className="icon-wrapper mx-auto mb-8 animate-pulse shadow-luxury-gold/20">
+                  <div className="relative">
+                      <FolderOpen className="text-luxury-gold" size={24} />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-light mb-4 uppercase tracking-[4px] text-stone-800">Folders empty</h3>
+                <p className="text-luxury-text-muted italic max-w-sm mx-auto text-sm leading-relaxed">
+                  Your event collections will appear here once they are uploaded by our team.
+                </p>
+              </div>
+            )}
+            
+            {/* Quick Links Footer */}
+            <section className="mt-16 pt-16 border-t border-black/[0.03] grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-up">
+                <Link to="/portal/cloud" className="glass-card hover-lift flex items-center gap-6 group">
+                    <div className="icon-wrapper group-hover:scale-110 transition-transform">
+                        <Lock size={20} className="text-luxury-gold" />
+                    </div>
+                    <div className="text-left">
+                        <h4 className="text-sm font-bold uppercase tracking-widest text-stone-800 mb-1">Access The Vault</h4>
+                        <p className="text-[10px] text-luxury-text-muted italic">Download your high-resolution masters.</p>
+                    </div>
+                    <ArrowRight size={14} className="ml-auto opacity-20 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
+                </Link>
+
+                <Link to="/portal/chats" className="glass-card hover-lift flex items-center gap-6 group">
+                    <div className="icon-wrapper group-hover:scale-110 transition-transform">
+                        <Sparkles size={20} className="text-luxury-gold" />
+                    </div>
+                    <div className="text-left">
+                        <h4 className="text-sm font-bold uppercase tracking-widest text-stone-800 mb-1">Studio Concierge</h4>
+                        <p className="text-[10px] text-luxury-text-muted italic">Discuss your collection with our team.</p>
+                    </div>
+                    <ArrowRight size={14} className="ml-auto opacity-20 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
+                </Link>
+            </section>
+          </>
         ) : (
-          <div className="empty-state">
-            <p>Your luxury gallery is currently being curated. Check back soon for your personalized captures.</p>
+          /* ========================================= */
+          /* MASONRY GALLERY VIEW (Like Admin details) */
+          /* ========================================= */
+          <div className="animate-in slide-in-from-right-8 duration-700 pb-24">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+              <div className="space-y-4 text-left">
+                <button 
+                  onClick={() => setView("events")}
+                  className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.3em] text-[#8a8a8a] hover:text-luxury-gold transition-all group"
+                >
+                  <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                  Back to Folders
+                </button>
+                <div className="space-y-1">
+                  <h1 className="text-4xl md:text-5xl uppercase tracking-[8px] font-light text-stone-800">{selectedEvent?.name}</h1>
+                  <p className="text-[10px] uppercase tracking-[0.4em] font-bold text-luxury-gold ml-1">Event Collection</p>
+                </div>
+              </div>
+
+              {/* Toolbar Integration */}
+              <div className="flex flex-col lg:flex-row gap-4 items-center w-full lg:w-auto">
+                <div className="flex bg-white/60 p-1.5 rounded-2xl border border-white/80 shadow-sm w-full lg:w-auto overflow-x-auto">
+                  {["all", "images", "videos", "recent"].map(type => (
+                    <button 
+                      key={type} onClick={() => setFilterType(type)}
+                      className={`flex-1 lg:flex-none px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${filterType === type ? 'bg-gradient-to-r from-luxury-gold/20 to-luxury-gold/40 text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-900'}`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+                <div className="relative w-full lg:w-64 group">
+                  <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <input 
+                    value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search assets..."
+                    className="w-full bg-white/50 border border-white/80 rounded-full py-3.5 pl-12 pr-4 text-xs focus:outline-none focus:ring-4 focus:ring-luxury-gold/5 focus:border-luxury-gold/20 transition-all placeholder:text-stone-400"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {loadingFiles ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {[1,2,3,4,5,6,7,8,9,10].map(n => <div key={n} className="aspect-square glass-card animate-pulse rounded-[32px] border border-white/60" />)}
+              </div>
+            ) : filteredFiles.length > 0 ? (
+              <Masonry
+                breakpointCols={{
+                  default: 4,
+                  1100: 3,
+                  700: 2,
+                  500: 1
+                }}
+                className="my-masonry-grid"
+                columnClassName="my-masonry-grid_column"
+              >
+                {filteredFiles.map((file, idx) => (
+                  <motion.div
+                    layoutId={file.id}
+                    key={file.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ 
+                      duration: 0.4, 
+                      ease: [0.23, 1, 0.32, 1],
+                      delay: idx * 0.03 
+                    }}
+                    whileHover={{ scale: 1.03, zIndex: 10 }}
+                    onClick={() => setSelectedMedia(file)}
+                    className="relative group cursor-pointer overflow-hidden transition-all duration-500 rounded-2xl glass-card !p-0 shadow-lg"
+                  >
+                    <div className="w-full h-full relative overflow-hidden rounded-2xl">
+                        <motion.img 
+                          src={`https://drive.google.com/thumbnail?id=${file.id}&sz=w1000`} 
+                          alt={file.name} 
+                          loading="lazy"
+                          className="w-full h-auto block object-cover" 
+                          onError={(e) => {
+                            e.target.src = `https://drive.google.com/uc?id=${file.id}`;
+                          }}
+                        />
+                        
+                        {/* Type Icon (Video/Image) */}
+                        {file.mimeType?.startsWith('video/') && (
+                           <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md p-2 rounded-full z-10 text-white">
+                                <Play size={16} fill="currentColor" />
+                           </div>
+                        )}
+
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                          <div className="p-3 bg-white/10 backdrop-blur-md rounded-full text-white scale-90 group-hover:scale-100 transition-transform duration-300">
+                             <Maximize2 size={24} strokeWidth={1.5} />
+                          </div>
+                        </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </Masonry>
+            ) : (
+              <div className="glass-card !p-20 text-center animate-fade-up">
+                <div className="icon-wrapper mx-auto mb-8 animate-pulse shadow-luxury-gold/20">
+                  <div className="relative">
+                      <Box className="text-luxury-gold" size={24} />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-light mb-4 uppercase tracking-[4px] text-stone-800">No media found</h3>
+                <p className="text-luxury-text-muted italic max-w-sm mx-auto text-sm leading-relaxed">
+                  Try adjusting your search or filter.
+                </p>
+              </div>
+            )}
           </div>
         )}
-      </main>
+      </div>
 
       {selectedMedia && (
-        <ImageModal
-          media={selectedMedia}
-          onClose={() => setSelectedMedia(null)}
-          onDownload={downloadMedia}
-        />
+        <div className="modal-backdrop" onClick={() => setSelectedMedia(null)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <button 
+                    onClick={() => setSelectedMedia(null)}
+                    className="absolute -top-12 right-0 text-white hover:text-luxury-gold transition-colors p-2"
+                >
+                    <X size={32} />
+                </button>
+                
+                {selectedMedia.mimeType?.startsWith('video/') ? (
+                    <iframe 
+                        src={`https://drive.google.com/file/d/${selectedMedia.id}/preview`}
+                        className="modal-media shadow-2xl rounded-lg w-full max-w-4xl h-[70vh] border-0"
+                        allow="autoplay"
+                    />
+                ) : (
+                    <img 
+                        src={`https://drive.google.com/thumbnail?id=${selectedMedia.id}&sz=w4000`} 
+                        className="modal-media shadow-2xl rounded-lg" 
+                        alt="Memory preview"
+                        onError={(e) => { e.target.src = `https://drive.google.com/uc?id=${selectedMedia.id}`; }}
+                    />
+                )}
+
+                <div className="mt-8 flex gap-6">
+                    <button
+                        className="btn-luxury-primary flex items-center gap-2 px-8 py-3"
+                        onClick={() => downloadMedia(selectedMedia.id, selectedMedia.name)}
+                    >
+                        <Download size={20} /> Download Master
+                    </button>
+                    <button 
+                        className="btn-glass-secondary !text-white !border-white/20 hover:!bg-white/10 px-8 py-3"
+                        onClick={() => setSelectedMedia(null)}
+                    >
+                        Back to Gallery
+                    </button>
+                </div>
+            </div>
+        </div>
       )}
 
       <style dangerouslySetInnerHTML={{
         __html: `
-                .gallery-container {
-                    padding: 80px 0;
-                    background: var(--bg-dark);
-                    min-height: 100vh;
-                }
+            .modal-backdrop {
+                position: fixed;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                backdrop-filter: blur(20px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                animation: fadeIn 0.4s ease;
+            }
 
-                .gallery-header {
-                    text-align: center;
-                    margin-bottom: 60px;
-                    padding: 0 24px;
-                }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-                .gallery-header h2 {
-                    font-size: clamp(2rem, 5vw, 3.5rem);
-                    text-transform: uppercase;
-                    letter-spacing: 10px;
-                    margin-bottom: 16px;
-                    color: var(--text-main);
-                }
+            .modal-content {
+                position: relative;
+                max-width: 90vw;
+                max-height: 90vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
 
-                .header-line {
-                    height: 1px;
-                    width: 80px;
-                    background: var(--primary);
-                    margin: 0 auto 24px;
-                }
-
-                .gallery-header p {
-                    font-family: "Inter", sans-serif;
-                    color: var(--text-muted);
-                    font-style: italic;
-                    letter-spacing: 1px;
-                    font-size: 0.9rem;
-                }
-
-                .gallery-grid-wrapper {
-                    max-width: 1600px;
-                    margin: 0 auto;
-                    padding: 0 24px;
-                }
-
-                .gallery-mosaic {
-                    column-count: 4;
-                    column-gap: 16px;
-                    width: 100%;
-                }
-
-                .media-tile {
-                    break-inside: avoid;
-                    margin-bottom: 24px;
-                    position: relative;
-                    overflow: hidden;
-                    cursor: pointer;
-                    background: var(--bg-card);
-                    border-radius: var(--radius);
-                    transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
-                    border: 1px solid var(--border);
-                }
-
-                .media-tile:hover {
-                    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
-                    transform: translateY(-4px);
-                    border-color: var(--primary);
-                }
-
-                .media-tile img,
-                .media-tile video {
-                    width: 100%;
-                    height: auto;
-                    display: block;
-                    transition: all 0.6s ease;
-                }
-
-                .media-tile:hover img,
-                .media-tile:hover video {
-                    transform: scale(1.05);
-                }
-
-                /* Redefined Modal CSS for Premium Balanced UI */
-                .modal-backdrop {
-                    position: fixed;
-                    top: 0; left: 0;
-                    width: 100%; height: 100%;
-                    background: rgba(0, 0, 0, 0.6);
-                    backdrop-filter: blur(10px);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 1000;
-                    padding: 20px;
-                    overflow-y: auto;
-                    animate: fadeIn 0.4s ease;
-                }
-
-                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-                .modal-container {
-                    background: rgba(255, 255, 255, 0.03);
-                    backdrop-filter: blur(20px);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 24px;
-                    width: 100%;
-                    max-width: 1100px;
-                    max-height: 95vh;
-                    position: relative;
-                    display: flex;
-                    flex-direction: column;
-                    box-shadow: 0 40px 100px rgba(0,0,0,0.5);
-                    overflow: hidden;
-                }
-
-                .modal-media-wrapper {
-                    flex: 1;
-                    overflow-y: auto;
-                    scrollbar-width: none;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    background: #000;
-                    min-height: 300px;
-                }
-
-                .modal-media-wrapper::-webkit-scrollbar { display: none; }
-
-                .modal-media {
-                    max-width: 100%;
-                    max-height: 100%;
-                    display: block;
-                    object-fit: contain;
-                }
-
-                .modal-content-footer {
-                    padding: 24px 32px;
-                    background: rgba(0,0,0,0.4);
-                    backdrop-filter: blur(10px);
-                    border-top: 1px solid rgba(255,255,255,0.05);
-                    display: flex;
-                    justify-content: center;
-                    gap: 16px;
-                }
-
-                .modal-btn {
-                    padding: 14px 28px;
-                    background: #fff;
-                    color: #000;
-                    border: none;
-                    font-family: inherit;
-                    font-weight: 700;
-                    font-size: 0.75rem;
-                    letter-spacing: 2px;
-                    text-transform: uppercase;
-                    border-radius: 50px;
-                    cursor: pointer;
-                    transition: all 0.3s;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                }
-
-                .modal-btn:hover {
-                    background: var(--primary);
-                    color: #fff;
-                    transform: translateY(-2px);
-                    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-                }
-
-                .modal-btn.secondary {
-                    background: rgba(255,255,255,0.1);
-                    color: #fff;
-                    border: 1px solid rgba(255,255,255,0.1);
-                }
-
-                .modal-btn.secondary:hover {
-                    background: rgba(255,255,255,0.2);
-                    border-color: #fff;
-                }
-
-                .close-modal-btn {
-                    position: absolute;
-                    top: 24px;
-                    right: 24px;
-                    width: 44px;
-                    height: 44px;
-                    background: rgba(0,0,0,0.5);
-                    backdrop-filter: blur(10px);
-                    color: #fff;
-                    border: 1px solid rgba(255,255,255,0.1);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 24px;
-                    cursor: pointer;
-                    z-index: 50;
-                    transition: all 0.3s;
-                }
-
-                .close-modal-btn:hover {
-                    background: #fff;
-                    color: #000;
-                    transform: rotate(90deg);
-                }
-
-                .loading-state {
-                    height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: var(--bg-dark);
-                }
-
-                .loader-content p {
-                    color: var(--text-main);
-                    letter-spacing: 2px;
-                    text-transform: uppercase;
-                    font-size: 0.8rem;
-                }
-
-                .shimmer-bar {
-                    width: 200px;
-                    height: 1px;
-                    background: #eee;
-                    margin: 20px auto;
-                    position: relative;
-                    overflow: hidden;
-                }
-
-                .shimmer-bar::after {
-                    content: '';
-                    position: absolute;
-                    top: 0; left: -100%;
-                    width: 100%; height: 100%;
-                    background: linear-gradient(90deg, transparent, var(--primary), transparent);
-                    animation: shimmer 2s infinite;
-                }
-
-                @keyframes shimmer {
-                    100% { left: 100%; }
-                }
-
-                .empty-state {
-                    text-align: center;
-                    padding: 100px 0;
-                    color: var(--text-muted);
-                }
-
-                @media (max-width: 1024px) {
-                    .gallery-header h2 { font-size: 1.8rem; letter-spacing: 4px; }
-                    .gallery-mosaic {
-                        column-count: 2;
-                    }
-                    .modal-actions { flex-direction: column; width: 100%; }
-                    .modal-btn { width: 100%; }
-                }
-
-                @media (max-width: 600px) {
-                    .gallery-mosaic {
-                        column-count: 1;
-                    }
-                }
-            `}} />
-    </div>
-  );
-}
-
-function ImageModal({ media, onClose, onDownload }) {
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-container" onClick={e => e.stopPropagation()}>
-        <button className="close-modal-btn" onClick={onClose}>&times;</button>
-        
-        <div className="modal-media-wrapper">
-          {media.type === "image" ? (
-            <img 
-              src={media.src} 
-              className="modal-media" 
-              alt="Luxury Capture" 
-            />
-          ) : (
-            <video src={media.src} controls autoPlay className="modal-media" />
-          )}
-        </div>
-
-        <div className="modal-content-footer">
-          <button
-            className="modal-btn"
-            onClick={() => onDownload(media.src, 'memory-capture')}
-          >
-            Save Memory
-          </button>
-          <button className="modal-btn secondary" onClick={onClose}>
-            Back
-          </button>
-        </div>
-      </div>
+            .modal-media {
+                max-width: 100%;
+                max-height: 80vh;
+                object-fit: contain;
+                border-radius: 12px;
+            }
+        `}} />
     </div>
   );
 }

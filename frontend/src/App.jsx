@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 
 // Website imports (Lazy loaded for performance)
@@ -19,12 +19,13 @@ import Breadcrumbs from './components/common/Breadcrumbs';
 import PageTransition from './components/common/PageTransition';
 
 // Portal imports
-const ClientDashboard = lazy(() => import('./pages/client/ClientDashboard'));
+import ClientDashboard from './pages/client/ClientDashboard';
 const ClientGallery = lazy(() => import('./pages/client/Gallery'));
 const Chats = lazy(() => import('./pages/client/Chats'));
 const Cloud = lazy(() => import('./pages/client/Cloud'));
 import ClientHeader from './components/client/Header';
 import ClientFooter from './components/client/Footer';
+import ClientSidebar from './components/client/Sidebar';
 
 // Admin imports
 import AdminLayout from './admin/components/common/Layout';
@@ -39,18 +40,51 @@ const AdminDriveGalleryDetail = lazy(() => import('./admin/pages/DriveGalleryDet
 const AdminClientEvents = lazy(() => import('./admin/pages/ClientEvents'));
 
 const PortalLayout = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   return (
-    <div className="app-container">
-      <ClientHeader />
-      <main className="content p-4 md:p-8 lg:p-12 max-w-7xl mx-auto w-full">
-        <Breadcrumbs />
-        <PageTransition>
-          <Suspense fallback={<div className="flex h-64 w-full items-center justify-center text-xl opacity-50">Loading Portal...</div>}>
-            <Outlet />
-          </Suspense>
-        </PageTransition>
-      </main>
-      <ClientFooter />
+    <div className="flex min-h-screen luxury-gradient-bg selection:bg-black selection:text-white overflow-x-hidden">
+      {/* Sidebar - Hidden on mobile, fixed on desktop */}
+      <div className="hidden lg:block w-[320px] shrink-0 sticky top-0 h-screen">
+        <ClientSidebar />
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[150] lg:hidden animate-in fade-in duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar Content */}
+      <div className={`fixed inset-y-0 left-0 z-[200] lg:hidden transition-transform duration-500 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <ClientSidebar onClose={() => setIsSidebarOpen(false)} />
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Mobile Header */}
+        <div className="lg:hidden">
+          <ClientHeader toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+        </div>
+
+        <main className="flex-1 w-full max-w-[1200px] px-6 lg:px-8 py-8 space-y-12">
+          <div className="mb-8">
+            <Breadcrumbs />
+          </div>
+          
+          <PageTransition>
+            <Suspense fallback={<div className="flex h-screen w-full items-center justify-center text-xl opacity-50">Loading Portal...</div>}>
+              <Outlet />
+            </Suspense>
+          </PageTransition>
+
+          <div className="pt-20">
+            <ClientFooter />
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

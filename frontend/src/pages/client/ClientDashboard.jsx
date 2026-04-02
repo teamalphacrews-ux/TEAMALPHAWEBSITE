@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { Quote, FolderOpen, Lock, CheckCircle, ArrowRight, Sparkles } from "lucide-react";
 
 export default function Home() {
     const [user, setUser] = useState(null);
@@ -23,260 +24,124 @@ export default function Home() {
     }, []);
 
     return (
-        <main id="home">
-            <Hero user={user} />
-            <div className="section-divider"></div>
-            {user && (user.cloudLink || user.galleryTag) && <CloudAssets user={user} />}
-            <Testimonials />
-            <CTA />
-
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                .section-divider {
-                    height: 1px;
-                    background: var(--border);
-                    max-width: 600px;
-                    margin: 0 auto;
-                }
-
-                .hero {
-                    height: 90vh;
-                    background: linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.4)), 
-                                url("https://i.pinimg.com/1200x/06/5a/97/065a971bd2079220ac781b1bc4e956b8.jpg") center/cover no-repeat;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                    position: relative;
-                }
-
-                .hero-content {
-                    max-width: 900px;
-                    padding: 60px;
-                    z-index: 1;
-                    background: var(--glass);
-                    backdrop-filter: blur(8px);
-                    border-radius: var(--radius);
-                    border: 1px solid var(--border);
-                }
-
-                .hero h2 {
-                    font-size: clamp(2.5rem, 6vw, 4.5rem);
-                    line-height: 1.1;
-                    margin-bottom: 24px;
-                    text-transform: uppercase;
-                    letter-spacing: 8px;
-                    color: #000;
-                    animation: fadeInUp 1s ease-out;
-                }
-
-                .hero p {
-                    font-size: 1rem;
-                    color: var(--text-muted);
-                    letter-spacing: 3px;
-                    text-transform: uppercase;
-                    margin-bottom: 32px;
-                    animation: fadeInUp 1s ease-out 0.2s both;
-                }
-
-                .primary-btn {
-                    background: #1a1a1a;
-                    color: white;
-                    padding: 16px 44px;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 2px;
-                    font-size: 0.75rem;
-                    border-radius: 40px; /* Fully rounded pill */
-                    transition: all 0.4s;
-                    display: inline-block;
-                    animation: fadeInUp 1s ease-out 0.4s both;
-                }
-
-                .primary-btn:hover {
-                    background: var(--primary);
-                    transform: translateY(-3px);
-                    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-                }
-
-                .testimonials {
-                    padding: 100px 24px;
-                    background: white;
-                }
-
-                .testimonials h3 {
-                    font-size: 0.8rem;
-                    letter-spacing: 4px;
-                    text-transform: uppercase;
-                    color: var(--primary);
-                    margin-bottom: 32px;
-                }
-
-                .quote-container {
-                    max-width: 900px;
-                    margin: 0 auto;
-                }
-
-                .quote-text {
-                    font-size: clamp(1.2rem, 3vw, 2rem);
-                    font-style: italic;
-                    line-height: 1.5;
-                    margin-bottom: 32px;
-                    color: #222;
-                }
-
-                .video-link {
-                    color: #1a1a1a;
-                    font-size: 0.75rem;
-                    letter-spacing: 1px;
-                    text-transform: uppercase;
-                    display: inline-block;
-                    padding: 12px 24px;
-                    border: 1px solid var(--border);
-                    border-radius: var(--radius);
-                    margin-top: 24px;
-                }
-
-                .video-link:hover {
-                    border-color: var(--primary);
-                    color: var(--primary);
-                }
-
-                .cta {
-                    background: var(--bg-card);
-                    padding: 80px 24px;
-                    text-align: center;
-                    border-top: 1px solid var(--border);
-                }
-
-                .cta h3 {
-                    font-size: clamp(1.8rem, 4vw, 2.5rem);
-                    margin-bottom: 12px;
-                }
-
-                .cta p {
-                    color: var(--text-muted);
-                    font-size: 1rem;
-                    font-style: italic;
-                }
-
-                @keyframes fadeInUp {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
+        <div id="home" className="animate-fade-up">
+            {/* Cinematic Hero Banner */}
+            <section className="relative h-[280px] rounded-[24px] overflow-hidden mb-10 shadow-2xl">
+                <div 
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"
+                    style={{ backgroundImage: `url('https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop')` }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
                 
-                .cloud-assets {
-                    padding: 80px 24px;
-                    background: var(--bg-card);
-                    text-align: center;
-                }
-                .cloud-assets-content {
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background: white;
-                    padding: 40px;
-                    border-radius: var(--radius);
-                    border: 1px solid var(--border);
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-                }
-                .cloud-assets h3 {
-                    font-size: 1.5rem;
-                    text-transform: uppercase;
-                    letter-spacing: 4px;
-                    margin-bottom: 24px;
-                    color: var(--primary);
-                }
-                .asset-item {
-                    margin-bottom: 20px;
-                    font-size: 0.9rem;
-                    color: var(--text-main);
-                }
-                .asset-label {
-                    text-transform: uppercase;
-                    letter-spacing: 2px;
-                    color: var(--text-muted);
-                    font-size: 0.75rem;
-                    display: block;
-                    margin-bottom: 8px;
-                }
-                .asset-link {
-                    color: #1a1a1a;
-                    font-weight: 600;
-                    text-decoration: underline;
-                }
-            `}} />
-        </main>
+                <div className="absolute inset-0 flex items-center px-12 md:px-20">
+                    <div className="max-w-xl bg-white/10 backdrop-blur-md border border-white/20 p-8 md:p-10 rounded-3xl animate-slide-in">
+                        <span className="text-[10px] uppercase tracking-[4px] text-luxury-gold font-bold mb-3 block">Establishing Timeless Memories</span>
+                        <h1 className="text-3xl md:text-5xl text-white mb-6 uppercase tracking-tighter">
+                            Welcome back, <span className="font-bold underline decoration-luxury-gold/30">{user?.firstName || "Client"}</span>
+                        </h1>
+                        <Link to="/portal/gallery" className="btn-luxury-primary inline-flex items-center gap-3 !px-10">
+                            Explore Your Stories <Sparkles size={16} />
+                        </Link>
+                    </div>
+                </div>
+            </section>
+            
+            {/* Grid Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {user && (user.cloudLink || user.galleryTag) && <CloudAssets user={user} />}
+                <Testimonials />
+            </div>
+
+            <section className="mt-10">
+                <CTA />
+            </section>
+        </div>
     );
 }
 
 function CloudAssets({ user }) {
     return (
-        <section className="cloud-assets">
-            <div className="cloud-assets-content">
-                <h3>Your Premium Assets</h3>
+        <div className="glass-card hover-lift flex flex-col items-start text-left">
+            <div className="icon-wrapper mb-8">
+                <FolderOpen size={24} strokeWidth={1.5} className="text-luxury-gold" />
+            </div>
+            <h3 className="text-2xl font-light mb-4 uppercase tracking-widest text-stone-800">The Private Vault</h3>
+            <p className="text-luxury-text-muted mb-8 leading-relaxed italic text-sm">
+                Your high-resolution cinema captures are preserved in our private encrypted vault. 
+                Access your legacy with the highest fidelity.
+            </p>
+            
+            <div className="w-full space-y-4">
                 {user.cloudLink && (
-                    <div className="asset-item">
-                        <span className="asset-label">Cloud Storage Link</span>
-                        <a href={user.cloudLink} target="_blank" rel="noreferrer" className="asset-link">
-                            Access Full Resolution Files Here
-                        </a>
+                    <div className="flex items-center gap-4 bg-white/40 p-5 rounded-2xl border border-white/60">
+                        <CheckCircle className="text-green-500" size={24} />
+                        <div className="flex-1">
+                            <span className="block text-[10px] uppercase tracking-widest text-luxury-text-muted mb-1 font-bold">Status: Collections Ready</span>
+                            <a href={user.cloudLink} target="_blank" rel="noreferrer" className="text-luxury-gold font-semibold hover:underline flex items-center gap-2 group italic">
+                                Access Full Collection <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                            </a>
+                        </div>
                     </div>
                 )}
-                {user.cloudPassword && (
-                    <div className="asset-item">
-                        <span className="asset-label">Cloud Access Password</span>
-                        <strong>{user.cloudPassword}</strong>
-                    </div>
-                )}
-                {user.galleryTag && (
-                    <div className="asset-item mt-4">
-                        <span className="asset-label">Gallery Sync Tag</span>
-                        <span style={{ fontFamily: 'monospace', background: '#f5f5f5', padding: '4px 8px', borderRadius: '4px' }}>
-                            {user.galleryTag}
-                        </span>
+                
+                {(user.cloudPassword || user.galleryTag) && (
+                    <div className="grid grid-cols-2 gap-4">
+                        {user.cloudPassword && (
+                            <div className="bg-black/5 p-4 rounded-2xl border border-black/5 flex flex-col gap-1">
+                                <span className="text-[9px] uppercase tracking-widest text-luxury-text-muted font-bold">Vault Password</span>
+                                <span className="font-mono text-sm font-bold tracking-widest text-stone-800">{user.cloudPassword}</span>
+                            </div>
+                        )}
+                        {user.galleryTag && (
+                            <div className="bg-black/5 p-4 rounded-2xl border border-black/5 flex flex-col gap-1">
+                                <span className="text-[9px] uppercase tracking-widest text-luxury-text-muted font-bold">Gallery ID</span>
+                                <span className="font-mono text-sm font-bold tracking-widest text-stone-800">{user.galleryTag}</span>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
-        </section>
-    );
-}
-
-function Hero({ user }) {
-    return (
-        <section className="hero">
-            <div className="hero-content">
-                <p>Establishing Timeless Memories</p>
-                <h2>Welcome {user ? user.firstName : ""}</h2>
-                <h3 style={{ fontSize: "1.5rem", marginBottom: "2rem", letterSpacing: "4px", color: "var(--text-muted)" }}>Luxury Wedding Photography</h3>
-                <Link to="/portal/gallery" className="primary-btn">
-                    Explore The Gallery
-                </Link>
-            </div>
-        </section>
+        </div>
     );
 }
 
 function Testimonials() {
     return (
-        <section className="testimonials">
-            <div className="quote-container">
-                <h3>Real Stories</h3>
-                <blockquote className="quote-text">
-                    "Team Alpha didn't just photograph our wedding, they captured the very soul of our celebration. Every frame tells a story we will cherish forever."
-                </blockquote>
-                <a href="#" className="video-link">Watch The Experience</a>
+        <div className="glass-card hover-lift flex flex-col items-start text-left">
+            <div className="icon-wrapper mb-8">
+                <Quote size={24} strokeWidth={1.5} className="text-luxury-gold" />
             </div>
-        </section>
+            <h3 className="text-sm uppercase tracking-[4px] text-luxury-gold font-bold mb-6">A Legacy of Love</h3>
+            <blockquote className="text-xl md:text-2xl italic font-light leading-[1.6] mb-10 text-stone-700">
+                "Team Alpha captured more than just scenes; they captured the <span className="font-bold">stolen glances</span> and breathless moments."
+            </blockquote>
+            <div className="flex items-center gap-4 mt-auto">
+                <div className="w-10 h-10 rounded-full bg-ivory border border-luxury-gold/20 flex items-center justify-center font-serif text-luxury-gold text-xs">MA</div>
+                <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-stone-800">Meghna & Arjun</p>
+                    <p className="text-[9px] text-luxury-text-muted uppercase tracking-widest">Villa Experience, 2025</p>
+                </div>
+            </div>
+        </div>
     );
 }
 
 function CTA() {
     return (
-        <section id="contact" className="cta">
-            <div className="cta-content">
-                <h3>Let's Tell Your Story</h3>
-                <p>Limited reservations remaining for the 2026 season.</p>
+        <div className="glass-card !p-16 text-left overflow-hidden relative group rounded-3xl border-white/60">
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-luxury-gold/5 rounded-full -mr-32 -mt-32 blur-[80px] group-hover:bg-luxury-gold/10 transition-all duration-1000"></div>
+            <div className="relative z-10 flex flex-col items-start">
+                <div className="px-4 py-1.5 bg-luxury-gold/10 text-luxury-gold text-[9px] font-bold uppercase tracking-[4px] rounded-full mb-8">
+                    Limited Availability
+                </div>
+                <h3 className="text-4xl md:text-5xl font-light mb-6 tracking-tight leading-none italic uppercase text-stone-800">Preserve Your Legacy</h3>
+                <p className="text-lg text-luxury-text-muted font-light mb-12 max-w-2xl leading-relaxed italic">
+                    Our bookings for the 2026/27 season are closing soon. Let's start planning the most beautiful day of your life.
+                </p>
+                <Link to="/portal/chats" className="btn-luxury-primary !px-12 flex items-center gap-4 group">
+                    Message The Studio <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
+                </Link>
             </div>
-        </section>
+        </div>
     );
 }

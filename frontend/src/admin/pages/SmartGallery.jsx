@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Image as ImageIcon, FolderOpen, Calendar, ChevronRight, MoreVertical, Loader2 } from "lucide-react";
+import { Plus, Image as ImageIcon, FolderOpen, Calendar, ChevronRight, Pencil, Loader2, Trash2 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -96,9 +96,14 @@ export default function SmartGallery() {
                 ease: [0.22, 1, 0.36, 1]
               }}
               whileHover={{ y: -12 }}
-              onClick={() => navigate(`/admin/gallery/${gallery._id}`)}
-              className="group relative aspect-[3.5/4.5] rounded-[32px] overflow-hidden bg-black shadow-2xl transition-all duration-500 cursor-pointer"
+              className="group relative aspect-[3.5/4.5] rounded-[32px] overflow-hidden bg-black shadow-2xl transition-all duration-500"
             >
+              {/* Clickable Area for Navigation */}
+              <div 
+                className="absolute inset-0 z-10" 
+                onClick={() => navigate(`/admin/gallery/${gallery._id}`)}
+              />
+
               {/* Full Image Background */}
               <motion.img 
                 src={gallery.thumbnail} 
@@ -109,29 +114,37 @@ export default function SmartGallery() {
               />
 
               {/* Sophisticated Gradient Overlays */}
-              <div className="absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
-              <div className="absolute inset-x-0 top-0 h-1/3 bg-linear-to-b from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/90 via-black/40 to-transparent pointer-events-none z-20" />
+              <div className="absolute inset-x-0 top-0 h-1/3 bg-linear-to-b from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-20" />
 
-              {/* Glassmorphic Management Controls (appear on hover) */}
-              <div className="absolute top-6 right-6 flex items-center gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-500 delay-100">
+              {/* Glassmorphic Management Controls - High Z-Index to stay above clickable area */}
+              <div className="absolute top-6 right-6 flex items-center gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-500 delay-100 z-50">
                 <button 
-                  onClick={(e) => handleEdit(e, gallery)}
-                  className="p-3 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/25 text-white rounded-2xl transition-all shadow-lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    handleEdit(e, gallery);
+                  }}
+                  className="p-3 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-[#cfe8d5]/40 text-white hover:text-white rounded-2xl transition-all shadow-lg group/edit"
                   title="Edit Collection"
                 >
-                  <MoreVertical size={16} />
+                  <Pencil size={16} className="group-hover/edit:scale-110 transition-transform" />
                 </button>
                 <button 
-                  onClick={(e) => deleteGallery(e, gallery._id)}
-                  className="p-3 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-red-500/30 text-white hover:text-red-300 rounded-2xl transition-all shadow-lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    deleteGallery(e, gallery._id);
+                  }}
+                  className="p-3 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-red-500/40 text-white hover:text-red-200 rounded-2xl transition-all shadow-lg group/del"
                   title="Delete Collection"
                 >
-                  <Plus size={16} className="rotate-45" />
+                  <Trash2 size={16} className="group-hover/del:scale-110 transition-transform" />
                 </button>
               </div>
 
               {/* Dynamic Text Content Overlay */}
-              <div className="absolute inset-0 p-8 flex flex-col justify-end">
+              <div className="absolute inset-0 p-8 flex flex-col justify-end z-30 pointer-events-none">
                 <motion.div 
                   initial={false}
                   className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-1.5 w-fit mb-4 group-hover:bg-[#cfe8d5]/20 group-hover:border-[#cfe8d5]/40 transition-all duration-500"
