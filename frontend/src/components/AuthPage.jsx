@@ -52,7 +52,7 @@ const AuthPage = () => {
 
             // Success - Use centralized login
             login(data.user, data.token);
-            
+
         } catch (err) {
             setError(err.message);
         } finally {
@@ -66,7 +66,7 @@ const AuthPage = () => {
             <div className="w-full md:w-1/2 flex items-center justify-center p-8 md:p-12 lg:p-16 relative bg-[#FDFCFB]">
                 <div className="w-full max-w-[400px] z-10">
                     {/* Logo/Brand */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         className="mb-8"
@@ -186,7 +186,7 @@ const AuthPage = () => {
 
                     <div className="mt-8 text-center text-[11px]">
                         <p className="text-gray-400 font-medium">
-                            Don't have an account? 
+                            Don't have an account?
                             <Link to="/quote" className="text-black font-black border-b-2 border-transparent hover:border-black transition-all ml-1">
                                 Register
                             </Link>
@@ -198,9 +198,9 @@ const AuthPage = () => {
             {/* RIGHT SECTION - IMAGE PANEL */}
             <div className="hidden md:block md:w-1/2 p-6 relative">
                 <div className="w-full h-full rounded-[2.5rem] overflow-hidden relative shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-                    <img 
-                        src="/assets/services/pre_wedding.jpg" 
-                        alt="Pre Wedding" 
+                    <img
+                        src="/assets/services/pre_wedding.jpg"
+                        alt="Pre Wedding"
                         className="w-full h-full object-cover"
                     />
                     {/* Overlay Text Centered Vertically */}

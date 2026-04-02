@@ -173,6 +173,50 @@ authRouter.get('/me', auth, async (req, res) => {
     }
 });
 
+authRouter.put('/profile', auth, async (req, res) => {
+    try {
+        const { name, role } = req.body;
+        
+        if (req.user.id === "hardcoded-admin-id") {
+            // For the system admin in .env, we return the data so the UI updates for the session
+            // even though it isn't stored in a specific DB collection.
+            const nameParts = (name || "System Admin").trim().split(/\s+/);
+            return res.json({ 
+                id: "hardcoded-admin-id",
+                firstName: nameParts[0],
+                lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : '',
+                role: role || "admin",
+                msg: "System Admin updated for session" 
+            });
+        }
+
+        let updateData = {};
+
+        if (name) {
+            const nameParts = name.trim().split(/\s+/);
+            updateData.firstName = nameParts[0];
+            updateData.lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+        }
+
+        if (role) {
+            updateData.role = role;
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { $set: updateData },
+            { new: true }
+        ).select('-password');
+
+        if (!user) return res.status(404).json({ msg: "User not found" });
+
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // Google OAuth Routes
 const { google } = require('googleapis');
 

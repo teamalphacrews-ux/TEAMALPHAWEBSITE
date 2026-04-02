@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { X, Calendar, MapPin, MessageCircle, Clock, CheckCircle, Edit2, Save, User, Mail, Phone, Camera, Trash2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { X, Calendar, MapPin, MessageCircle, Clock, CheckCircle, Edit2, Save, User, Mail, Phone, Camera, Trash2, Loader2 } from "lucide-react";
 import { format, isPast } from "date-fns";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -70,48 +71,47 @@ export default function PhotographerProfile({ photographer, onClose, onUpdate })
         return isNaN(d) ? "Date TBD" : format(d, 'PPP');
     };
 
-    return (
-        <div className="fixed inset-0 bg-charcoal/60 backdrop-blur-md z-60 flex items-center justify-center p-4">
-            <div className="bg-white rounded-4xl w-full max-w-2xl h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden border border-ivory">
-                {/* Header Profile Section */}
-                <div className="relative bg-charcoal text-white p-8 pb-24 overflow-hidden">
-                    <div className="absolute top-0 right-0 p-32 bg-mutedbrown/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-
+    return createPortal(
+        <div className="fixed inset-0 bg-black/10 backdrop-blur-[6px] z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div className="bg-white/70 backdrop-blur-[24px] w-full max-w-3xl h-[85vh] flex flex-col rounded-[40px] shadow-[0_25px_70px_rgba(0,0,0,0.15)] border border-white/60 overflow-hidden animate-in zoom-in-95 duration-400 relative">
+                {/* Premium Pastel Header */}
+                <div className="relative bg-gradient-to-br from-[#F0F4FF] via-[#F8F4FF] to-[#FFF9F0] p-8 md:p-10 border-b border-white/40 shrink-0">
                     <div className="relative z-10 flex justify-between items-start">
-                        <div className="flex gap-6 items-center">
-                            <div className="w-24 h-24 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/20 text-3xl font-serif">
+                        <div className="flex gap-8 items-center">
+                            <div className="w-24 h-24 bg-white/80 backdrop-blur-sm rounded-[32px] flex items-center justify-center border border-white shadow-sm text-4xl font-luxury text-[#2d2d2d] uppercase">
                                 {photographer.name[0]}
                             </div>
                             <div>
-                                <h2 className="font-serif text-3xl">{formData.name}</h2>
-                                <p className="text-white/60 text-xs uppercase tracking-[0.2em] font-bold mt-1">
-                                    {(formData.specialty || '').toUpperCase().includes('PHOTOGRAPHER') ? formData.specialty : `${formData.specialty || ''} Photographer`}
+                                <h2 className="font-luxury text-3xl md:text-4xl text-[#2d2d2d] tracking-tight">{formData.name}</h2>
+                                <p className="text-[10px] md:text-[11px] text-[#8a8a8a] mt-2 font-black uppercase tracking-[0.25em] bg-white/60 px-4 py-1.5 rounded-full border border-white/40 inline-block">
+                                    {(formData.specialty || '').toUpperCase().includes('PHOTOGRAPHER') ? formData.specialty : `${formData.specialty || 'Master'} Artist`}
                                 </p>
-                                <div className="flex gap-2 mt-4">
+                                <div className="flex gap-3 mt-6">
                                     <button
                                         onClick={() => setActiveTab('schedule')}
-                                        className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'schedule' ? 'bg-white text-charcoal' : 'bg-white/10 hover:bg-white/20'}`}
+                                        className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${activeTab === 'schedule' ? 'bg-[#2d2d2d] text-white border-[#2d2d2d] shadow-lg' : 'bg-white/60 text-[#8a8a8a] border-white/80 hover:bg-white'}`}
                                     >
-                                        Schedule
+                                        Itinerary
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('profile')}
-                                        className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'profile' ? 'bg-white text-charcoal' : 'bg-white/10 hover:bg-white/20'}`}
+                                        className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${activeTab === 'profile' ? 'bg-[#2d2d2d] text-white border-[#2d2d2d] shadow-lg' : 'bg-white/60 text-[#8a8a8a] border-white/80 hover:bg-white'}`}
                                     >
-                                        Profile Details
+                                        Portfolio
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
+                        <button onClick={onClose} className="p-3 bg-white/60 hover:bg-white text-[#8a8a8a] hover:text-[#2d2d2d] rounded-full transition-all border border-white/80 hover:rotate-90 hover:shadow-sm">
                             <X size={20} />
                         </button>
                     </div>
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 bg-gray-50 -mt-8 rounded-t-4xl relative z-20 overflow-hidden flex flex-col shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+                <div className="flex-1 overflow-hidden flex flex-col">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-8 md:p-10">
+
 
                         {activeTab === 'schedule' && (
                             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -122,49 +122,42 @@ export default function PhotographerProfile({ photographer, onClose, onUpdate })
                                     </h3>
                                     {upcomingWorks.length > 0 ? (
                                         upcomingWorks.map(work => (
-                                            <div key={work._id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
-                                                <div className="flex justify-between items-start mb-4">
+                                            <div key={work._id} className="bg-white/40 backdrop-blur-sm p-6 rounded-[28px] border border-white/80 shadow-sm hover:shadow-md transition-all group">
+                                                <div className="flex justify-between items-start mb-6">
                                                     <div>
-                                                        <h4 className="font-bold text-lg text-charcoal">{work.name}</h4>
-                                                        <span className="text-[10px] uppercase tracking-wide text-gray-400 font-bold">{work.eventType}</span>
+                                                        <h4 className="font-black text-xl text-[#2d2d2d] tracking-tight">{work.name}</h4>
+                                                        <span className="text-[9px] uppercase tracking-[0.2em] text-[#8a8a8a] font-black bg-white/60 px-2.5 py-1 rounded-lg border border-white/40 mt-2 inline-block shadow-sm">{work.eventType}</span>
                                                     </div>
-                                                    <div className="flex gap-2">
-                                                        <button onClick={() => sendWhatsApp(work)} className="bg-[#25D366] text-white p-2 rounded-xl hover:bg-[#128C7E] transition-colors shadow-sm" title="WhatsApp Reminder">
-                                                            <MessageCircle size={18} />
+                                                    <div className="flex gap-3">
+                                                        <button onClick={() => sendWhatsApp(work)} className="bg-[#25D366]/10 text-[#25D366] p-3 rounded-2xl hover:bg-[#25D366]/20 transition-all border border-[#25D366]/20 shadow-sm" title="WhatsApp Deployment">
+                                                            <MessageCircle size={20} />
                                                         </button>
                                                         <button
-                                                            onClick={async () => {
-                                                                if (!window.confirm(`Remove ${photographer.name} from this event?`)) return;
-                                                                try {
-                                                                    const newPeople = work.people ? work.people.filter(p => p !== photographer.name) : [];
-                                                                    await axios.patch(`${import.meta.env.VITE_API_URL || ""}/api/leads/${work._id}`, { people: newPeople }, authHeader);
-                                                                    fetchWorks(); // Refresh list
-                                                                    toast.success("Assignment removed");
-                                                                } catch (e) { toast.error("Failed to remove assignment"); }
-                                                            }}
-                                                            className="bg-red-50 text-red-500 p-2 rounded-xl hover:bg-red-100 transition-colors shadow-sm"
-                                                            title="Remove Assignment"
+                                                            onClick={async () => handleRemoveAssignment(work._id, work.people)}
+                                                            className="bg-red-50 text-red-500 p-3 rounded-2xl hover:bg-red-100 transition-all border border-red-100 shadow-sm"
+                                                            title="Sever Assignment"
                                                         >
-                                                            <Trash2 size={18} />
+                                                            <Trash2 size={20} />
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                                                    <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg">
-                                                        <Calendar size={14} className="text-mutedbrown" />
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-bold text-[#5a5a5a]">
+                                                    <div className="flex items-center gap-3 bg-white/60 p-3.5 rounded-xl border border-white/80 shadow-inner">
+                                                        <Calendar size={16} className="text-[#D9CDEB]" />
                                                         <span>{safeFormat(work.eventDate)}</span>
                                                     </div>
-                                                    <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg">
-                                                        <Clock size={14} className="text-mutedbrown" />
-                                                        <span>{work.eventTime || "Time TBD"}</span>
+                                                    <div className="flex items-center gap-3 bg-white/60 p-3.5 rounded-xl border border-white/80 shadow-inner">
+                                                        <Clock size={16} className="text-[#D9CDEB]" />
+                                                        <span>{work.eventTime || "Time Phase TBD"}</span>
                                                     </div>
-                                                    <div className="col-span-2 flex items-center gap-2 bg-gray-50 p-2 rounded-lg">
-                                                        <MapPin size={14} className="text-mutedbrown" />
-                                                        <span>{work.eventLocation || "Location TBD"}</span>
+                                                    <div className="col-span-full flex items-center gap-3 bg-white/60 p-3.5 rounded-xl border border-white/80 shadow-inner">
+                                                        <MapPin size={16} className="text-[#D9CDEB]" />
+                                                        <span className="truncate">{work.eventLocation || "Venue Not Designated"}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         ))
+
                                     ) : (
                                         <div className="text-center py-10 bg-white rounded-2xl border border-dashed border-gray-200">
                                             <p className="text-gray-400 text-sm">No upcoming shoots scheduled.</p>
@@ -193,43 +186,44 @@ export default function PhotographerProfile({ photographer, onClose, onUpdate })
                         )}
 
                         {activeTab === 'profile' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <div className="flex justify-between items-center">
-                                    <h3 className="text-lg font-serif">Personal Details</h3>
+                                    <h3 className="text-xl font-luxury text-[#2d2d2d] tracking-tight">Artistic Profile</h3>
                                     {!isEditing ? (
-                                        <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-mutedbrown hover:text-charcoal transition-colors">
-                                            <Edit2 size={14} /> Edit Profile
+                                        <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#5a5a5a] bg-white/60 px-5 py-2.5 rounded-full border border-white/80 shadow-sm hover:bg-white transition-all">
+                                            <Edit2 size={14} /> Refine Portfolio
                                         </button>
                                     ) : (
-                                        <button onClick={handleSaveProfile} disabled={loading} className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors">
-                                            <Save size={14} /> {loading ? 'Saving...' : 'Save Changes'}
+                                        <button onClick={handleSaveProfile} disabled={loading} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#2d2d2d] bg-gradient-to-r from-[#CFE8D5] to-[#F0FDF4] px-6 py-2.5 rounded-full shadow-md hover:shadow-lg transition-all border border-white/60 active:scale-[0.98]">
+                                            {loading ? <Loader2 size={14} className="animate-spin text-[#4a4a4a]" /> : <Save size={14} className="text-[#4a4a4a]" />} 
+                                            {loading ? 'Archiving...' : 'Commit Changes'}
                                         </button>
                                     )}
                                 </div>
 
-                                <div className="bg-white p-6 rounded-3xl border border-gray-100 space-y-6 shadow-sm">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Full Name</label>
-                                            <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-transparent focus-within:border-mutedbrown transition-all">
-                                                <User size={16} className="text-gray-400" />
+                                <div className="bg-white/40 backdrop-blur-sm p-8 rounded-[32px] border border-white/80 space-y-8 shadow-sm">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] uppercase font-black tracking-[0.2em] text-[#8a8a8a] ml-1">Legal Identity</label>
+                                            <div className="flex items-center gap-4 bg-white/60 p-4 rounded-2xl border border-white/80 focus-within:border-[#D9CDEB] focus-within:ring-4 focus-within:ring-[#D9CDEB]/10 transition-all shadow-inner">
+                                                <User size={18} className="text-[#c0c0c0]" />
                                                 <input
                                                     disabled={!isEditing}
                                                     value={formData.name}
                                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                    className="bg-transparent w-full text-sm outline-none disabled:text-gray-500"
+                                                    className="bg-transparent w-full text-sm font-bold outline-none disabled:text-[#8a8a8a]"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Specialty</label>
-                                            <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-transparent focus-within:border-mutedbrown transition-all">
-                                                <Camera size={16} className="text-gray-400" />
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] uppercase font-black tracking-[0.2em] text-[#8a8a8a] ml-1">Technical Specialization</label>
+                                            <div className="flex items-center gap-4 bg-white/60 p-4 rounded-2xl border border-white/80 focus-within:border-[#D9CDEB] focus-within:ring-4 focus-within:ring-[#D9CDEB]/10 transition-all shadow-inner relative">
+                                                <Camera size={18} className="text-[#c0c0c0]" />
                                                 <select
                                                     disabled={!isEditing}
                                                     value={formData.specialty}
                                                     onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
-                                                    className="bg-transparent w-full text-sm outline-none disabled:text-gray-500 appearance-none"
+                                                    className="bg-transparent w-full text-sm font-bold outline-none disabled:text-[#8a8a8a] appearance-none cursor-pointer"
                                                 >
                                                     <option>Lead</option>
                                                     <option>Second</option>
@@ -239,27 +233,27 @@ export default function PhotographerProfile({ photographer, onClose, onUpdate })
                                                 </select>
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Email Address</label>
-                                            <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-transparent focus-within:border-mutedbrown transition-all">
-                                                <Mail size={16} className="text-gray-400" />
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] uppercase font-black tracking-[0.2em] text-[#8a8a8a] ml-1">Digital Correspondence</label>
+                                            <div className="flex items-center gap-4 bg-white/60 p-4 rounded-2xl border border-white/80 focus-within:border-[#D9CDEB] focus-within:ring-4 focus-within:ring-[#D9CDEB]/10 transition-all shadow-inner">
+                                                <Mail size={18} className="text-[#c0c0c0]" />
                                                 <input
                                                     disabled={!isEditing}
                                                     value={formData.email}
                                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                    className="bg-transparent w-full text-sm outline-none disabled:text-gray-500"
+                                                    className="bg-transparent w-full text-sm font-bold outline-none disabled:text-[#8a8a8a]"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] uppercase font-bold tracking-widest text-gray-400">Phone</label>
-                                            <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-transparent focus-within:border-mutedbrown transition-all">
-                                                <Phone size={16} className="text-gray-400" />
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] uppercase font-black tracking-[0.2em] text-[#8a8a8a] ml-1">Communication Axis</label>
+                                            <div className="flex items-center gap-4 bg-white/60 p-4 rounded-2xl border border-white/80 focus-within:border-[#D9CDEB] focus-within:ring-4 focus-within:ring-[#D9CDEB]/10 transition-all shadow-inner">
+                                                <Phone size={18} className="text-[#c0c0c0]" />
                                                 <input
                                                     disabled={!isEditing}
                                                     value={formData.phone}
                                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                                    className="bg-transparent w-full text-sm outline-none disabled:text-gray-500"
+                                                    className="bg-transparent w-full text-sm font-bold outline-none disabled:text-[#8a8a8a]"
                                                 />
                                             </div>
                                         </div>
@@ -270,6 +264,7 @@ export default function PhotographerProfile({ photographer, onClose, onUpdate })
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

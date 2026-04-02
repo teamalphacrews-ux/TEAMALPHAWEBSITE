@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
-import { X } from "lucide-react";
+import { X, User, Mail, Phone, Camera, Shield, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function PhotographerForm({ onClose, onAdded }) {
@@ -31,88 +32,111 @@ export default function PhotographerForm({ onClose, onAdded }) {
         }
     };
 
-    return (
-        <div className="bg-ivory w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="px-8 py-6 border-b border-[#e6e3df] flex justify-between items-center bg-white">
-                <h2 className="font-serif text-2xl text-charcoal">New Photographer</h2>
-                <button onClick={onClose} className="p-2 hover:bg-ivory rounded-full transition-colors">
-                    <X size={20} />
-                </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Full Name</label>
-                    <input
-                        required
-                        type="text"
-                        className="w-full bg-white border border-[#e6e3df] rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-1 focus:ring-mutedbrown"
-                        placeholder="e.g. Amit Kumar"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
+    return createPortal(
+        <div className="fixed inset-0 bg-black/10 backdrop-blur-[6px] z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div 
+                className="bg-white/70 backdrop-blur-[24px] w-full max-w-lg rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-white/60 overflow-hidden animate-in zoom-in-95 duration-400 relative flex flex-col"
+            >
+                {/* Premium Gradient Header */}
+                <div className="p-6 md:p-8 border-b border-white/40 flex justify-between items-center bg-gradient-to-br from-[#F0F4FF] via-[#F8F4FF] to-[#FFF9F0]">
+                    <div>
+                        <h2 className="font-serif text-2xl text-[#2d2d2d] tracking-tight">Studio Artist Registry</h2>
+                        <p className="text-[9px] text-[#8a8a8a] mt-2 font-bold uppercase tracking-[0.2em] bg-white/50 px-3 py-1 rounded-full border border-white/40 inline-block">Team Expansion Registry</p>
+                    </div>
+                    <button 
+                        onClick={onClose} 
+                        className="p-2.5 bg-white/60 hover:bg-white text-[#8a8a8a] hover:text-[#2d2d2d] rounded-full transition-all hover:rotate-90 hover:shadow-md"
+                    >
+                        <X size={18} />
+                    </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
                     <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Email Address</label>
+                        <label className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.15em] text-[#9a9a9a] ml-1">
+                            <User size={12} className="opacity-60" /> Full Name
+                        </label>
                         <input
                             required
-                            type="email"
-                            className="w-full bg-white border border-[#e6e3df] rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-1 focus:ring-mutedbrown"
-                            placeholder="amit@teamalpha.com"
-                            value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            type="text"
+                            placeholder="e.g. Amit Kumar"
+                            className="w-full bg-white/40 border border-white/60 rounded-2xl px-5 py-4 text-[13px] font-medium text-[#2d2d2d] focus:outline-none focus:border-[#D9CDEB] focus:bg-white focus:ring-4 focus:ring-[#D9CDEB]/10 transition-all shadow-sm"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         />
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Phone Number</label>
-                        <input
-                            type="tel"
-                            className="w-full bg-white border border-[#e6e3df] rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-1 focus:ring-mutedbrown"
-                            placeholder="+91 ..."
-                            value={formData.phone}
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        />
-                    </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Specialty</label>
-                        <select
-                            className="w-full bg-white border border-[#e6e3df] rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-1 focus:ring-mutedbrown appearance-none"
-                            value={formData.specialty}
-                            onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
-                        >
-                            <option>Lead</option>
-                            <option>Second</option>
-                            <option>Video</option>
-                            <option>Drone</option>
-                            <option>Editor</option>
-                        </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.15em] text-[#9a9a9a] ml-1">
+                                <Mail size={12} className="opacity-60" /> Email
+                            </label>
+                            <input
+                                required
+                                type="email"
+                                placeholder="amit@alpha.com"
+                                className="w-full bg-white/40 border border-white/60 rounded-2xl px-5 py-4 text-[13px] font-medium text-[#2d2d2d] focus:outline-none focus:border-[#D9CDEB] focus:bg-white transition-all shadow-sm"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.15em] text-[#9a9a9a] ml-1">
+                                <Phone size={12} className="opacity-60" /> contact
+                            </label>
+                            <input
+                                type="tel"
+                                placeholder="+91 ..."
+                                className="w-full bg-white/40 border border-white/60 rounded-2xl px-5 py-4 text-[13px] font-medium text-[#2d2d2d] focus:outline-none focus:border-[#D9CDEB] focus:bg-white transition-all shadow-sm"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            />
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-warmgray ml-1">Status</label>
-                        <select
-                            className="w-full bg-white border border-[#e6e3df] rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-1 focus:ring-mutedbrown appearance-none"
-                            value={formData.status}
-                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        >
-                            <option>Active</option>
-                            <option>Inactive</option>
-                        </select>
-                    </div>
-                </div>
 
-                <button
-                    disabled={loading}
-                    type="submit"
-                    className="w-full bg-charcoal text-white py-5 rounded-2xl text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-mutedbrown transition-all shadow-xl disabled:opacity-50"
-                >
-                    {loading ? "Adding..." : "Add to Team"}
-                </button>
-            </form>
-        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.15em] text-[#9a9a9a] ml-1">
+                                <Camera size={12} className="opacity-60" /> Specialty
+                            </label>
+                            <select
+                                className="w-full bg-white/40 border border-white/60 rounded-2xl px-5 py-4 text-[13px] font-medium text-[#2d2d2d] focus:outline-none focus:border-[#D9CDEB] focus:bg-white transition-all shadow-sm appearance-none"
+                                value={formData.specialty}
+                                onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                            >
+                                <option>Lead</option>
+                                <option>Second</option>
+                                <option>Video</option>
+                                <option>Drone</option>
+                                <option>Editor</option>
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.15em] text-[#9a9a9a] ml-1">
+                                <Shield size={12} className="opacity-60" /> Status
+                            </label>
+                            <select
+                                className="w-full bg-white/40 border border-white/60 rounded-2xl px-5 py-4 text-[13px] font-medium text-[#2d2d2d] focus:outline-none focus:border-[#D9CDEB] focus:bg-white transition-all shadow-sm appearance-none"
+                                value={formData.status}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                            >
+                                <option>Active</option>
+                                <option>Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button
+                        disabled={loading}
+                        type="submit"
+                        className="w-full bg-gradient-to-r from-[#CFE8D5] to-[#F0FDF4] text-[#2d2d2d] py-4 rounded-2xl flex items-center justify-center gap-3 text-[11px] font-black uppercase tracking-[0.2em] hover:shadow-lg transition-all border border-white/60 active:scale-[0.98] disabled:opacity-70 shadow-md mt-6"
+                    >
+                        {loading ? <Loader2 size={18} className="animate-spin text-[#4a4a4a]" /> : <Camera size={18} className="text-[#4a4a4a]" />}
+                        {loading ? 'Archiving...' : 'Add Artist to Team'}
+                    </button>
+                </form>
+            </div>
+        </div>,
+        document.body
     );
 }

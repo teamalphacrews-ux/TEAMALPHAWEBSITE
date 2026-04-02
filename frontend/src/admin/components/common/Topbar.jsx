@@ -74,7 +74,7 @@ const Topbar = memo(function Topbar({ onMenuClick, isVisibleProp }) {
 
     // Initial check: if no user is present, Topbar should still render but with defaults
     const activeProfile = {
-        name: adminProfile?.firstName || adminProfile?.name || "Admin",
+        name: adminProfile?.name || (adminProfile?.firstName ? `${adminProfile.firstName} ${adminProfile.lastName || ""}`.trim() : "Admin"),
         role: adminProfile?.role === 'admin' ? "Admin Registry" : (adminProfile?.role || "Staff")
     };
 
