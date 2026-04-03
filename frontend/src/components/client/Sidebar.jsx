@@ -57,17 +57,16 @@ export default function ClientSidebar({ onClose }) {
   ];
 
   return (
-    <div className="w-[280px] h-[calc(100vh-40px)] m-5 fixed left-0 top-0 z-[100] flex flex-col glass-card border-white/40 shadow-2xl overflow-hidden py-10 px-6 animate-in slide-in-from-left-4 duration-700">
+    <div className="w-[260px] h-[calc(100vh-40px)] m-5 lg:ml-8 lg:mt-6 fixed left-0 top-0 z-[100] flex flex-col bg-white rounded-[32px] border border-black/[0.03] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden py-10 px-6 animate-in slide-in-from-left-4 duration-700">
       
-      {/* Brand Identity */}
-      <div className="mb-12 px-2 flex justify-between items-center">
-        <Link to="/portal" className="flex flex-col gap-4 group">
-          <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-110 shadow-lg border border-white/20">
+      <div className="mb-14 px-2 flex justify-between items-center text-center mx-auto">
+        <Link to="/portal" className="flex flex-col gap-4 group items-center">
+          <div className="w-16 h-16 bg-black rounded-[20px] flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-110 shadow-[0_8px_20px_rgb(0,0,0,0.2)] border border-white/10">
             <img src="/logo.png" alt="Logo" className="w-full h-full object-cover scale-150" />
           </div>
-          <div>
-            <span className="block text-xs font-bold tracking-[0.4em] uppercase text-stone-800 transition-colors group-hover:text-luxury-gold">Team Alpha</span>
-            <span className="block text-[8px] tracking-[0.4em] uppercase text-luxury-text-muted mt-1">High-End Wedding Cinema</span>
+          <div className="text-center mt-2">
+            <span className="block text-[13px] font-bold tracking-[0.3em] uppercase text-stone-800 transition-colors group-hover:text-luxury-gold">Team Alpha</span>
+            <span className="block text-[7px] tracking-[0.2em] font-medium uppercase text-stone-400 mt-1.5">High-End Wedding Cinema</span>
           </div>
         </Link>
         {onClose && (
@@ -77,8 +76,7 @@ export default function ClientSidebar({ onClose }) {
         )}
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-2">
+      <nav className="flex-1 space-y-3 px-1">
         {navLinks.map((link) => (
           <NavLink
             key={link.path}
@@ -86,46 +84,47 @@ export default function ClientSidebar({ onClose }) {
             end={link.exact}
             onClick={() => onClose && onClose()}
             className={({ isActive }) => `
-              relative flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 group
+              relative flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all duration-300 group
               ${isActive 
-                ? 'bg-black text-white shadow-xl shadow-black/10' 
-                : 'text-luxury-text-muted hover:bg-white/40 hover:text-black'}
+                ? 'bg-gradient-to-r from-[#FDE8E8] to-[#FDFBF7] text-[#BA6A5D] shadow-[0_4px_20px_rgba(186,106,93,0.15)] border border-[#BA6A5D]/10' 
+                : 'text-stone-500 hover:bg-stone-50 hover:text-stone-900'}
             `}
           >
-            <link.icon size={18} className="relative z-10 transition-transform duration-300 group-hover:scale-110" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em] relative z-10">{link.name}</span>
-            
-            {link.count > 0 && (
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 bg-luxury-gold text-white text-[8px] font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-luxury-gold/50">
-                {link.count}
-              </span>
-            )}
-            
-            {/* Hover Indicator for non-active */}
-            {!location.pathname.startsWith(link.path) && (
-                <div className="absolute inset-0 bg-gradient-to-r from-luxury-gold/0 to-luxury-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
+            {({ isActive }) => (
+              <>
+                <link.icon size={16} strokeWidth={isActive ? 2 : 1.5} className="relative z-10 transition-transform duration-300 group-hover:scale-110" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] relative z-10">{link.name}</span>
+                
+                {link.count > 0 && (
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 bg-luxury-gold text-white text-[8px] font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-luxury-gold/50">
+                    {link.count}
+                  </span>
+                )}
+                {link.name === "Concierge" && link.count === 0 && (
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-luxury-gold rounded-full flex items-center justify-center" />
+                )}
+              </>
             )}
           </NavLink>
         ))}
       </nav>
 
-      {/* Logout & Bottom Section */}
-      <div className="pt-8 border-t border-black/5 space-y-4">
+      <div className="pt-6 border-t border-black/5 space-y-4 px-1 pb-4">
         <button 
           onClick={handleLogout}
-          className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-all duration-300 group"
+          className="w-full flex items-center gap-4 px-5 py-3 rounded-2xl text-[#BA6A5D] hover:bg-[#BA6A5D]/10 transition-all duration-300 group"
         >
-          <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
-          <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Sign Out</span>
+          <LogOut size={16} strokeWidth={1.5} className="group-hover:-translate-x-1 transition-transform" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em]">Sign Out</span>
         </button>
 
-        <div className="px-5 py-6 bg-white/30 rounded-3xl border border-white/60 text-center">
-            <p className="text-[9px] text-stone-400 uppercase tracking-widest leading-relaxed">
-                Personal Client Portal <br /> <span className="text-black font-bold">2026 Season</span>
+        <div className="px-5 py-4 bg-stone-50 rounded-[20px] text-center">
+            <p className="text-[8px] text-stone-500 uppercase tracking-widest leading-[1.6]">
+                Personal Client Portal <br /> <span className="text-stone-800 font-bold">2026 Season</span>
             </p>
-            <div className="mt-4 flex justify-center gap-4">
-                <a href="https://instagram.com/teamalpha_crew" target="_blank" rel="noreferrer" className="text-stone-300 hover:text-black transition-colors">
-                    <Instagram size={14} />
+            <div className="mt-3 flex justify-center gap-4">
+                <a href="https://instagram.com/teamalpha_crew" target="_blank" rel="noreferrer" className="text-stone-400 hover:text-stone-800 transition-colors">
+                    <Instagram size={12} strokeWidth={1.5} />
                 </a>
             </div>
         </div>

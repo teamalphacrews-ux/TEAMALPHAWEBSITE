@@ -24,36 +24,78 @@ export default function Home() {
     }, []);
 
     return (
-        <div id="home" className="animate-fade-up">
-            {/* Cinematic Hero Banner */}
-            <section className="relative h-[280px] rounded-[24px] overflow-hidden mb-10 shadow-2xl">
-                <div 
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 hover:scale-105"
-                    style={{ backgroundImage: `url('https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop')` }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
+        <div id="home" className="animate-fade-up max-w-[1000px] mx-auto pb-20">
+            {/* Top Banner: Hero */}
+            <section className="relative h-[250px] md:h-[300px] w-full rounded-[24px] overflow-hidden mb-8 shadow-sm group bg-stone-900">
+                {/* Background Image on Right */}
+                <div className="absolute inset-y-0 right-0 w-3/4">
+                    <div 
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-[2000ms] group-hover:scale-105"
+                        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070&auto=format&fit=crop')` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-stone-900 via-stone-900/60 to-transparent" />
+                </div>
                 
-                <div className="absolute inset-0 flex items-center px-12 md:px-20">
-                    <div className="max-w-xl bg-white/10 backdrop-blur-md border border-white/20 p-8 md:p-10 rounded-3xl animate-slide-in">
-                        <span className="text-[10px] uppercase tracking-[4px] text-luxury-gold font-bold mb-3 block">Establishing Timeless Memories</span>
-                        <h1 className="text-3xl md:text-5xl text-white mb-6 uppercase tracking-tighter">
-                            Welcome back, <span className="font-bold underline decoration-luxury-gold/30">{user?.firstName || "Client"}</span>
-                        </h1>
-                        <Link to="/portal/gallery" className="btn-luxury-primary inline-flex items-center gap-3 !px-10">
-                            Explore Your Stories <Sparkles size={16} />
-                        </Link>
-                    </div>
+                {/* Left Side Content Area */}
+                <div className="absolute inset-0 bg-gradient-to-r from-stone-900 via-stone-900/90 to-transparent z-10 w-2/3" />
+                
+                {/* Soft Warm Top Light Overlay */}
+                <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#fcd34d]/10 rounded-full blur-[100px] pointer-events-none mix-blend-overlay z-20" />
+
+                <div className="relative z-30 h-full flex flex-col justify-center px-8 md:px-14">
+                    <span className="text-[9px] md:text-[10px] uppercase tracking-[0.3em] text-[#D4AF37] font-semibold mb-4 block drop-shadow-sm">
+                        Establishing Timeless Memories
+                    </span>
+                    
+                    <h1 className="text-3xl md:text-[42px] text-white mb-8 uppercase tracking-wide font-serif leading-[1.1] drop-shadow-md">
+                        Welcome back,<br />
+                        {user?.firstName || "Client"}
+                    </h1>
+                    
+                    <Link to="/portal/gallery" className="w-fit inline-flex items-center gap-3 bg-[#181818] hover:bg-black text-white px-6 py-3 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] transition-all duration-300">
+                        Explore Your Stories <Sparkles size={12} className="text-white relative top-[-1px]" />
+                    </Link>
                 </div>
             </section>
             
-            {/* Grid Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {user && (user.cloudLink || user.galleryTag) && <CloudAssets user={user} />}
-                <Testimonials />
-            </div>
+            {/* Bottom Banner: Testimonials */}
+            <section className="relative h-[250px] md:h-[300px] w-full rounded-[24px] overflow-hidden shadow-sm group bg-[#F5F2EB]">
+                {/* Background Image on Right */}
+                <div className="absolute inset-y-0 right-0 w-3/4">
+                    <div 
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-[2000ms] group-hover:scale-105"
+                        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1520854221256-17451cc331bf?q=80&w=2070&auto=format&fit=crop')` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#F5F2EB] via-[#F5F2EB]/80 to-transparent" />
+                </div>
+                
+                {/* Left Side Content Area */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#F5F2EB] via-[#F5F2EB]/95 to-transparent z-10 w-2/3" />
 
-            <section className="mt-10">
-                <CTA />
+                <div className="relative z-30 h-full flex flex-col justify-center px-8 md:px-14">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-10 h-10 rounded-full border border-[#D4AF37]/30 bg-white/40 shadow-inner flex items-center justify-center font-serif text-[#C4A052] text-sm">
+                            99
+                        </div>
+                        <h3 className="text-[9px] uppercase tracking-[0.3em] text-[#C4A052] font-semibold">
+                            A Legacy of Love
+                        </h3>
+                    </div>
+
+                    <blockquote className="text-2xl md:text-[28px] italic font-serif leading-[1.3] text-stone-800 mb-8 max-w-[600px] drop-shadow-sm">
+                        "Team Alpha captured more than just scenes; they captured the <span className="font-bold not-italic">stolen glances</span> and breathless moments."
+                    </blockquote>
+                    
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-white/60 border border-[#D4AF37]/20 flex items-center justify-center font-serif text-[#C4A052] text-xs shadow-sm">
+                            MA
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-800">Meghna & Arjun</p>
+                            <p className="text-[8px] text-stone-500 uppercase tracking-[0.2em] mt-1">Villa Experience, 2025</p>
+                        </div>
+                    </div>
+                </div>
             </section>
         </div>
     );
@@ -128,9 +170,9 @@ function Testimonials() {
 
 function CTA() {
     return (
-        <div className="glass-card !p-16 text-left overflow-hidden relative group rounded-3xl border-white/60">
+        <div className="glass-card !p-8 md:!p-16 text-left overflow-hidden relative group rounded-3xl border-white/60">
             <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-luxury-gold/5 rounded-full -mr-32 -mt-32 blur-[80px] group-hover:bg-luxury-gold/10 transition-all duration-1000"></div>
-            <div className="relative z-10 flex flex-col items-start">
+            <div className="relative z-10 flex flex-col items-start w-full">
                 <div className="px-4 py-1.5 bg-luxury-gold/10 text-luxury-gold text-[9px] font-bold uppercase tracking-[4px] rounded-full mb-8">
                     Limited Availability
                 </div>

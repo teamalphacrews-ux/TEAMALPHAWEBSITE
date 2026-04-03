@@ -191,7 +191,7 @@ export default function Chats() {
                 </p>
             </header>
 
-            <div className="w-full max-w-[950px] h-[70vh] mx-auto glass-card flex flex-col overflow-hidden relative shadow-2xl border border-white/40 !p-0">
+            <div className="w-full max-w-[950px] h-[calc(100vh-16rem)] md:h-[70vh] min-h-[400px] mx-auto glass-card flex flex-col overflow-hidden relative shadow-2xl border border-white/40 !p-0">
                 
                 {/* Header */}
                 <header className="p-6 border-b border-black/5 bg-white/20 backdrop-blur-xl flex items-center justify-between sticky top-0 z-10">

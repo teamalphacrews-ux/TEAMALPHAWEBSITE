@@ -9,8 +9,8 @@
   --luxury-lavender: #E6E6FA;
   --luxury-text-main: #1A1A1A;
   --luxury-text-muted: #666666;
-  --glass-bg: rgba(255, 255, 255, 0.55);
-  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.3);
   --soft-shadow: 0 8px 30px rgba(0, 0, 0, 0.08); /* Updated premium shadow */
 }
 
@@ -76,7 +76,7 @@
 }
 
 .luxury-gradient-bg {
-  background: linear-gradient(135deg, var(--luxury-beige) 0%, var(--luxury-cream) 50%, var(--luxury-lavender) 100%);
+  background: linear-gradient(135deg, #F9F7F4 0%, #EBE7E0 100%);
   background-attachment: fixed;
 }
 

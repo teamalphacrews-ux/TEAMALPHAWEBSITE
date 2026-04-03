@@ -62,7 +62,7 @@ const Cloud = () => {
 
             <div className="max-w-[850px] w-full mx-auto">
                 {!isUnlocked ? (
-                    <div className="glass-card hover-lift p-10 text-left animate-fade-up border-white/40 shadow-2xl relative overflow-hidden border-l-[6px] border-l-luxury-gold/50">
+                    <div className="glass-card hover-lift p-6 md:p-10 text-left animate-fade-up border-white/40 shadow-2xl relative overflow-hidden border-l-[6px] border-l-luxury-gold/50">
                         <div className="icon-wrapper !w-24 !h-24 mx-auto mb-10 bg-gradient-to-br from-luxury-gold/20 to-white/5 shadow-luxury-gold/20 shadow-2xl">
                             <FolderOpen size={48} className="text-luxury-gold animate-breathe" strokeWidth={1.5} />
                         </div>
@@ -110,7 +110,7 @@ const Cloud = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="glass-card p-10 animate-fade-up border-luxury-gold/20 shadow-2xl border-l-[6px] border-l-green-500/50">
+                    <div className="glass-card p-6 md:p-10 animate-fade-up border-luxury-gold/20 shadow-2xl border-l-[6px] border-l-green-500/50">
                         <div className="flex items-center justify-between mb-10 pb-6 border-b border-black/5">
                             <div className="flex items-center gap-5">
                                 <div className="icon-wrapper !w-12 !h-12 bg-green-500/10 border-green-500/20">
@@ -127,7 +127,7 @@ const Cloud = () => {
                         </div>
 
                         <div className="grid grid-cols-1 gap-6">
-                            <div className="bg-white/50 border border-white rounded-[2rem] p-8 hover:bg-white transition-all group shadow-sm">
+                            <div className="bg-white/50 border border-white rounded-[2rem] p-6 md:p-8 hover:bg-white transition-all group shadow-sm flex flex-col h-full">
                                 <div className="icon-wrapper mb-6 group-hover:scale-110 transition-transform">
                                     <FolderOpen size={24} className="text-luxury-gold" strokeWidth={1.5} />
                                 </div>
@@ -145,7 +145,7 @@ const Cloud = () => {
                                 </a>
                             </div>
 
-                            <div className="bg-stone-50 rounded-[2rem] p-8 border border-black/[0.03] relative overflow-hidden">
+                            <div className="bg-stone-50 rounded-[2rem] p-6 md:p-8 border border-black/[0.03] relative overflow-hidden flex flex-col h-full">
                                 <div className="absolute top-0 right-0 p-8 opacity-5 text-luxury-gold">
                                     <Lock size={80} />
                                 </div>

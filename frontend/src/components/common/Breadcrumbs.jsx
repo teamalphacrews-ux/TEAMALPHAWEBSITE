@@ -24,7 +24,7 @@ const Breadcrumbs = () => {
 
   return (
     <nav className="flex mb-4 overflow-x-auto whitespace-nowrap py-3 px-1" aria-label="Breadcrumb">
-      <ol className="inline-flex items-center space-x-2 md:space-x-3 bg-white/60 backdrop-blur-md px-6 py-2.5 rounded-[20px] border border-white/40 shadow-[0_4px_15px_rgba(0,0,0,0.03)]">
+      <ol className="inline-flex items-center space-x-2 md:space-x-3 bg-white/10 backdrop-blur-xl px-6 py-2.5 rounded-[20px] border border-white/20 shadow-[0_4px_15px_rgba(0,0,0,0.03)]">
         <li className="inline-flex items-center">
           <Link
             to="/"

@@ -192,7 +192,7 @@ export default function Gallery() {
                 </p>
             </header>
             <div className="flex flex-col items-center justify-center py-20 animate-fade-up">
-              <div className="w-full max-w-md glass-card !p-12 text-center border-white/60 shadow-2xl relative overflow-hidden">
+              <div className="w-full max-w-md glass-card !p-8 md:!p-12 text-center border-white/60 shadow-2xl relative overflow-hidden mx-auto">
                   <div className="absolute -top-20 -right-20 w-40 h-40 bg-luxury-gold/10 rounded-full blur-3xl"></div>
                   
                   <div className="icon-wrapper !w-20 !h-20 mx-auto mb-10 bg-gradient-to-b from-luxury-gold/20 to-transparent shadow-xl">
