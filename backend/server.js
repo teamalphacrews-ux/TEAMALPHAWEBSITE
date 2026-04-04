@@ -34,6 +34,9 @@ const io = require('socket.io')(server, {
     cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
+// CRITICAL: Attach io instance so routes can access it for real-time broadcasts
+app.set('io', io);
+
 app.use(express.json());
 app.use(cors());
 
