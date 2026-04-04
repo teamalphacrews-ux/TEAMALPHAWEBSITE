@@ -2,8 +2,7 @@ const mongoose = require('mongoose');
 
 const MessageSchema = new mongoose.Schema({
     sender: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        type: String, // userId or 'admin'
         required: true
     },
     senderName: {
@@ -54,6 +53,10 @@ const MessageSchema = new mongoose.Schema({
         default: Date.now
     },
     isRead: {
+        type: Boolean,
+        default: false
+    },
+    seen: {
         type: Boolean,
         default: false
     },

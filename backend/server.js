@@ -68,6 +68,13 @@ io.on('connection', (socket) => {
         } catch (err) { }
     });
 
+    socket.on('chat_seen', (data) => {
+        const chatId = typeof data === 'string' ? data : data.chatId;
+        // Broadcast to the target room and the admin group to sync all tabs
+        socket.broadcast.to(chatId).emit('chat_seen', data);
+        socket.broadcast.to('admin').emit('chat_seen', data);
+    });
+
     socket.on('disconnect', () => {
         console.log('User disconnected');
     });

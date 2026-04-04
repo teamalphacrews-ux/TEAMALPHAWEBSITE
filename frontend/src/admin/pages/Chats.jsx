@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  MessageSquare, Send, User, Check, CheckCheck, ChevronLeft, 
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  MessageSquare, Send, User, Check, CheckCheck, ChevronLeft,
   MoreVertical, Edit3, Trash2, Smile, Paperclip, Search, X, Clock, Reply, Copy, Image as ImageIcon
 } from 'lucide-react';
 import axios from 'axios';
@@ -8,6 +8,9 @@ import { io } from 'socket.io-client';
 import EmojiPicker from 'emoji-picker-react';
 import { format } from 'date-fns';
 import { useAuth } from "../../context/AuthContext";
+import { motion, AnimatePresence } from 'framer-motion';
+import ChatSearchBar from "../../components/client/Chat/SearchBar";
+import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😲', '😢'];
@@ -16,26 +19,27 @@ export default function Chats() {
   const { user: adminProfile } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
+  const selectedUserRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingMessage, setEditingMessage] = useState(null); 
-  const [editText, setEditText] = useState(""); 
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [editText, setEditText] = useState("");
   const [activeMenuId, setActiveMenuId] = useState(null);
-  const [searchQuery, setSearchQuery] = useState(""); 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [numResults, setNumResults] = useState(0);
   const [isMobileThreadView, setIsMobileThreadView] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
-  
+
   // Pagination
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   // Modals/Menus
-  const [isDeleting, setIsDeleting] = useState(null); 
   const [showClearModal, setShowClearModal] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [attachmentsPreview, setAttachmentsPreview] = useState(null);
@@ -56,6 +60,16 @@ export default function Chats() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const fetchConversations = async (showLoading = false) => {
+    try {
+      if (showLoading) setLoading(true);
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_URL}/api/chats/admin/conversations`, { headers: { "x-auth-token": token } });
+      const sortedUsers = Array.isArray(res.data) ? res.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) : [];
+      setConversations(sortedUsers);
+    } catch (err) { } finally { if (showLoading) setLoading(false); }
+  };
+
   // Socket Logic
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -63,16 +77,40 @@ export default function Chats() {
     socketRef.current = newSocket;
     newSocket.emit('join_chat', 'admin');
 
-    newSocket.on('receive_message', (message) => {
-      setMessages(prev => {
-        if (prev.find(m => m._id === message._id)) return prev;
-        return [...prev, message];
-      });
-      fetchConversations();
-      if (message.recipient === 'admin' || message.recipient === 'hardcoded-admin-id') {
-        newSocket.emit('message_delivered', { messageId: message._id, senderId: message.sender });
+    newSocket.on('new_message', (message) => {
+      // WhatsApp Lifecycle: Industry-Standard DB Synchronization
+      const isOutbound = (message.sender === 'admin' || String(message.sender) === String(adminProfile?.id || adminProfile?._id));
+      const clientUserId = isOutbound ? message.recipient : Number.isNaN(Number(message.sender)) ? message.sender : String(message.sender);
+
+      if (!clientUserId || clientUserId === 'admin') return;
+
+      // 1. If we are active in this chat, mark as seen immediately (Step 1 Variation: IS in chat)
+      const isCurThread = selectedUserRef.current?.userId === clientUserId;
+      if (isCurThread) {
+        setMessages(prev => {
+          if (prev.find(m => m._id === message._id)) return prev;
+          return [...prev, message];
+        });
+        if (!isOutbound) markAsSeen(clientUserId);
       }
-      if (selectedUser?.userId === message.sender || selectedUser?.userId === message.recipient) markAsSeen(selectedUser.userId);
+
+      // 2. STRICTURE: Re-fetch conversations to get database-driven unread counts (WhatsApp Logic)
+      // This ensures unread systems are "database truth" only.
+      fetchConversations();
+    });
+
+    newSocket.on('chat_seen', (data) => {
+      // If someone else (or another tab) saw the chat, refresh everything
+      fetchConversations();
+
+      const chatId = typeof data === 'string' ? data : data.chatId;
+      if (chatId === 'admin' || String(chatId) === String(selectedUserRef.current?.userId)) {
+        setMessages(prev => prev.map(m =>
+          (String(m.sender) === 'admin' || String(m.sender) === String(adminProfile?.id || adminProfile?._id))
+            ? { ...m, status: 'seen', seen: true, isRead: true }
+            : m
+        ));
+      }
     });
 
     newSocket.on('message_status_update', (data) => {
@@ -83,25 +121,13 @@ export default function Chats() {
       setMessages(prev => prev.map(m => m._id === data.messageId ? { ...m, reactions: data.reactions } : m));
     });
 
-    newSocket.on('display_typing', (data) => { if (selectedUser?.userId === data.senderId) setIsTyping(true); });
-    newSocket.on('hide_typing', (data) => { if (selectedUser?.userId === data.senderId) setIsTyping(false); });
+    newSocket.on('display_typing', (data) => { if (selectedUserRef.current?.userId === data.senderId) setIsTyping(true); });
+    newSocket.on('hide_typing', (data) => { if (selectedUserRef.current?.userId === data.senderId) setIsTyping(false); });
     newSocket.on('message_edited', (updatedMsg) => { setMessages(prev => prev.map(m => m._id === updatedMsg._id ? updatedMsg : m)); });
     newSocket.on('message_deleted_everyone', (data) => { setMessages(prev => prev.map(m => m._id === data.id ? { ...m, text: 'This transmission redacted', isDeletedEveryone: true, attachments: [] } : m)); });
-    newSocket.on('messages_seen', () => {
-      setMessages(prev => prev.map(m => (m.sender === "admin" || String(m.sender) === String(adminProfile?.id || adminProfile?._id)) ? { ...m, status: 'seen', isRead: true } : m));
-      fetchConversations();
-    });
 
     return () => newSocket.close();
-  }, [selectedUser?.userId]);
-
-  const fetchConversations = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/api/chats/admin/conversations`, { headers: { "x-auth-token": token } });
-      setConversations(res.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
-    } catch (err) { } finally { setLoading(false); }
-  };
+  }, [adminProfile]);
 
   const fetchMessages = async (userId, pageNum = 1) => {
     try {
@@ -126,6 +152,22 @@ export default function Chats() {
     } catch (err) { } finally { setLoading(false); setIsFetchingMore(false); }
   };
 
+  const groupedMessages = useMemo(() => {
+    return messages.map((msg, i) => {
+      const prev = messages[i - 1];
+      const next = messages[i + 1];
+      const isSentByMe = (adminProfile?.id || adminProfile?._id) && (String(msg.sender) === String(adminProfile.id || adminProfile._id) || msg.sender === 'admin');
+      const isNextFromSame = next && (String(next.sender) === String(msg.sender));
+      const isPrevFromSame = prev && (String(prev.sender) === String(msg.sender));
+
+      return {
+        ...msg,
+        isGroupStart: !isPrevFromSame || (prev && new Date(msg.timestamp) - new Date(prev.timestamp) > 5 * 60 * 1000),
+        isGroupEnd: !isNextFromSame || (next && new Date(next.timestamp) - new Date(msg.timestamp) > 5 * 60 * 1000)
+      };
+    });
+  }, [messages, adminProfile]);
+
   const handleScroll = (e) => {
     if (e.target.scrollTop === 0 && hasMore && !isFetchingMore && selectedUser) {
       const nextPage = page + 1;
@@ -134,25 +176,57 @@ export default function Chats() {
     }
   };
 
-  useEffect(() => { fetchConversations(); }, []);
-  useEffect(() => {
-    if (selectedUser) {
-      fetchMessages(selectedUser.userId);
-      markAsSeen(selectedUser.userId);
-      socketRef.current?.emit('join_chat', selectedUser.userId);
+  useEffect(() => { fetchConversations(true); }, []);
+
+  const handleSelectUser = (user) => {
+    setSelectedUser(user);
+    selectedUserRef.current = user;
+    if (user) {
+      fetchMessages(user.userId);
+      markAsSeen(user.userId);
       setReplyingTo(null);
       setAttachmentsPreview(null);
     }
-  }, [selectedUser]);
+  };
 
   const markAsSeen = async (userId) => {
+    if (!userId) return;
+
+    // STEP 2: IMMEDIATELY set count to 0 (WhatsApp Style)
+    setConversations(prev => prev.map(c => c.userId === userId ? { ...c, unreadCount: 0 } : c));
+
     try {
       const token = localStorage.getItem("token");
-      await axios.patch(`${API_URL}/api/chats/seen/${userId}`, {}, { headers: { "x-auth-token": token } });
+      await axios.put(`${API_URL}/api/chats/read`, { chatId: userId }, { headers: { "x-auth-token": token } });
+
+      // Emit seen via socket locally to sync other tabs
+      socketRef.current?.emit('chat_seen', { chatId: userId, seenBy: 'admin' });
+
+      // STEP 3: DEFINITIVE SYNC (Database-driven truth)
+      fetchConversations();
     } catch (err) { }
   };
 
-  useEffect(() => { if (page === 1) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
+  const scrollToBottom = (behavior = "smooth") => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!searchQuery) {
+      if (page === 1) scrollToBottom();
+    } else {
+      const firstMatch = messages.find(m => String(m.text || '').toLowerCase().includes(searchQuery.toLowerCase()));
+      if (firstMatch) {
+        const el = document.getElementById(`msg-${firstMatch._id}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [messages, isTyping, searchQuery, page]);
 
   const handleSend = async (e) => {
     if (e) e.preventDefault();
@@ -169,12 +243,19 @@ export default function Chats() {
     setNewMessage(""); setReplyingTo(null); setAttachmentsPreview(null); setShowEmojiPicker(false);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post(`${API_URL}/api/chats`, 
+      const res = await axios.post(`${API_URL}/api/chats`,
         { text: optimisticMsg.text, recipient: selectedUser.userId, messageType: optimisticMsg.messageType, attachments: optimisticMsg.attachments, replyTo: optimisticMsg.replyTo?._id },
         { headers: { "x-auth-token": token } }
       );
-      setMessages(prev => prev.map(m => m._id === tempId ? res.data : m));
+      setMessages(prev => {
+        const alreadyExists = prev.find(m => m._id === res.data._id);
+        if (alreadyExists) return prev.filter(m => m._id !== tempId);
+        return prev.map(m => m._id === tempId ? res.data : m);
+      });
       socketRef.current?.emit('typing_stop', { roomId: selectedUser.userId, senderId: 'admin' });
+
+      // After sending, unread should obviously be 0 for this client
+      setConversations(prev => prev.map(c => c.userId === selectedUser.userId ? { ...c, unreadCount: 0 } : c));
       fetchConversations();
     } catch (err) {
       setMessages(prev => prev.map(m => m._id === tempId ? { ...m, status: 'error' } : m));
@@ -224,7 +305,6 @@ export default function Chats() {
     } catch (err) { }
   };
 
-
   const handleEditSave = async (messageId) => {
     try {
       const token = localStorage.getItem("token");
@@ -243,7 +323,6 @@ export default function Chats() {
     typingTimeoutRef.current = setTimeout(() => { socketRef.current.emit('typing_stop', { roomId: selectedUser.userId, senderId: 'admin' }); }, 2000);
   };
 
-
   const handleEmojiClick = (emojiData) => {
     const input = inputRef.current;
     if (!input) return;
@@ -254,22 +333,260 @@ export default function Chats() {
     setTimeout(() => { input.focus(); input.setSelectionRange(start + emojiData.emoji.length, start + emojiData.emoji.length); }, 0);
   };
 
-  const selectConversation = (conv) => { setSelectedUser(conv); setIsMobileThreadView(true); };
   const backToList = () => { setIsMobileThreadView(false); setShowOptionsMenu(false); };
+
+  const renderHighlightedText = (text, query) => {
+    const rawText = (typeof text === 'string') ? text : '';
+    const trimmedQuery = query?.trim();
+    if (!trimmedQuery || !rawText) return rawText;
+    const escapedQuery = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = rawText.split(new RegExp(`(${escapedQuery})`, 'gi'));
+    return parts.map((part, i) =>
+      part.toLowerCase() === trimmedQuery.toLowerCase()
+        ? <span key={i} className="bg-[#e8dfd1] text-[#2c2c2c] rounded-[2px] px-0.5">{part}</span>
+        : part
+    );
+  };
 
   return (
     <div className="h-[calc(100vh-100px)] flex flex-col gap-6 animate-in fade-in duration-700 max-w-[1400px] mx-auto w-full font-sans text-[#5a5a5a] overflow-hidden">
-      {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end px-2 sm:px-4">
         <div>
           <h1 className="font-luxury text-4xl md:text-5xl text-[#2d2d2d] tracking-tight">Communication Hub</h1>
-          <p className="text-[11px] md:text-[13px] text-[#7a7a7a] mt-3 font-medium uppercase tracking-[1px]">
-            Direct client engagement and message registry
-          </p>
+          <p className="text-[11px] md:text-[13px] text-[#7a7a7a] mt-3 font-medium uppercase tracking-[1px]">Direct client engagement and message registry</p>
         </div>
       </div>
 
-      {/* Modals */}
+      <div className="grid grid-cols-1 md:grid-cols-12 flex-1 overflow-hidden bg-gradient-to-br from-[#f8f6f2] via-[#f3efe7] to-[#fdfaf6] shadow-[0_10px_30px_rgba(0,0,0,0.06)] rounded-[22px] border border-white/60 p-4 gap-3">
+        <div className={`${isMobileThreadView ? 'hidden md:flex' : 'flex'} md:col-span-4 lg:col-span-3 flex flex-col overflow-hidden`}>
+          <div className="flex flex-col gap-1 mb-3 pt-1">
+            <h2 className="text-[20px] font-serif text-[#2c2c2c] mb-3 px-2">Messages</h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-lightgray size-3.5" />
+              <input
+                type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                className="mb-3 pl-9 pr-4 py-2.5 rounded-xl bg-white/50 border border-white/80 text-[12px] outline-none w-full placeholder:text-lightgray/50 shadow-sm"
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+            {conversations.filter(c => String(c.userName || '').toLowerCase().includes(searchTerm.toLowerCase())).map((conv) => (
+              <button
+                key={conv.userId} onClick={() => handleSelectUser(conv)}
+                className={`w-full flex items-center gap-3 p-3 rounded-[18px] transition-all duration-[300ms] group ${selectedUser?.userId === conv.userId ? 'bg-[#e8dfd1] text-[#2c2c2c] shadow-[0_4px_12px_rgba(0,0,0,0.05)]' : 'bg-white/60 hover:bg-white/90 shadow-sm border border-white/40 hover:border-white transition-all'}`}
+              >
+                <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center font-bold shrink-0 transition-all ${selectedUser?.userId === conv.userId ? 'bg-white/60 text-[#2c2c2c]' : 'bg-[#f3eee7] text-[#8a8a8a]'}`}>
+                  {String(conv.userName || '').charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex justify-between items-center mb-0.5">
+                    <h3 className="text-[13px] font-black truncate text-[#2c2c2c] leading-tight">{String(conv.userName || '')}</h3>
+                    <span className="text-[9px] opacity-40 uppercase font-black whitespace-nowrap ml-2">{conv.timestamp ? format(new Date(conv.timestamp), 'h:mm a') : ''}</span>
+                  </div>
+                  <p className="text-[11px] truncate opacity-50 font-medium text-[#5a5a5a]">{String(conv.lastMessage || '')}</p>
+                </div>
+                <AnimatePresence>
+                  {Number(conv.unreadCount || 0) > 0 && selectedUser?.userId !== conv.userId && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      className="w-5 h-5 bg-red-600 text-white text-[9px] flex items-center justify-center rounded-full font-black shadow-[0_2px_8px_rgba(220,38,38,0.4)] shrink-0"
+                    >
+                      {String(conv.unreadCount)}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className={`${isMobileThreadView ? 'flex' : 'hidden md:flex'} md:col-span-8 lg:col-span-9 flex flex-col overflow-hidden relative`}>
+          {selectedUser ? (
+            <div className="flex flex-col h-full">
+              <div className="px-5 py-4 border-b border-white/60 flex items-center justify-between z-10 bg-white/20 backdrop-blur-md rounded-t-[22px]">
+                <div className="flex items-center gap-3">
+                  <button onClick={backToList} className="md:hidden p-1 hover:bg-[#fafafa] rounded-lg text-[#2c2c2c]"><ChevronLeft size={18} /></button>
+                  <div className="w-9 h-9 bg-white/60 rounded-xl flex items-center justify-center text-[#2c2c2c] font-serif text-sm border border-white shrink-0 shadow-sm">{String(selectedUser.userName || '').charAt(0)}</div>
+                  <div className="flex flex-col">
+                    <h3 className="font-serif text-[16px] text-[#2c2c2c] leading-none mb-1">{String(selectedUser.userName || '')}</h3>
+                    <div className="flex items-center gap-1.5 opacity-50">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                      <span className="text-[8px] font-black uppercase tracking-[0.2em]">Live Session</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <ChatSearchBar onSearch={(q) => {
+                    setSearchQuery(q);
+                    setNumResults(messages.filter(m => String(m.text || '').toLowerCase().includes(q.toLowerCase())).length);
+                  }} />
+                  <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="p-2 hover:bg-white/60 rounded-xl transition-all relative">
+                    <MoreVertical size={18} />
+                    <AnimatePresence>
+                      {showOptionsMenu && (
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute top-11 right-0 w-44 bg-white/90 backdrop-blur-xl border border-white/80 shadow-2xl rounded-2xl py-2 z-50 overflow-hidden">
+                          <button onClick={() => setShowClearModal(true)} className="w-full text-left px-4 py-3 text-[10px] uppercase font-black text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors">
+                            <Trash2 size={14} /> Clear DM History
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </button>
+                </div>
+              </div>
+
+              <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-6 flex flex-col custom-scrollbar scroll-smooth bg-transparent">
+                {groupedMessages.map((msg, idx) => {
+                  const isSentByAdmin = (adminProfile?.id || adminProfile?._id) && (String(msg.sender) === String(adminProfile.id || adminProfile._id) || msg.sender === 'admin');
+                  const showDateHeader = idx === 0 || new Date(groupedMessages[idx - 1].timestamp).toDateString() !== new Date(msg.timestamp).toDateString();
+
+                  return (
+                    <React.Fragment key={msg._id}>
+                      {showDateHeader && (
+                        <div className="flex justify-center my-6">
+                          <span className="px-4 py-1.5 bg-white/40 backdrop-blur-sm text-[9px] font-black uppercase tracking-[0.3em] text-warmgray rounded-full border border-white/60 shadow-sm">
+                            {(msg.timestamp && !isNaN(new Date(msg.timestamp))) ? format(new Date(msg.timestamp), 'EEEE, MMM dd') : ''}
+                          </span>
+                        </div>
+                      )}
+
+                      <div id={`msg-${msg._id}`} className={`w-full flex px-2 ${isSentByAdmin ? "justify-end" : "justify-start"} ${msg.isGroupStart ? "mt-5" : "mt-1"} ${msg.isGroupEnd ? "mb-5" : "mb-1"}`}>
+                        <div className={`flex flex-col group max-w-[85%] lg:max-w-[70%] relative ${isSentByAdmin ? 'items-end' : 'items-start'}`}>
+                          <div className={`flex items-start gap-2 ${isSentByAdmin ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <div className={`px-4 py-3 text-[13px] relative flex flex-col gap-2 transition-all duration-[300ms] hover:scale-[1.01] shadow-sm ${isSentByAdmin ? "bg-gradient-to-br from-[#e8dfd1] to-[#f5ebe0] text-[#2c2c2c] rounded-[20px] rounded-tr-none" : "bg-white/80 text-[#333333] border border-white/60 rounded-[20px] rounded-tl-none"}`}>
+                              {msg.replyTo && (
+                                <div className={`p-2.5 rounded-xl text-[11px] mb-1 line-clamp-2 border-l-4 transition-all ${isSentByAdmin ? 'bg-white/30 border-white/60' : 'bg-[#f7f5f2] border-[#e8dfd1]'}`}>
+                                  <p className="font-black opacity-60 mb-0.5 text-[8px] uppercase tracking-widest flex items-center gap-2"><Reply size={10} strokeWidth={3} /> Referenced Message</p>
+                                  <p className="italic font-medium opacity-80">{String(msg.replyTo.text || '')}</p>
+                                </div>
+                              )}
+
+                              {editingMessage === msg._id ? (
+                                <div className="flex flex-col gap-3 min-w-[260px]">
+                                  <textarea className="bg-white/40 backdrop-blur-xl p-3 rounded-xl focus:outline-none w-full border border-white/60 text-[13px] placeholder:text-white/30 resize-none font-medium" value={editText} onChange={(e) => setEditText(e.target.value)} autoFocus />
+                                  <div className="flex justify-end gap-3 text-[10px] font-black uppercase tracking-widest">
+                                    <button onClick={() => { setEditingMessage(null); setEditText(""); }} className="opacity-60">Cancel</button>
+                                    <button onClick={() => handleEditSave(msg._id)} className="bg-white text-charcoal px-4 py-1.5 rounded-full shadow-md">Update</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col gap-2">
+                                  {msg.messageType === 'image' && msg.attachments?.[0] && (
+                                    <div className="relative overflow-hidden rounded-xl border border-white/40 mb-1 shadow-inner"><img src={msg.attachments[0].url} className="w-full max-h-80 object-contain" /></div>
+                                  )}
+                                  <p className="whitespace-pre-wrap leading-relaxed select-text font-medium">{msg.isDeletedEveryone ? "This transmission redacted" : renderHighlightedText(msg.text, searchQuery)}</p>
+                                  <div className={`flex items-center justify-end gap-2 text-[9px] font-black uppercase tracking-widest ${isSentByAdmin ? 'text-charcoal/40' : 'text-warmgray'}`}>
+                                    {msg.isEdited && !msg.isDeletedEveryone && <span className="opacity-60">(Edited)</span>}
+                                    <span className="opacity-80">{(msg.timestamp && !isNaN(new Date(msg.timestamp))) ? format(new Date(msg.timestamp), 'h:mm a') : ''}</span>
+                                    {isSentByAdmin && (
+                                      <span className="flex items-center ml-1">
+                                        {msg.status === 'sent' && <Check size={11} strokeWidth={3} className="opacity-40" />}
+                                        {msg.status === 'delivered' && <CheckCheck size={11} strokeWidth={3} className="opacity-40" />}
+                                        {msg.status === 'seen' && <CheckCheck size={11} strokeWidth={3} className="text-[#34B7F1] drop-shadow-sm" />}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {msg.reactions?.length > 0 && (
+                                <div className={`flex flex-wrap gap-1 absolute -bottom-3.5 z-10 ${isSentByAdmin ? 'right-2' : 'left-2'}`}>
+                                  {msg.reactions.map((r, i) => (
+                                    <div key={i} className="bg-white/90 backdrop-blur-sm border border-white/80 rounded-full px-2 py-0.5 text-[12px] shadow-md ring-1 ring-black/5">{r.emoji}</div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            <button onClick={() => setActiveMenuId(activeMenuId === msg._id ? null : msg._id)} className={`p-1.5 mt-1 text-lightgray opacity-0 group-hover:opacity-100 hover:bg-white/60 rounded-xl transition-all ${activeMenuId === msg._id ? 'opacity-100' : ''}`}><MoreVertical size={16} /></button>
+
+                            {activeMenuId === msg._id && (
+                              <div ref={menuRef} className={`absolute top-full mt-2 w-52 bg-white/90 backdrop-blur-2xl shadow-2xl rounded-[20px] py-2 z-[100] border border-white animate-in zoom-in-95 duration-200 ${isSentByAdmin ? "right-0" : "left-0"}`}>
+                                <div className="px-5 py-2 mb-2 flex items-center justify-between border-b border-black/5 pb-3">
+                                  {REACTION_EMOJIS.map(emoji => <button key={emoji} onClick={() => handleReact(msg._id, emoji)} className="text-xl hover:scale-150 transition-transform active:scale-95">{emoji}</button>)}
+                                </div>
+                                <button onClick={() => { setReplyingTo(msg); setActiveMenuId(null); }} className="w-full flex items-center gap-3 px-5 py-2.5 hover:bg-black/5 text-[11px] font-black uppercase text-charcoal/70 tracking-widest"><Reply size={14} className="opacity-60" /> Reply</button>
+                                <button onClick={() => { navigator.clipboard.writeText(msg.text); setActiveMenuId(null); toast.success('Copied to clipboard'); }} className="w-full flex items-center gap-3 px-5 py-2.5 hover:bg-black/5 text-[11px] font-black uppercase text-charcoal/70 tracking-widest"><Copy size={14} className="opacity-60" /> Copy Text</button>
+                                {isSentByAdmin && <button onClick={() => { setEditingMessage(msg._id); setEditText(msg.text); setActiveMenuId(null); }} className="w-full flex items-center gap-3 px-5 py-2.5 hover:bg-black/5 text-[11px] font-black uppercase text-charcoal/70 tracking-widest"><Edit3 size={14} className="opacity-60" /> Edit Message</button>}
+                                <div className="mt-1 pt-1 border-t border-black/5">
+                                  <button onClick={() => { handleDelete(msg._id, 'me'); setActiveMenuId(null); }} className="w-full text-left px-5 py-2.5 text-[10px] uppercase font-black text-red-600 hover:bg-red-50 flex items-center gap-3 tracking-widest"><Trash2 size={14} /> Remove for me</button>
+                                  {isSentByAdmin && <button onClick={() => { handleDelete(msg._id, 'everyone'); setActiveMenuId(null); }} className="w-full text-left px-5 py-2.5 text-[10px] uppercase font-black text-red-600 hover:bg-red-50 flex items-center gap-3 tracking-widest"><Trash2 size={14} /> Wipe everywhere</button>}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+                {isTyping && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-[10px] text-emerald-600 uppercase font-black tracking-[0.4em] pl-6 mt-2">Active Typing...</motion.div>}
+                <div ref={messagesEndRef} className="h-6" />
+              </div>
+
+              <div className="p-5 bg-transparent relative">
+                {replyingTo && (
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="absolute bottom-[calc(100%+12px)] left-6 right-6 bg-white/80 backdrop-blur-2xl border border-white rounded-2xl p-4 flex items-center justify-between shadow-2xl z-30">
+                    <div className="min-w-0 pr-4">
+                      <p className="text-[9px] font-black text-emerald-600 mb-1 uppercase tracking-widest">Replying to msg</p>
+                      <p className="text-[13px] text-charcoal font-medium truncate opacity-70 italic">"{replyingTo.text}"</p>
+                    </div>
+                    <button onClick={() => setReplyingTo(null)} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-500 shadow-sm"><X size={16} /></button>
+                  </motion.div>
+                )}
+
+                <div className="flex items-center gap-4 bg-white/60 backdrop-blur-2xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] rounded-[28px] px-4 py-3 relative border border-white">
+                  <button onClick={() => fileInputRef.current?.click()} className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-2xl transition-all text-warmgray hover:text-charcoal group shadow-sm border border-transparent hover:border-white/80">
+                    <Paperclip size={20} className="group-hover:rotate-45 transition-transform" />
+                  </button>
+                  <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+
+                  <div className="flex-1 relative flex items-center">
+                    <textarea
+                      ref={inputRef} placeholder="Enter message here..." value={newMessage} onChange={handleTyping}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                      className="w-full bg-transparent border-none py-3 pl-2 pr-12 text-[14px] min-h-[48px] max-h-40 resize-none focus:outline-none placeholder:text-warmgray/50 text-charcoal font-medium"
+                      rows={1} onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px'; }}
+                    />
+                    <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-0 p-2.5 rounded-2xl transition-all ${showEmojiPicker ? 'bg-emerald-50 text-emerald-600' : 'text-warmgray hover:text-charcoal hover:bg-white'}`}><Smile size={22} /></button>
+                    {showEmojiPicker && (
+                      <div className="absolute bottom-[calc(100%+24px)] right-0 z-50 shadow-3xl rounded-[28px] overflow-hidden border border-white/80 scale-100 origin-bottom-right transition-transform">
+                        <EmojiPicker onEmojiClick={handleEmojiClick} width={320} height={420} theme="light" skinTonesDisabled />
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleSend} disabled={!newMessage.trim() && !attachmentsPreview}
+                    className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-[#2c2c2c] to-[#4c4c4c] text-white rounded-2xl transition-all duration-300 hover:shadow-2xl hover:scale-105 active:scale-95 disabled:opacity-20 disabled:grayscale shadow-lg"
+                  >
+                    <Send size={18} className="translate-x-[1px]" />
+                  </button>
+                </div>
+
+                {attachmentsPreview && (
+                  <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="absolute bottom-[calc(100%+20px)] left-8 bg-white/90 backdrop-blur-2xl border-4 border-white rounded-2xl p-2 shadow-3xl z-40 group">
+                    <img src={attachmentsPreview.url} className="max-h-40 rounded-xl shadow-inner" />
+                    <button onClick={() => setAttachmentsPreview(null)} className="absolute -top-3 -right-3 bg-red-600 text-white rounded-full p-2 shadow-2xl border-2 border-white hover:scale-110 transition-transform"><X size={12} /></button>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-8 animate-pulse">
+              <div className="w-20 h-20 bg-white/40 backdrop-blur-md rounded-[32px] flex items-center justify-center border border-white shadow-xl"><MessageSquare size={32} className="text-warmgray" /></div>
+              <div className="text-center space-y-2">
+                <h3 className="text-2xl font-serif text-charcoal">Secure Interface</h3>
+                <p className="text-[10px] uppercase font-black tracking-[0.4em] text-warmgray">Select conversation to begin encrypted transmission</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {showClearModal && (
         <div className="fixed inset-0 bg-charcoal/30 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
           <div className="bg-white rounded-[28px] p-6 max-w-xs w-full shadow-2xl border border-ivory/50 text-center">
@@ -279,266 +596,9 @@ export default function Chats() {
               <button onClick={() => handleClear(selectedUser.userId)} className="w-full py-2.5 bg-red-600 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest shadow-lg">Confirm clear</button>
               <button onClick={() => setShowClearModal(false)} className="w-full py-2.5 bg-ivory text-warmgray rounded-xl text-[9px] font-bold uppercase tracking-widest border border-[#e6e3df]">Abort</button>
             </div>
-
           </div>
         </div>
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-12 flex-1 overflow-hidden bg-gradient-to-br from-[#f8f6f2] via-[#f3efe7] to-[#fdfaf6] shadow-[0_10px_30px_rgba(0,0,0,0.06)] rounded-[22px] border border-white/60 p-4 gap-3">
-        {/* Sidebar */}
-        <div className={`${isMobileThreadView ? 'hidden md:flex' : 'flex'} md:col-span-4 lg:col-span-3 flex flex-col overflow-hidden`}>
-          <div className="flex flex-col gap-1 mb-3 pt-1">
-            <h2 className="text-[20px] font-serif text-[#2c2c2c] mb-3 px-2">Messages</h2>
-            <div className="relative">
-              <input 
-                type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                className="mb-3 px-4 py-2 rounded-xl bg-[#f8f8f8] text-[12px] outline-none w-full placeholder:text-lightgray/50"
-              />
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
-            {conversations.filter(c => c.userName?.toLowerCase().includes(searchTerm.toLowerCase())).map((conv) => (
-                <button
-                  key={conv.userId} onClick={() => selectConversation(conv)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-[16px] transition-all duration-[250ms] group ${selectedUser?.userId === conv.userId ? 'bg-gradient-to-br from-[#e8dfd1] to-[#f5ebe0] text-[#2c2c2c] shadow-sm' : 'bg-[#ffffff] hover:bg-[#f7f5f2] shadow-sm border border-transparent hover:border-[#f0f0f0]'}`}
-                >
-                  <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center font-bold shrink-0 transition-all ${selectedUser?.userId === conv.userId ? 'bg-white/40 text-[#2c2c2c]' : 'bg-[#f7f5f2] text-[#5a5a5a]'}`}>
-                    {conv.userName?.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="flex justify-between items-center">
-                      <h3 className={`text-[13px] font-semibold truncate ${selectedUser?.userId === conv.userId ? 'text-[#2c2c2c]' : 'text-[#2c2c2c]'}`}>{conv.userName}</h3>
-                      <span className="text-[9px] opacity-40 uppercase font-black">{conv.timestamp ? format(new Date(conv.timestamp), 'hh:mm a') : ''}</span>
-                    </div>
-                    <p className={`text-[11px] truncate opacity-60 ${selectedUser?.userId === conv.userId ? 'text-[#5a5a5a]' : 'text-[#5a5a5a]'}`}>{conv.lastMessage}</p>
-                  </div>
-                  {conv.unreadCount > 0 && selectedUser?.userId !== conv.userId && (
-                    <div className="w-4 h-4 bg-mutedbrown text-white text-[9px] flex items-center justify-center rounded-full font-black shadow-sm ring-2 ring-white">
-                      {conv.unreadCount}
-                    </div>
-                  )}
-                </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Messaging Area */}
-        <div className={`${isMobileThreadView ? 'flex' : 'hidden md:flex'} md:col-span-8 lg:col-span-9 flex flex-col overflow-hidden relative`}>
-          {selectedUser ? (
-            <>
-              {/* Header */}
-              <div className="px-5 py-4 border-b border-[#f2f2f2] flex items-center justify-between z-10 bg-[rgba(255,255,255,0.4)] backdrop-blur-xl rounded-t-[22px]">
-                <div className="flex items-center gap-3">
-                  <button onClick={backToList} className="md:hidden p-1 hover:bg-[#fafafa] rounded-lg text-[#2c2c2c]"><ChevronLeft size={18} /></button>
-                  <div className="w-8 h-8 bg-white/60 rounded-lg flex items-center justify-center text-[#2c2c2c] font-serif text-sm border border-white shrink-0">{selectedUser.userName?.charAt(0)}</div>
-                  <div className="flex flex-col">
-                    <h3 className="font-serif text-[15px] text-[#2c2c2c] leading-none mb-1">{selectedUser.userName}</h3>
-                    <div className="flex items-center gap-1.5 opacity-50">
-                      <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
-                      <span className="text-[8px] font-bold uppercase tracking-widest">Active session</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-warmgray">
-                    <button className="p-1.5 hover:bg-[#fafafa] rounded-lg transition-all opacity-60"><ImageIcon size={16} /></button>
-                    <button className="p-1.5 hover:bg-[#fafafa] rounded-lg transition-all opacity-60"><Search size={16} /></button>
-                    <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="p-1.5 hover:bg-[#fafafa] rounded-lg transition-all relative">
-                        <MoreVertical size={16} />
-                        {showOptionsMenu && (
-                            <div className="absolute top-9 right-0 w-40 bg-white border border-[#f0f0f0] shadow-xl rounded-xl py-1 z-50 text-charcoal animate-in fade-in slide-in-from-top-1">
-                                <button onClick={() => setShowClearModal(true)} className="w-full text-left px-3.5 py-2 text-[9px] uppercase font-bold text-red-500 hover:bg-red-50 flex items-center gap-2">
-                                    <Trash2 size={12} /> Clear records
-                                </button>
-                            </div>
-                        )}
-                    </button>
-                </div>
-              </div>
-
-              {/* Chat Canvas */}
-              <div ref={chatContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 custom-scrollbar scroll-smooth bg-transparent">
-                {messages.map((msg, idx) => {
-                  const isSentByAdmin = (adminProfile?.id || adminProfile?._id) && (String(msg.sender) === String(adminProfile.id || adminProfile._id) || msg.sender === 'admin');
-                  const showDateHeader = idx === 0 || new Date(messages[idx-1].timestamp).toDateString() !== new Date(msg.timestamp).toDateString();
-                  
-                  return (
-                    <React.Fragment key={msg._id}>
-                      {showDateHeader && (
-                        <div className="flex justify-center my-4">
-                          <span className="px-3.5 py-1 bg-white shadow-sm text-[8px] font-bold uppercase tracking-[0.25em] text-[#B0B0B0] rounded-full border border-[#f2f2f2]">
-                            {format(new Date(msg.timestamp), 'EEEE, MMM dd')}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Message Row Structure */}
-                      <div className={`w-full flex mb-2 px-2 ${isSentByAdmin ? "justify-end" : "justify-start"}`}>
-                        <div 
-                            className={`flex flex-col group max-w-[80%] lg:max-w-[70%] relative ${isSentByAdmin ? 'items-end' : 'items-start'}`}
-                        >
-                          <div className={`flex items-start gap-2 ${isSentByAdmin ? 'flex-row-reverse' : 'flex-row'}`}>
-                            {/* Message Bubble Container */}
-                            <div 
-                                className={`px-4 py-3 text-[13px] relative flex flex-col gap-1.5 transition-all duration-[250ms] hover:-translate-y-[2px] ${
-                                isSentByAdmin 
-                                    ? "bg-gradient-to-br from-[#e8dfd1] to-[#f5ebe0] text-[#2c2c2c] rounded-[16px_16px_4px_16px] shadow-sm" 
-                                    : "bg-[#ffffff] text-[#333333] border border-[#eeeeee] rounded-[16px_16px_16px_4px] shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
-                                }`}
-                            >
-
-                                {msg.replyTo && (
-                                    <div className={`p-2 rounded-[14px] text-[11px] mb-1 line-clamp-2 border-l-4 transition-all opacity-80 ${isSentByAdmin ? 'bg-white/40 border-[#d6cfc4]' : 'bg-[#f7f5f2] border-[#e8dfd1] shadow-inner'}`}>
-                                        <p className="font-black opacity-60 mb-0.5 text-[9px] uppercase tracking-widest flex items-center gap-1.5">
-                                            <Reply size={10} strokeWidth={3} /> Quoted message
-                                        </p>
-                                        <p className="italic font-medium">{msg.replyTo.text}</p>
-                                    </div>
-                                )}
-
-                                {editingMessage === msg._id ? (
-                                    <div className="flex flex-col gap-3 min-w-[240px] animate-in fade-in duration-300">
-                                        <textarea 
-                                            className="bg-transparent focus:outline-none w-full border-b border-white/40 text-[13px] py-1 placeholder:text-white/30 resize-none font-medium" 
-                                            value={editText} 
-                                            onChange={(e) => setEditText(e.target.value)} 
-                                            autoFocus 
-                                        />
-                                        <div className="flex justify-end gap-3 text-[10px] font-bold uppercase tracking-widest">
-                                            <button onClick={() => { setEditingMessage(null); setEditText(""); }} className="opacity-60 hover:opacity-100">Abort</button>
-                                            <button onClick={() => handleEditSave(msg._id)} className="bg-white text-charcoal px-3 py-1 rounded-full shadow-md">Apply changes</button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {msg.messageType === 'image' && msg.attachments?.[0] && (
-                                            <div className="relative overflow-hidden rounded-xl border border-black/5 bg-black/5 mb-1">
-                                                <img src={msg.attachments[0].url} className="w-full max-h-72 object-contain" />
-                                            </div>
-                                        )}
-                                        <p className="whitespace-pre-wrap leading-[1.6] select-text">{msg.isDeletedEveryone ? "This message was deleted" : msg.text}</p>
-                                    </>
-                                )}
-                                
-                                {/* Timestamp and Status */}
-                                <div className={`mt-1 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest opacity-40 ${isSentByAdmin ? 'justify-end text-white/50' : 'justify-start text-charcoal/50'}`}>
-                                    <span>{format(new Date(msg.timestamp), 'hh:mm a')}</span>
-                                    {isSentByAdmin && (
-                                        <span className="flex items-center gap-0.5">
-                                            {msg.status === 'sent' && <Check size={11} strokeWidth={3} />}
-                                            {msg.status === 'delivered' && <CheckCheck size={11} strokeWidth={3} />}
-                                            {msg.status === 'seen' && <CheckCheck size={11} strokeWidth={3} className="text-emerald-400" />}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {msg.reactions?.length > 0 && (
-                                    <div className={`flex flex-wrap gap-1 absolute -bottom-3.5 z-10 animate-in zoom-in duration-300 ${isSentByAdmin ? 'right-2' : 'left-2'}`}>
-                                        {msg.reactions.map((r, i) => (
-                                            <div key={i} className="bg-white border border-[#f0f0f0] rounded-full px-1.5 py-0.5 text-[11px] shadow-sm ring-2 ring-[#fafafa] font-normal">
-                                                {r.emoji}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Contextual 3-Dot Menu Trigger (Visible on Hover) */}
-                            {!msg.isDeletedEveryone && !editingMessage && (
-                                <button 
-                                    onClick={() => setActiveMenuId(activeMenuId === msg._id ? null : msg._id)}
-                                    className={`p-1 mt-1 text-lightgray hover:text-charcoal transition-all opacity-0 group-hover:opacity-100 hover:bg-ivory rounded-lg shrink-0 ${activeMenuId === msg._id ? 'opacity-100' : ''}`}
-                                >
-                                    <MoreVertical size={16} />
-                                </button>
-                            )}
-
-                            {/* Action Menu (Positioned Absolute relative to Bubble area) */}
-                            {activeMenuId === msg._id && !editingMessage && (
-                                <div ref={menuRef} className={`absolute top-full mt-2 w-48 bg-white shadow-[0_15px_40px_rgba(0,0,0,0.12)] rounded-2xl py-2 z-[100] border border-[#f8f8f8] animate-in zoom-in-95 duration-150 ${isSentByAdmin ? "right-0" : "left-0"}`}>
-                                    <div className="px-4 py-1.5 mb-1 flex items-center justify-between border-b border-[#f9f9f9] pb-2">
-                                        {REACTION_EMOJIS.map(emoji => <button key={emoji} onClick={() => handleReact(msg._id, emoji)} className="text-lg hover:scale-125 transition-transform">{emoji}</button>)}
-                                    </div>
-                                    <button onClick={() => {setReplyingTo(msg); setActiveMenuId(null);}} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fafafa] text-[12px] font-bold text-charcoal/80"><Reply size={14} className="opacity-40" /> Reply</button>
-                                    <button onClick={() => {navigator.clipboard.writeText(msg.text); setActiveMenuId(null); toast.success('Copied to clipboard');}} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fafafa] text-[12px] font-bold text-charcoal/80"><Copy size={14} className="opacity-40" /> Copy Text</button>
-                                    {isSentByAdmin && (
-                                        <button onClick={() => {setEditingMessage(msg._id); setEditText(msg.text); setActiveMenuId(null);}} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#fafafa] text-[12px] font-bold text-charcoal/80"><Edit3 size={14} className="opacity-40" /> Edit Message</button>
-                                    )}
-                                    <div className="mt-1 pt-1 border-t border-red-50">
-                                        <button onClick={() => { setIsDeleting(msg); setActiveMenuId(null); }} className="w-full text-left px-4 py-2.5 text-[10px] uppercase font-black text-red-500 hover:bg-red-50 flex items-center gap-3"><Trash2 size={14} /> Remove for me</button>
-                                        {isSentByAdmin && (
-                                            <button onClick={() => {handleDelete(msg._id, 'everyone'); setActiveMenuId(null);}} className="w-full text-left px-4 py-2.5 text-[10px] uppercase font-black text-red-500 hover:bg-red-50 flex items-center gap-3"><Trash2 size={14} /> Wipe for everyone</button>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-                {isTyping && <div className="text-[10px] text-stone-500 uppercase font-bold tracking-[0.3em] pl-4 opacity-50 animate-pulse">Typing...</div>}
-                <div ref={messagesEndRef} className="h-4" />
-              </div>
-
-              {/* Input Area */}
-              <div className="p-4 bg-transparent relative z-20">
-                {replyingTo && (
-                    <div className="absolute bottom-[calc(100%+8px)] left-6 right-6 bg-[#ffffff] border border-[#eeeeee] rounded-xl p-3 flex items-center justify-between shadow-[0_4px_12px_rgba(0,0,0,0.04)] animate-in fade-in slide-in-from-bottom-2">
-                        <div className="min-w-0 pr-4">
-                            <p className="text-[9px] font-bold text-[#5a5a5a] mb-0.5 uppercase tracking-widest">In reply to</p>
-                            <p className="text-[12px] text-[#2c2c2c] font-medium truncate opacity-90">{replyingTo.text}</p>
-                        </div>
-                        <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-[#f7f5f2] rounded-full transition-colors text-[#5a5a5a]"><X size={14} /></button>
-                    </div>
-                )}
-
-                <div className="flex items-center gap-3 bg-[#ffffff] shadow-[0_5px_15px_rgba(0,0,0,0.06)] rounded-[20px] px-3 py-2 relative">
-                   <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 flex items-center justify-center hover:bg-[#f7f5f2] rounded-[14px] transition-all text-[#a3a3a3] hover:text-[#5a5a5a]">
-                     <Paperclip size={18} />
-                   </button>
-                   <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
-
-                    <div className="flex-1 relative flex items-center">
-                      <textarea 
-                         ref={inputRef} placeholder="Type a message..." value={newMessage} onChange={handleTyping}
-                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
-                         className="w-full bg-transparent border-none py-2 pl-2 pr-10 text-[13px] min-h-[40px] max-h-32 resize-none focus:outline-none focus:ring-0 transition-all placeholder:text-[#a3a3a3] text-[#2c2c2c]"
-                         rows={1} onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
-                      />
-                      <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-1 p-2 rounded-full transition-all ${showEmojiPicker ? 'bg-[#f7f5f2] text-[#2c2c2c]' : 'text-[#a3a3a3] hover:text-[#5a5a5a] hover:bg-[#f7f5f2]'}`}><Smile size={20} /></button>
-                     {showEmojiPicker && (
-                        <div className="absolute bottom-[calc(100%+16px)] right-0 z-50 shadow-2xl rounded-2xl overflow-hidden animate-in zoom-in-95 border border-[#eeeeee]">
-                            <EmojiPicker onEmojiClick={handleEmojiClick} width={300} height={380} theme="light" skinTonesDisabled />
-                        </div>
-                     )}
-                   </div>
-                   
-                   <button 
-                    onClick={handleSend} disabled={!newMessage.trim() && !attachmentsPreview}
-                    className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-[#d6cfc4] to-[#e8dfd1] text-[#2c2c2c] rounded-[14px] transition-all duration-250 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 shadow-sm"
-                   >
-                     <Send size={16} className="translate-x-[1px] translate-y-[1px]" />
-                   </button>
-                </div>
-
-                {attachmentsPreview && (
-                     <div className="absolute bottom-[calc(100%+12px)] left-5 bg-white border border-[#f2f2f2] rounded-xl p-1.5 shadow-2xl animate-in zoom-in-95 group">
-                        <img src={attachmentsPreview.url} className="max-h-24 rounded-lg border border-black/5" />
-                        <button onClick={() => setAttachmentsPreview(null)} className="absolute -top-1.5 -right-1.5 bg-charcoal text-white rounded-full p-1 shadow-lg border-2 border-white"><X size={10} /></button>
-                     </div>
-                )}
-              </div>
-            </>
-          ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-6">
-              <div className="w-16 h-16 bg-[#f9f9f9] rounded-[24px] flex items-center justify-center border border-[#f2f2f2] shadow-inner"><MessageSquare size={24} className="text-charcoal" /></div>
-              <div className="max-w-xs space-y-1.5"><h3 className="text-xl font-serif text-charcoal">Select a chat</h3></div>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

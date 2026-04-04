@@ -1,32 +1,36 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
 import { 
-  Send, Check, CheckCheck, MoreVertical, Trash2, 
-  Smile, Paperclip, X, Reply, Copy, ArrowLeft, MessageSquare, ShieldCheck, Sparkles
+  Search, MoreVertical, Trash2, 
+  MessageSquare, ShieldCheck, Sparkles, X, ChevronDown, CheckCircle2
 } from "lucide-react";
-import EmojiPicker from "emoji-picker-react";
-import { format } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import toast, { Toaster } from 'react-hot-toast';
+
+// Modular Components
+import MessageBubble from "../../components/client/Chat/MessageBubble";
+import ChatInput from "../../components/client/Chat/ChatInput";
+import ChatSearchBar from "../../components/client/Chat/SearchBar";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const REACTION_EMOJIS = ['👍', '❤️', '😂', '😲', '😢'];
 
 export default function Chats() {
     const { user } = useAuth();
     const [messages, setMessages] = useState([]);
-    const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(true);
     const [isTyping, setIsTyping] = useState(false);
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [activeMenuId, setActiveMenuId] = useState(null);
     const [replyingTo, setReplyingTo] = useState(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [numResults, setNumResults] = useState(0);
+    const [showOptions, setShowOptions] = useState(false);
+    const [showClearModal, setShowClearModal] = useState(false);
 
     const messagesEndRef = useRef(null);
     const chatContainerRef = useRef(null);
     const socketRef = useRef(null);
-    const inputRef = useRef(null);
-    const menuRef = useRef(null);
+    const optionsRef = useRef(null);
     const typingTimeoutRef = useRef(null);
 
     // Socket Initialization
@@ -39,16 +43,26 @@ export default function Chats() {
 
         socket.emit("join_chat", user.id);
 
-        socket.on("receive_message", (message) => {
+        // Standardized real-time unread engine listeners
+        socket.on("new_message", (message) => {
             if (message.sender === user.id || message.recipient === user.id) {
                 setMessages(prev => {
                     if (prev.find(m => m._id === message._id)) return prev;
                     return [...prev, message];
                 });
+                
+                // If we are recipient and currently viewing this chat, mark it seen instantly
                 if (message.recipient === user.id) {
                    socket.emit('message_delivered', { messageId: message._id, senderId: message.sender });
                    markAsSeen();
                 }
+            }
+        });
+
+        socket.on("chat_seen", (data) => {
+            // When admin sees our messages, update blue ticks
+            if (data.chatId === 'admin' || data.chatId === user.id) {
+                setMessages(prev => prev.map(m => (m.sender === user.id) ? { ...m, status: 'seen', seen: true, isRead: true } : m));
             }
         });
 
@@ -76,10 +90,6 @@ export default function Chats() {
             if (data.senderId === 'admin' || data.senderId === 'hardcoded-admin-id') setIsTyping(false);
         });
 
-        socket.on('messages_seen', () => {
-            setMessages(prev => prev.map(m => m.sender === user.id ? { ...m, status: 'seen', isRead: true } : m));
-        });
-
         return () => socket.disconnect();
     }, [user?.id]);
 
@@ -103,35 +113,52 @@ export default function Chats() {
         try {
             const token = localStorage.getItem("token");
             if (!token) return;
-            await axios.patch(`${API_URL}/api/chats/seen/admin`, {}, {
+            await axios.put(`${API_URL}/api/chats/read`, { chatId: 'admin' }, {
                 headers: { "x-auth-token": token }
             });
+            // Notify local socket about seen status to sync other client tabs
+            socketRef.current?.emit('chat_seen', 'admin');
         } catch (err) { }
     };
 
     useEffect(() => {
         fetchMessages();
         markAsSeen();
+        
+        const handleClickOutside = (e) => {
+            if (optionsRef.current && !optionsRef.current.contains(e.target)) setShowOptions(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const scrollToBottom = (behavior = "smooth") => {
-        setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior });
-        }, 100);
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTo({
+                top: chatContainerRef.current.scrollHeight,
+                behavior
+            });
+        }
     };
 
     useEffect(() => {
-        scrollToBottom();
-    }, [messages, isTyping]);
+        if (!searchQuery) {
+            scrollToBottom();
+        } else {
+            // Scroll to the FIRST matching message smoothly
+            const firstMatch = messages.find(m => m.text.toLowerCase().includes(searchQuery.toLowerCase()));
+            if (firstMatch) {
+               const el = document.getElementById(`msg-${firstMatch._id}`);
+               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }, [messages, isTyping, searchQuery]);
 
-    const handleSend = async (e) => {
-        if (e) e.preventDefault();
-        if (!newMessage.trim()) return;
-
+    const handleSend = async (text) => {
         const tempId = Date.now().toString();
         const optimisticMsg = {
             _id: tempId,
-            text: newMessage,
+            text,
             sender: user.id,
             recipient: "admin",
             timestamp: new Date().toISOString(),
@@ -141,24 +168,26 @@ export default function Chats() {
         };
 
         setMessages(prev => [...prev, optimisticMsg]);
-        setNewMessage("");
         setReplyingTo(null);
-        setShowEmojiPicker(false);
 
         try {
             const token = localStorage.getItem("token");
             const res = await axios.post(`${API_URL}/api/chats`, 
-                { text: optimisticMsg.text, recipient: "admin", replyTo: replyingTo?._id },
+                { text, recipient: "admin", replyTo: replyingTo?._id },
                 { headers: { "x-auth-token": token } }
             );
-            setMessages(prev => prev.map(m => m._id === tempId ? res.data : m));
+            setMessages(prev => {
+                const exists = prev.find(m => m._id === res.data._id);
+                if (exists) return prev.filter(m => m._id !== tempId);
+                return prev.map(m => m._id === tempId ? res.data : m);
+            });
         } catch (err) {
             setMessages(prev => prev.map(m => m._id === tempId ? { ...m, status: "error" } : m));
+            toast.error("Failed to send message");
         }
     };
 
-    const handleTyping = (e) => {
-        setNewMessage(e.target.value);
+    const handleTyping = () => {
         if (!socketRef.current) return;
         socketRef.current.emit("typing_start", { roomId: "admin", senderId: user.id });
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -167,122 +196,179 @@ export default function Chats() {
         }, 2000);
     };
 
-    const handleEmojiClick = (emojiData) => {
-        setNewMessage(prev => prev + emojiData.emoji);
+    const handleEdit = async (messageId, newText) => {
+        try {
+            const token = localStorage.getItem("token");
+            const res = await axios.patch(`${API_URL}/api/chats/${messageId}`, 
+                { text: newText },
+                { headers: { "x-auth-token": token } }
+            );
+            setMessages(prev => prev.map(m => m._id === messageId ? res.data : m));
+            toast.success("Message updated");
+        } catch (err) {
+            toast.error("Edit failed");
+        }
     };
 
+    const handleDeleteMe = async (messageId) => {
+        try {
+            const token = localStorage.getItem("token");
+            await axios.delete(`${API_URL}/api/chats/${messageId}/me`, {
+                headers: { "x-auth-token": token }
+            });
+            setMessages(prev => prev.filter(m => m._id !== messageId));
+        } catch (err) { }
+    };
+
+    const handleDeleteEveryone = async (messageId) => {
+        try {
+            const token = localStorage.getItem("token");
+            await axios.delete(`${API_URL}/api/chats/${messageId}/everyone`, {
+                headers: { "x-auth-token": token }
+            });
+            setMessages(prev => prev.map(m => m._id === messageId ? { ...m, text: 'This message was deleted', isDeletedEveryone: true } : m));
+        } catch (err) { }
+    };
+
+    const handleReact = async (messageId, emoji) => {
+        try {
+            const token = localStorage.getItem("token");
+            const res = await axios.post(`${API_URL}/api/chats/react/${messageId}`, 
+                { emoji },
+                { headers: { "x-auth-token": token } }
+            );
+            setMessages(prev => prev.map(m => m._id === messageId ? { ...m, reactions: res.data } : m));
+        } catch (err) { }
+    };
+
+    const handleClearChat = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            await axios.post(`${API_URL}/api/chats/clear/admin`, {}, {
+                headers: { "x-auth-token": token }
+            });
+            setMessages([]);
+            setShowClearModal(false);
+            toast.success("Conversation cleared");
+        } catch (err) {
+            toast.error("Failed to clear chat");
+        }
+    };
+
+    const handleCopy = (text) => {
+        navigator.clipboard.writeText(text);
+        toast.success("Copied to clipboard");
+    };
+
+    const filteredMessages = useMemo(() => {
+        if (!searchQuery) {
+            setNumResults(0);
+            return messages;
+        }
+        const matches = messages.filter(m => m.text.toLowerCase().includes(searchQuery.toLowerCase()));
+        setNumResults(matches.length);
+        return messages; // We still show everything but highlight matches
+    }, [messages, searchQuery]);
+
+    const groupedMessages = useMemo(() => {
+        return filteredMessages.map((msg, i) => {
+            const prev = filteredMessages[i - 1];
+            const next = filteredMessages[i + 1];
+            const isGroupStart = !prev || prev.sender !== msg.sender || (new Date(msg.timestamp) - new Date(prev.timestamp) > 300000);
+            const isGroupEnd = !next || next.sender !== msg.sender || (new Date(next.timestamp) - new Date(msg.timestamp) > 300000);
+            return { ...msg, isGroupStart, isGroupEnd };
+        });
+    }, [filteredMessages]);
+
     if (loading) return (
-        <div className="flex flex-1 items-center justify-center">
+        <div className="flex flex-1 h-screen items-center justify-center bg-[#FDFBF7]">
             <div className="text-center">
-                <div className="animate-spin mb-4 text-luxury-gold mx-auto"><ShieldCheck size={40} /></div>
-                <p className="text-sm uppercase tracking-widest text-luxury-gold">Establishing Encrypted Channel...</p>
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="mb-6 text-luxury-gold mx-auto">
+                    <ShieldCheck size={48} strokeWidth={1} />
+                </motion.div>
+                <p className="text-[10px] uppercase tracking-[6px] text-luxury-gold font-bold">Securing Channel</p>
             </div>
         </div>
     );
 
     return (
-        <div className="flex flex-col w-full animate-fade-up">
-            {/* Page Header */}
-            <header className="text-left mb-10">
-                <h1 className="text-4xl md:text-5xl mb-4 uppercase tracking-[8px] font-light text-stone-800">Studio Concierge</h1>
-                <div className="h-1 w-20 bg-gradient-to-r from-luxury-gold to-luxury-gold/20 rounded-full"></div>
-                <p className="text-luxury-text-muted italic max-w-2xl text-base mt-6">
-                    Direct access to our creative team for seamless collaboration and legacy planning.
-                </p>
+        <div className="flex flex-col w-full h-full">
+            <Toaster position="top-right" />
+            <header className="mb-10 w-full">
+                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                        <div className="flex items-center gap-3 mb-4"><Sparkles className="text-luxury-gold" size={20} /><span className="text-[10px] font-bold uppercase tracking-[4px] text-luxury-gold">Member Exclusive</span></div>
+                        <h1 className="text-4xl md:text-6xl mb-4 uppercase tracking-[8px] font-light text-stone-800 leading-tight">Studio <br className="hidden md:block" /> Concierge</h1>
+                        <div className="h-1 w-24 bg-gradient-to-r from-luxury-gold to-transparent rounded-full"></div>
+                    </div>
+                </motion.div>
             </header>
 
-            <div className="w-full max-w-[950px] h-[calc(100vh-16rem)] md:h-[70vh] min-h-[400px] mx-auto glass-card flex flex-col overflow-hidden relative shadow-2xl border border-white/40 !p-0">
-                
-                {/* Header */}
-                <header className="p-6 border-b border-black/5 bg-white/20 backdrop-blur-xl flex items-center justify-between sticky top-0 z-10">
+            <div className="w-full h-[75vh] glass-card flex flex-col overflow-hidden relative shadow-2xl border border-white/60 !p-0">
+                <header className="px-6 py-5 border-b border-black/5 flex items-center justify-between sticky top-0 z-30 bg-white/40 backdrop-blur-xl">
                     <div className="flex items-center gap-4">
-                        <div className="icon-wrapper !w-12 !h-12">
-                            <MessageSquare size={20} strokeWidth={1.5} className="text-luxury-gold" />
-                        </div>
+                        <div className="icon-wrapper !w-12 !h-12 !border-luxury-gold/20 !bg-luxury-gold/5"><MessageSquare size={18} strokeWidth={1.5} className="text-luxury-gold" /></div>
                         <div>
-                            <h2 className="text-lg font-medium tracking-tight text-stone-800">Studio Concierge</h2>
-                            <p className="text-[9px] uppercase tracking-[3px] text-luxury-text-muted font-bold">
-                                {isTyping ? "Writing a reply..." : "Always here for you"}
-                            </p>
+                            <div className="flex items-center gap-2"><h2 className="text-lg font-bold tracking-tight text-stone-800">Support Lead</h2><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div></div>
+                            <p className="text-[9px] uppercase tracking-[3px] text-luxury-text-muted font-bold mt-0.5">{isTyping ? "Typing..." : "Online & Active"}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
+                            {searchQuery && <motion.span initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="text-[10px] uppercase tracking-widest text-luxury-gold font-bold">{numResults} matches found</motion.span>}
+                            <ChatSearchBar onSearch={setSearchQuery} />
+                        </div>
+                        <div className="relative" ref={optionsRef}>
+                            <button onClick={() => setShowOptions(!showOptions)} className={`w-10 h-10 flex items-center justify-center rounded-full transition-all hover:bg-black/5 ${showOptions ? 'text-stone-800 bg-black/5' : 'text-stone-400'}`}><MoreVertical size={18} /></button>
+                            <AnimatePresence>
+                                {showOptions && (
+                                    <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-black/5 overflow-hidden z-50 backdrop-blur-xl bg-white/90">
+                                        <div className="p-2">
+                                            <button onClick={() => { setShowClearModal(true); setShowOptions(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors font-medium"><Trash2 size={16} />Clear Conversation</button>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </header>
 
-                {/* Messages Area */}
-                <div 
-                    ref={chatContainerRef}
-                    className="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col gap-4 custom-scrollbar bg-white/5"
-                >
-                    {messages.length === 0 && !loading && (
-                        <div className="mt-20 text-center opacity-40 animate-breathe">
-                            <Sparkles className="mx-auto mb-4 text-luxury-gold" size={32} />
-                            <p className="text-xs uppercase tracking-[4px]">Begin your legacy conversation</p>
+                <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col custom-scrollbar bg-transparent relative">
+                    {groupedMessages.length === 0 && !loading ? (
+                        <div className="flex-1 flex flex-col items-center justify-center opacity-30"><motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity }} className="mb-6 text-luxury-gold"><MessageSquare size={48} strokeWidth={1} /></motion.div><p className="text-[10px] uppercase tracking-[4px] font-bold text-center">No history starts here</p></div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
+                            {groupedMessages.map((msg, idx) => (
+                                <MessageBubble key={msg._id} message={msg} user={user} isOwn={msg.sender === user.id} isGroupStart={msg.isGroupStart} isGroupEnd={msg.isGroupEnd} onReply={setReplyingTo} onEdit={handleEdit} onDeleteMe={handleDeleteMe} onDeleteEveryone={handleDeleteEveryone} onReact={handleReact} onCopy={handleCopy} searchQuery={searchQuery} id={`msg-${msg._id}`} />
+                            ))}
                         </div>
                     )}
-
-                    {messages.map((msg, idx) => {
-                        const isOwn = msg.sender === user.id;
-                        return (
-                            <div key={msg._id} className={`flex w-full ${isOwn ? "justify-end" : "justify-start"} animate-fade-up`}>
-                                <div className={`max-w-[75%] flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
-                                    <div 
-                                        className={`px-5 py-3.5 rounded-2xl shadow-sm relative text-sm leading-relaxed ${
-                                            isOwn 
-                                                ? "bg-gradient-to-br from-stone-800 to-black text-white rounded-tr-sm" 
-                                                : "bg-white/70 backdrop-blur-md text-stone-800 rounded-tl-sm border border-white/60"
-                                        }`}
-                                    >
-                                        <p>{msg.text}</p>
-                                        <div className={`text-[8px] mt-2 opacity-50 uppercase tracking-[2px] font-bold ${isOwn ? "text-right" : "text-left"}`}>
-                                            {format(new Date(msg.timestamp), 'h:mm a')}
-                                            {isOwn && (
-                                                <span className="ml-2 inline-flex items-center">
-                                                    {msg.status === 'seen' ? <CheckCheck size={10} className="text-luxury-gold inline" /> : <Check size={10} className="inline" />}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                    
                     {isTyping && (
-                        <div className="flex justify-start animate-fade-up">
-                            <div className="bg-white/40 backdrop-blur-md px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5">
-                                <div className="w-1.5 h-1.5 bg-luxury-gold/40 rounded-full animate-bounce"></div>
-                                <div className="w-1.5 h-1.5 bg-luxury-gold/40 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                <div className="w-1.5 h-1.5 bg-luxury-gold/40 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                            </div>
-                        </div>
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start px-10 mt-6">
+                            <div className="bg-white/40 backdrop-blur-md px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5 items-center"><span className="text-[9px] uppercase tracking-widest font-bold text-stone-400 mr-2">Admin is writing</span><div className="flex gap-1"><div className="w-1 h-1 bg-luxury-gold rounded-full animate-bounce"></div><div className="w-1 h-1 bg-luxury-gold rounded-full animate-bounce [animation-delay:-0.15s]"></div><div className="w-1 h-1 bg-luxury-gold rounded-full animate-bounce [animation-delay:-0.3s]"></div></div></div>
+                        </motion.div>
                     )}
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input Area */}
-                <div className="p-6 bg-white/20 backdrop-blur-md border-t border-black/5 sticky bottom-0">
-                    <div className="bg-white/60 rounded-full p-2 flex items-center gap-2 border border-white shadow-inner">
-                        <button className="w-10 h-10 flex items-center justify-center text-stone-400 hover:text-luxury-gold transition-colors">
-                            <Paperclip size={18} strokeWidth={1.5} />
-                        </button>
-                        <input 
-                            ref={inputRef}
-                            type="text" 
-                            placeholder="Share your thoughts..."
-                            value={newMessage}
-                            onChange={handleTyping}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                            className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 px-2 text-stone-800 placeholder:text-stone-400"
-                        />
-                        <button 
-                            onClick={handleSend}
-                            disabled={!newMessage.trim()}
-                            className="bg-black text-white w-10 h-10 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-20 shadow-lg shadow-black/20"
-                        >
-                            <Send size={14} className="ml-0.5" />
-                        </button>
-                    </div>
-                </div>
+                <AnimatePresence>
+                    {showClearModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowClearModal(false)} className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" />
+                            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl text-center">
+                                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500"><Trash2 size={28} /></div>
+                                <h3 className="text-2xl font-bold text-stone-800 mb-2">Clear History?</h3>
+                                <p className="text-stone-500 text-sm mb-8">This will remove messages from your view.</p>
+                                <div className="flex flex-col gap-3">
+                                    <button onClick={handleClearChat} className="w-full py-4 bg-red-500 text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-red-600 transition-colors shadow-lg shadow-red-200">Clear</button>
+                                    <button onClick={() => setShowClearModal(false)} className="w-full py-4 bg-stone-50 text-stone-600 rounded-2xl font-bold uppercase tracking-widest text-[10px]">Cancel</button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+
+                <ChatInput onSend={handleSend} onTyping={handleTyping} replyingTo={replyingTo} onCancelReply={() => setReplyingTo(null)} />
             </div>
         </div>
     );
