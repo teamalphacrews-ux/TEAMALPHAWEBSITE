@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchClientUnreadCounts, setClientUnreadCount, handleRoomUpdate } from '../../store/slices/chatSlice';
+import { motion } from "framer-motion";
 import { 
   Heart, 
   Home, 
@@ -8,17 +11,21 @@ import {
   Cloud, 
   LogOut, 
   Instagram, 
-  User,
-  X 
+  X,
+  Bell
 } from "lucide-react";
-import axios from "axios";
 import { io } from "socket.io-client";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ClientSidebar({ onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const dispatch = useDispatch();
+  const unreadCount = useSelector(state => state.chat.clientUnreadCount);
   const socketRef = useRef(null);
+  
+  const { user } = useAuth();
+  const userId = user?.id || user?._id;
 
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to sign out safely?")) {
@@ -32,55 +39,35 @@ export default function ClientSidebar({ onClose }) {
   useEffect(() => { locationRef.current = location.pathname; }, [location.pathname]);
 
   useEffect(() => {
-    const fetchUnread = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-        const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/chats/unread`, {
-          headers: { "x-auth-token": token }
-        });
-        setUnreadCount(res.data.count || 0);
-      } catch (err) {
-        console.error("Failed to fetch unread chats", err);
-      }
-    };
-
-    fetchUnread();
-    
-    // Real-time updates via socket
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    const userId = storedUser?.id || storedUser?._id;
     const token = localStorage.getItem("token");
 
     if (userId && token) {
-      const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", { auth: { token } });
+      const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", { 
+        auth: { token },
+        reconnection: true
+      });
       socketRef.current = socket;
       socket.emit("join_chat", userId);
 
-      socket.on("new_message", (msg) => {
-        // Industry-Standard: Do NOT re-fetch if we are the sender
-        const isOutbound = (msg.sender === userId);
-        const isOnChatPage = locationRef.current === '/portal/chats';
-        if (msg.recipient === userId && !isOnChatPage && !isOutbound) {
-          fetchUnread(); 
-        }
-      });
+      // Global Redux Sync
+      dispatch(fetchClientUnreadCounts());
 
+      socket.on("room_updated", (data) => dispatch(handleRoomUpdate(data)));
+      
       socket.on("chat_seen", (data) => {
-        // Reset unread count for the specific conversation
         if (data.chatId === 'admin' || data.chatId === userId) {
-          setUnreadCount(0);
+            dispatch(setClientUnreadCount(0));
         }
       });
 
       return () => socket.disconnect();
     }
-  }, []);
+  }, [userId]);
 
   const navLinks = [
     { name: "Dashboard", path: "/portal", icon: Home, exact: true },
     { name: "My Gallery", path: "/portal/gallery", icon: Image },
-    { name: "Concierge", path: "/portal/chats", icon: MessageSquare, count: unreadCount },
+    { name: "Concierge", path: "/portal/chats", icon: MessageSquare, hasUnread: unreadCount > 0 },
     { name: "The Vault", path: "/portal/cloud", icon: Cloud },
   ];
 
@@ -110,14 +97,7 @@ export default function ClientSidebar({ onClose }) {
             key={link.path}
             to={link.path}
             end={link.exact}
-            onClick={() => {
-              if (link.name === "Concierge") {
-                setUnreadCount(0);
-                // Broadcast to other tabs that we viewed it
-                socketRef.current?.emit('chat_seen', 'admin');
-              }
-              onClose && onClose();
-            }}
+            onClick={() => onClose && onClose()}
             className={({ isActive }) => `
               relative flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all duration-300 group
               ${isActive 
@@ -128,15 +108,14 @@ export default function ClientSidebar({ onClose }) {
             {({ isActive }) => (
               <>
                 <link.icon size={16} strokeWidth={isActive ? 2 : 1.5} className="relative z-10 transition-transform duration-300 group-hover:scale-110" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] relative z-10">
-                  {link.name} {link.count > 0 && `(${link.count > 99 ? '99+' : link.count})`}
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] relative z-10 flex items-center gap-2">
+                  {link.name}
+                  {link.hasUnread && (
+                    <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ repeat: Infinity, repeatType: 'reverse', duration: 1.5 }}>
+                      <Bell size={12} className="text-[#BA6A5D] fill-[#BA6A5D]/10" />
+                    </motion.div>
+                  )}
                 </span>
-                
-                {link.count > 0 && (
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 bg-red-600 shadow-lg shadow-red-500/30 text-white text-[8px] font-black rounded-full flex items-center justify-center animate-bounce z-20">
-                    {link.count}
-                  </span>
-                )}
               </>
             )}
           </NavLink>

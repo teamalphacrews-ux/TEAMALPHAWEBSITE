@@ -71,7 +71,7 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
         socketRef.current = io(API_URL);
 
         socketRef.current.on('connect', () => {
-            console.log('🔗 Spreadsheet Sync Connected via Sockets');
+            // Silently connected
         });
 
         socketRef.current.on('sheet_cell_updated', (update) => {
@@ -232,7 +232,7 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
 
     const handleKeyDown = (e) => {
         if (editingCell) {
-            if (e.key === 'Enter') handleSaveCell(editingCell.rowIdx, editingCell.colIdx, editValue);
+            if (e.key === 'Enter') handleSaveCell(editingCell.rowId, editingCell.colIdx, editValue);
             if (e.key === 'Escape') setEditingCell(null);
             return;
         }
@@ -243,10 +243,10 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
 
         if (e.key === 'ArrowRight') { e.preventDefault(); if (colIdx < headers.length - 1) setSelectedCell({ rowId, colIdx: colIdx + 1 }); }
         if (e.key === 'ArrowLeft') { e.preventDefault(); if (colIdx > 0) setSelectedCell({ rowId, colIdx: colIdx - 1 }); }
-        if (e.key === 'ArrowDown') { e.preventDefault(); if (rowIdx < rows.length - 1) setSelectedCell({ rowId: rows[rowIdx + 1].rowId, colIdx }); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); if (rowIdx >= 0 && rowIdx < rows.length - 1) setSelectedCell({ rowId: rows[rowIdx + 1].rowId, colIdx }); }
         if (e.key === 'ArrowUp') { e.preventDefault(); if (rowIdx > 0) setSelectedCell({ rowId: rows[rowIdx - 1].rowId, colIdx }); }
-        if (e.key === 'Enter' && isAdmin) { e.preventDefault(); handleCellDoubleClick(rowId, colIdx, rows[rowIdx].values[colIdx]); }
-        if (e.key.length === 1 && isAdmin && !e.ctrlKey && !e.metaKey) {
+        if (e.key === 'Enter' && isAdmin) { e.preventDefault(); if (rowIdx >= 0) handleCellDoubleClick(rowId, colIdx, rows[rowIdx].values[colIdx]); }
+        if (e.key.length === 1 && isAdmin && !e.ctrlKey && !e.metaKey && rowIdx >= 0) {
             handleCellDoubleClick(rowId, colIdx, "");
             setEditValue(e.key);
         }
@@ -292,8 +292,8 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
                                     {isFullScreen ? 'Team Alpha Task Tracker' : 'Task Tracker'}
                                     <span className="text-slate-300 ml-2 font-light">{sheetName || "..."}</span>
                                 </h1>
-                                <div className="flex items-center gap-2 bg-emerald-500 text-white text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></div>
+                                <div className="flex items-center gap-2 bg-emerald-500/10 text-emerald-600 text-[9px] px-3 py-1 rounded-full font-black uppercase tracking-widest border border-emerald-500/20">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                                     Sync Active
                                 </div>
                             </div>
@@ -478,8 +478,8 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
                 </table>
             </div>
 
-            <div className={`bg-slate-900 border-t border-slate-800 h-8 flex items-center px-6 justify-end shadow-2xl relative z-10 ${isFullScreen ? 'rounded-b-none' : 'rounded-b-3xl'}`}>
-                <div className="flex items-center gap-3 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></div><span className="text-emerald-400 text-[8px] font-black uppercase tracking-[0.2em]">PORTAL_STATUS: ACTIVE_SYNC</span></div>
+            <div className={`bg-slate-900 border-t border-slate-800 h-8 flex items-center px-6 justify-end relative z-10 ${isFullScreen ? 'rounded-b-none' : 'rounded-b-3xl'}`}>
+                <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-full border border-white/10"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div><span className="text-white/30 text-[8px] font-black uppercase tracking-[0.2em]">Live Registry</span></div>
             </div>
 
             <DropdownSettingsModal

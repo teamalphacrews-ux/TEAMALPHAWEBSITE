@@ -51,6 +51,7 @@ const GoogleSheetsService = {
 
         try {
             const cleanId = typeof spreadsheetId === 'string' ? spreadsheetId.trim() : spreadsheetId;
+            if (!cleanId) throw new Error('Spreadsheet ID is missing');
             const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: cleanId });
             const sheetsList = spreadsheet.data.sheets;
             if (!sheetsList || sheetsList.length === 0) return 'Sheet1';
@@ -58,7 +59,7 @@ const GoogleSheetsService = {
             const target = sheetsList.find(s => s.properties.title === '2025') || sheetsList[0];
             return target.properties.title;
         } catch (error) {
-            console.error('Error fetching sheet metadata:', error.message);
+            // Silently handle sheet metadata fetch error
             return 'Sheet1'; 
         }
     },
@@ -71,6 +72,10 @@ const GoogleSheetsService = {
         }
         
         const finalId = (spreadsheetId || process.env.GOOGLE_SHEET_ID || '').trim();
+        if (!finalId) {
+            console.error("❌ No Spreadsheet ID provided (header or .env)");
+            return { headers: [], rows: [], error: 'Spreadsheet ID missing' };
+        }
 
         try {
             const sheetName = await this.getTargetSheetName(finalId);

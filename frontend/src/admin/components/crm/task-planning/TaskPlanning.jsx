@@ -16,7 +16,6 @@ const TaskPlanning = ({ user }) => {
     setError(null);
     try {
       const res = await getSheetData();
-      console.log("Fetched Tasks (Google Sheets):", res);
       // Ensure completely new reference to prevent UI stale state blocks
       if (res && res.headers && res.rows) {
         setData({
@@ -45,15 +44,44 @@ const TaskPlanning = ({ user }) => {
     return () => clearInterval(interval);
   }, [loadTasks]);
 
-  // Filtering based on date column (assuming index 2 is date)
+  // Filtering based on date column (dynamically finding "DATE" column)
+  const dateColIdx = data.headers.findIndex(h => h.toUpperCase().includes("DATE"));
+  
+  const parseDateString = (str) => {
+    if (!str) return null;
+    const clean = str.toString().trim();
+    if (!clean) return null;
+
+    // Handle DD-MM-YYYY or DD/MM/YYYY
+    const dmyMatch = clean.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (dmyMatch) {
+      const day = parseInt(dmyMatch[1], 10);
+      const monthIdx = parseInt(dmyMatch[2], 10) - 1;
+      const year = parseInt(dmyMatch[3], 10);
+      return new Date(year, monthIdx, day);
+    }
+
+    // Fallback to standard JS parsing (ISO etc)
+    const d = new Date(clean);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   const filteredRows = data.rows.filter(row => {
     if (month === "All") return true;
-    const dateVal = row.values[2];
-    if (!dateVal) return true; // ALWAYS SHOW EMPTY/NEW ROWS TO PREVENT DISAPPEARING BUG
+    
+    // Fallback to index 2 if "DATE" column header not found
+    const targetIdx = dateColIdx !== -1 ? dateColIdx : 2;
+    const dateVal = row.values[targetIdx];
+    
+    const parsedDate = parseDateString(dateVal);
+    if (!parsedDate) return true; // Show empty/unparseable rows to keep them visible
+
     try {
-      const taskMonth = new Date(dateVal).toLocaleString("default", { month: "short" });
+      const taskMonth = parsedDate.toLocaleString("default", { month: "short" });
       return taskMonth.toUpperCase() === month.toUpperCase();
-    } catch (e) { return true; } // IF INVALID DATE, SHOW IT
+    } catch (e) { 
+      return true; 
+    }
   });
 
   const filteredData = { ...data, rows: filteredRows };

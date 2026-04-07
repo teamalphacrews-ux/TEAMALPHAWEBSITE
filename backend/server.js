@@ -6,14 +6,14 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 let compression;
 try {
-    compression = require('compression'); 
+    compression = require('compression');
 } catch (error) {
     console.warn('⚠️ Performance warning: `compression` module not found. Run `npm install compression` in the backend directory.');
 }
 require('dotenv').config();
 
 const User = require('./models/User');
-const connectDB = require('./config/db'); 
+const connectDB = require('./config/db');
 const leadRoutes = require('./routes/leadroutes');
 const galleryRoutes = require('./routes/galleryRoutes');
 const financeRoutes = require('./routes/financeRoutes');
@@ -38,7 +38,12 @@ const io = require('socket.io')(server, {
 app.set('io', io);
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "x-auth-token", "Authorization", "x-sheet-id", "x-sheet-name"],
+    credentials: true
+}));
 
 // --- Socket.IO Middleware ---
 // Attach socket instance to req so routes can emit events
@@ -48,11 +53,14 @@ app.use((req, res, next) => {
 });
 
 io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    // Silent connection
 
     socket.on('join_chat', (roomId) => {
         socket.join(roomId);
-        console.log(`User joined room: ${roomId}`);
+    });
+
+    socket.on('disconnect', (reason) => {
+        // Silent disconnect
     });
 
     socket.on('typing_start', (data) => {
@@ -71,9 +79,43 @@ io.on('connection', (socket) => {
         } catch (err) { }
     });
 
+    socket.on('mark_read', async (data) => {
+        try {
+            const { roomId, readerType } = data; // roomId is the userId, readerType is 'admin' or 'user'
+            const ChatRoom = require('./models/ChatRoom');
+            const Message = require('./models/Message');
+
+            // 1. Mark all messages as seen in DB
+            const adminIds = ['admin', 'hardcoded-admin-id']; // Simplified for socket logic
+            if (readerType === 'admin') {
+                await Message.updateMany({ sender: roomId, seen: false }, { $set: { seen: true, status: 'seen' } });
+                await ChatRoom.findOneAndUpdate({ userId: roomId }, { $set: { unreadCountAdmin: 0 } });
+            } else {
+                await Message.updateMany({ recipient: roomId, seen: false }, { $set: { seen: true, status: 'seen' } });
+                await ChatRoom.findOneAndUpdate({ userId: roomId }, { $set: { unreadCountUser: 0 } });
+            }
+
+            // 2. Fetch updated counts
+            const updatedRoom = await ChatRoom.findOne({ userId: roomId });
+
+            // 3. Emit room_updated to sync everyone
+            io.emit('room_updated', {
+                roomId,
+                unreadCountAdmin: updatedRoom?.unreadCountAdmin || 0,
+                unreadCountUser: updatedRoom?.unreadCountUser || 0
+            });
+
+            // Legacy sync for old components
+            socket.broadcast.to(roomId).emit('chat_seen', roomId);
+            socket.broadcast.to('admin').emit('chat_seen', roomId);
+
+        } catch (err) {
+            console.error('Error in mark_read socket:', err.message);
+        }
+    });
+
     socket.on('chat_seen', (data) => {
         const chatId = typeof data === 'string' ? data : data.chatId;
-        // Broadcast to the target room and the admin group to sync all tabs
         socket.broadcast.to(chatId).emit('chat_seen', data);
         socket.broadcast.to('admin').emit('chat_seen', data);
     });
@@ -100,8 +142,8 @@ connectDB().then(() => {
 
     setInterval(async () => {
         try {
-            const connectedUsers = await User.find({ 
-                googleAccessToken: { $exists: true, $ne: null } 
+            const connectedUsers = await User.find({
+                googleAccessToken: { $exists: true, $ne: null }
             });
             for (const user of connectedUsers) {
                 await pollGoogleCalendar(user, io);
@@ -146,9 +188,9 @@ authRouter.post('/login', async (req, res) => {
         ) {
             const payload = { user: { id: "hardcoded-admin-id", role: "admin" } };
             const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '2h' });
-            return res.json({ 
-                token, 
-                user: { id: "hardcoded-admin-id", firstName: "System", lastName: "Admin", email, role: "admin" } 
+            return res.json({
+                token,
+                user: { id: "hardcoded-admin-id", firstName: "System", lastName: "Admin", email, role: "admin" }
             });
         }
 
@@ -186,17 +228,17 @@ authRouter.get('/me', auth, async (req, res) => {
 authRouter.put('/profile', auth, async (req, res) => {
     try {
         const { name, role } = req.body;
-        
+
         if (req.user.id === "hardcoded-admin-id") {
             // For the system admin in .env, we return the data so the UI updates for the session
             // even though it isn't stored in a specific DB collection.
             const nameParts = (name || "System Admin").trim().split(/\s+/);
-            return res.json({ 
+            return res.json({
                 id: "hardcoded-admin-id",
                 firstName: nameParts[0],
                 lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : '',
                 role: role || "admin",
-                msg: "System Admin updated for session" 
+                msg: "System Admin updated for session"
             });
         }
 
@@ -298,7 +340,7 @@ authRouter.get('/google/callback', async (req, res) => {
         const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
         const userInfo = await oauth2.userinfo.get();
         const googleEmail = userInfo.data.email;
-        
+
         const user = await User.findByIdAndUpdate(userId, {
             googleAccessToken: tokens.access_token,
             googleRefreshToken: tokens.refresh_token,

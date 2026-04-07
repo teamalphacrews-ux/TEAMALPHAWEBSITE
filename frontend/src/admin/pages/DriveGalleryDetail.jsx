@@ -125,55 +125,64 @@ export default function DriveGalleryDetail() {
       {/* Masonry Display */}
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {[1,2,3,4,5,6,7,8,9,10].map(n => <div key={n} className="aspect-square bg-white/40 animate-pulse rounded-[32px] border border-white/60" />)}
+          {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(n => (
+            <div key={n} className="aspect-[3/4] bg-white/40 animate-pulse rounded-[24px] border border-white/60 relative overflow-hidden">
+                <div className="absolute inset-0 bg-linear-to-br from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+            </div>
+          ))}
         </div>
       ) : filteredFiles.length > 0 ? (
-        <Masonry
-          breakpointCols={{
-            default: 4,
-            1100: 3,
-            700: 2,
-            500: 1
-          }}
-          className="my-masonry-grid"
-          columnClassName="my-masonry-grid_column"
-        >
-          {filteredFiles.map((file, idx) => (
-            <motion.div
-              layoutId={file.id}
-              key={file.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ 
-                duration: 0.4, 
-                ease: [0.23, 1, 0.32, 1],
-                delay: idx * 0.03 
-              }}
-              whileHover={{ scale: 1.03, zIndex: 10 }}
-              onClick={() => setSelectedFile(file)}
-              className="relative group cursor-pointer overflow-hidden transition-all duration-500 rounded-2xl"
-            >
-              <div className="w-full h-full relative overflow-hidden rounded-2xl">
-                  <motion.img 
-                    src={`https://drive.google.com/thumbnail?id=${file.id}&sz=w1000`} 
-                    alt={file.name} 
-                    loading="lazy"
-                    className="w-full h-auto block object-cover" 
-                    onError={(e) => {
-                      e.target.src = `https://drive.google.com/uc?id=${file.id}`;
-                    }}
-                  />
-                  
-                  {/* Minimal Subtle Overlay */}
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <div className="p-3 bg-white/10 backdrop-blur-md rounded-full text-white scale-90 group-hover:scale-100 transition-transform duration-300">
-                       <Maximize2 size={24} strokeWidth={1.5} />
+        <AnimatePresence mode="popLayout">
+          <Masonry
+            breakpointCols={{
+              default: 4,
+              1100: 3,
+              700: 2,
+              500: 1
+            }}
+            className="my-masonry-grid"
+            columnClassName="my-masonry-grid_column"
+          >
+            {filteredFiles.map((file, idx) => (
+              <motion.div
+                layout
+                key={file.id}
+                initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ 
+                  duration: 0.5, 
+                  ease: [0.21, 1, 0.36, 1],
+                  delay: Math.min(idx * 0.02, 0.5) // Staggered but capped
+                }}
+                whileHover={{ y: -5, transition: { duration: 0.3 } }}
+                onClick={() => setSelectedFile(file)}
+                className="relative group cursor-pointer overflow-hidden transition-all duration-500 rounded-2xl mb-6 bg-white shadow-sm hover:shadow-xl hover:shadow-[#cfe8d5]/20"
+              >
+                <div className="w-full h-full relative overflow-hidden rounded-2xl">
+                    <motion.img 
+                      src={file.thumbnailLink ? file.thumbnailLink.replace('=s220', '=s400') : `${API_BASE_URL}/api/drive-gallery/proxy/${file.id}`} 
+                      alt={file.name} 
+                      loading="lazy"
+                      className="w-full h-auto block object-cover scale-100 group-hover:scale-110 transition-transform duration-700" 
+                      onError={(e) => {
+                        if (!e.target.src.includes('/proxy/')) {
+                          e.target.src = `${API_BASE_URL}/api/drive-gallery/proxy/${file.id}`;
+                        }
+                      }}
+                    />
+                    
+                    {/* Minimal Subtle Overlay */}
+                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <div className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white scale-90 group-hover:scale-100 transition-transform duration-300 border border-white/30">
+                         <Maximize2 size={24} strokeWidth={1.5} />
+                      </div>
                     </div>
-                  </div>
-              </div>
-            </motion.div>
-          ))}
-        </Masonry>
+                </div>
+              </motion.div>
+            ))}
+          </Masonry>
+        </AnimatePresence>
       ) : (
         <div className="flex flex-col items-center justify-center py-40 animate-in fade-in zoom-in duration-1000">
            <div className="avatar !w-24 !h-24 !rounded-[40px] mb-8 bg-linear-to-br from-[#f6e6b4] to-[#cfe8d5]/30 flex items-center justify-center">

@@ -84,9 +84,9 @@ export default function Dashboard() {
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <StatCard
-          title="Global Photo Assets"
-          value={stats.totalPhotos.toLocaleString()}
-          icon={<ImageIcon size={20} />}
+          title="Clients & Smart Drives"
+          value={stats.totalPhotos}
+          icon={<Users size={20} />}
           delayClass="animate-stagger-1"
         />
         <StatCard

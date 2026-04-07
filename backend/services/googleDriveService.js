@@ -113,13 +113,41 @@ const GoogleDriveService = {
         if (!drive) throw new Error('Drive Client not initialized');
 
         try {
-            const response = await drive.files.list({
-                q: `'${folderId}' in parents and trashed = false`,
-                fields: 'files(id, name, mimeType, thumbnailLink, size, createdTime, webViewLink, webContentLink)',
-                orderBy: 'folder,name'
-            });
+            let ALL_FILES = [];
+            let foldersToProcess = [folderId];
+            let processedFolders = new Set();
 
-            return response.data.files;
+            while (foldersToProcess.length > 0) {
+                const currentFolderId = foldersToProcess.shift();
+                if (processedFolders.has(currentFolderId)) continue;
+                processedFolders.add(currentFolderId);
+
+                let pageToken = null;
+                do {
+                    const response = await drive.files.list({
+                        q: `'${currentFolderId}' in parents and trashed = false`,
+                        fields: 'nextPageToken, files(id, name, mimeType, thumbnailLink, size, createdTime, webViewLink, webContentLink)',
+                        orderBy: 'folder,name',
+                        pageSize: 1000,
+                        pageToken: pageToken
+                    });
+
+                    const files = response.data.files || [];
+                    for (const file of files) {
+                        if (file.mimeType === 'application/vnd.google-apps.folder') {
+                            foldersToProcess.push(file.id);
+                        } else {
+                            // Only include images and videos
+                            if (file.mimeType.startsWith('image/') || file.mimeType.startsWith('video/')) {
+                                ALL_FILES.push(file);
+                            }
+                        }
+                    }
+                    pageToken = response.data.nextPageToken;
+                } while (pageToken);
+            }
+
+            return ALL_FILES;
         } catch (error) {
             console.error('Google Drive List Folder Error:', error.message);
             throw error;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   MessageSquare, Send, User, Check, CheckCheck, ChevronLeft,
-  MoreVertical, Edit3, Trash2, Smile, Paperclip, Search, X, Clock, Reply, Copy, Image as ImageIcon
+  MoreVertical, Edit3, Trash2, Smile, Paperclip, Search, X, Clock, Reply, Copy, Image as ImageIcon, Bell
 } from 'lucide-react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
@@ -9,6 +9,8 @@ import EmojiPicker from 'emoji-picker-react';
 import { format } from 'date-fns';
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchUnreadCounts, clearAdminUnread, handleRoomUpdate, markRoomAsRead } from '../../store/slices/chatSlice';
 import ChatSearchBar from "../../components/client/Chat/SearchBar";
 import toast from 'react-hot-toast';
 
@@ -16,7 +18,9 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😲', '😢'];
 
 export default function Chats() {
-  const { user: adminProfile } = useAuth();
+  const { user: adminProfile, token: authContextToken } = useAuth();
+  const dispatch = useDispatch();
+  const roomStates = useSelector(state => state.chat.roomStates);
   const [conversations, setConversations] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const selectedUserRef = useRef(null);
@@ -60,51 +64,92 @@ export default function Chats() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const cleanToken = (raw) => {
+    if (!raw || typeof raw !== 'string') return null;
+    const cleaned = raw.replace(/^["']|["']$/g, '').trim();
+    return cleaned === 'null' || cleaned === 'undefined' ? null : cleaned;
+  };
+
   const fetchConversations = async (showLoading = false) => {
+    const token = cleanToken(authContextToken || localStorage.getItem("token"));
+    if (!token) return;
+
     try {
       if (showLoading) setLoading(true);
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/api/chats/admin/conversations`, { headers: { "x-auth-token": token } });
+      const res = await axios.get(`${API_URL}/api/chats/admin/conversations`, {
+        headers: {
+          "x-auth-token": token,
+          "Authorization": `Bearer ${token}`
+        }
+      });
       const sortedUsers = Array.isArray(res.data) ? res.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) : [];
       setConversations(sortedUsers);
-    } catch (err) { } finally { if (showLoading) setLoading(false); }
+    } catch (err) {
+      if (err.response?.status === 401) console.warn("--- [AUTH/401] --- Admin fetchConversations rejected");
+    } finally { if (showLoading) setLoading(false); }
   };
 
   // Socket Logic
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const newSocket = io(API_URL, { auth: { token } });
+    const token = cleanToken(authContextToken || localStorage.getItem("token"));
+    if (!token) return;
+
+    const newSocket = io(API_URL, {
+      auth: { token },
+      reconnection: true,
+      reconnectionAttempts: 10,
+      timeout: 10000
+    });
+
     socketRef.current = newSocket;
-    newSocket.emit('join_chat', 'admin');
+
+    newSocket.on('connect', () => {
+      console.log('--- [SOCKET] --- Admin connected successfully ---');
+      newSocket.emit('join_chat', 'admin');
+      if (adminProfile?.id || adminProfile?._id) {
+        newSocket.emit('join_chat', String(adminProfile.id || adminProfile._id));
+      }
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.warn('--- [SOCKET] --- Admin connection error:', err.message);
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.warn('--- [SOCKET] --- Admin disconnected:', reason);
+    });
 
     newSocket.on('new_message', (message) => {
       // WhatsApp Lifecycle: Industry-Standard DB Synchronization
-      const isOutbound = (message.sender === 'admin' || String(message.sender) === String(adminProfile?.id || adminProfile?._id));
-      const clientUserId = isOutbound ? message.recipient : Number.isNaN(Number(message.sender)) ? message.sender : String(message.sender);
+      const senderId = typeof message.sender === 'object' ? String(message.sender._id) : String(message.sender);
+      const recipientId = typeof message.recipient === 'object' ? String(message.recipient._id) : String(message.recipient);
+
+      const isOutbound = (senderId === 'admin' || senderId === String(adminProfile?.id || adminProfile?._id));
+      const clientUserId = isOutbound ? recipientId : senderId;
 
       if (!clientUserId || clientUserId === 'admin') return;
 
-      // 1. If we are active in this chat, mark as seen immediately (Step 1 Variation: IS in chat)
-      const isCurThread = selectedUserRef.current?.userId === clientUserId;
+      // 1. If we are active in this chat, mark as seen immediately
+      const isCurThread = selectedUserRef.current?.chatId === clientUserId;
       if (isCurThread) {
         setMessages(prev => {
           if (prev.find(m => m._id === message._id)) return prev;
           return [...prev, message];
         });
-        if (!isOutbound) markAsSeen(clientUserId);
+      } else {
+        // 2. STRICTURE: Re-fetch conversations for latest message snippet
+        fetchConversations();
       }
-
-      // 2. STRICTURE: Re-fetch conversations to get database-driven unread counts (WhatsApp Logic)
-      // This ensures unread systems are "database truth" only.
-      fetchConversations();
     });
+
+    newSocket.on('room_updated', (data) => dispatch(handleRoomUpdate(data)));
 
     newSocket.on('chat_seen', (data) => {
       // If someone else (or another tab) saw the chat, refresh everything
       fetchConversations();
 
       const chatId = typeof data === 'string' ? data : data.chatId;
-      if (chatId === 'admin' || String(chatId) === String(selectedUserRef.current?.userId)) {
+      if (chatId === 'admin' || String(chatId) === String(selectedUserRef.current?.chatId)) {
         setMessages(prev => prev.map(m =>
           (String(m.sender) === 'admin' || String(m.sender) === String(adminProfile?.id || adminProfile?._id))
             ? { ...m, status: 'seen', seen: true, isRead: true }
@@ -121,20 +166,36 @@ export default function Chats() {
       setMessages(prev => prev.map(m => m._id === data.messageId ? { ...m, reactions: data.reactions } : m));
     });
 
-    newSocket.on('display_typing', (data) => { if (selectedUserRef.current?.userId === data.senderId) setIsTyping(true); });
-    newSocket.on('hide_typing', (data) => { if (selectedUserRef.current?.userId === data.senderId) setIsTyping(false); });
+    newSocket.on('display_typing', (data) => { if (selectedUserRef.current?.chatId === data.senderId) setIsTyping(true); });
+    newSocket.on('hide_typing', (data) => { if (selectedUserRef.current?.chatId === data.senderId) setIsTyping(false); });
     newSocket.on('message_edited', (updatedMsg) => { setMessages(prev => prev.map(m => m._id === updatedMsg._id ? updatedMsg : m)); });
     newSocket.on('message_deleted_everyone', (data) => { setMessages(prev => prev.map(m => m._id === data.id ? { ...m, text: 'This transmission redacted', isDeletedEveryone: true, attachments: [] } : m)); });
 
     return () => newSocket.close();
-  }, [adminProfile]);
+  }, [adminProfile, authContextToken]);
 
-  const fetchMessages = async (userId, pageNum = 1) => {
+  // Initial Data Fetch Gate
+  useEffect(() => {
+    const token = cleanToken(authContextToken || localStorage.getItem("token"));
+    if (adminProfile && token) {
+      fetchConversations(true);
+      dispatch(fetchUnreadCounts());
+    }
+  }, [adminProfile, authContextToken]);
+
+  const fetchMessages = async (userId, pageNum = 1, showLoading = false) => {
+    const token = cleanToken(authContextToken || localStorage.getItem("token"));
+    if (!token) return;
+
     try {
       if (pageNum === 1) setLoading(true);
       else setIsFetchingMore(true);
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/api/chats/admin/${userId}?page=${pageNum}&limit=40`, { headers: { "x-auth-token": token } });
+      const res = await axios.get(`${API_URL}/api/chats/admin/${userId}?page=${pageNum}&limit=40`, {
+        headers: {
+          "x-auth-token": token,
+          "Authorization": `Bearer ${token}`
+        }
+      });
       if (pageNum === 1) {
         setMessages(res.data);
         setPage(1);
@@ -143,47 +204,52 @@ export default function Chats() {
       } else {
         const prevHeight = chatContainerRef.current.scrollHeight;
         setMessages(prev => [...res.data, ...prev]);
+        setPage(pageNum);
         setHasMore(res.data.length === 40);
         setTimeout(() => {
           const newHeight = chatContainerRef.current.scrollHeight;
           chatContainerRef.current.scrollTop = newHeight - prevHeight;
         }, 0);
       }
-    } catch (err) { } finally { setLoading(false); setIsFetchingMore(false); }
-  };
-
-  const groupedMessages = useMemo(() => {
-    return messages.map((msg, i) => {
-      const prev = messages[i - 1];
-      const next = messages[i + 1];
-      const isSentByMe = (adminProfile?.id || adminProfile?._id) && (String(msg.sender) === String(adminProfile.id || adminProfile._id) || msg.sender === 'admin');
-      const isNextFromSame = next && (String(next.sender) === String(msg.sender));
-      const isPrevFromSame = prev && (String(prev.sender) === String(msg.sender));
-
-      return {
-        ...msg,
-        isGroupStart: !isPrevFromSame || (prev && new Date(msg.timestamp) - new Date(prev.timestamp) > 5 * 60 * 1000),
-        isGroupEnd: !isNextFromSame || (next && new Date(next.timestamp) - new Date(msg.timestamp) > 5 * 60 * 1000)
-      };
-    });
-  }, [messages, adminProfile]);
-
-  const handleScroll = (e) => {
-    if (e.target.scrollTop === 0 && hasMore && !isFetchingMore && selectedUser) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchMessages(selectedUser.userId, nextPage);
+    } catch (err) {
+      if (err.response?.status === 401) console.warn("--- [AUTH/401] --- Admin fetchMessages rejected");
+    } finally {
+      if (pageNum === 1) setLoading(false);
+      else setIsFetchingMore(false);
     }
   };
 
-  useEffect(() => { fetchConversations(true); }, []);
+  const filteredMessages = useMemo(() => {
+    if (!searchQuery) return messages;
+    return messages; // We show all but use searchQuery for highlighting
+  }, [messages, searchQuery]);
+
+  const groupedMessages = useMemo(() => {
+    return filteredMessages.map((msg, i) => {
+      const prev = filteredMessages[i - 1];
+      const next = filteredMessages[i + 1];
+      const isGroupStart = !prev || prev.sender !== msg.sender || (new Date(msg.timestamp) - new Date(prev.timestamp) > 300000);
+      const isGroupEnd = !next || next.sender !== msg.sender || (new Date(next.timestamp) - new Date(msg.timestamp) > 300000);
+      return { ...msg, isGroupStart, isGroupEnd };
+    });
+  }, [filteredMessages]);
+
+  const handleScroll = () => {
+    if (!chatContainerRef.current || isFetchingMore || !hasMore || !selectedUser) return;
+    if (chatContainerRef.current.scrollTop === 0) {
+      fetchMessages(selectedUser.chatId, page + 1);
+    }
+  };
 
   const handleSelectUser = (user) => {
     setSelectedUser(user);
     selectedUserRef.current = user;
     if (user) {
-      fetchMessages(user.userId);
-      markAsSeen(user.userId);
+      const token = cleanToken(authContextToken || localStorage.getItem("token"));
+      if (token) {
+        fetchMessages(user.chatId);
+        markAsSeen(user.chatId);
+      }
       setReplyingTo(null);
       setAttachmentsPreview(null);
     }
@@ -191,20 +257,31 @@ export default function Chats() {
 
   const markAsSeen = async (userId) => {
     if (!userId) return;
-
-    // STEP 2: IMMEDIATELY set count to 0 (WhatsApp Style)
-    setConversations(prev => prev.map(c => c.userId === userId ? { ...c, unreadCount: 0 } : c));
+    const token = cleanToken(authContextToken || localStorage.getItem("token"));
+    if (!token) return;
 
     try {
-      const token = localStorage.getItem("token");
-      await axios.put(`${API_URL}/api/chats/read`, { chatId: userId }, { headers: { "x-auth-token": token } });
+      // 1. Instant Optimistic UI Clear (Zero Delay)
+      dispatch(markRoomAsRead({ roomId: userId, readerType: 'admin' }));
 
-      // Emit seen via socket locally to sync other tabs
-      socketRef.current?.emit('chat_seen', { chatId: userId, seenBy: 'admin' });
+      // 2. Direct Socket Signal for global sync
+      if (socketRef.current) {
+        socketRef.current.emit('mark_read', { roomId: userId, readerType: 'admin' });
+      }
 
-      // STEP 3: DEFINITIVE SYNC (Database-driven truth)
+      await axios.put(`${API_URL}/api/chats/mark-as-seen`, { chatId: userId }, {
+        headers: {
+          "x-auth-token": token,
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      // Secondary Syncs
       fetchConversations();
-    } catch (err) { }
+      dispatch(fetchUnreadCounts());
+    } catch (err) {
+      if (err.response?.status === 401) console.warn("--- [AUTH/401] --- Admin markAsSeen rejected");
+    }
   };
 
   const scrollToBottom = (behavior = "smooth") => {
@@ -233,7 +310,7 @@ export default function Chats() {
     if ((!newMessage.trim() && !attachmentsPreview) || !selectedUser) return;
     const tempId = Date.now().toString();
     const optimisticMsg = {
-      _id: tempId, text: newMessage, sender: 'admin', recipient: selectedUser.userId,
+      _id: tempId, text: newMessage, sender: 'admin', recipient: selectedUser.chatId,
       timestamp: new Date().toISOString(), status: 'pending',
       messageType: attachmentsPreview ? (attachmentsPreview.fileType.startsWith('image/') ? 'image' : 'file') : 'text',
       attachments: attachmentsPreview ? [attachmentsPreview] : [],
@@ -244,7 +321,7 @@ export default function Chats() {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.post(`${API_URL}/api/chats`,
-        { text: optimisticMsg.text, recipient: selectedUser.userId, messageType: optimisticMsg.messageType, attachments: optimisticMsg.attachments, replyTo: optimisticMsg.replyTo?._id },
+        { text: optimisticMsg.text, recipient: selectedUser.chatId, messageType: optimisticMsg.messageType, attachments: optimisticMsg.attachments, replyTo: optimisticMsg.replyTo?._id },
         { headers: { "x-auth-token": token } }
       );
       setMessages(prev => {
@@ -252,10 +329,9 @@ export default function Chats() {
         if (alreadyExists) return prev.filter(m => m._id !== tempId);
         return prev.map(m => m._id === tempId ? res.data : m);
       });
-      socketRef.current?.emit('typing_stop', { roomId: selectedUser.userId, senderId: 'admin' });
+      socketRef.current?.emit('typing_stop', { roomId: selectedUser.chatId, senderId: 'admin' });
 
       // After sending, unread should obviously be 0 for this client
-      setConversations(prev => prev.map(c => c.userId === selectedUser.userId ? { ...c, unreadCount: 0 } : c));
       fetchConversations();
     } catch (err) {
       setMessages(prev => prev.map(m => m._id === tempId ? { ...m, status: 'error' } : m));
@@ -269,9 +345,23 @@ export default function Chats() {
     formData.append('file', file);
     try {
       const token = localStorage.getItem("token");
-      const uploadRes = await axios.post(`${API_URL}/api/chats/upload`, formData, { headers: { "x-auth-token": token, "Content-Type": "multipart/form-data" } });
-      setAttachmentsPreview({ url: uploadRes.data.url, fileType: file.type, fileName: file.name });
-    } catch (err) { }
+      // Use the newly created /upload endpoint in chatRoutes.js
+      const uploadRes = await axios.post(`${API_URL}/api/chats/upload`, formData, {
+        headers: {
+          "x-auth-token": token,
+          "Content-Type": "multipart/form-data"
+        }
+      });
+
+      setAttachmentsPreview({
+        url: uploadRes.data.url.startsWith('http') ? uploadRes.data.url : `${API_URL}${uploadRes.data.url}`,
+        fileType: file.type,
+        fileName: file.name
+      });
+    } catch (err) {
+      console.error("Upload failed", err);
+      toast.error("File upload failed");
+    }
   };
 
   const handleReact = async (messageId, emoji) => {
@@ -318,9 +408,9 @@ export default function Chats() {
   const handleTyping = (e) => {
     setNewMessage(e.target.value);
     if (!socketRef.current || !selectedUser) return;
-    socketRef.current.emit('typing_start', { roomId: selectedUser.userId, senderId: 'admin' });
+    socketRef.current.emit('typing_start', { roomId: selectedUser.chatId, senderId: 'admin' });
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => { socketRef.current.emit('typing_stop', { roomId: selectedUser.userId, senderId: 'admin' }); }, 2000);
+    typingTimeoutRef.current = setTimeout(() => { socketRef.current.emit('typing_stop', { roomId: selectedUser.chatId, senderId: 'admin' }); }, 2000);
   };
 
   const handleEmojiClick = (emojiData) => {
@@ -373,10 +463,10 @@ export default function Chats() {
           <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
             {conversations.filter(c => String(c.userName || '').toLowerCase().includes(searchTerm.toLowerCase())).map((conv) => (
               <button
-                key={conv.userId} onClick={() => handleSelectUser(conv)}
-                className={`w-full flex items-center gap-3 p-3 rounded-[18px] transition-all duration-[300ms] group ${selectedUser?.userId === conv.userId ? 'bg-[#e8dfd1] text-[#2c2c2c] shadow-[0_4px_12px_rgba(0,0,0,0.05)]' : 'bg-white/60 hover:bg-white/90 shadow-sm border border-white/40 hover:border-white transition-all'}`}
+                key={conv.chatId} onClick={() => handleSelectUser(conv)}
+                className={`w-full flex items-center gap-3 p-3 rounded-[18px] transition-all duration-[300ms] group ${selectedUser?.chatId === conv.chatId ? 'bg-[#e8dfd1] text-[#2c2c2c] shadow-[0_4px_12px_rgba(0,0,0,0.05)]' : 'bg-white/60 hover:bg-white/90 shadow-sm border border-white/40 hover:border-white transition-all'}`}
               >
-                <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center font-bold shrink-0 transition-all ${selectedUser?.userId === conv.userId ? 'bg-white/60 text-[#2c2c2c]' : 'bg-[#f3eee7] text-[#8a8a8a]'}`}>
+                <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center font-bold shrink-0 transition-all ${selectedUser?.chatId === conv.chatId ? 'bg-white/60 text-[#2c2c2c]' : 'bg-[#f3eee7] text-[#8a8a8a]'}`}>
                   {String(conv.userName || '').charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0 text-left">
@@ -386,18 +476,15 @@ export default function Chats() {
                   </div>
                   <p className="text-[11px] truncate opacity-50 font-medium text-[#5a5a5a]">{String(conv.lastMessage || '')}</p>
                 </div>
-                <AnimatePresence>
-                  {Number(conv.unreadCount || 0) > 0 && selectedUser?.userId !== conv.userId && (
-                    <motion.div
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      className="w-5 h-5 bg-red-600 text-white text-[9px] flex items-center justify-center rounded-full font-black shadow-[0_2px_8px_rgba(220,38,38,0.4)] shrink-0"
-                    >
-                      {String(conv.unreadCount)}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* --- ROOM-BASED REDUX BADGE --- */}
+                {(roomStates[conv.chatId]?.unreadCountAdmin > 0 || Number(conv.unreadCount || 0) > 0) && selectedUser?.chatId !== conv.chatId && (
+                  <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="shrink-0 ml-2 flex items-center gap-1.5">
+                    <span className="bg-[#e11d48] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm">
+                      {roomStates[conv.chatId]?.unreadCountAdmin || conv.unreadCount}
+                    </span>
+                    <Bell size={14} className="text-[#e11d48] fill-[#e11d48]/10 animate-shake" />
+                  </motion.div>
+                )}
               </button>
             ))}
           </div>
@@ -593,7 +680,7 @@ export default function Chats() {
             <h3 className="text-lg font-serif text-charcoal mb-1">Clear history</h3>
             <p className="text-[9px] text-warmgray mb-6 font-bold uppercase tracking-widest">Permanent record deletion</p>
             <div className="flex flex-col gap-2">
-              <button onClick={() => handleClear(selectedUser.userId)} className="w-full py-2.5 bg-red-600 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest shadow-lg">Confirm clear</button>
+              <button onClick={() => handleClear(selectedUser.chatId)} className="w-full py-2.5 bg-red-600 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest shadow-lg">Confirm clear</button>
               <button onClick={() => setShowClearModal(false)} className="w-full py-2.5 bg-ivory text-warmgray rounded-xl text-[9px] font-bold uppercase tracking-widest border border-[#e6e3df]">Abort</button>
             </div>
           </div>

@@ -3,6 +3,22 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Storage configuration for profile and chat uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const chatDir = path.join(__dirname, '../uploads/chats');
+        if (!fs.existsSync(chatDir)) fs.mkdirSync(chatDir, { recursive: true });
+        cb(null, chatDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '_')}`);
+    }
+});
+const upload = multer({ storage });
 
 // @route   POST api/chats
 // @desc    Send a message
@@ -29,21 +45,77 @@ router.post('/', auth, async (req, res) => {
         const populatedMessage = await Message.findById(savedMessage._id)
             .populate('replyTo', 'text sender timestamp');
 
+        // --- NEW: ChatRoom Orchestration ---
+        const ChatRoom = require('../models/ChatRoom');
+        const isAdmin = req.user.role === 'admin' || req.user.id === 'hardcoded-admin-id';
+        const roomUserId = isAdmin ? recipient : req.user.id;
+
+        if (roomUserId && roomUserId !== 'admin') {
+            const incrementField = isAdmin ? 'unreadCountUser' : 'unreadCountAdmin';
+            const updatedRoom = await ChatRoom.findOneAndUpdate(
+                { userId: roomUserId },
+                {
+                    $set: { lastMessage: text, lastTimestamp: new Date() },
+                    $inc: { [incrementField]: 1 }
+                },
+                { upsert: true, new: true }
+            );
+
+            const ioInstance = req.app.get('io');
+            if (ioInstance) {
+                ioInstance.emit('room_updated', {
+                    roomId: roomUserId,
+                    unreadCountAdmin: updatedRoom.unreadCountAdmin,
+                    unreadCountUser: updatedRoom.unreadCountUser
+                });
+            }
+        }
+
         const io = req.app.get('io');
         if (io) {
-            // 1. Sending to the recipient
-            io.to(recipient).emit('new_message', populatedMessage);
-            
-            // 2. Sending to the sender (for multi-tab sync)
-            io.to(req.user.id).emit('new_message', populatedMessage);
-            
-            // 3. Ensuring admins get a copy if they are watching the general portal
-            io.to('admin').emit('new_message', populatedMessage);
+            // Logic to determine unique rooms to emit to.
+            // If sender is 'admin' or hardcoded, we should still reach room 'admin' for multi-tab sync.
+            // If recipient is 'admin', we reach room 'admin'.
+            const rooms = new Set();
+            rooms.add(recipient);
+
+            // For admins, also broadcast to 'admin' room to keep all admin tabs in sync
+            if (recipient === 'admin' || req.user.role === 'admin' || req.user.id === 'hardcoded-admin-id') {
+                rooms.add('admin');
+            }
+
+            // Always reach the sender for multi-tab sync
+            rooms.add(req.user.id);
+
+            // Emit to each unique room
+            rooms.forEach(room => {
+                console.log(`--- [EMIT] --- Socket: Sending new_message to room: ${room}`);
+                io.to(room).emit('new_message', populatedMessage);
+            });
         }
 
         res.json(populatedMessage);
     } catch (err) {
         console.error('Chat POST Error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// @route   POST api/chats/upload
+// @desc    Upload an attachment for a chat
+router.post('/upload', auth, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ msg: 'No file uploaded' });
+
+        // Return URL relative to the host
+        const fileUrl = `/uploads/chats/${req.file.filename}`;
+
+        res.json({
+            url: fileUrl,
+            fileName: req.file.originalname,
+            fileType: req.file.mimetype
+        });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -54,7 +126,7 @@ router.get('/', auth, async (req, res) => {
     try {
         const admins = await User.find({ role: 'admin' }, '_id');
         const adminIds = ['admin', 'hardcoded-admin-id', ...admins.map(a => String(a._id))];
-        
+
         const messages = await Message.find({
             $or: [
                 { sender: req.user.id, recipient: { $in: adminIds } },
@@ -62,7 +134,7 @@ router.get('/', auth, async (req, res) => {
             ],
             deletedForUsers: { $ne: req.user.id }
         }).sort({ timestamp: 1 })
-          .populate('replyTo', 'text sender timestamp');
+            .populate('replyTo', 'text sender timestamp');
 
         res.json(messages);
     } catch (err) {
@@ -71,93 +143,90 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-// @route   GET api/chats/admin/conversations
-// @desc    Admin-side: List all unique client conversations with summary and unread counts
+// Helper to get all possible admin identifiers
+async function getAdminIds(adminId) {
+    const admins = await User.find({ role: 'admin' }, '_id');
+    return ['admin', 'hardcoded-admin-id', adminId, ...admins.map(a => String(a._id))].filter(Boolean);
+}
+
+// API 1: GET /api/chats/admin/conversations
 router.get('/admin/conversations', auth, async (req, res) => {
     try {
-        const admins = await User.find({ role: 'admin' }, '_id');
-        const adminIds = ['admin', 'hardcoded-admin-id', req.user.id, ...admins.map(a => String(a._id))];
-        
+        const adminIds = await getAdminIds(req.user.id);
         const messages = await Message.find({
-            $or: [
-                { sender: { $in: adminIds } },
-                { recipient: { $in: adminIds } }
-            ]
+            $or: [{ sender: { $in: adminIds } }, { recipient: { $in: adminIds } }]
         }).sort({ timestamp: -1 });
 
         const conversationsMap = {};
-        const participantIds = new Set();
-
+        const participantIdsSet = new Set();
         messages.forEach(msg => {
             const senderStr = String(msg.sender);
             const recipientStr = String(msg.recipient);
             const otherParty = adminIds.includes(senderStr) ? recipientStr : senderStr;
-            
             if (adminIds.includes(otherParty)) return;
-            participantIds.add(otherParty);
-
+            participantIdsSet.add(otherParty);
             if (!conversationsMap[otherParty]) {
-                conversationsMap[otherParty] = {
-                    userId: otherParty,
-                    lastMessage: msg.text,
-                    timestamp: msg.timestamp,
-                    unreadCount: 0
-                };
-            }
-
-            // Unread: Sent TO an admin ID and NOT seen
-            if (!msg.seen && adminIds.includes(recipientStr)) {
-                conversationsMap[otherParty].unreadCount += 1;
+                conversationsMap[otherParty] = { chatId: otherParty, lastMessage: msg.text, timestamp: msg.timestamp, unreadCount: 0 };
             }
         });
 
-        const users = await User.find({ _id: { $in: Array.from(participantIds) } }, 'firstName lastName name');
+        const ChatRoom = require('../models/ChatRoom');
+
+        const participantIds = Array.from(participantIdsSet);
+        const [users, rooms] = await Promise.all([
+            User.find({ _id: { $in: participantIds } }, 'name firstName lastName'),
+            ChatRoom.find({ userId: { $in: participantIds } })
+        ]);
+
         const userDetails = {};
         users.forEach(u => userDetails[u._id.toString()] = u.name || `${u.firstName} ${u.lastName}`.trim());
 
+        const roomCounts = {};
+        rooms.forEach(r => roomCounts[r.userId] = r.unreadCountAdmin);
+
         const result = Object.values(conversationsMap).map(conv => ({
             ...conv,
-            userName: userDetails[conv.userId] || 'Alpha Client'
+            userName: userDetails[conv.chatId] || 'Alpha Client',
+            unreadCount: roomCounts[conv.chatId] || 0
         }));
-
-        res.json(result);
-    } catch (err) {
-        res.status(500).send('Server Error');
-    }
-});
-
-// @route   GET api/chats/unread-summary
-router.get('/unread-summary', auth, async (req, res) => {
-    try {
-        const admins = await User.find({ role: 'admin' }, '_id');
-        const adminIds = ['admin', 'hardcoded-admin-id', req.user.id, ...admins.map(a => String(a._id))];
-        const unreadMessages = await Message.find({ recipient: { $in: adminIds }, seen: false });
-        const uniqueChatSenders = new Set(unreadMessages.map(m => String(m.sender)));
-        res.json({ totalChatsWithUnread: uniqueChatSenders.size });
+        res.json(result.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-// @route   PUT api/chats/mark-as-seen
+// API 3: GET /api/chats/unread-summary
+// API 3: GET /api/chats/unread-summary
+router.get('/unread-summary', auth, async (req, res) => {
+    try {
+        const ChatRoom = require('../models/ChatRoom');
+        const roomsWithUnread = await ChatRoom.countDocuments({ unreadCountAdmin: { $gt: 0 } });
+        res.json({ totalChatsWithUnread: roomsWithUnread });
+    } catch (err) { res.status(500).send('Server Error'); }
+});
+
 router.put('/mark-as-seen', auth, async (req, res) => {
     const { chatId } = req.body;
     try {
-        const admins = await User.find({ role: 'admin' }, '_id');
-        const adminIds = ['admin', 'hardcoded-admin-id', req.user.id, ...admins.map(a => String(a._id))];
-        
-        await Message.updateMany(
-            { sender: chatId, recipient: { $in: adminIds }, seen: false }, 
-            { $set: { seen: true, isRead: true, status: 'seen' } }
-        );
-        
-        const unreadMessages = await Message.find({ recipient: { $in: adminIds }, seen: false });
-        const totalUnreadChats = new Set(unreadMessages.map(m => String(m.sender))).size;
+        const adminIds = await getAdminIds(req.user.id);
+        const ChatRoom = require('../models/ChatRoom');
+
+        await Promise.all([
+            Message.updateMany({ sender: chatId, recipient: { $in: adminIds }, seen: false }, { $set: { seen: true, isRead: true, status: 'seen' } }),
+            ChatRoom.findOneAndUpdate({ userId: chatId }, { $set: { unreadCountAdmin: 0 } })
+        ]);
+
+        const updatedRoom = await ChatRoom.findOne({ userId: chatId });
+        const roomsWithUnread = await ChatRoom.countDocuments({ unreadCountAdmin: { $gt: 0 } });
 
         const io = req.app.get('io');
         if (io) {
-            io.to('admin').emit('chat_seen', { chatId, totalUnreadChats });
-            io.to('admin').emit('unread_count_update', { count: totalUnreadChats });
+            io.emit('room_updated', {
+                roomId: chatId,
+                unreadCountAdmin: 0,
+                unreadCountUser: updatedRoom ? updatedRoom.unreadCountUser : 0
+            });
+            io.to('admin').emit('unread_count_update', { count: roomsWithUnread });
         }
-        res.json({ success: true, totalUnreadChats });
+        res.json({ success: true, totalUnreadChats: roomsWithUnread });
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
@@ -165,20 +234,32 @@ router.put('/mark-as-seen', auth, async (req, res) => {
 router.put('/read', auth, async (req, res) => {
     const { chatId } = req.body;
     try {
-        const admins = await User.find({ role: 'admin' }, '_id');
-        const adminIds = ['admin', 'hardcoded-admin-id', req.user.id, ...admins.map(a => String(a._id))];
-        await Message.updateMany({ sender: chatId, recipient: { $in: adminIds }, seen: false }, { $set: { seen: true, isRead: true, status: 'seen' } });
+        const ChatRoom = require('../models/ChatRoom');
+        await Promise.all([
+            Message.updateMany({ recipient: req.user.id, seen: false }, { $set: { seen: true, isRead: true, status: 'seen' } }),
+            ChatRoom.findOneAndUpdate({ userId: req.user.id }, { $set: { unreadCountUser: 0 } })
+        ]);
+
+        const updatedRoom = await ChatRoom.findOne({ userId: req.user.id });
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('room_updated', {
+                roomId: req.user.id,
+                unreadCountAdmin: updatedRoom ? updatedRoom.unreadCountAdmin : 0,
+                unreadCountUser: 0
+            });
+            io.to(req.user.id).emit('unread_count_update', { count: 0 });
+        }
         res.json({ success: true });
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
 router.get('/unread', auth, async (req, res) => {
     try {
-        const admins = await User.find({ role: 'admin' }, '_id');
-        const adminIds = ['admin', 'hardcoded-admin-id', req.user.id, ...admins.map(a => String(a._id))];
-        const unreadMessages = await Message.find({ recipient: { $in: adminIds }, seen: false });
-        const uniqueChatSenders = new Set(unreadMessages.map(m => String(m.sender)));
-        res.json({ count: uniqueChatSenders.size });
+        const ChatRoom = require('../models/ChatRoom');
+        const room = await ChatRoom.findOne({ userId: req.user.id });
+        const count = room ? room.unreadCountUser : 0;
+        res.json({ count, totalChatsWithUnread: count > 0 ? 1 : 0 });
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
@@ -196,9 +277,9 @@ router.get('/admin/:userId', auth, async (req, res) => {
                 { sender: { $in: adminIds }, recipient: userId }
             ]
         }).sort({ timestamp: -1 })
-          .skip((page - 1) * limit)
-          .limit(limit)
-          .populate('replyTo', 'text sender timestamp');
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .populate('replyTo', 'text sender timestamp');
         res.json(messages.reverse());
     } catch (err) { res.status(500).send('Server Error'); }
 });
@@ -236,5 +317,7 @@ router.delete('/:id/:mode', auth, async (req, res) => {
         res.json({ success: true });
     } catch (err) { res.status(500).send('Server Error'); }
 });
+
+module.exports = router;
 
 module.exports = router;

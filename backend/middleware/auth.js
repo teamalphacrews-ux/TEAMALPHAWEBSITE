@@ -11,15 +11,20 @@ module.exports = function (req, res, next) {
 
     // Check if no token
     if (!token) {
+        console.warn('--- [AUTH/401] --- No token found in headers (x-auth-token or Authorization)');
         return res.status(401).json({ msg: 'No token, authorization denied' });
     }
 
     // Verify token
     try {
+        console.log(`--- [AUTH] --- Attempting verification for: ${token.substring(0, 10)}...`);
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log(`--- [AUTH/SUCCESS] --- User: ${decoded.user.id} (Role: ${decoded.user.role})`);
         req.user = decoded.user;
         next();
     } catch (err) {
-        res.status(401).json({ msg: 'Token is not valid' });
+        console.error('--- [AUTH/ERROR] --- Validation failed:', err.message);
+        // Possible reasons: "jwt malformed", "jwt expired", "invalid signature"
+        res.status(401).json({ msg: `Token is not valid: ${err.message}` });
     }
 };

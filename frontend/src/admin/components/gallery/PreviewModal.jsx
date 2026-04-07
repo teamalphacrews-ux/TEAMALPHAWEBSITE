@@ -10,11 +10,11 @@ export default function PreviewModal({ item, onClose, onDelete }) {
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   const token = localStorage.getItem('token');
   
-  const proxyUrl = `${API_BASE_URL}/api/drive-gallery/proxy/${item.fileId}?token=${token}`;
+  const proxyUrl = `${API_BASE_URL}/api/drive-gallery/proxy/${item.fileId}`;
   // Fast Optimized Preview (High Res but not the massive original)
-  const previewUrl = isVideo ? proxyUrl : `https://drive.google.com/thumbnail?id=${item.fileId}&sz=s2048`;
+  const previewUrl = isVideo ? proxyUrl : proxyUrl;
   // Low-res placeholder for immediate display
-  const placeholderUrl = `https://drive.google.com/thumbnail?id=${item.fileId}&sz=w300`;
+  const placeholderUrl = item.thumbnailLink || proxyUrl;
   const downloadUrl = item.webContentLink || item.webViewLink || previewUrl;
 
   const [isLoaded, setIsLoaded] = useState(false);

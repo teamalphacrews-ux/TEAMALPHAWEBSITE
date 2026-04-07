@@ -170,15 +170,69 @@ router.get('/files/:eventId', auth, async (req, res) => {
         }
 
         const files = await GoogleDriveService.getFolderContents(event.driveFolderId);
-        
-        // Filter: only images and videos
-        const filteredFiles = files.filter(f => 
-            f.mimeType.startsWith('image/') || f.mimeType.startsWith('video/')
-        );
-
-        res.json(filteredFiles);
+        res.json(files);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * @route   GET /api/drive-gallery/proxy/:fileId
+ * @desc    Proxy file request from Google Drive (Service Account auth)
+ *          Supports Range headers for video seeking.
+ */
+router.get('/proxy/:fileId', async (req, res) => {
+    try {
+        const { fileId } = req.params;
+        const drive = GoogleDriveService.getDriveClient();
+        if (!drive) return res.status(500).send('Drive client error');
+
+        // Fetch file metadata for mimeType and size
+        const metadata = await drive.files.get({
+            fileId,
+            fields: 'id, name, mimeType, size'
+        });
+
+        const mimeType = metadata.data.mimeType;
+        const fileSize = parseInt(metadata.data.size);
+        const range = req.headers.range;
+
+        if (range) {
+            const parts = range.replace(/bytes=/, "").split("-");
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+            const chunksize = (end - start) + 1;
+
+            const response = await drive.files.get(
+                { fileId, alt: 'media' },
+                { 
+                    responseType: 'stream',
+                    headers: { Range: `bytes=${start}-${end}` }
+                }
+            );
+
+            res.writeHead(206, {
+                'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+                'Accept-Ranges': 'bytes',
+                'Content-Length': chunksize,
+                'Content-Type': mimeType,
+            });
+            response.data.pipe(res);
+        } else {
+            const response = await drive.files.get(
+                { fileId, alt: 'media' },
+                { responseType: 'stream' }
+            );
+
+            res.writeHead(200, {
+                'Content-Length': fileSize,
+                'Content-Type': mimeType,
+            });
+            response.data.pipe(res);
+        }
+    } catch (error) {
+        console.error('Proxy error:', error.message);
+        res.status(500).send('Error streaming file');
     }
 });
 

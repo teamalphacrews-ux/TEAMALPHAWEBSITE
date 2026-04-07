@@ -1,8 +1,11 @@
 import { memo, useState, useEffect, useRef } from "react";
 import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchUnreadCounts, setAdminUnreadCount, handleRoomUpdate } from '../../../store/slices/chatSlice';
 import { motion } from "framer-motion";
 import axios from "axios";
 import { io } from "socket.io-client";
+import { useAuth } from "../../../context/AuthContext";
 import {
   LayoutDashboard,
   Users,
@@ -19,46 +22,53 @@ import toast from "react-hot-toast";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const Sidebar = function Sidebar({ onClose }) {
+  const { user: authUser, token: authContextToken } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const dispatch = useDispatch();
+  const unreadCount = useSelector(state => state.chat.adminUnreadCount);
   const socketRef = useRef(null);
-  const pathRef = useRef(location.pathname);
-
-  useEffect(() => { pathRef.current = location.pathname; }, [location.pathname]);
+  
+  const cleanToken = (raw) => {
+    if (!raw || typeof raw !== 'string') return null;
+    const cleaned = raw.replace(/^["']|["']$/g, '').trim();
+    return cleaned === 'null' || cleaned === 'undefined' ? null : cleaned;
+  };
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      const socket = io(API_URL, { auth: { token } });
+    const token = cleanToken(authContextToken || localStorage.getItem("token"));
+    
+    // Auth Gate: Strictly only fire if we have a valid user and a sanitized token
+    if (authUser && token) {
+      console.log('--- [SIDEBAR] --- Session Ready, Initializing Hooks ---');
+      
+      const socket = io(API_URL, { 
+        auth: { token },
+        reconnection: true,
+        reconnectionAttempts: 5 
+      });
       socketRef.current = socket;
-      socket.emit("join_chat", "admin");
-
-      const fetchUnread = async () => {
-        try {
-          const res = await axios.get(`${API_URL}/api/chats/unread`, { headers: { "x-auth-token": token } });
-          setUnreadCount(res.data.count || 0);
-        } catch (err) { }
-      };
-      fetchUnread();
-
-      socket.on("new_message", (msg) => {
-        // Industry-Standard: Re-fetch if addressed to us and we aren't viewing
-        const isOutbound = (msg.sender === JSON.parse(localStorage.getItem('user'))?.id);
-        const isAdminRecipient = msg.recipient === 'admin' || msg.recipient === 'hardcoded-admin-id' || msg.recipient === JSON.parse(localStorage.getItem('user'))?.id;
-        const isOnChatPage = pathRef.current === '/admin/chats';
-
-        if (isAdminRecipient && !isOnChatPage && !isOutbound) {
-          fetchUnread();
-        }
+      
+      socket.on("connect", () => {
+          socket.emit("join_chat", "admin");
+          // Re-sync counts on every clean connection
+          dispatch(fetchUnreadCounts());
       });
 
-      socket.on("chat_seen", () => fetchUnread());
-      socket.on("unread_count_update", () => fetchUnread());
+      socket.on("room_updated", (data) => dispatch(handleRoomUpdate(data)));
+      
+      socket.on("unread_count_update", (data) => {
+        if (data && typeof data.count === 'number') dispatch(setAdminUnreadCount(data.count));
+      });
 
-      return () => socket.disconnect();
+      // Initial Sync via Redux (Guarded)
+      dispatch(fetchUnreadCounts());
+
+      return () => {
+        if (socket) socket.disconnect();
+      };
     }
-  }, []);
+  }, [authUser, authContextToken]);
 
   const menuItems = [
     { name: "Dashboard", path: "/admin", icon: LayoutDashboard, exact: true },
@@ -102,9 +112,9 @@ const Sidebar = function Sidebar({ onClose }) {
               <span className="relative z-20 flex items-center gap-2">
                 {item.name}
                 {item.path === '/admin/chats' && unreadCount > 0 && (
-                  <span className="bg-red-500 text-white text-[9px] px-2 py-0.5 rounded-full font-black animate-pulse shadow-md ring-2 ring-white">
-                    {unreadCount}
-                  </span>
+                  <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ repeat: Infinity, repeatType: 'reverse', duration: 1.5 }}>
+                    <Bell size={14} className="text-[#e11d48] fill-[#e11d48]/10 drop-shadow-[0_0_8px_rgba(225,29,72,0.4)]" />
+                  </motion.div>
                 )}
               </span>
               {isActive && (

@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import { useDispatch } from 'react-redux';
+import { fetchClientUnreadCounts, clearClientUnread, handleRoomUpdate, markRoomAsRead } from '../../store/slices/chatSlice';
 import toast, { Toaster } from 'react-hot-toast';
 
 // Modular Components
@@ -17,7 +19,8 @@ import ChatSearchBar from "../../components/client/Chat/SearchBar";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Chats() {
-    const { user } = useAuth();
+    const { user, token: authContextToken } = useAuth();
+    const dispatch = useDispatch();
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isTyping, setIsTyping] = useState(false);
@@ -33,27 +36,48 @@ export default function Chats() {
     const optionsRef = useRef(null);
     const typingTimeoutRef = useRef(null);
 
+    const cleanToken = (raw) => {
+        if (!raw || typeof raw !== 'string') return null;
+        const cleaned = raw.replace(/^["']|["']$/g, '').trim();
+        return cleaned === 'null' || cleaned === 'undefined' ? null : cleaned;
+    };
+
     // Socket Initialization
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        const token = cleanToken(authContextToken || localStorage.getItem("token"));
         if (!token || !user) return;
 
-        const socket = io(API_URL, { auth: { token } });
+        const socket = io(API_URL, { 
+            auth: { token },
+            reconnection: true,
+            reconnectionAttempts: 10
+        });
         socketRef.current = socket;
 
-        socket.emit("join_chat", user.id);
+        socket.on('connect', () => {
+            console.log('--- [SOCKET] --- Client connected successfully ---');
+            socket.emit("join_chat", user.id);
+        });
 
-        // Standardized real-time unread engine listeners
+        socket.on('connect_error', (err) => {
+            console.warn('--- [SOCKET] --- Connection error:', err.message);
+        });
+
+        // Room-based real-time unread engine
+        socket.on('room_updated', (data) => dispatch(handleRoomUpdate(data)));
         socket.on("new_message", (message) => {
-            if (message.sender === user.id || message.recipient === user.id) {
+            const senderId = typeof message.sender === 'object' ? String(message.sender._id) : String(message.sender);
+            const recipientId = typeof message.recipient === 'object' ? String(message.recipient._id) : String(message.recipient);
+
+            if (senderId === user.id || recipientId === user.id || recipientId === 'admin') {
                 setMessages(prev => {
                     if (prev.find(m => m._id === message._id)) return prev;
                     return [...prev, message];
                 });
                 
                 // If we are recipient and currently viewing this chat, mark it seen instantly
-                if (message.recipient === user.id) {
-                   socket.emit('message_delivered', { messageId: message._id, senderId: message.sender });
+                if (recipientId === user.id) {
+                   socket.emit('message_delivered', { messageId: message._id, senderId: senderId });
                    markAsSeen();
                 }
             }
@@ -91,40 +115,71 @@ export default function Chats() {
         });
 
         return () => socket.disconnect();
-    }, [user?.id]);
+    }, [user?.id, authContextToken]);
 
     const fetchMessages = async () => {
+        const token = cleanToken(authContextToken || localStorage.getItem("token"));
+        if (!token || !user) return;
+        
         try {
-            const token = localStorage.getItem("token");
-            if (!token) return;
             const res = await axios.get(`${API_URL}/api/chats`, {
-                headers: { "x-auth-token": token }
+                headers: { 
+                    "x-auth-token": token,
+                    "Authorization": `Bearer ${token}`
+                }
             });
             setMessages(res.data);
             setLoading(false);
             scrollToBottom('auto');
         } catch (err) {
-            console.error("Failed to fetch messages", err);
+            if (err.response?.status === 401) {
+                console.warn("--- [AUTH/401] --- Rejected fetchMessages (Invalid/Stale Token)");
+            } else {
+                console.error("Failed to fetch messages", err);
+            }
             setLoading(false);
         }
     };
 
     const markAsSeen = async () => {
+        const token = cleanToken(authContextToken || localStorage.getItem("token"));
+        if (!token || !user) return;
+
         try {
-            const token = localStorage.getItem("token");
-            if (!token) return;
+            // 1. Instant Optimistic UI Clear (Zero Delay)
+            dispatch(markRoomAsRead({ roomId: user.id || user._id, readerType: 'user' }));
+
+            // 2. Direct Socket Signal for global sync
+            if (socketRef.current) {
+                socketRef.current.emit('mark_read', { roomId: user.id || user._id, readerType: 'user' });
+            }
+
             await axios.put(`${API_URL}/api/chats/read`, { chatId: 'admin' }, {
-                headers: { "x-auth-token": token }
+                headers: { 
+                    "x-auth-token": token,
+                    "Authorization": `Bearer ${token}`
+                }
             });
-            // Notify local socket about seen status to sync other client tabs
-            socketRef.current?.emit('chat_seen', 'admin');
-        } catch (err) { }
+            
+            // Secondary Syncs
+            dispatch(fetchClientUnreadCounts());
+        } catch (err) {
+            if (err.response?.status === 401) {
+                 console.warn("--- [AUTH/401] --- Rejected markAsSeen (Invalid/Stale Token)");
+            }
+        }
     };
 
     useEffect(() => {
-        fetchMessages();
-        markAsSeen();
-        
+        const token = cleanToken(authContextToken || localStorage.getItem("token"));
+        // Strict guard: only fire when session is fully ready
+        if (user && token) {
+            fetchMessages();
+            markAsSeen();
+        }
+    }, [user?.id, user?._id, authContextToken]);
+
+    useEffect(() => {
         const handleClickOutside = (e) => {
             if (optionsRef.current && !optionsRef.current.contains(e.target)) setShowOptions(false);
         };

@@ -4,9 +4,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const getHeaders = (sheetName = '') => {
     const sheetId = localStorage.getItem('google_sheet_id');
+    const token = localStorage.getItem('token');
     const headers = {
         'Content-Type': 'application/json',
-        'x-sheet-id': sheetId || ''
+        'x-sheet-id': sheetId || '',
+        'Authorization': `Bearer ${token}`
     };
     if (sheetName) {
         headers['x-sheet-name'] = sheetName;
@@ -98,12 +100,8 @@ export const deleteRow = async (rowId, sheetName) => {
 
 export const deleteColumn = async (colIndex, sheetName) => {
     try {
-        const token = localStorage.getItem('token');
         const response = await axios.delete(`${API_URL}/api/google-sheets/column/${colIndex}`, {
-            headers: {
-                ...getHeaders(sheetName),
-                'Authorization': `Bearer ${token}`
-            }
+            headers: getHeaders(sheetName)
         });
         return { success: true, data: response.data };
     } catch (error) {
@@ -114,12 +112,8 @@ export const deleteColumn = async (colIndex, sheetName) => {
 
 export const getDropdownConfig = async () => {
     try {
-        const token = localStorage.getItem('token');
         const response = await axios.get(`${API_URL}/api/google-sheets/config/dropdowns`, {
-            headers: {
-                ...getHeaders(),
-                'Authorization': `Bearer ${token}`
-            }
+            headers: getHeaders()
         });
         return response.data;
     } catch (error) {
@@ -130,14 +124,10 @@ export const getDropdownConfig = async () => {
 
 export const updateDropdownConfig = async (type, options) => {
     try {
-        const token = localStorage.getItem('token');
         const response = await axios.post(`${API_URL}/api/google-sheets/config/dropdowns`, {
             type, options
         }, {
-            headers: {
-                ...getHeaders(),
-                'Authorization': `Bearer ${token}`
-            }
+            headers: getHeaders()
         });
         return { success: true, data: response.data };
     } catch (error) {

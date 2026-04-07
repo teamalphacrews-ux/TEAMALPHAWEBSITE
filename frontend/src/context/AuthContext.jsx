@@ -9,8 +9,14 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    const cleanToken = (raw) => {
+        if (!raw || typeof raw !== 'string') return null;
+        const cleaned = raw.replace(/^["']|["']$/g, '').trim();
+        return cleaned === 'null' || cleaned === 'undefined' ? null : cleaned;
+    };
+
     useEffect(() => {
-        const storedToken = localStorage.getItem('token');
+        const storedToken = cleanToken(localStorage.getItem('token'));
         const storedUser = localStorage.getItem('user');
         if (storedToken && storedUser) {
             setToken(storedToken);
@@ -20,9 +26,10 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = (userData, userToken) => {
-        setToken(userToken);
+        const sanitizedToken = cleanToken(userToken);
+        setToken(sanitizedToken);
         setUser(userData);
-        localStorage.setItem('token', userToken);
+        if (sanitizedToken) localStorage.setItem('token', sanitizedToken);
         localStorage.setItem('user', JSON.stringify(userData));
         if (userData.role === 'admin') navigate('/admin');
         else navigate('/portal');
