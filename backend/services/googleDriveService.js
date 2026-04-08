@@ -182,6 +182,13 @@ const GoogleDriveService = {
             console.error('Google Drive Get File Stream Error:', error.message);
             throw error;
         }
+    },
+
+    /**
+     * Internal helper to get/initialize the drive client.
+     */
+    getDriveClient() {
+        return getDriveClient();
     }
 };
 

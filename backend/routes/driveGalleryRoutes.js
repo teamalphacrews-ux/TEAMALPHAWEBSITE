@@ -57,7 +57,7 @@ router.post('/', auth, (req, res) => {
 
         try {
             const { name, password, clientId } = req.body;
-            
+
             if (!name) {
                 return res.status(400).json({ error: "Client name is required" });
             }
@@ -102,7 +102,7 @@ router.post('/:clientId/events', auth, (req, res) => {
         try {
             const { name, driveLink, eventDate } = req.body;
             const { clientId } = req.params;
-            
+
             if (!name || !driveLink) {
                 return res.status(400).json({ error: "Event name and Drive link are required" });
             }
@@ -187,16 +187,39 @@ router.get('/proxy/:fileId', async (req, res) => {
         const drive = GoogleDriveService.getDriveClient();
         if (!drive) return res.status(500).send('Drive client error');
 
-        // Fetch file metadata for mimeType and size
+        // Get metadata first with all-drive support
         const metadata = await drive.files.get({
             fileId,
-            fields: 'id, name, mimeType, size'
+            fields: 'id, name, mimeType, size, thumbnailLink',
+            supportsAllDrives: true
         });
 
         const mimeType = metadata.data.mimeType;
         const fileSize = parseInt(metadata.data.size);
-        const range = req.headers.range;
+        const fileName = metadata.data.name;
+        const isHEIC =
+            mimeType === 'image/heic' ||
+            fileName?.toLowerCase().endsWith('.heic') ||
+            fileName?.toLowerCase().endsWith('.heif');
 
+        // CASE 1: REDIRECT TO THUMBNAIL (For HEIC/Reliable Previews)
+        // We use a redirect for thumbnails because it's significantly more reliable on varied network setups
+        if ((req.query.thumbnail === 'true' || isHEIC) && metadata.data.thumbnailLink) {
+            let highResThumbnail = metadata.data.thumbnailLink;
+            if (highResThumbnail.includes('=s')) {
+                highResThumbnail = highResThumbnail.replace(/=s\d+/, '=s1000');
+            } else if (highResThumbnail.includes('=w')) {
+                highResThumbnail = highResThumbnail.replace(/=w\d+/, '=w1000').replace(/=h\d+/, '=h1000');
+            } else if (!highResThumbnail.includes('=')) {
+                highResThumbnail += '=s1000';
+            }
+
+            console.log(`📡 Redirecting ${fileId} to high-res thumbnail: ${fileName}`);
+            return res.redirect(302, highResThumbnail);
+        }
+
+        // CASE 2: PROXY RAW FILE (For Video Streaming/Downloads)
+        const range = req.headers.range;
         if (range) {
             const parts = range.replace(/bytes=/, "").split("-");
             const start = parseInt(parts[0], 10);
@@ -204,8 +227,8 @@ router.get('/proxy/:fileId', async (req, res) => {
             const chunksize = (end - start) + 1;
 
             const response = await drive.files.get(
-                { fileId, alt: 'media' },
-                { 
+                { fileId, alt: 'media', supportsAllDrives: true },
+                {
                     responseType: 'stream',
                     headers: { Range: `bytes=${start}-${end}` }
                 }
@@ -216,19 +239,22 @@ router.get('/proxy/:fileId', async (req, res) => {
                 'Accept-Ranges': 'bytes',
                 'Content-Length': chunksize,
                 'Content-Type': mimeType,
+                'Content-Disposition': `inline; filename="${fileName}"`
             });
-            response.data.pipe(res);
+            return response.data.pipe(res);
         } else {
             const response = await drive.files.get(
-                { fileId, alt: 'media' },
+                { fileId, alt: 'media', supportsAllDrives: true },
                 { responseType: 'stream' }
             );
 
             res.writeHead(200, {
                 'Content-Length': fileSize,
                 'Content-Type': mimeType,
+                'Content-Disposition': `inline; filename="${fileName}"`,
+                'Cache-Control': 'public, max-age=86400'
             });
-            response.data.pipe(res);
+            return response.data.pipe(res);
         }
     } catch (error) {
         console.error('Proxy error:', error.message);
@@ -270,18 +296,18 @@ router.get('/event/:eventId', auth, async (req, res) => {
 router.post('/verify/search', async (req, res) => {
     try {
         const { password, clientName, clientId } = req.body;
-        
+
         let client;
-        
+
         // Priority 1: Search by direct Account ID
         if (clientId) {
             client = await DriveGallery.findOne({ clientId });
         }
-        
+
         // Priority 2: Fallback to string matching for legacy/unlinked clients
         if (!client && clientName) {
-            client = await DriveGallery.findOne({ 
-                name: { $regex: new RegExp('^' + clientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') } 
+            client = await DriveGallery.findOne({
+                name: { $regex: new RegExp('^' + clientName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }
             });
         }
 
@@ -367,7 +393,7 @@ router.patch('/:id', auth, upload.single('thumbnail'), async (req, res) => {
         if (name) updateData.name = name;
         if (req.file) updateData.thumbnail = req.file.path;
         if (clientId) updateData.clientId = clientId;
-        
+
         if (password) {
             const salt = await bcrypt.genSalt(10);
             updateData.passwordHash = await bcrypt.hash(password, salt);

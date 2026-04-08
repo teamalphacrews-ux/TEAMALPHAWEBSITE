@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Components
 import PreviewModal from "../components/gallery/PreviewModal";
+import LoadingScreen from "../../components/common/LoadingScreen";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -33,6 +34,7 @@ export default function DriveGalleryDetail() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [selectedFile, setSelectedFile] = useState(null);
+  const [imagesLoaded, setImagesLoaded] = useState(0);
 
   useEffect(() => {
     fetchEventData();
@@ -54,12 +56,16 @@ export default function DriveGalleryDetail() {
         headers: { 'x-auth-token': token }
       });
       setFiles(filesRes.data);
+      setImagesLoaded(0); // Reset count on new fetch
     } catch (err) {
       toast.error("Failed to fetch event media.");
     } finally {
       setLoading(false);
     }
   };
+
+  const imageFiles = useMemo(() => files.filter(f => f.mimeType.startsWith('image/')), [files]);
+  const totalImages = imageFiles.length;
 
   const filteredFiles = useMemo(() => {
     return files.filter(f => {
@@ -73,15 +79,15 @@ export default function DriveGalleryDetail() {
     });
   }, [files, searchQuery, filterType]);
 
-  if (loading && !event) return (
-    <div className="flex flex-col h-[70vh] items-center justify-center animate-in fade-in duration-700">
-      <Loader2 size={40} className="animate-spin text-[#cfe8d5] mb-4" />
-      <p className="page-title !text-2xl text-[#8a8a8a]">Opening Event Bundle...</p>
-    </div>
-  );
+  if (loading && !event) return null; // Let the full-screen LoadingScreen handle initial fetch
 
   return (
     <div className="min-h-screen pb-24 animate-in fade-in duration-1000">
+      <LoadingScreen 
+        isLoading={loading || (totalImages > 0 && imagesLoaded < totalImages)} 
+        total={totalImages} 
+        current={imagesLoaded} 
+      />
       
       {/* Header Bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
@@ -161,13 +167,20 @@ export default function DriveGalleryDetail() {
               >
                 <div className="w-full h-full relative overflow-hidden rounded-2xl">
                     <motion.img 
-                      src={file.thumbnailLink ? file.thumbnailLink.replace('=s220', '=s400') : `${API_BASE_URL}/api/drive-gallery/proxy/${file.id}`} 
+                      src={`${API_BASE_URL}/api/drive-gallery/proxy/${file.id}?thumbnail=true`} 
                       alt={file.name} 
-                      loading="lazy"
+                      loading="eager" 
+                      onLoad={() => setImagesLoaded(prev => prev + 1)}
                       className="w-full h-auto block object-cover scale-100 group-hover:scale-110 transition-transform duration-700" 
                       onError={(e) => {
-                        if (!e.target.src.includes('/proxy/')) {
-                          e.target.src = `${API_BASE_URL}/api/drive-gallery/proxy/${file.id}`;
+                        const currentSrc = e.target.src;
+                        if (!currentSrc.includes('fallback=true')) {
+                          // Try one fallback to raw stream if thumbnail redirect fails
+                          console.warn(`Fallback triggered for ${file.name}`);
+                          e.target.src = `${API_BASE_URL}/api/drive-gallery/proxy/${file.id}?thumbnail=false&fallback=true`;
+                        } else {
+                          // Both failed, count as "loaded" so we don't hang the screen, but it will show broken icon
+                          setImagesLoaded(prev => prev + 1);
                         }
                       }}
                     />

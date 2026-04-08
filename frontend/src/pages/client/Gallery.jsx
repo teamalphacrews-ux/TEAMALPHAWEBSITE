@@ -3,6 +3,7 @@ import { Download, X, Maximize2, Play, Image as ImageIcon, Sparkles, Filter, Cam
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Masonry from "react-masonry-css";
+import LoadingScreen from "../../components/common/LoadingScreen";
 
 export default function Gallery() {
   const [user, setUser] = useState(null);
@@ -28,6 +29,7 @@ export default function Gallery() {
   
   // Preview
   const [selectedMedia, setSelectedMedia] = useState(null);
+  const [imagesLoaded, setImagesLoaded] = useState(0);
 
   useEffect(() => {
     const fetchUserAndInit = async () => {
@@ -133,8 +135,12 @@ export default function Gallery() {
         console.error("Failed to fetch files for event", err);
     } finally {
         setLoadingFiles(false);
+        setImagesLoaded(0); // Reset count on new folder view
     }
   };
+
+  const imageFiles = useMemo(() => files.filter(f => f.mimeType.startsWith('image/')), [files]);
+  const totalImages = imageFiles.length;
 
   const filteredFiles = useMemo(() => {
     return files.filter(f => {
@@ -180,6 +186,11 @@ export default function Gallery() {
 
   return (
     <div className="animate-in fade-in duration-700">
+      <LoadingScreen 
+        isLoading={loadingEvents || loadingFiles || (totalImages > 0 && imagesLoaded < totalImages)} 
+        total={totalImages || (loadingEvents ? 4 : 0)} // Dummy total for initial events load to show some activity
+        current={loadingEvents ? 0 : imagesLoaded} 
+      />
       <div className="max-w-[1400px] mx-auto px-4 md:px-8">
         
         {isLocked ? (
@@ -434,12 +445,18 @@ export default function Gallery() {
                   >
                     <div className="w-full h-full relative overflow-hidden rounded-2xl">
                         <motion.img 
-                          src={`https://drive.google.com/thumbnail?id=${file.id}&sz=w1000`} 
+                          src={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/proxy/${file.id}?thumbnail=true`} 
                           alt={file.name} 
-                          loading="lazy"
+                          loading="eager" 
+                          onLoad={() => setImagesLoaded(prev => prev + 1)}
                           className="w-full h-auto block object-cover" 
                           onError={(e) => {
-                            e.target.src = `https://drive.google.com/uc?id=${file.id}`;
+                            const currentSrc = e.target.src;
+                            if (!currentSrc.includes('fallback=true')) {
+                              e.target.src = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/proxy/${file.id}?thumbnail=false&fallback=true`;
+                            } else {
+                              setImagesLoaded(prev => prev + 1);
+                            }
                           }}
                         />
                         
@@ -494,10 +511,14 @@ export default function Gallery() {
                     />
                 ) : (
                     <img 
-                        src={`https://drive.google.com/thumbnail?id=${selectedMedia.id}&sz=w4000`} 
+                        src={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/proxy/${selectedMedia.id}?thumbnail=true`} 
                         className="modal-media shadow-2xl rounded-lg" 
                         alt="Memory preview"
-                        onError={(e) => { e.target.src = `https://drive.google.com/uc?id=${selectedMedia.id}`; }}
+                        onError={(e) => { 
+                            if (!e.target.src.includes('thumbnail=false')) {
+                                e.target.src = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/proxy/${selectedMedia.id}?thumbnail=false`; 
+                            }
+                        }}
                     />
                 )}
 
