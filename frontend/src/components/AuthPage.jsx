@@ -31,7 +31,7 @@ const AuthPage = () => {
         e.preventDefault();
         setError('');
         setIsSubmitting(true);
-        const url = '/api/auth/login';
+        const url = `${import.meta.env.VITE_API_URL || ""}/api/auth/login`;
 
         const body = { email: formData.email, password: formData.password, role: userRole };
 
