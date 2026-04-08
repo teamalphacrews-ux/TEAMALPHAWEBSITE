@@ -105,6 +105,12 @@ export default function Chats() {
         socket.on('message_deleted_everyone', (data) => {
             setMessages(prev => prev.map(m => m._id === data.id ? { ...m, text: 'This message was deleted', isDeletedEveryone: true, attachments: [] } : m));
         });
+        
+        socket.on('chat_cleared', (data) => {
+            if (data.userId === 'admin') {
+                setMessages([]);
+            }
+        });
 
         socket.on('display_typing', (data) => {
             if (data.senderId === 'admin' || data.senderId === 'hardcoded-admin-id') setIsTyping(true);

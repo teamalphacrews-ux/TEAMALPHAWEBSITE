@@ -154,7 +154,8 @@ router.get('/admin/conversations', auth, async (req, res) => {
     try {
         const adminIds = await getAdminIds(req.user.id);
         const messages = await Message.find({
-            $or: [{ sender: { $in: adminIds } }, { recipient: { $in: adminIds } }]
+            $or: [{ sender: { $in: adminIds } }, { recipient: { $in: adminIds } }],
+            deletedForUsers: { $ne: req.user.id }
         }).sort({ timestamp: -1 });
 
         const conversationsMap = {};
@@ -172,12 +173,12 @@ router.get('/admin/conversations', auth, async (req, res) => {
 
         const ChatRoom = require('../models/ChatRoom');
 
-        const participantIds = Array.from(participantIdsSet);
         const [users, rooms] = await Promise.all([
-            User.find({ _id: { $in: participantIds } }, 'name firstName lastName'),
-            ChatRoom.find({ userId: { $in: participantIds } })
+            User.find({ _id: { $in: Array.from(participantIdsSet) } }, 'name firstName lastName'),
+            ChatRoom.find({ userId: { $in: Array.from(participantIdsSet) } })
         ]);
 
+        // Build details for users we found messages for
         const userDetails = {};
         users.forEach(u => userDetails[u._id.toString()] = u.name || `${u.firstName} ${u.lastName}`.trim());
 
@@ -189,8 +190,32 @@ router.get('/admin/conversations', auth, async (req, res) => {
             userName: userDetails[conv.chatId] || 'Alpha Client',
             unreadCount: roomCounts[conv.chatId] || 0
         }));
+
         res.json(result.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
     } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// @route   GET api/chats/search-users
+// @desc    Global search for all clients (for starting new chats)
+router.get('/search-users', auth, async (req, res) => {
+    const { query } = req.query;
+    if (!query || query.length < 2) return res.json([]);
+    try {
+        const users = await User.find({
+            $or: [
+                { firstName: { $regex: query, $options: 'i' } },
+                { lastName: { $regex: query, $options: 'i' } },
+                { email: { $regex: query, $options: 'i' } },
+                { name: { $regex: query, $options: 'i' } } // In case name field exists
+            ],
+            role: 'client' // Only search for clients
+        }, 'name firstName lastName email').limit(10);
+        
+        res.json(users);
+    } catch (err) {
+        console.error('Search users error:', err.message);
+        res.status(500).send('Server Error');
+    }
 });
 
 // API 3: GET /api/chats/unread-summary
@@ -275,13 +300,75 @@ router.get('/admin/:userId', auth, async (req, res) => {
             $or: [
                 { sender: userId, recipient: { $in: adminIds } },
                 { sender: { $in: adminIds }, recipient: userId }
-            ]
+            ],
+            deletedForUsers: { $ne: req.user.id }
         }).sort({ timestamp: -1 })
             .skip((page - 1) * limit)
             .limit(limit)
             .populate('replyTo', 'text sender timestamp');
         res.json(messages.reverse());
     } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// @route   POST api/chats/clear/:userId (Admin)
+// @desc    Clear chat history for admin only
+router.post('/clear/:userId', auth, async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const admins = await User.find({ role: 'admin' }, '_id');
+        const adminIds = ['admin', 'hardcoded-admin-id', req.user.id, ...admins.map(a => String(a._id))];
+
+        await Message.updateMany({
+            $or: [
+                { sender: userId, recipient: { $in: adminIds } },
+                { sender: { $in: adminIds }, recipient: userId }
+            ],
+            deletedForUsers: { $ne: req.user.id }
+        }, {
+            $addToSet: { deletedForUsers: req.user.id }
+        });
+
+        res.json({ success: true, msg: 'Conversation cleared for admin' });
+
+        const io = req.app.get('io');
+        if (io) {
+            // Emit to 'admin' room so all admin tabs clear
+            io.to('admin').emit('chat_cleared', { userId: userId, clearedBy: req.user.id });
+        }
+    } catch (err) {
+        console.error('Clear chat error:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST api/chats/clear/admin (Client)
+// @desc    Clear chat history for client only
+router.post('/clear/admin', auth, async (req, res) => {
+    try {
+        const admins = await User.find({ role: 'admin' }, '_id');
+        const adminIds = ['admin', 'hardcoded-admin-id', ...admins.map(a => String(a._id))];
+
+        await Message.updateMany({
+            $or: [
+                { sender: req.user.id, recipient: { $in: adminIds } },
+                { sender: { $in: adminIds }, recipient: req.user.id }
+            ],
+            deletedForUsers: { $ne: req.user.id }
+        }, {
+            $addToSet: { deletedForUsers: req.user.id }
+        });
+
+        res.json({ success: true, msg: 'Conversation cleared for client' });
+
+        const io = req.app.get('io');
+        if (io) {
+            // Emit to the client's own room so all their tabs clear
+            io.to(req.user.id).emit('chat_cleared', { userId: 'admin', clearedBy: req.user.id });
+        }
+    } catch (err) {
+        console.error('Clear chat error:', err.message);
+        res.status(500).send('Server Error');
+    }
 });
 
 router.post('/react/:messageId', auth, async (req, res) => {

@@ -33,10 +33,33 @@ export default function Chats() {
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState("");
   const [activeMenuId, setActiveMenuId] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [numResults, setNumResults] = useState(0);
   const [isMobileThreadView, setIsMobileThreadView] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [globalSearchResults, setGlobalSearchResults] = useState([]);
+  const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Debounced Global Search
+  useEffect(() => {
+    if (!searchTerm || searchTerm.length < 2) {
+      setGlobalSearchResults([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      setIsSearchingGlobal(true);
+      try {
+        const token = cleanToken(authContextToken || localStorage.getItem("token"));
+        const res = await axios.get(`${API_URL}/api/chats/search-users?query=${searchTerm}`, {
+          headers: { "x-auth-token": token, "Authorization": `Bearer ${token}` }
+        });
+        setGlobalSearchResults(res.data);
+      } catch (err) { console.error("Global search error", err); }
+      finally { setIsSearchingGlobal(false); }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, authContextToken]);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -170,6 +193,16 @@ export default function Chats() {
     newSocket.on('hide_typing', (data) => { if (selectedUserRef.current?.chatId === data.senderId) setIsTyping(false); });
     newSocket.on('message_edited', (updatedMsg) => { setMessages(prev => prev.map(m => m._id === updatedMsg._id ? updatedMsg : m)); });
     newSocket.on('message_deleted_everyone', (data) => { setMessages(prev => prev.map(m => m._id === data.id ? { ...m, text: 'This transmission redacted', isDeletedEveryone: true, attachments: [] } : m)); });
+    newSocket.on('chat_cleared', (data) => {
+      if (selectedUserRef.current?.chatId === data.userId) {
+        setMessages([]);
+        setSelectedUser(null);
+        selectedUserRef.current = null;
+        setIsMobileThreadView(false);
+      }
+      setConversations(prev => prev.filter(c => c.chatId !== data.userId));
+      fetchConversations();
+    });
 
     return () => newSocket.close();
   }, [adminProfile, authContextToken]);
@@ -245,13 +278,21 @@ export default function Chats() {
     setSelectedUser(user);
     selectedUserRef.current = user;
     if (user) {
-      const token = cleanToken(authContextToken || localStorage.getItem("token"));
-      if (token) {
-        fetchMessages(user.chatId);
-        markAsSeen(user.chatId);
+      if (user.chatId) {
+        const token = cleanToken(authContextToken || localStorage.getItem("token"));
+        if (token) {
+          fetchMessages(user.chatId);
+          markAsSeen(user.chatId);
+        }
+      } else {
+        // This is a new user from global search with no previous messages
+        setMessages([]);
+        setPage(1);
+        setHasMore(false);
       }
       setReplyingTo(null);
       setAttachmentsPreview(null);
+      setIsMobileThreadView(true);
     }
   };
 
@@ -294,23 +335,19 @@ export default function Chats() {
   };
 
   useEffect(() => {
-    if (!searchQuery) {
-      if (page === 1) scrollToBottom();
-    } else {
-      const firstMatch = messages.find(m => String(m.text || '').toLowerCase().includes(searchQuery.toLowerCase()));
-      if (firstMatch) {
-        const el = document.getElementById(`msg-${firstMatch._id}`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-  }, [messages, isTyping, searchQuery, page]);
+    if (page === 1) scrollToBottom();
+  }, [messages, isTyping, page]);
 
   const handleSend = async (e) => {
     if (e) e.preventDefault();
     if ((!newMessage.trim() && !attachmentsPreview) || !selectedUser) return;
+    
+    // Determine the target ID (chatId or _id for new users)
+    const targetUserId = selectedUser.chatId || selectedUser._id;
+    
     const tempId = Date.now().toString();
     const optimisticMsg = {
-      _id: tempId, text: newMessage, sender: 'admin', recipient: selectedUser.chatId,
+      _id: tempId, text: newMessage, sender: 'admin', recipient: targetUserId,
       timestamp: new Date().toISOString(), status: 'pending',
       messageType: attachmentsPreview ? (attachmentsPreview.fileType.startsWith('image/') ? 'image' : 'file') : 'text',
       attachments: attachmentsPreview ? [attachmentsPreview] : [],
@@ -321,7 +358,7 @@ export default function Chats() {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.post(`${API_URL}/api/chats`,
-        { text: optimisticMsg.text, recipient: selectedUser.chatId, messageType: optimisticMsg.messageType, attachments: optimisticMsg.attachments, replyTo: optimisticMsg.replyTo?._id },
+        { text: optimisticMsg.text, recipient: targetUserId, messageType: optimisticMsg.messageType, attachments: optimisticMsg.attachments, replyTo: optimisticMsg.replyTo?._id },
         { headers: { "x-auth-token": token } }
       );
       setMessages(prev => {
@@ -329,10 +366,17 @@ export default function Chats() {
         if (alreadyExists) return prev.filter(m => m._id !== tempId);
         return prev.map(m => m._id === tempId ? res.data : m);
       });
-      socketRef.current?.emit('typing_stop', { roomId: selectedUser.chatId, senderId: 'admin' });
+      socketRef.current?.emit('typing_stop', { roomId: targetUserId, senderId: 'admin' });
 
-      // After sending, unread should obviously be 0 for this client
-      fetchConversations();
+      // If this was a new conversation, re-fetch the list to show the new entry
+      if (!selectedUser.chatId) {
+        const updatedUser = { ...selectedUser, chatId: targetUserId };
+        setSelectedUser(updatedUser);
+        selectedUserRef.current = updatedUser;
+        fetchConversations();
+      } else {
+        fetchConversations();
+      }
     } catch (err) {
       setMessages(prev => prev.map(m => m._id === tempId ? { ...m, status: 'error' } : m));
     }
@@ -389,10 +433,21 @@ export default function Chats() {
     try {
       const token = localStorage.getItem("token");
       await axios.post(`${API_URL}/api/chats/clear/${userId}`, {}, { headers: { "x-auth-token": token } });
+      
+      // Optimistic Update: Immediately hide from sidebar and clear messages
+      setConversations(prev => prev.filter(c => c.chatId !== userId));
       setMessages([]);
+      setSelectedUser(null);
+      selectedUserRef.current = null;
+      setIsMobileThreadView(false);
+      
       setShowClearModal(false);
-      fetchConversations();
-    } catch (err) { }
+      fetchConversations(); // Sync with server backup
+      toast.success("Conversation cleared for you");
+    } catch (err) {
+      console.error("Clear chat error", err);
+      toast.error("Failed to clear conversation");
+    }
   };
 
   const handleEditSave = async (messageId) => {
@@ -408,9 +463,10 @@ export default function Chats() {
   const handleTyping = (e) => {
     setNewMessage(e.target.value);
     if (!socketRef.current || !selectedUser) return;
-    socketRef.current.emit('typing_start', { roomId: selectedUser.chatId, senderId: 'admin' });
+    const targetUserId = selectedUser.chatId || selectedUser._id;
+    socketRef.current.emit('typing_start', { roomId: targetUserId, senderId: 'admin' });
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => { socketRef.current.emit('typing_stop', { roomId: selectedUser.chatId, senderId: 'admin' }); }, 2000);
+    typingTimeoutRef.current = setTimeout(() => { socketRef.current.emit('typing_stop', { roomId: targetUserId, senderId: 'admin' }); }, 2000);
   };
 
   const handleEmojiClick = (emojiData) => {
@@ -438,6 +494,22 @@ export default function Chats() {
     );
   };
 
+  const activeConversations = useMemo(() => {
+    return conversations.filter(c => {
+      const matchesSearch = String(c.userName || '').toLowerCase().includes(searchTerm.toLowerCase());
+      if (!searchTerm) {
+        // WhatsApp behavior: Hide if cleared (no visible messages)
+        return c.lastMessage && c.lastMessage.trim() !== "";
+      }
+      return matchesSearch;
+    });
+  }, [conversations, searchTerm]);
+
+  const otherContacts = useMemo(() => {
+    if (!searchTerm) return [];
+    return globalSearchResults.filter(u => !conversations.find(c => c.chatId === u._id));
+  }, [globalSearchResults, conversations, searchTerm]);
+
   return (
     <div className="h-[calc(100vh-100px)] flex flex-col gap-6 animate-in fade-in duration-700 max-w-[1400px] mx-auto w-full font-sans text-[#5a5a5a] overflow-hidden">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end px-2 sm:px-4">
@@ -461,7 +533,10 @@ export default function Chats() {
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
-            {conversations.filter(c => String(c.userName || '').toLowerCase().includes(searchTerm.toLowerCase())).map((conv) => (
+            {searchTerm && activeConversations.length > 0 && (
+              <p className="text-[10px] font-black uppercase tracking-widest text-warmgray px-2 mb-2 opacity-60">Active Chats</p>
+            )}
+            {activeConversations.map((conv) => (
               <button
                 key={conv.chatId} onClick={() => handleSelectUser(conv)}
                 className={`w-full flex items-center gap-3 p-3 rounded-[18px] transition-all duration-[300ms] group ${selectedUser?.chatId === conv.chatId ? 'bg-[#e8dfd1] text-[#2c2c2c] shadow-[0_4px_12px_rgba(0,0,0,0.05)]' : 'bg-white/60 hover:bg-white/90 shadow-sm border border-white/40 hover:border-white transition-all'}`}
@@ -487,6 +562,39 @@ export default function Chats() {
                 )}
               </button>
             ))}
+
+            {searchTerm && otherContacts.length > 0 && (
+              <div className="mt-6">
+                <p className="text-[10px] font-black uppercase tracking-widest text-warmgray px-2 mb-2 opacity-60">Other Contacts</p>
+                {otherContacts.map((u) => (
+                  <button
+                    key={u._id} onClick={() => handleSelectUser({ ...u, userName: u.name || `${u.firstName} ${u.lastName}`.trim() })}
+                    className={`w-full flex items-center gap-3 p-3 rounded-[18px] transition-all duration-[300ms] group bg-white/40 hover:bg-white/80 shadow-sm border border-white/20 hover:border-white mb-2`}
+                  >
+                    <div className="w-11 h-11 rounded-[14px] bg-[#fbf9f6] flex items-center justify-center font-bold text-[#8a8a8a] shrink-0">{String(u.name || u.firstName || '').charAt(0)}</div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <h3 className="text-[13px] font-black truncate text-[#2c2c2c]">{u.name || `${u.firstName} ${u.lastName}`.trim()}</h3>
+                      <p className="text-[10px] truncate opacity-40 font-medium">{u.email}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {!searchTerm && conversations.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full opacity-40 p-4 text-center mt-20">
+                <MessageSquare size={32} className="mb-4" />
+                <p className="text-[11px] font-black uppercase tracking-widest">No active conversations</p>
+                <p className="text-[10px] mt-2 font-medium">Search for a client to start chatting</p>
+              </div>
+            )}
+
+            {searchTerm && activeConversations.length === 0 && otherContacts.length === 0 && !isSearchingGlobal && (
+              <div className="flex flex-col items-center justify-center p-8 opacity-40 text-center">
+                <Search size={24} className="mb-3" />
+                <p className="text-[10px] font-black uppercase tracking-widest">No results found</p>
+              </div>
+            )}
           </div>
         </div>
 
