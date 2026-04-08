@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 export default function PhotographerForm({ onClose, onAdded }) {
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
-    const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const API = import.meta.env.VITE_API_URL || '';
     const [formData, setFormData] = useState({
         name: "",
         email: "",

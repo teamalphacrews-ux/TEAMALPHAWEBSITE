@@ -11,7 +11,7 @@ export default function Home() {
             try {
                 const token = localStorage.getItem('token');
                 if (token) {
-                    const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/me`, {
+                    const res = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/auth/me`, {
                         headers: { 'x-auth-token': token }
                     });
                     setUser(res.data);

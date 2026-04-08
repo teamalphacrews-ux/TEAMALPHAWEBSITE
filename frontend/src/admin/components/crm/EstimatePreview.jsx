@@ -1,4 +1,4 @@
-﻿import React, { forwardRef } from 'react';
+import React, { forwardRef } from 'react';
 import { numberToIndianWords } from '../../utils/numberToWords';
 
 const EstimatePreview = forwardRef(({ data }, ref) => {
@@ -91,23 +91,23 @@ const EstimatePreview = forwardRef(({ data }, ref) => {
                 {/* Workflow Graphic Simulation */}
                 <div className="w-[85%] mx-auto flex flex-col gap-6 font-bold text-[12px] relative pl-10">
                     <div className="flex items-center gap-6 z-10">
-                        <div className="w-20 h-20 bg-blue-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">💸</div>
+                        <div className="w-20 h-20 bg-blue-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">??</div>
                         <p>payment confirmation with 50% advanced</p>
                     </div>
                     <div className="flex items-center justify-end gap-6 z-10 -mt-4">
                         <p className="w-48 text-right">project confirmation with other vendors & finalize deliverables with 25% payment</p>
-                        <div className="w-20 h-20 bg-indigo-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">🤝</div>
+                        <div className="w-20 h-20 bg-indigo-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">??</div>
                     </div>
                     <div className="flex items-center gap-6 z-10 -mt-4">
-                        <div className="w-20 h-20 bg-orange-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">📸</div>
+                        <div className="w-20 h-20 bg-orange-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">??</div>
                         <p className="w-48">shoot day data will be updated on drive & download link will be sent</p>
                     </div>
                     <div className="flex items-center justify-end gap-6 z-10 -mt-4">
                         <p className="w-48 text-right">selection of photos & videos from client</p>
-                        <div className="w-20 h-20 bg-teal-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">💻</div>
+                        <div className="w-20 h-20 bg-teal-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">??</div>
                     </div>
                     <div className="flex items-center gap-6 z-10 -mt-4">
-                        <div className="w-20 h-20 bg-yellow-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">🎁</div>
+                        <div className="w-20 h-20 bg-yellow-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">??</div>
                         <p className="w-48">deliver of albums & collection of remaining payment</p>
                     </div>
                 </div>
@@ -218,7 +218,7 @@ const EstimatePreview = forwardRef(({ data }, ref) => {
 
                 <div className="space-y-6 text-[12px] text-gray-700 leading-relaxed text-justify">
                     <div className="flex gap-4">
-                        <span className="text-[#555] mt-1 text-[10px]">●</span>
+                        <span className="text-[#555] mt-1 text-[10px]">?</span>
                         <div>
                             <span className="font-bold text-black text-[13px]">BOOKING CONFIRMATION AND PAYMENTS:</span><br />
                             To confirm booking for our photography, videography, and other services, you are requested to pay an advance amount of 50% of the total project cost plus the traveling charges (if any). We follow a strict "first come first serve" policy. Without the advance payment, we cannot guarantee to block specific dates for you. The remaining balance of the total amount can be paid prior to the 1st day of the photo shoot or preferably two days in advance. We accept cash, cheque, and online transfer. We will share the transaction details once you confirm to us your preferred mode of payment.
@@ -226,7 +226,7 @@ const EstimatePreview = forwardRef(({ data }, ref) => {
                     </div>
 
                     <div className="flex gap-4">
-                        <span className="text-[#555] mt-1 text-[10px]">●</span>
+                        <span className="text-[#555] mt-1 text-[10px]">?</span>
                         <div>
                             <span className="font-bold text-black text-[13px]">CANCELLATIONS AND RESCHEDULING:</span><br />
                             Client will be responsible for payment of all expenses incurred up to the time of cancellation of the assignment, plus 50 percent of Photographer's fee. However, if notice of cancellation is given less than two (2) business days before the shoot date, the client will be charged a 100% fee. All cancellations must be in writing. Likewise, requests for rescheduling the photo shoot shall be intimated to us well in advance of the initial agreed date. In case of delayed intimation, we may not guarantee booking on your preferred new dates.
@@ -234,7 +234,7 @@ const EstimatePreview = forwardRef(({ data }, ref) => {
                     </div>
 
                     <div className="flex gap-4">
-                        <span className="text-[#555] mt-1 text-[10px]">●</span>
+                        <span className="text-[#555] mt-1 text-[10px]">?</span>
                         <div>
                             <span className="font-bold text-black text-[13px]">DISTURBANCE AT THE EVENT:</span><br />
                             you are looking for multiple photographers and videographers, we recommend booking within TEAM ALPHA as we have good rapport with our team members. If there are any other photographers/videographers (who are not a part of TEAM ALPHA), they must be briefed to cooperate with our team members. As candid photography and cinematography concentrates on special moments, subjects and detailing, there are chances that our crew members will appear on other team's camera frames and vice-versa. Any guests or family members behave rudely or threaten the photographers during the event, the situation should be handled by you. We believe to maintain professionalism of high standards and expect the same from all our clients. If there are any unavoidable circumstances, the entire crew will leave the premises with no further photoshoot. There shall also be no refund of any fees.
@@ -242,7 +242,7 @@ const EstimatePreview = forwardRef(({ data }, ref) => {
                     </div>
 
                     <div className="flex gap-4">
-                        <span className="text-[#555] mt-1 text-[10px]">●</span>
+                        <span className="text-[#555] mt-1 text-[10px]">?</span>
                         <div>
                             <span className="font-bold text-black text-[13px]">TRAVELING:</span><br />
                             We are a team based in Bengaluru. For any events/venue outside Bengaluru, all the travel expenses and accommodation must be taken care of by the client for the entire crew. If there are any events happening during the late night and the next event is scheduled in the early morning, accommodation must be taken care of by the client for the entire crew. This is applicable for Bengaluru events as well.
@@ -254,7 +254,7 @@ const EstimatePreview = forwardRef(({ data }, ref) => {
             {/* PAGE 6: DATA MANAGEMENT TERMS & CONDITIONS */}
             <div className={pageStyle + " pdf-page px-16 py-24 flex flex-col justify-between"}>
                 <div>
-                    <h3 className="font-bold text-[18px] mb-8 text-[#222]">Wedding Photography Data Management — Terms & Conditions</h3>
+                    <h3 className="font-bold text-[18px] mb-8 text-[#222]">Wedding Photography Data Management � Terms & Conditions</h3>
 
                     <div className="space-y-8 text-[13px] text-black leading-relaxed text-justify">
                         <div>

@@ -3,7 +3,7 @@ import { X, Upload, Loader2, Save } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export default function EditClientModal({ isOpen, onClose, client, onSuccess }) {
   const [name, setName] = useState('');

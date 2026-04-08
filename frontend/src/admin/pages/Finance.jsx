@@ -24,7 +24,7 @@ const AnimatedNumber = ({ value, prefix = "₹" }) => {
 export default function Finance() {
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
-    const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const API = import.meta.env.VITE_API_URL || '';
     const [stats, setStats] = useState({ annualSales: 0, annualProfit: 0, expenses: 0, pendingRevenue: 0 });
     const [transactions, setTransactions] = useState([]);
     const [allocation, setAllocation] = useState([]);

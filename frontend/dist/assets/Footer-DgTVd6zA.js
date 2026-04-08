@@ -1,0 +1,1 @@
+import{j as t}from"./vendor-motion-CXT3a-I7.js";import"./vendor-react-CzbQv84D.js";const o=()=>t.jsx("footer",{className:"py-10 bg-white text-center text-xs tracking-widest text-gray-500 uppercase border-t border-gray-100",children:"© 2026 Team Alpha Photography"});export{o as default};

@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import CreateGalleryModal from "../components/gallery/CreateGalleryModal";
 import EditClientModal from "../components/gallery/EditClientModal";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export default function SmartGallery() {
   const navigate = useNavigate();

@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 export default function ActivityLog() {
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-    const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const API = import.meta.env.VITE_API_URL || '';
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 

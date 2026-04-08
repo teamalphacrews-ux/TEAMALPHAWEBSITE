@@ -4,7 +4,7 @@ import { X, Upload, Link as LinkIcon, Info, Loader2 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }) {
   const [name, setName] = useState("");

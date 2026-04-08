@@ -10,7 +10,7 @@ import EstimatePreview from "./EstimatePreview";
 export default function InvoiceForm({ onClose, initialData = null, initialClientName = "" }) {
   const token = localStorage.getItem('token');
   const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
-  const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API = import.meta.env.VITE_API_URL || '';
 
   const [clientName, setClientName] = useState(initialData?.clientName || initialClientName);
   const [invoiceDate, setInvoiceDate] = useState(initialData?.invoiceDate ? initialData.invoiceDate.split('T')[0] : new Date().toISOString().split('T')[0]);

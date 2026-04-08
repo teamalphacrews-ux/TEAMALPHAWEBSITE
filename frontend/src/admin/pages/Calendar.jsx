@@ -40,7 +40,7 @@ export default function Calendar() {
     const [selectedDate, setSelectedDate] = useState(null);
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
-    const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const API = import.meta.env.VITE_API_URL || '';
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);

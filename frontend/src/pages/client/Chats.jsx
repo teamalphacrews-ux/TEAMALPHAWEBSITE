@@ -16,7 +16,7 @@ import MessageBubble from "../../components/client/Chat/MessageBubble";
 import ChatInput from "../../components/client/Chat/ChatInput";
 import ChatSearchBar from "../../components/client/Chat/SearchBar";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 export default function Chats() {
     const { user, token: authContextToken } = useAuth();

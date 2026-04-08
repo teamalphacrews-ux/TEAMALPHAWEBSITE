@@ -37,7 +37,7 @@ export default function Gallery() {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const userRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/me`, {
+          const userRes = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/me`, {
             headers: { 'x-auth-token': token }
           });
           if (userRes.ok) {
@@ -69,7 +69,7 @@ export default function Gallery() {
     setLoadingEvents(true);
     try {
       const token = localStorage.getItem('token');
-      const eventsRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/${cid}/events`, {
+      const eventsRes = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/drive-gallery/${cid}/events`, {
         headers: { 'x-auth-token': token }
       });
       const eventsData = await eventsRes.json();
@@ -89,7 +89,7 @@ export default function Gallery() {
     setError("");
     
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/verify/search`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/drive-gallery/verify/search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -127,7 +127,7 @@ export default function Gallery() {
     setFiles([]);
     try {
         const token = localStorage.getItem('token');
-        const filesRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/files/${event._id}`, {
+        const filesRes = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/drive-gallery/files/${event._id}`, {
             headers: { 'x-auth-token': token }
         });
         const filesData = await filesRes.json();
@@ -445,7 +445,7 @@ export default function Gallery() {
                   >
                     <div className="w-full h-full relative overflow-hidden rounded-2xl">
                         <motion.img 
-                          src={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/proxy/${file.id}?thumbnail=true`} 
+                          src={`${import.meta.env.VITE_API_URL || ""}/api/drive-gallery/proxy/${file.id}?thumbnail=true`} 
                           alt={file.name} 
                           loading="eager" 
                           onLoad={() => setImagesLoaded(prev => prev + 1)}
@@ -453,7 +453,7 @@ export default function Gallery() {
                           onError={(e) => {
                             const currentSrc = e.target.src;
                             if (!currentSrc.includes('fallback=true')) {
-                              e.target.src = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/proxy/${file.id}?thumbnail=false&fallback=true`;
+                              e.target.src = `${import.meta.env.VITE_API_URL || ""}/api/drive-gallery/proxy/${file.id}?thumbnail=false&fallback=true`;
                             } else {
                               setImagesLoaded(prev => prev + 1);
                             }
@@ -511,12 +511,12 @@ export default function Gallery() {
                     />
                 ) : (
                     <img 
-                        src={`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/proxy/${selectedMedia.id}?thumbnail=true`} 
+                        src={`${import.meta.env.VITE_API_URL || ""}/api/drive-gallery/proxy/${selectedMedia.id}?thumbnail=true`} 
                         className="modal-media shadow-2xl rounded-lg" 
                         alt="Memory preview"
                         onError={(e) => { 
                             if (!e.target.src.includes('thumbnail=false')) {
-                                e.target.src = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/drive-gallery/proxy/${selectedMedia.id}?thumbnail=false`; 
+                                e.target.src = `${import.meta.env.VITE_API_URL || ""}/api/drive-gallery/proxy/${selectedMedia.id}?thumbnail=false`; 
                             }
                         }}
                     />

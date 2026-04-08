@@ -4,7 +4,7 @@ import { X, Upload, Link as LinkIcon, CheckCircle2, Loader2, Info } from "lucide
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export default function UploadModal({ isOpen, onClose, onUploadSuccess, clientFolders = [] }) {
   const [tab, setTab] = useState("file"); // "file" or "link"

@@ -42,7 +42,7 @@ export default function ClientSidebar({ onClose }) {
     const token = localStorage.getItem("token");
 
     if (userId && token) {
-      const socket = io(import.meta.env.VITE_API_URL || "http://localhost:5000", { 
+      const socket = io(import.meta.env.VITE_API_URL || "", { 
         auth: { token },
         reconnection: true
       });

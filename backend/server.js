@@ -377,30 +377,10 @@ app.use('/api/google-sheets', require('./routes/googleSheetRoutes'));
 app.use('/api/media', require('./routes/media'));
 app.use('/api/drive-gallery', require('./routes/driveGalleryRoutes'));
 
-// --- Production Configuration ---
-// Serve static files from the React/Vite frontend build folder
-const distPath = path.join(__dirname, '../frontend/dist');
-app.use(express.static(distPath));
-
-// Root route to confirm server is running (Optional, but index.html usually handles "/")
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'Server is running', environment: process.env.NODE_ENV || 'development' });
-});
-
-// Wildcard route to serve index.html for any non-API routes (SPA Routing)
-app.get('*', (req, res) => {
-    if (res.headersSent) return;
-    res.sendFile(path.join(distPath, 'index.html'), (err) => {
-        if (err) {
-            res.status(404).send("Frontend build not found. please run 'npm run build' in the frontend directory.");
-        }
-    });
-});
-
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log('-------------------------------------------');
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🔗 Frontend & API integrated`);
+    console.log(`🚀 API Server running on port ${PORT}`);
+    console.log(`🔗 Real-time Sockets Enabled`);
     console.log('-------------------------------------------');
 });

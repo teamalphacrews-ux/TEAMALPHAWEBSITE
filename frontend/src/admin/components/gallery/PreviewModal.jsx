@@ -7,7 +7,7 @@ export default function PreviewModal({ item, onClose, onDelete }) {
   if (!item) return null;
 
   const isVideo = item.mimeType?.includes("video/");
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '';
   const token = localStorage.getItem('token');
 
   const proxyUrl = `${API_BASE_URL}/api/drive-gallery/proxy/${item.fileId}`;

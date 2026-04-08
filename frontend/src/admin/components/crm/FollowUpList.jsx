@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { Phone, Mail, Calendar, Clock, CheckCircle, MessageCircle, AlertCircle, CalendarPlus } from "lucide-react";
 import { format, addDays } from "date-fns";
 import axios from "axios";
@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 export default function FollowUpList({ lead, onUpdate }) {
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
-    const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const API = import.meta.env.VITE_API_URL || '';
   const [loading, setLoading] = useState(false);
   const dateInputRef = useRef(null);
 
