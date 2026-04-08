@@ -184,7 +184,7 @@ const Topbar = memo(function Topbar({ onMenuClick, isVisibleProp }) {
                         onClick={onMenuClick}
                         className="lg:hidden w-9 h-9 flex items-center justify-center rounded-full bg-white/50 backdrop-blur-[8px] text-[#5f5f5f] hover:bg-black/5 hover:text-[#2d2d2d] transition-all duration-200"
                     >
-                        <X size={18} />
+                        <Menu size={18} />
                     </button>
 
                     <div className="flex items-center gap-2">

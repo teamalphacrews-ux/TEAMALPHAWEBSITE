@@ -127,7 +127,7 @@ function CloudAssets({ user }) {
                 )}
                 
                 {(user.cloudPassword || user.galleryTag) && (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {user.cloudPassword && (
                             <div className="bg-black/5 p-4 rounded-2xl border border-black/5 flex flex-col gap-1">
                                 <span className="text-[9px] uppercase tracking-widest text-luxury-text-muted font-bold">Vault Password</span>

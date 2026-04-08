@@ -125,7 +125,7 @@ export default function EventForm({ onClose, onSave, onDelete, initialData }) {
                     </div>
 
                     {/* Timeline */}
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-3">
                             <label className="text-[10px] uppercase font-bold tracking-[0.3em] text-[#2d2d2d]/40 ml-1">Commencement</label>
                             <input

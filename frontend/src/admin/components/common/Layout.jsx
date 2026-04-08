@@ -80,7 +80,7 @@ export default function Layout() {
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && !isFocusMode && (
                 <div
-                    className="lg:hidden fixed inset-0 bg-charcoal/40 backdrop-blur-sm z-90 animate-in fade-in duration-300"
+                    className="lg:hidden fixed inset-0 bg-charcoal/40 backdrop-blur-sm z-[90] animate-in fade-in duration-300"
                     onClick={() => setIsSidebarOpen(false)}
                 />
             )}
@@ -88,7 +88,7 @@ export default function Layout() {
             {/* Mobile Sidebar Content */}
             {!isFocusMode && (
                 <div className={`
-                    lg:hidden fixed left-0 top-0 h-screen z-100 transition-transform duration-500 ease-in-out p-4
+                    lg:hidden fixed left-0 top-0 h-screen z-[100] transition-transform duration-500 ease-in-out
                     ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
                 `}>
                     <div className="h-full floating-card-animation">

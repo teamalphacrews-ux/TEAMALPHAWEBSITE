@@ -202,7 +202,7 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
 
                     <div className="space-y-2">
                       <label className="text-[10px] uppercase font-bold tracking-[0.15em] text-[#9a9a9a] ml-1">Hero Cover Image (Optional)</label>
-                      <div className="flex items-center gap-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                         <div className="w-20 h-20 bg-white/80 rounded-2xl border border-white/80 shadow-inner overflow-hidden flex items-center justify-center">
                           {coverImage ? <img src={coverImage} className="w-full h-full object-cover" /> : <Camera size={24} className="text-[#c0c0c0]" />}
                         </div>
@@ -262,10 +262,12 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
                   </div>
                   <div className="bg-white/40 p-6 md:p-8 rounded-[24px] border border-white/60 shadow-sm space-y-4">
                     {timeline.map((item, i) => (
-                      <div key={i} className="flex gap-4 items-center group">
-                        <input className="flex-1 bg-white/80 border border-white/80 rounded-xl px-5 py-3 text-xs focus:outline-none focus:border-[#D9CDEB]" placeholder="Deliverable (e.g. Cinematic Film)" value={item.deliverable} onChange={e => { const m = [...timeline]; m[i].deliverable = e.target.value; setTimeline(m); }} />
-                        <input className="w-1/3 bg-white/80 border border-white/80 rounded-xl px-5 py-3 text-xs focus:outline-none focus:border-[#D9CDEB] text-center font-bold" placeholder="Phasing" value={item.time} onChange={e => { const m = [...timeline]; m[i].time = e.target.value; setTimeline(m); }} />
-                        <button type="button" onClick={() => setTimeline(timeline.filter((_, idx) => idx !== i))} className="text-[#8a8a8a] hover:text-red-500 p-2.5 transition-colors"><X size={18} /></button>
+                      <div key={i} className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center group w-full relative">
+                        <input className="flex-1 w-full bg-white/80 border border-white/80 rounded-xl px-5 py-3 text-xs focus:outline-none focus:border-[#D9CDEB]" placeholder="Deliverable (e.g. Cinematic Film)" value={item.deliverable} onChange={e => { const m = [...timeline]; m[i].deliverable = e.target.value; setTimeline(m); }} />
+                        <div className="flex w-full sm:w-auto items-center gap-2">
+                           <input className="flex-1 sm:w-32 bg-white/80 border border-white/80 rounded-xl px-5 py-3 text-xs focus:outline-none focus:border-[#D9CDEB] text-center font-bold" placeholder="Phasing" value={item.time} onChange={e => { const m = [...timeline]; m[i].time = e.target.value; setTimeline(m); }} />
+                           <button type="button" onClick={() => setTimeline(timeline.filter((_, idx) => idx !== i))} className="text-[#8a8a8a] shrink-0 hover:text-red-500 p-2.5 transition-colors absolute sm:static right-[-5px] sm:right-auto top-[-30px] sm:top-auto"><X size={18} /></button>
+                        </div>
                       </div>
                     ))}
                     <button type="button" onClick={() => setTimeline([...timeline, { deliverable: '', time: '' }])} className="text-[10px] font-bold uppercase tracking-widest text-[#2d2d2d] bg-white/60 hover:bg-white px-5 py-3 rounded-xl border border-white/80 transition-all flex items-center justify-center gap-2 w-full mt-4">
@@ -282,10 +284,12 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
                   </div>
                   <div className="bg-white/40 p-6 md:p-8 rounded-[24px] border border-white/60 shadow-sm space-y-4">
                     {deliverables.map((dItem, i) => (
-                      <div key={i} className="flex gap-4 items-center group">
-                        <span className="w-8 text-center text-[10px] text-[#8a8a8a] font-black uppercase">{String(i+1).padStart(2, '0')}</span>
-                        <input className="flex-1 bg-white/80 border border-white/80 rounded-xl px-5 py-3 text-xs focus:outline-none focus:border-[#D9CDEB]" placeholder="e.g. 2 Premium Couture Albums" value={dItem} onChange={e => { const m = [...deliverables]; m[i] = e.target.value; setDeliverables(m); }} />
-                        <button type="button" onClick={() => setDeliverables(deliverables.filter((_, idx) => idx !== i))} className="text-[#8a8a8a] hover:text-red-500 p-2.5 transition-colors"><X size={18} /></button>
+                      <div key={i} className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center group w-full relative">
+                        <span className="hidden sm:block w-8 text-center text-[10px] text-[#8a8a8a] font-black uppercase">{String(i+1).padStart(2, '0')}</span>
+                        <div className="flex w-full items-center gap-2">
+                           <input className="flex-1 bg-white/80 border border-white/80 rounded-xl px-5 py-3 text-xs focus:outline-none focus:border-[#D9CDEB]" placeholder="e.g. 2 Premium Couture Albums" value={dItem} onChange={e => { const m = [...deliverables]; m[i] = e.target.value; setDeliverables(m); }} />
+                           <button type="button" onClick={() => setDeliverables(deliverables.filter((_, idx) => idx !== i))} className="text-[#8a8a8a] shrink-0 hover:text-red-500 p-2 transition-colors"><X size={18} /></button>
+                        </div>
                       </div>
                     ))}
                     <button type="button" onClick={() => setDeliverables([...deliverables, ''])} className="text-[10px] font-bold uppercase tracking-widest text-[#2d2d2d] bg-white/60 hover:bg-white px-5 py-3 rounded-xl border border-white/80 transition-all flex items-center justify-center gap-2 w-full mt-4">
@@ -294,17 +298,17 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
                   </div>
 
                   <div className="bg-white/30 backdrop-blur-sm p-6 md:p-8 rounded-[32px] border border-white/60 mt-8 space-y-4">
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4">
                       <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#4a4a4a]">Production Valuation (₹)</span>
-                      <input type="number" className="bg-white/80 border text-right border-white/80 rounded-xl px-5 py-3 text-[13px] w-40 font-black focus:outline-none focus:border-[#D9CDEB] shadow-inner" value={deliverablesPrice} onChange={e => setDeliverablesPrice(Number(e.target.value))} />
+                      <input type="number" className="w-full sm:w-40 bg-white/80 border text-left sm:text-right border-white/80 rounded-xl px-5 py-3 text-[13px] font-black focus:outline-none focus:border-[#D9CDEB] shadow-inner" value={deliverablesPrice} onChange={e => setDeliverablesPrice(Number(e.target.value))} />
                     </div>
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4">
                       <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-red-600">Administrative Gesture (Discount ₹)</span>
-                      <input type="number" className="bg-white/80 border text-right border-red-200 rounded-xl px-5 py-3 text-[13px] w-40 font-black focus:outline-none focus:border-red-400 text-red-600 shadow-inner" value={discount} onChange={e => setDiscount(Number(e.target.value))} placeholder="0" />
+                      <input type="number" className="w-full sm:w-40 bg-white/80 border text-left sm:text-right border-red-200 rounded-xl px-5 py-3 text-[13px] font-black focus:outline-none focus:border-red-400 text-red-600 shadow-inner" value={discount} onChange={e => setDiscount(Number(e.target.value))} placeholder="0" />
                     </div>
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4">
                       <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-blue-700">Auxiliary Provisions / Tax (₹)</span>
-                      <input type="number" className="bg-white/80 border text-right border-blue-200 rounded-xl px-5 py-3 text-[13px] w-40 font-black focus:outline-none focus:border-blue-400 text-blue-700 shadow-inner" value={extraCharges} onChange={e => setExtraCharges(Number(e.target.value))} placeholder="0" />
+                      <input type="number" className="w-full sm:w-40 bg-white/80 border text-left sm:text-right border-blue-200 rounded-xl px-5 py-3 text-[13px] font-black focus:outline-none focus:border-blue-400 text-blue-700 shadow-inner" value={extraCharges} onChange={e => setExtraCharges(Number(e.target.value))} placeholder="0" />
                     </div>
                     <div className="bg-gradient-to-r from-[#CFE8D5] to-[#F0FDF4] text-[#2d2d2d] p-6 rounded-[28px] mt-6 shadow-md flex items-center justify-between border border-white/60">
                       <div>
@@ -317,7 +321,7 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
                 </section>
               )}
 
-              <div className="sticky bottom-0 bg-white/70 backdrop-blur-md border-t border-white/40 py-6 px-1 mt-auto flex gap-4 z-50 rounded-b-[32px]">
+              <div className="sticky bottom-0 bg-white/70 backdrop-blur-md border-t border-white/40 py-6 px-1 mt-auto flex flex-col sm:flex-row gap-4 z-50 rounded-b-[32px]">
                 {currentStep > 1 && (
                   <button
                     type="button"

@@ -403,7 +403,7 @@ export default function Gallery() {
             </div>
 
             {loadingFiles ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                 {[1,2,3,4,5,6,7,8,9,10].map(n => <div key={n} className="aspect-square glass-card animate-pulse rounded-[32px] border border-white/60" />)}
               </div>
             ) : filteredFiles.length > 0 ? (

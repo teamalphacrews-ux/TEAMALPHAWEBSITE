@@ -72,7 +72,7 @@ export default function ClientSidebar({ onClose }) {
   ];
 
   return (
-    <div className="w-[260px] h-[calc(100vh-40px)] m-5 lg:ml-8 lg:mt-6 fixed left-0 top-0 z-[100] flex flex-col bg-white rounded-[32px] border border-black/[0.03] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden py-10 px-6 animate-in slide-in-from-left-4 duration-700">
+    <div className="w-[280px] lg:w-[260px] h-full lg:h-[calc(100vh-40px)] m-0 lg:m-5 lg:ml-8 lg:mt-6 relative z-50 flex flex-col bg-white rounded-none lg:rounded-[32px] border-r lg:border border-black/[0.03] shadow-2xl lg:shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden py-10 px-6 animate-in slide-in-from-left-4 duration-700">
       
       <div className="mb-14 px-2 flex justify-between items-center text-center mx-auto">
         <Link to="/portal" className="flex flex-col gap-4 group items-center">

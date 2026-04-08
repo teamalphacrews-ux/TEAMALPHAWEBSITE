@@ -129,7 +129,7 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <label className="text-[10px] uppercase font-bold tracking-widest text-[#8a8a8a] ml-1 flex items-center gap-2"><Calendar size={12}/> Event Date</label>
                 <input 
