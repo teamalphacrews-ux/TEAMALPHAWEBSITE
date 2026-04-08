@@ -265,17 +265,17 @@ export default function Calendar() {
     const [isRegistryOpen, setIsRegistryOpen] = useState(false);
 
     return (
-        <div className="min-h-screen text-[#2d2d2d] px-4 md:px-12 pb-20 animate-in fade-in duration-1000 overflow-x-hidden">
+        <div className="min-h-screen text-[#2d2d2d] px-12 pb-20 animate-in fade-in duration-1000 overflow-x-hidden">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 py-12">
+            <div className="flex flex-row justify-between items-center gap-8 py-12">
                 <div>
-                    <h1 className="font-serif text-4xl md:text-6xl text-[#2d2d2d] tracking-tight">Studio Calendar</h1>
-                    <p className="text-[10px] md:text-xs text-[#BB998B] mt-4 font-bold uppercase tracking-[0.4em] opacity-80">
+                    <h1 className="font-serif text-6xl text-[#2d2d2d] tracking-tight">Studio Calendar</h1>
+                    <p className="text-xs text-[#BB998B] mt-4 font-bold uppercase tracking-[0.4em] opacity-80">
                         Coordinating luxury moments across the globe
                     </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 w-full md:w-auto relative z-20">
+                <div className="flex flex-wrap items-center gap-4 w-auto relative z-20">
                     {/* Sync Status Pill - High Visibility */}
                     <div className={`
                         inline-flex items-center gap-3 px-6 py-3.5 rounded-full border-2 border-black/5
@@ -325,31 +325,31 @@ export default function Calendar() {
             </div>
 
             {/* Main Application Interface */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+            <div className="grid grid-cols-12 gap-10">
                 
                 {/* 1. THE CALENDAR BOARD */}
-                <div className="xl:col-span-8 bg-white/40 backdrop-blur-xl rounded-3xl p-12 border-4 border-black/5 shadow-2xl shadow-black/5 flex flex-col gap-12 transition-all">
+                <div className="col-span-8 bg-white/40 backdrop-blur-xl rounded-3xl p-12 border-4 border-black/5 shadow-2xl shadow-black/5 flex flex-col gap-12 transition-all">
                     
                     {/* Board Header: Month & Year */}
-                    <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-6 sm:gap-0 px-2 sm:px-4">
+                    <div className="flex flex-row justify-between items-center px-4">
                         <div className="flex items-baseline gap-4">
-                            <h3 className="font-serif text-4xl sm:text-5xl text-[#2d2d2d]">{format(currentDate, 'MMMM')}</h3>
-                            <span className="text-xl sm:text-2xl font-bold text-[#2d2d2d]/20 tracking-[0.2em]">{format(currentDate, 'yyyy')}</span>
+                            <h3 className="font-serif text-5xl text-[#2d2d2d]">{format(currentDate, 'MMMM')}</h3>
+                            <span className="text-2xl font-bold text-[#2d2d2d]/20 tracking-[0.2em]">{format(currentDate, 'yyyy')}</span>
                         </div>
-                        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                            <button onClick={jumpToToday} className="flex-1 sm:flex-none text-[10px] font-bold uppercase tracking-widest bg-white/60 hover:bg-white px-4 sm:px-6 py-3.5 rounded-2xl transition-all shadow-sm sm:mr-2 border border-black/5 text-center">Today</button>
-                            <button onClick={prevMonth} className="flex-1 sm:flex-none p-3.5 bg-white/60 hover:bg-white rounded-2xl transition-all shadow-sm border border-black/5 flex justify-center">
+                        <div className="flex items-center gap-3 w-auto">
+                            <button onClick={jumpToToday} className="flex-none text-[10px] font-bold uppercase tracking-widest bg-white/60 hover:bg-white px-6 py-3.5 rounded-2xl transition-all shadow-sm mr-2 border border-black/5 text-center">Today</button>
+                            <button onClick={prevMonth} className="flex-none p-3.5 bg-white/60 hover:bg-white rounded-2xl transition-all shadow-sm border border-black/5 flex justify-center">
                                 <ChevronLeft size={22} className="text-[#2d2d2d]" />
                             </button>
-                            <button onClick={nextMonth} className="flex-1 sm:flex-none p-3.5 bg-white/60 hover:bg-white rounded-2xl transition-all shadow-sm border border-black/5 flex justify-center">
+                            <button onClick={nextMonth} className="flex-none p-3.5 bg-white/60 hover:bg-white rounded-2xl transition-all shadow-sm border border-black/5 flex justify-center">
                                 <ChevronRight size={22} className="text-[#2d2d2d]" />
                             </button>
                         </div>
                     </div>
 
                     {/* Branded Day Labels Row */}
-                    <div className="overflow-x-auto custom-scrollbar w-full pb-6">
-                        <div className="min-w-[700px]">
+                    <div className="w-full pb-6">
+                        <div className="w-full">
                             <div className="grid grid-cols-7 gap-6 px-4">
                         {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(day => (
                             <div key={day} className="text-[9px] font-bold text-[#2d2d2d]/40 tracking-[0.5em] text-center pb-4 border-b-2 border-black/5">
@@ -390,6 +390,18 @@ export default function Calendar() {
                                 const isHovered = hoveredIdx === gridIdx;
                                 const isCurrentMonth = isSameMonth(day, currentDate);
                                 
+                                // --- Localized Bump Logic (RECOVERED FROM COMMIT c2f4c1e) ---
+                                const isTop = hoveredIdx !== null && gridIdx === hoveredIdx - 7;
+                                const isBottom = hoveredIdx !== null && gridIdx === hoveredIdx + 7;
+                                const isLeft = hoveredIdx !== null && gridIdx === hoveredIdx - 1 && hoveredIdx % 7 !== 0;
+                                const isRight = hoveredIdx !== null && gridIdx === hoveredIdx + 1 && hoveredIdx % 7 !== 6;
+
+                                let x = 0, y = 0;
+                                if (isLeft) x = -40;
+                                if (isRight) x = 40;
+                                if (isTop) y = -40;
+                                if (isBottom) y = 40;
+
                                 const isTodayDate = isToday(day);
                                 const dayEvents = filteredEvents.filter(e => isSameDay(parseISO(e.start), day));
                                 
@@ -407,11 +419,16 @@ export default function Calendar() {
                                         onMouseEnter={() => setHoveredIdx(gridIdx)}
                                         onMouseLeave={() => setHoveredIdx(null)}
                                         animate={{
-                                            scale: isHovered ? 1.05 : 1,
-                                            zIndex: isHovered ? 50 : 1,
+                                            x, y,
+                                            scale: isHovered ? 1.5 : 1,
+                                            zIndex: isHovered ? 50 : (isTop || isBottom || isLeft || isRight ? 40 : 1),
                                             boxShadow: isHovered ? "0 30px 60px -15px rgba(0,0,0,0.15)" : "0 4px 6px -1px rgba(0,0,0,0.02)"
                                         }}
-                                        transition={{ type: "spring", stiffness: 500, damping: 45 }}
+                                        transition={{ 
+                                            type: "spring", 
+                                            stiffness: 500, 
+                                            damping: 45 
+                                        }}
                                         onClick={() => {
                                             if (!isCurrentMonth) return; 
                                             setSelectedEvent({ 
@@ -495,7 +512,7 @@ export default function Calendar() {
                 </div>
 
                 {/* 2. SIDEBAR COMPONENT */}
-                <div className="xl:col-span-4 flex flex-col gap-10">
+                <div className="col-span-4 flex flex-col gap-10">
                     {/* Upcoming Registry */}
                     <div className="bg-white/40 backdrop-blur-xl rounded-3xl border-4 border-black/5 p-10 shadow-sm flex flex-col relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-8 opacity-5">
@@ -609,7 +626,7 @@ export default function Calendar() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-12 overflow-hidden"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-12 overflow-hidden"
                     >
                         <motion.div 
                             initial={{ scale: 0.9, y: 50, opacity: 0 }}
@@ -647,10 +664,10 @@ export default function Calendar() {
                                                 initial={{ x: -20, opacity: 0 }}
                                                 animate={{ x: 0, opacity: 1 }}
                                                 transition={{ delay: i * 0.05 }}
-                                                className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center group cursor-help"
+                                                className="grid grid-cols-12 gap-8 items-center group cursor-help"
                                                 onClick={() => { setSelectedEvent(event); setIsModalOpen(true); }}
                                             >
-                                                <div className="col-span-2 text-center md:text-left">
+                                                <div className="col-span-2 text-left">
                                                     <span className="text-[10px] font-bold uppercase tracking-[0.4em] opacity-40 block mb-2">{format(parseISO(event.start), 'MMMM')}</span>
                                                     <span className="text-5xl font-serif text-[#2d2d2d] leading-none">{format(parseISO(event.start), 'dd')}</span>
                                                 </div>
@@ -665,8 +682,8 @@ export default function Calendar() {
                                                         <span className="px-3 py-1 rounded-full bg-black/5 text-[8px]">{event.type}</span>
                                                     </div>
                                                 </div>
-                                                <div className="col-span-3 text-right hidden md:block">
-                                                    <button className="text-[10px] font-bold uppercase tracking-widest p-4 rounded-full border border-black/10 opacity-0 group-hover:opacity-100 transition-all">VIEW DETAILS</button>
+                                                <div className="col-span-3 text-right block">
+                                                    <button className="text-[10px] font-bold uppercase tracking-widest p-4 rounded-full border border-black/10 transition-all">VIEW DETAILS</button>
                                                 </div>
                                             </motion.div>
                                         ))}
