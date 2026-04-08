@@ -149,7 +149,7 @@ export default function LeadForm({ onClose, onLeadAdded }) {
                     </div>
 
                     <div className="pt-4 border-t border-white/40 space-y-5">
-                        <div className="bg-white/30 rounded-[20px] p-5 border border-white/40 grid grid-cols-2 gap-4">
+                        <div className="bg-white/30 rounded-[20px] p-5 border border-white/40 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="col-span-full text-[9px] font-bold uppercase tracking-[0.2em] text-[#8a8a8a] mb-1">Financial Structure</div>
                             <div className="space-y-1.5">
                                 <label className="text-[9px] uppercase font-bold tracking-widest text-[#9a9a9a] ml-1">Budget (₹)</label>

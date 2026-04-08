@@ -130,7 +130,7 @@ export default function DriveGalleryDetail() {
 
       {/* Masonry Display */}
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(n => (
             <div key={n} className="aspect-[3/4] bg-white/40 animate-pulse rounded-[24px] border border-white/60 relative overflow-hidden">
                 <div className="absolute inset-0 bg-linear-to-br from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />

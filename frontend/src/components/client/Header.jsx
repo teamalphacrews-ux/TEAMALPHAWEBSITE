@@ -8,14 +8,6 @@ export default function Header({ toggleSidebar }) {
       <div className="mx-auto px-6 py-4">
         <div className="glass-card !rounded-full px-6 py-3 flex items-center justify-between border-white/40 shadow-xl bg-white/70 backdrop-blur-2xl">
           
-          {/* Mobile Menu Toggle */}
-          <button 
-            onClick={toggleSidebar}
-            className="w-10 h-10 flex items-center justify-center bg-black text-white rounded-full transition-transform active:scale-95"
-          >
-            <Menu size={20} />
-          </button>
-
           {/* Brand */}
           <Link to="/portal" className="flex items-center gap-3">
             <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center overflow-hidden">
@@ -24,11 +16,19 @@ export default function Header({ toggleSidebar }) {
             <span className="text-[10px] font-bold tracking-[0.3em] uppercase">Team Alpha</span>
           </Link>
 
-          {/* Quick Actions */}
-          <div className="flex items-center gap-3">
-            <a href="https://instagram.com/teamalpha_crew" target="_blank" rel="noreferrer" className="text-stone-400">
+          {/* Quick Actions & Menu Toggle */}
+          <div className="flex items-center gap-4">
+            <a href="https://instagram.com/teamalpha_crew" target="_blank" rel="noreferrer" className="text-stone-400 hover:text-stone-800 transition-colors">
                 <Instagram size={18} />
             </a>
+            
+            {/* Mobile Menu Toggle */}
+            <button 
+              onClick={toggleSidebar}
+              className="w-10 h-10 flex items-center justify-center bg-black text-white rounded-full transition-transform active:scale-95 shadow-sm"
+            >
+              <Menu size={18} />
+            </button>
           </div>
         </div>
       </div>

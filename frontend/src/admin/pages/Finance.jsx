@@ -506,7 +506,7 @@ export default function Finance() {
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.3, delay: 0.05 * i }}
                                 key={i} 
-                                className="flex items-center justify-between p-6 rounded-2xl hover:bg-stone-50 transition-all duration-300 group/row border-b border-black/5 last:border-0"
+                                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 rounded-2xl hover:bg-stone-50 transition-all duration-300 group/row border-b border-black/5 last:border-0 gap-4 sm:gap-0"
                             >
                                 <div className="flex items-center gap-5">
                                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm ${tx.type === 'income' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
@@ -522,7 +522,7 @@ export default function Finance() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-6">
+                                <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-6 border-t sm:border-0 border-black/5 pt-4 sm:pt-0">
                                     <div className="text-right">
                                         <div className={`text-lg font-bold ${tx.type === 'expense' ? 'text-rose-700' : 'text-emerald-700'}`}>
                                             {tx.type === 'expense' ? '-' : '+'}{formatCurrency(tx.amount)}
@@ -771,7 +771,7 @@ export default function Finance() {
                                     </div>
                                 </div>
                                 
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <div className="space-y-4">
                                         <label className="text-[9px] uppercase font-bold tracking-[0.4em] text-[#555] ml-1 block">Amount (₹)</label>
                                         <input

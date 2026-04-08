@@ -81,7 +81,7 @@ const Sidebar = function Sidebar({ onClose }) {
   ];
 
   return (
-    <div className="w-64 h-full bg-white/55 backdrop-blur-[14px] rounded-[24px] border border-white/40 px-6 py-10 flex flex-col shadow-[0_4px_15px_rgba(0,0,0,0.03)] relative z-50">
+    <div className="w-[280px] lg:w-64 h-full bg-[#fdfbf7] lg:bg-white/55 lg:backdrop-blur-[14px] rounded-none lg:rounded-[24px] border-r border-[#e6e3df] lg:border-white/40 px-6 py-10 flex flex-col shadow-2xl lg:shadow-[0_4px_15px_rgba(0,0,0,0.03)] relative z-50">
       <div className="flex justify-between items-center mb-12 px-2">
         <Link to="/" className="flex flex-col gap-4 group transition-transform hover:scale-[1.02]">
           <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
