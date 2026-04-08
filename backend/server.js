@@ -39,20 +39,21 @@ app.set('io', io);
 
 app.use(express.json());
 const allowedOrigins = [
-    "http://localhost:3000", 
-    "http://localhost:5173", 
-    "http://127.0.0.1:3000", 
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
+    "https://team-alpha-d64k.onrender.com",
     process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, "") : null
 ].filter(Boolean);
 
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin) return callback(null, true);
-        
+
         // Normalize origin for comparison (remove trailing slash)
         const normalizedOrigin = origin.replace(/\/$/, "");
-        
+
         if (allowedOrigins.includes(normalizedOrigin) || allowedOrigins.includes("*")) {
             callback(null, true);
         } else {
@@ -400,7 +401,7 @@ app.use('/api/drive-gallery', require('./routes/driveGalleryRoutes'));
 // --- Standalone API Configuration ---
 // Root route for initial verification
 app.get('/', (req, res) => {
-    res.json({ 
+    res.json({
         message: "🚀 Team Alpha API is running successfully!",
         version: "1.0.0",
         documentation: "/api/health"
@@ -409,8 +410,8 @@ app.get('/', (req, res) => {
 
 // Health check route for Render/monitoring
 app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'Online', 
+    res.json({
+        status: 'Online',
         environment: process.env.NODE_ENV || 'production',
         database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
         timestamp: new Date().toISOString()
