@@ -118,6 +118,7 @@ export default function Gallery() {
   };
 
   const handleOpenEvent = async (event) => {
+    setImagesLoaded(0); // Reset count immediately
     setSelectedEvent(event);
     setView("masonry");
     setLoadingFiles(true);
@@ -135,7 +136,6 @@ export default function Gallery() {
         console.error("Failed to fetch files for event", err);
     } finally {
         setLoadingFiles(false);
-        setImagesLoaded(0); // Reset count on new folder view
     }
   };
 
@@ -187,9 +187,9 @@ export default function Gallery() {
   return (
     <div className="animate-in fade-in duration-700">
       <LoadingScreen 
-        isLoading={loadingEvents || loadingFiles || (totalImages > 0 && imagesLoaded < totalImages)} 
-        total={totalImages || (loadingEvents ? 4 : 0)} // Dummy total for initial events load to show some activity
-        current={loadingEvents ? 0 : imagesLoaded} 
+        isLoading={view === "masonry" && (loadingFiles || (totalImages > 0 && imagesLoaded < totalImages))} 
+        total={totalImages} 
+        current={imagesLoaded} 
       />
       <div className="max-w-[1400px] mx-auto px-4 md:px-8">
         
