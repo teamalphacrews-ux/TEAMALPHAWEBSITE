@@ -41,8 +41,6 @@ app.use(express.json());
 const allowedOrigins = [
     "http://localhost:3000",
     "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
     "https://team-alpha-d64k.onrender.com",
     process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, "") : null
 ].filter(Boolean);
@@ -374,12 +372,12 @@ authRouter.get('/google/callback', async (req, res) => {
         await setupGoogleWebhook(user);
 
         // Redirect back to frontend calendar page
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        res.redirect(`${frontendUrl}/admin/calendar?sync=success`);
+        const frontendUrl = process.env.FRONTEND_URL || 'https://team-alpha-d64k.onrender.com';
+        res.redirect(`${frontendUrl.replace(/\/$/, "")}/admin/calendar?sync=success`);
     } catch (err) {
         console.error('Callback error:', err.message);
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        res.redirect(`${frontendUrl}/admin/calendar?sync=error`);
+        const frontendUrl = process.env.FRONTEND_URL || 'https://team-alpha-d64k.onrender.com';
+        res.redirect(`${frontendUrl.replace(/\/$/, "")}/admin/calendar?sync=error`);
     }
 });
 

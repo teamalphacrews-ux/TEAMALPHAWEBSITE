@@ -14,7 +14,7 @@ export default function ActivityLog() {
     const fetchNotifications = async () => {
         try {
             if (!token) { setLoading(false); return; }
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications`, authHeader);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/notifications`, authHeader);
             setNotifications(res.data);
             setLoading(false);
         } catch (err) {
