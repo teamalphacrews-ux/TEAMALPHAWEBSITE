@@ -39,8 +39,6 @@ app.set('io', io);
 
 app.use(express.json());
 const allowedOrigins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
     "https://team-alpha-d64k.onrender.com",
     process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, "") : null
 ].filter(Boolean);

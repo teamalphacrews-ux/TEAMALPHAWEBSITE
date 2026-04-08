@@ -54,7 +54,12 @@ const AuthPage = () => {
             login(data.user, data.token);
 
         } catch (err) {
-            setError(err.message);
+            console.error("Login attempt failed:", err);
+            if (err.message === 'Failed to fetch') {
+              setError("Network Error: Cannot reach the server. Check your connection or API URL.");
+            } else {
+              setError(err.message || "An unexpected error occurred during login.");
+            }
         } finally {
             setIsSubmitting(false);
         }

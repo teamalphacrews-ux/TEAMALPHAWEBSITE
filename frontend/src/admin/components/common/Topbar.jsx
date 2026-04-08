@@ -83,7 +83,7 @@ const Topbar = memo(function Topbar({ onMenuClick, isVisibleProp }) {
         try {
             const token = localStorage.getItem("token");
             if (!token) return;
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/notifications`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res && res.data && Array.isArray(res.data)) {
@@ -122,7 +122,7 @@ const Topbar = memo(function Topbar({ onMenuClick, isVisibleProp }) {
         e?.stopPropagation();
         try {
             const token = localStorage.getItem("token");
-            await axios.patch(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications/${id}/read`, {}, {
+            await axios.patch(`${import.meta.env.VITE_API_URL || ""}/api/notifications/${id}/read`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
@@ -135,7 +135,7 @@ const Topbar = memo(function Topbar({ onMenuClick, isVisibleProp }) {
         e?.stopPropagation();
         try {
             const token = localStorage.getItem("token");
-            await axios.delete(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications/${id}`, {
+            await axios.delete(`${import.meta.env.VITE_API_URL || ""}/api/notifications/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications(prev => prev.filter(n => n._id !== id));
@@ -148,7 +148,7 @@ const Topbar = memo(function Topbar({ onMenuClick, isVisibleProp }) {
         e?.stopPropagation();
         try {
             const token = localStorage.getItem("token");
-            await axios.post(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications/mark-all-read`, {}, {
+            await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/notifications/mark-all-read`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -162,7 +162,7 @@ const Topbar = memo(function Topbar({ onMenuClick, isVisibleProp }) {
         e?.stopPropagation();
         try {
             const token = localStorage.getItem("token");
-            await axios.delete(`${import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"}/api/notifications/clear-all`, {
+            await axios.delete(`${import.meta.env.VITE_API_URL || ""}/api/notifications/clear-all`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications([]);

@@ -43,7 +43,7 @@ export default function AdminProfileModal({ profile, onClose, onSave }) {
         setLoading(true);
         try {
             const token = localStorage.getItem("token");
-            const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000";
+            const apiUrl = import.meta.env.VITE_API_URL || "";
             
             const res = await axios.put(`${apiUrl}/api/auth/profile`, formData, {
                 headers: { Authorization: `Bearer ${token}` }
