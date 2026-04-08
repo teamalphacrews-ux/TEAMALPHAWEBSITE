@@ -43,16 +43,20 @@ const allowedOrigins = [
     "http://localhost:5173", 
     "http://127.0.0.1:3000", 
     "http://127.0.0.1:5173",
-    process.env.FRONTEND_URL // Allow deployed frontend URL from .env
+    process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, "") : null
 ].filter(Boolean);
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes("*")) {
+        
+        // Normalize origin for comparison (remove trailing slash)
+        const normalizedOrigin = origin.replace(/\/$/, "");
+        
+        if (allowedOrigins.includes(normalizedOrigin) || allowedOrigins.includes("*")) {
             callback(null, true);
         } else {
+            console.log(`Blocked by CORS: ${normalizedOrigin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
