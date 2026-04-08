@@ -293,9 +293,8 @@ router.get('/admin/:userId', auth, async (req, res) => {
     const { userId } = req.params;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 40;
-    const admins = await User.find({ role: 'admin' }, '_id');
-    const adminIds = ['admin', 'hardcoded-admin-id', req.user.id, ...admins.map(a => String(a._id))];
     try {
+        const adminIds = await getAdminIds(req.user.id);
         const messages = await Message.find({
             $or: [
                 { sender: userId, recipient: { $in: adminIds } },
@@ -315,18 +314,24 @@ router.get('/admin/:userId', auth, async (req, res) => {
 router.post('/clear/:userId', auth, async (req, res) => {
     const { userId } = req.params;
     try {
-        const admins = await User.find({ role: 'admin' }, '_id');
-        const adminIds = ['admin', 'hardcoded-admin-id', req.user.id, ...admins.map(a => String(a._id))];
+        const adminIds = await getAdminIds(req.user.id);
+        const ChatRoom = require('../models/ChatRoom');
 
-        await Message.updateMany({
-            $or: [
-                { sender: userId, recipient: { $in: adminIds } },
-                { sender: { $in: adminIds }, recipient: userId }
-            ],
-            deletedForUsers: { $ne: req.user.id }
-        }, {
-            $addToSet: { deletedForUsers: req.user.id }
-        });
+        await Promise.all([
+            // 1. Mark all messages as deleted for this specific admin
+            Message.updateMany({
+                $or: [
+                    { sender: userId, recipient: { $in: adminIds } },
+                    { sender: { $in: adminIds }, recipient: userId }
+                ],
+                deletedForUsers: { $ne: req.user.id }
+            }, {
+                $addToSet: { deletedForUsers: req.user.id },
+                $set: { seen: true, isRead: true, status: 'seen' } // Mark as seen globally to clear badges
+            }),
+            // 2. Explicitly clear unread count for this admin in the ChatRoom
+            ChatRoom.findOneAndUpdate({ userId }, { $set: { unreadCountAdmin: 0 } })
+        ]);
 
         res.json({ success: true, msg: 'Conversation cleared for admin' });
 
@@ -334,6 +339,10 @@ router.post('/clear/:userId', auth, async (req, res) => {
         if (io) {
             // Emit to 'admin' room so all admin tabs clear
             io.to('admin').emit('chat_cleared', { userId: userId, clearedBy: req.user.id });
+            
+            // Also update unread counts globally
+            const roomsWithUnread = await ChatRoom.countDocuments({ unreadCountAdmin: { $gt: 0 } });
+            io.to('admin').emit('unread_count_update', { count: roomsWithUnread });
         }
     } catch (err) {
         console.error('Clear chat error:', err.message);

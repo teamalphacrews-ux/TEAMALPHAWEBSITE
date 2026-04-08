@@ -5,9 +5,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    allowedHosts: ["team-alpha-d64k.onrender.com"],
     watch: {
       usePolling: true,
     },
+  },
+  preview: {
+    allowedHosts: ["team-alpha-d64k.onrender.com"],
   },
   build: {
     rollupOptions: {

@@ -39,6 +39,7 @@ export default function Chats() {
   const [globalSearchResults, setGlobalSearchResults] = useState([]);
   const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [clearedHistory, setClearedHistory] = useState({}); // { [userId]: timestamp }
 
   // Debounced Global Search
   useEffect(() => {
@@ -151,6 +152,13 @@ export default function Chats() {
       const clientUserId = isOutbound ? recipientId : senderId;
 
       if (!clientUserId || clientUserId === 'admin') return;
+      
+      // Remove from cleared history if a new message arrives after the clear time
+      setClearedHistory(prev => {
+        const newHistory = { ...prev };
+        delete newHistory[clientUserId];
+        return newHistory;
+      });
 
       // 1. If we are active in this chat, mark as seen immediately
       const isCurThread = selectedUserRef.current?.chatId === clientUserId;
@@ -200,6 +208,7 @@ export default function Chats() {
         selectedUserRef.current = null;
         setIsMobileThreadView(false);
       }
+      setClearedHistory(prev => ({ ...prev, [data.userId]: Date.now() }));
       setConversations(prev => prev.filter(c => c.chatId !== data.userId));
       fetchConversations();
     });
@@ -434,6 +443,9 @@ export default function Chats() {
       const token = localStorage.getItem("token");
       await axios.post(`${API_URL}/api/chats/clear/${userId}`, {}, { headers: { "x-auth-token": token } });
       
+      const now = Date.now();
+      setClearedHistory(prev => ({ ...prev, [userId]: now }));
+
       // Optimistic Update: Immediately hide from sidebar and clear messages
       setConversations(prev => prev.filter(c => c.chatId !== userId));
       setMessages([]);
@@ -442,7 +454,7 @@ export default function Chats() {
       setIsMobileThreadView(false);
       
       setShowClearModal(false);
-      fetchConversations(); // Sync with server backup
+      setTimeout(() => fetchConversations(), 500); // Slight delay for DB propagation
       toast.success("Conversation cleared for you");
     } catch (err) {
       console.error("Clear chat error", err);
@@ -496,6 +508,12 @@ export default function Chats() {
 
   const activeConversations = useMemo(() => {
     return conversations.filter(c => {
+      // 1. Strict Clear Check: Hide if cleared in this session and no new messages since
+      const clearTime = clearedHistory[c.chatId];
+      if (clearTime && c.timestamp && new Date(c.timestamp).getTime() <= clearTime) {
+        return false;
+      }
+
       const matchesSearch = String(c.userName || '').toLowerCase().includes(searchTerm.toLowerCase());
       if (!searchTerm) {
         // WhatsApp behavior: Hide if cleared (no visible messages)
@@ -503,7 +521,7 @@ export default function Chats() {
       }
       return matchesSearch;
     });
-  }, [conversations, searchTerm]);
+  }, [conversations, searchTerm, clearedHistory]);
 
   const otherContacts = useMemo(() => {
     if (!searchTerm) return [];
