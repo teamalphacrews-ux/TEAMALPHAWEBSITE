@@ -10,8 +10,10 @@ const getApiUrl = () => {
     const protocol = window.location.protocol;
 
     // 1. If we are in production (Render), use the Environment Variable
-    // But ONLY if it's not the placeholder!
-    if (envUrl && !envUrl.includes("your-api-slug") && !hostname.includes("localhost") && !hostname.match(/^192\.168\./)) {
+    // Logic: If we are on an 'onrender.com' domain OR we have a valid VITE_API_URL
+    const isProduction = hostname.includes("onrender.com") || (envUrl && !envUrl.includes("your-api-slug"));
+
+    if (isProduction && envUrl && !envUrl.includes("your-api-slug")) {
         return envUrl.replace(/\/$/, "");
     }
 
