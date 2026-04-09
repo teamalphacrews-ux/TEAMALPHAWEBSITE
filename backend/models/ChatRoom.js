@@ -20,6 +20,12 @@ const ChatRoomSchema = new mongoose.Schema({
     lastTimestamp: {
         type: Date,
         default: Date.now
+    },
+    clearedAtUser: {
+        type: Date
+    },
+    clearedAtAdmin: {
+        type: Date
     }
 });
 

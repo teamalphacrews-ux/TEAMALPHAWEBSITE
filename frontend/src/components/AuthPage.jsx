@@ -20,7 +20,9 @@ const AuthPage = () => {
 
     // Auto-redirect if already logged in - using context state
     useEffect(() => {
-        if (user) {
+        const storedToken = localStorage.getItem('token');
+        // Only redirect if we have BOTH the user in context AND a token in localStorage
+        if (user && storedToken) {
             if (user.role === 'admin') navigate('/admin');
             else navigate('/portal');
         }

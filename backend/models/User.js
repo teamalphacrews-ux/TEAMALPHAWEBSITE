@@ -20,7 +20,8 @@ const UserSchema = new mongoose.Schema({
     googleCalendarId: { type: String, default: 'primary' },
     googleEmail: String,
     googleWebhookId: String,
-    googleResourceId: String
+    googleResourceId: String,
+    lastChatClearAt: { type: Date }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);

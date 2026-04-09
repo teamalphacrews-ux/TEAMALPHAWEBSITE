@@ -95,8 +95,7 @@ const Topbar = memo(function Topbar({ onMenuClick, isVisibleProp }) {
             console.error("Topbar notifications error:", err);
             if (err.response?.status === 401) {
                 // Halt polling on unauthorized to prevent infinite loops
-                localStorage.removeItem("token");
-                navigate('/auth');
+                logout();
             }
             setNotifications([]);
         }

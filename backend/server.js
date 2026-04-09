@@ -189,7 +189,7 @@ authRouter.post('/register', async (req, res) => {
         await user.save();
 
         const payload = { user: { id: user.id, role: user.role } };
-        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' }, (err, token) => {
             if (err) throw err;
             res.status(201).json({ token, user: { id: user.id, firstName, lastName, email, role: user.role } });
         });
@@ -207,7 +207,7 @@ authRouter.post('/login', async (req, res) => {
             email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD
         ) {
             const payload = { user: { id: "hardcoded-admin-id", role: "admin" } };
-            const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '2h' });
+            const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' });
             return res.json({
                 token,
                 user: { id: "hardcoded-admin-id", firstName: "System", lastName: "Admin", email, role: "admin" }
@@ -222,7 +222,7 @@ authRouter.post('/login', async (req, res) => {
         if (!isMatch) return res.status(400).json({ msg: "Invalid Credentials" });
 
         const payload = { user: { id: user.id, role: user.role } };
-        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
             if (err) throw err;
             res.json({ token, user: { id: user.id, firstName: user.firstName, lastName: user.lastName, email, role: user.role } });
         });

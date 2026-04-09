@@ -18,7 +18,7 @@ const API_URL = import.meta.env.VITE_API_URL || "";
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😲', '😢'];
 
 export default function Chats() {
-  const { user: adminProfile, token: authContextToken } = useAuth();
+  const { user: adminProfile, token: authContextToken, logout } = useAuth();
   const dispatch = useDispatch();
   const roomStates = useSelector(state => state.chat.roomStates);
   const [conversations, setConversations] = useState([]);
@@ -109,7 +109,10 @@ export default function Chats() {
       const sortedUsers = Array.isArray(res.data) ? res.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) : [];
       setConversations(sortedUsers);
     } catch (err) {
-      if (err.response?.status === 401) console.warn("--- [AUTH/401] --- Admin fetchConversations rejected");
+      if (err.response?.status === 401) {
+        console.warn("--- [AUTH/401] --- Admin fetchConversations rejected");
+        logout();
+      }
     } finally { if (showLoading) setLoading(false); }
   };
 
@@ -254,7 +257,10 @@ export default function Chats() {
         }, 0);
       }
     } catch (err) {
-      if (err.response?.status === 401) console.warn("--- [AUTH/401] --- Admin fetchMessages rejected");
+      if (err.response?.status === 401) {
+        console.warn("--- [AUTH/401] --- Admin fetchMessages rejected");
+        logout();
+      }
     } finally {
       if (pageNum === 1) setLoading(false);
       else setIsFetchingMore(false);

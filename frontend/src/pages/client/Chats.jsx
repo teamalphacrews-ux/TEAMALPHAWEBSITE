@@ -106,9 +106,11 @@ export default function Chats() {
             setMessages(prev => prev.map(m => m._id === data.id ? { ...m, text: 'This message was deleted', isDeletedEveryone: true, attachments: [] } : m));
         });
         
-        socket.on('chat_cleared', (data) => {
+        socket.on('chat_deleted', (data) => {
+            // WhatsApp-style instant wipe across all sessions/tabs
             if (data.userId === 'admin') {
                 setMessages([]);
+                toast.success("Conversation cleared globally");
             }
         });
 
@@ -189,9 +191,21 @@ export default function Chats() {
         const handleClickOutside = (e) => {
             if (optionsRef.current && !optionsRef.current.contains(e.target)) setShowOptions(false);
         };
+        const handleFocus = () => {
+            // Refetch when tab becomes active to sync across multiple tabs
+            if (user && authContextToken) {
+                fetchMessages();
+            }
+        };
+
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+        window.addEventListener('focus', handleFocus);
+        
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, [user, authContextToken]);
 
     const scrollToBottom = (behavior = "smooth") => {
         if (chatContainerRef.current) {
@@ -304,14 +318,24 @@ export default function Chats() {
 
     const handleClearChat = async () => {
         try {
-            const token = localStorage.getItem("token");
-            await axios.post(`${API_URL}/api/chats/clear/admin`, {}, {
-                headers: { "x-auth-token": token }
+            const token = cleanToken(authContextToken || localStorage.getItem("token"));
+            if (!token) return;
+
+            // Updated to use the professional DELETE API (Strictly Client)
+            await axios.delete(`${API_URL}/api/chats/clear-history`, {
+                headers: {
+                    "x-auth-token": token,
+                    "Authorization": `Bearer ${token}`
+                }
             });
+
+            // Immediate UI cleanup
             setMessages([]);
             setShowClearModal(false);
-            toast.success("Conversation cleared");
+            dispatch(clearClientUnread());
+            toast.success("Conversation cleared permanently");
         } catch (err) {
+            console.error('Failed to clear chat:', err);
             toast.error("Failed to clear chat");
         }
     };

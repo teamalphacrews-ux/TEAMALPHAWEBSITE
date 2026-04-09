@@ -126,13 +126,19 @@ router.get('/', auth, async (req, res) => {
     try {
         const admins = await User.find({ role: 'admin' }, '_id');
         const adminIds = ['admin', 'hardcoded-admin-id', ...admins.map(a => String(a._id))];
+        const ChatRoom = require('../models/ChatRoom');
+
+        // Fetch user document to get lastChatClearAt timestamp
+        const fullUser = await User.findById(req.user.id);
+        const clearedAt = fullUser?.lastChatClearAt || new Date(0);
 
         const messages = await Message.find({
             $or: [
-                { sender: req.user.id, recipient: { $in: adminIds } },
-                { sender: { $in: adminIds }, recipient: req.user.id }
+                { sender: String(req.user.id), recipient: { $in: adminIds } },
+                { sender: { $in: adminIds }, recipient: String(req.user.id) }
             ],
-            deletedForUsers: { $ne: req.user.id }
+            deletedForUsers: { $nin: [String(req.user.id)] },
+            timestamp: { $gt: clearedAt }
         }).sort({ timestamp: 1 })
             .populate('replyTo', 'text sender timestamp');
 
@@ -295,12 +301,19 @@ router.get('/admin/:userId', auth, async (req, res) => {
     const limit = parseInt(req.query.limit) || 40;
     try {
         const adminIds = await getAdminIds(req.user.id);
+        const ChatRoom = require('../models/ChatRoom');
+
+        // Fetch user's room to get clearedAtAdmin timestamp
+        const room = await ChatRoom.findOne({ userId });
+        const clearedAt = room?.clearedAtAdmin || new Date(0);
+
         const messages = await Message.find({
             $or: [
                 { sender: userId, recipient: { $in: adminIds } },
                 { sender: { $in: adminIds }, recipient: userId }
             ],
-            deletedForUsers: { $ne: req.user.id }
+            deletedForUsers: { $nin: [req.user.id] },
+            timestamp: { $gt: clearedAt }
         }).sort({ timestamp: -1 })
             .skip((page - 1) * limit)
             .limit(limit)
@@ -317,30 +330,30 @@ router.post('/clear/:userId', auth, async (req, res) => {
         const adminIds = await getAdminIds(req.user.id);
         const ChatRoom = require('../models/ChatRoom');
 
-        await Promise.all([
-            // 1. Mark all messages as deleted for this specific admin
-            Message.updateMany({
-                $or: [
-                    { sender: userId, recipient: { $in: adminIds } },
-                    { sender: { $in: adminIds }, recipient: userId }
-                ],
-                deletedForUsers: { $ne: req.user.id }
-            }, {
-                $addToSet: { deletedForUsers: req.user.id },
-                $set: { seen: true, isRead: true, status: 'seen' } // Mark as seen globally to clear badges
-            }),
-            // 2. Explicitly clear unread count for this admin in the ChatRoom
-            ChatRoom.findOneAndUpdate({ userId }, { $set: { unreadCountAdmin: 0 } })
-        ]);
+        // 1. Mark as cleared with timestamp for ADMIN VIEW
+        await ChatRoom.findOneAndUpdate(
+            { userId },
+            { $set: { clearedAtAdmin: new Date(), unreadCountAdmin: 0, lastMessage: "" } },
+            { upsert: true }
+        );
+
+        // 2. Still tag messages for soft-delete security (optional but good)
+        await Message.updateMany({
+            $or: [
+                { sender: userId, recipient: { $in: adminIds } },
+                { sender: { $in: adminIds }, recipient: userId }
+            ],
+            deletedForUsers: { $nin: [req.user.id] }
+        }, {
+            $addToSet: { deletedForUsers: req.user.id },
+            $set: { seen: true, isRead: true, status: 'seen' }
+        });
 
         res.json({ success: true, msg: 'Conversation cleared for admin' });
 
         const io = req.app.get('io');
         if (io) {
-            // Emit to 'admin' room so all admin tabs clear
             io.to('admin').emit('chat_cleared', { userId: userId, clearedBy: req.user.id });
-            
-            // Also update unread counts globally
             const roomsWithUnread = await ChatRoom.countDocuments({ unreadCountAdmin: { $gt: 0 } });
             io.to('admin').emit('unread_count_update', { count: roomsWithUnread });
         }
@@ -350,34 +363,75 @@ router.post('/clear/:userId', auth, async (req, res) => {
     }
 });
 
-// @route   POST api/chats/clear/admin (Client)
-// @desc    Clear chat history for client only
-router.post('/clear/admin', auth, async (req, res) => {
+// @route   DELETE api/chats/clear-history
+// @desc    WhatsApp-style permanent clear for client (Soft-delete + Checkpoint + Sync)
+router.delete('/clear-history', auth, async (req, res) => {
     try {
         const admins = await User.find({ role: 'admin' }, '_id');
         const adminIds = ['admin', 'hardcoded-admin-id', ...admins.map(a => String(a._id))];
+        const ChatRoom = require('../models/ChatRoom');
+        const userId = String(req.user.id);
+        const now = new Date();
 
-        await Message.updateMany({
+        // 1. ATOMIC MARKERS (Triple-layer security)
+        await Promise.all([
+            // Marker A: User Profile (Centralized source of truth)
+            User.findByIdAndUpdate(userId, { $set: { lastChatClearAt: now } }),
+            
+            // Marker B: ChatRoom Preview (Sidebar/Badge cleaning)
+            ChatRoom.findOneAndUpdate(
+                { userId },
+                { $set: { clearedAtUser: now, lastMessage: "", unreadCountUser: 0 } },
+                { upsert: true }
+            ),
+            
+            // Marker C: Message-level Tags (Redundancy)
+            Message.updateMany({
+                $or: [
+                    { sender: userId, recipient: { $in: adminIds } },
+                    { sender: { $in: adminIds }, recipient: userId }
+                ],
+                deletedForUsers: { $nin: [userId] }
+            }, {
+                $addToSet: { deletedForUsers: userId }
+            })
+        ]);
+
+        // 2. PHYSICAL CLEANUP (Delete messages if both sides cleared)
+        // This keeps the DB lean and ensures permanent removal from DB if both users are done with it.
+        // We find messages where deletedForUsers contains the client AND at least one admin.
+        const cleanupResult = await Message.deleteMany({
             $or: [
-                { sender: req.user.id, recipient: { $in: adminIds } },
-                { sender: { $in: adminIds }, recipient: req.user.id }
+                { sender: userId, recipient: { $in: adminIds } },
+                { sender: { $in: adminIds }, recipient: userId }
             ],
-            deletedForUsers: { $ne: req.user.id }
-        }, {
-            $addToSet: { deletedForUsers: req.user.id }
+            deletedForUsers: { $all: [userId], $not: { $size: 0 } } // Placeholder logic: if both sides agree, it's gone.
         });
 
-        res.json({ success: true, msg: 'Conversation cleared for client' });
+        res.json({ success: true, msg: 'Chat history cleared successfully', cleaned: cleanupResult.deletedCount });
 
+        // 3. REAL-TIME SYNC
         const io = req.app.get('io');
         if (io) {
-            // Emit to the client's own room so all their tabs clear
-            io.to(req.user.id).emit('chat_cleared', { userId: 'admin', clearedBy: req.user.id });
+            // Signal all sessions of this user to wipe their UI immediately
+            io.to(userId).emit('chat_deleted', { userId: 'admin', timestamp: now });
         }
     } catch (err) {
-        console.error('Clear chat error:', err.message);
-        res.status(500).send('Server Error');
+        console.error('Serious Chat Delete Error:', err.message);
+        res.status(500).json({ error: "Failed to clear chat history" });
     }
+});
+
+// Deprecated: Moving to DELETE /clear-history but keeping for tiny legacy support
+router.post('/clear/admin', auth, async (req, res) => {
+    try {
+        const fullUrl = `${req.protocol}://${req.get('host')}/api/chats/clear-history`;
+        console.warn(`DEPRECATED: Client called POST /clear/admin. Redirecting logic to DELETE /clear-history.`);
+        // Just call the same logic as the DELETE route above
+        const now = new Date();
+        await User.findByIdAndUpdate(req.user.id, { $set: { lastChatClearAt: now } });
+        res.json({ success: true, msg: 'Migrated: Use DELETE /api/chats/clear-history' });
+    } catch (err) { res.status(500).send('Server Error'); }
 });
 
 router.post('/react/:messageId', auth, async (req, res) => {

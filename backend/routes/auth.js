@@ -40,7 +40,7 @@ router.post('/register', async (req, res) => {
         jwt.sign(
             payload,
             process.env.JWT_SECRET,
-            { expiresIn: '1h' },
+            { expiresIn: '30d' },
             (err, token) => {
                 if (err) throw err;
                 res.json({ token, user: { id: user.id, firstName, lastName, email, role: user.role } });
@@ -85,7 +85,7 @@ router.post('/login', async (req, res) => {
         jwt.sign(
             payload,
             process.env.JWT_SECRET,
-            { expiresIn: '1h' },
+            { expiresIn: '30d' },
             (err, token) => {
                 if (err) throw err;
                 res.json({ token, user: { id: user.id, firstName: user.firstName, lastName: user.lastName, email, role: user.role } });

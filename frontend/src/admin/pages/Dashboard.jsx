@@ -3,8 +3,10 @@ import axios from "axios";
 import StatCard from "../components/dashboard/StatCard";
 import { TrendingUp, Users, ImageIcon, PieChart, ArrowUpRight, Clock, MapPin } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Dashboard() {
+  const { logout } = useAuth(); // Destructure logout from context
   const token = localStorage.getItem('token');
   const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
   const API = import.meta.env.VITE_API_URL || '';
@@ -46,9 +48,7 @@ export default function Dashboard() {
       } catch (err) {
         console.error("Dashboard error:", err);
         if (err.response?.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          navigate('/auth');
+          logout(); // Use centralized logout to clear both Context and localStorage
           return;
         }
         if (isMounted) {
