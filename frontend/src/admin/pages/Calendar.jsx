@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import EventForm from "../components/calendar/EventForm";
 import { io } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
+import API_BASE_URL from "../../utils/apiConfig";
 
 const PASTEL_COLORS = {
     yellow: "#FDE68A",
@@ -40,7 +41,7 @@ export default function Calendar() {
     const [selectedDate, setSelectedDate] = useState(null);
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
-    const API = import.meta.env.VITE_API_URL || '';
+    const API = import.meta.env.VITE_API_URL || API_BASE_URL;
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);

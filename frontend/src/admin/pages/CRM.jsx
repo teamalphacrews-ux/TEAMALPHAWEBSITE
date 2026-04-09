@@ -9,6 +9,7 @@ import TaskPlanning from "../components/crm/task-planning/TaskPlanning";
 import PhotographerList from "../components/crm/PhotographerList";
 import { Trash2, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
+import API_BASE_URL from '../../utils/apiConfig';
 
 export default function CRM() {
   const [searchParams] = useSearchParams();

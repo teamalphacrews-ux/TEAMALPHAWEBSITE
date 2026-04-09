@@ -5,8 +5,8 @@ import toast from "react-hot-toast";
 import axios from "axios";
 import AdminProfileModal from "./AdminProfileModal";
 import { formatDistanceToNow } from "date-fns";
-
 import { useAuth } from "../../../context/AuthContext";
+import API_BASE_URL from "../../../utils/apiConfig";
 
 const Topbar = memo(function Topbar({ onMenuClick, isVisibleProp }) {
     const navigate = useNavigate();

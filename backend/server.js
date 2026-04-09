@@ -50,7 +50,10 @@ app.use(cors({
         // Normalize origin for comparison (remove trailing slash)
         const normalizedOrigin = origin.replace(/\/$/, "");
 
-        if (allowedOrigins.includes(normalizedOrigin) || allowedOrigins.includes("*")) {
+        // SMART CORS: Allow if in allowedOrigins OR if it's a local network IP (192.168.x.x, 10.x.x.x, 172.x.x.x, localhost)
+        const isLocal = normalizedOrigin.match(/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1]))(:[0-9]+)?$/);
+
+        if (allowedOrigins.includes(normalizedOrigin) || isLocal || allowedOrigins.includes("*")) {
             callback(null, true);
         } else {
             console.log(`Blocked by CORS: ${normalizedOrigin}`);

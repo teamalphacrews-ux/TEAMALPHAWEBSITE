@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User, Shield, Mail, Lock, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import API_BASE_URL from '../utils/apiConfig';
 
 const AuthPage = () => {
     const { user, login } = useAuth();
@@ -31,7 +32,7 @@ const AuthPage = () => {
         e.preventDefault();
         setError('');
         setIsSubmitting(true);
-        const url = `${import.meta.env.VITE_API_URL || ""}/api/auth/login`;
+        const url = `${API_BASE_URL}/api/auth/login`;
 
         const body = { email: formData.email, password: formData.password, role: userRole };
 
@@ -55,8 +56,9 @@ const AuthPage = () => {
 
         } catch (err) {
             console.error("Login attempt failed:", err);
+            // Provide a very detailed error for mobile troubleshooting
             if (err.message === 'Failed to fetch') {
-              setError("Network Error: Cannot reach the server. Check your connection or API URL.");
+              setError(`Mobile Connectivity Failure: Cannot reach the backend at [${url}]. Ensure your laptop and phone are on the same Wi-Fi and that your backend is running.`);
             } else {
               setError(err.message || "An unexpected error occurred during login.");
             }
