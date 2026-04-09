@@ -57,7 +57,7 @@ const PortalLayout = () => {
 
   return (
     <div 
-        className="flex min-h-screen selection:bg-black selection:text-white overflow-x-hidden font-sans text-stone-900" 
+        className="flex h-screen selection:bg-black selection:text-white overflow-hidden font-sans text-stone-900" 
         style={clientBackgroundStyle}
     >
       {/* Sidebar - Hidden on mobile, fixed on desktop */}
@@ -79,7 +79,7 @@ const PortalLayout = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
         {/* Mobile Header */}
         <div className="lg:hidden">
           <ClientHeader toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
