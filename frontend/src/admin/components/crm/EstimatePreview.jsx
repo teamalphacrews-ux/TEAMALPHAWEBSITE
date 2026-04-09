@@ -1,15 +1,14 @@
 import React, { forwardRef } from 'react';
 import { numberToIndianWords } from '../../utils/numberToWords';
-import new_logo from "../../assets/new_logo_original.png";
+import new_logo from "../../../assets/new_logo_original.png";
 
 const EstimatePreview = forwardRef(({ data }, ref) => {
-    // A4 proportions: 794 x 1123 px at 96 DPI
-    const pageStyle = "w-[794px] h-[1123px] bg-white relative mx-auto shrink-0 shadow-sm border border-gray-200 mt-4 overflow-hidden text-black font-sans box-border";
+     // A4 proportions: 794 x 1123 px at 96 DPI
+    const pageStyle = "w-[794px] h-[1123px] bg-white relative mx-auto shrink-0 shadow-sm border border-stone-100 mt-4 overflow-hidden text-[#1A1A1A] font-sans box-border";
 
     // Total from events
     const eventsTotal = data.events?.reduce((sum, ev) => sum + (Number(ev.price) || 0), 0) || 0;
 
-    // Render Deliverables Table mapping from lines
     const deliverablesList = Array.isArray(data.deliverables) ? data.deliverables : (data.deliverables || "").split('\n').filter(l => l.trim() !== '');
     const timelineList = data.timeline || [
         { deliverable: "Soft Copies (All photos)", time: "7 Days" },
@@ -18,286 +17,214 @@ const EstimatePreview = forwardRef(({ data }, ref) => {
         { deliverable: "Edited Traditional Video", time: "60 days" }
     ];
 
-    // Default to an empty pixel or local asset if no coverImage to prevent CORS taint
     const coverImageUrl = data.coverImage || "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
     return (
-        <div ref={ref} className="bg-gray-100 p-8 pt-0 flex flex-col gap-8 items-center" style={{ fontFamily: "'Inter', sans-serif" }}>
-
-            {/* PAGE 1: COVER */}
-            <div className={pageStyle + " pdf-page"}>
-                {/* Decorative Elements */}
-                <div className="absolute top-16 right-32 w-16 h-16 bg-[#e96e45] rounded-full z-10"></div>
-                <div className="absolute -bottom-32 left-0 w-[500px] h-[500px] bg-[#f2b38f] rounded-tr-full z-10"></div>
-                <div className="absolute bottom-0 right-10 w-48 h-48 bg-[#e87a5d] rounded-t-full rounded-b-0 z-20"></div>
-
-                {/* Image Clipper */}
-                <div className="absolute top-[180px] right-0 w-[450px] h-[700px] z-0 overflow-hidden" style={{ borderTopLeftRadius: '300px', borderBottomLeftRadius: '300px' }}>
-                    <img src={coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+        <div ref={ref} className="bg-stone-50 p-8 pt-0 flex flex-col gap-12 items-center" style={{ fontFamily: "'Inter', sans-serif" }}>
+            
+            {/* PAGE 1: REFINED COVER - NO OVERLAPS */}
+            <div className={pageStyle + " pdf-page flex flex-col items-center pt-10"}>
+                {/* Minimalist Top Branding */}
+                <div className="text-center mb-8">
+                    <p className="text-[10px] tracking-[0.5em] text-stone-400 uppercase mb-2">Wedding Photography Portfolio</p>
+                    <div className="w-12 h-[1px] bg-stone-200 mx-auto"></div>
                 </div>
 
-                <div className="relative z-30 pt-24 px-12">
-                    <h1 className="text-[18px] font-bold tracking-widest text-[#111] uppercase mb-16 text-center w-full">
-                        TEAM ALPHA WEDDING PHOTOGRAPHY ESTIMATE
-                    </h1>
-
-                    <div className="mt-8 mb-40">
-                        <img
-                            src={new_logo}
-                            alt="Team Alpha Logo"
-                            style={{
-                                width: "120px",
-                                height: "auto",
-                                background: "transparent",
-                                border: "none",
-                                boxShadow: "none",
-                                padding: 0,
-                                margin: 0,
-                                objectFit: "contain"
-                            }}
-                        />
-                    </div>
-
-                    <div className="mt-32">
-                        <div className="w-16 h-1 bg-[#1aa0a0] mb-4"></div>
-                        <h2 className="text-[32px] font-bold leading-tight text-[#444] font-serif uppercase w-[350px]">
-                            TURN YOUR WEDDING INTO A TIMELESS MEMORY
-                        </h2>
-                    </div>
-
-                    <div className="absolute bottom-[80px] left-[50px] text-white">
-                        <div className="flex items-center gap-2 text-xl font-bold">
-                            <span>whatsapp +91 91106 03953</span>
-                        </div>
+                {/* Primary Logo - Centered */}
+                <div className="flex flex-col items-center mb-10 px-4">
+                    <img
+                        src={new_logo}
+                        alt="Team Alpha Logo"
+                        style={{
+                            width: "180px",
+                            height: "auto",
+                            objectFit: "contain"
+                        }}
+                    />
+                    <div className="mt-[-15px] text-center">
+                        <h1 className="text-2xl font-bold tracking-[0.2em] text-[#1A1A1A] font-serif uppercase">TEAM ALPHA</h1>
+                        <p className="text-[8px] tracking-[0.6em] text-stone-400 uppercase mt-1 italic">THE WEDDING ARTIST</p>
                     </div>
                 </div>
-            </div>
 
-            {/* PAGE 2: Welcome & Timeline */}
-            <div className={pageStyle + " pdf-page px-16 py-20"}>
-                <h2 className="text-3xl font-bold text-center mt-12 mb-10">Congratulations!!!</h2>
-                <div className="text-sm space-y-4 mb-16 text-center px-12 leading-relaxed">
-                    <p>We wish you a lifetime of happiness. Thank you for considering us to be a part of your Event.</p>
-                    <p>It'll be a privilege to capture your most memorable journey. Our team is dedicated to giving you the best service possible and establishing a long-lasting relationship with you.</p>
+                {/* Centered Image Frame - Avoids Side-Text Collision */}
+                <div className="w-[85%] h-[420px] border-[10px] border-stone-50 shadow-2xl relative overflow-hidden rounded-sm">
+                    <img 
+                        src={coverImageUrl} 
+                        alt="Wedding" 
+                        className="w-full h-full object-cover grayscale-[0.1]" 
+                        crossOrigin="anonymous" 
+                    />
                 </div>
 
-                <table className="w-[85%] mx-auto border-collapse border border-gray-400 mb-16 text-center text-[13px]">
-                    <thead>
-                        <tr>
-                            <th className="border border-gray-400 bg-[#c0d6e4] py-3 w-16 font-bold uppercase">SL.NO</th>
-                            <th className="border border-gray-400 bg-[#c0d6e4] py-3 font-bold uppercase">DELIVERABLES</th>
-                            <th className="border border-gray-400 bg-[#c0d6e4] py-3 font-bold uppercase">TIMELINE</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {timelineList.map((item, i) => (
-                            <tr key={i}>
-                                <td className="border border-gray-400 py-3 font-medium">{i + 1}</td>
-                                <td className="border border-gray-400 py-3 font-medium">{item.deliverable}</td>
-                                <td className="border border-gray-400 py-3 font-medium">{item.time}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                {/* Central Statement - Perfectly Aligned */}
+                <div className="mt-16 text-center max-w-[600px] px-8">
+                    <h2 className="text-[34px] font-serif italic text-stone-800 leading-tight tracking-[0.02em]">
+                        "Capturing your forever, one timeless memory at a time."
+                    </h2>
+                    <div className="mt-8 flex justify-center items-center gap-4">
+                        <div className="h-[1px] w-8 bg-stone-300"></div>
+                        <p className="text-[11px] tracking-[0.3em] font-medium text-stone-400 uppercase">OFFICIAL PROPOSAL</p>
+                        <div className="h-[1px] w-8 bg-stone-300"></div>
+                    </div>
+                </div>
 
-                {/* Workflow Graphic Simulation */}
-                <div className="w-[85%] mx-auto flex flex-col gap-6 font-bold text-[12px] relative pl-10">
-                    <div className="flex items-center gap-6 z-10">
-                        <div className="w-20 h-20 bg-blue-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">??</div>
-                        <p>payment confirmation with 50% advanced</p>
-                    </div>
-                    <div className="flex items-center justify-end gap-6 z-10 -mt-4">
-                        <p className="w-48 text-right">project confirmation with other vendors & finalize deliverables with 25% payment</p>
-                        <div className="w-20 h-20 bg-indigo-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">??</div>
-                    </div>
-                    <div className="flex items-center gap-6 z-10 -mt-4">
-                        <div className="w-20 h-20 bg-orange-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">??</div>
-                        <p className="w-48">shoot day data will be updated on drive & download link will be sent</p>
-                    </div>
-                    <div className="flex items-center justify-end gap-6 z-10 -mt-4">
-                        <p className="w-48 text-right">selection of photos & videos from client</p>
-                        <div className="w-20 h-20 bg-teal-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">??</div>
-                    </div>
-                    <div className="flex items-center gap-6 z-10 -mt-4">
-                        <div className="w-20 h-20 bg-yellow-100 flex items-center justify-center rounded-xl shadow-sm text-2xl">??</div>
-                        <p className="w-48">deliver of albums & collection of remaining payment</p>
-                    </div>
+                {/* Bottom Contact Detail */}
+                <div className="absolute bottom-12 text-center w-full border-t border-stone-50 pt-8">
+                    <p className="text-[10px] tracking-[0.4em] text-stone-400 uppercase">
+                        +91 91106 03953  •  info@teamalphacrew.com
+                    </p>
                 </div>
             </div>
 
-            {/* PAGE 3: MAIN ESTIMATE TABLE */}
-            <div className={pageStyle + " pdf-page px-12 py-20"}>
-                <h3 className="font-bold text-center text-[14px] uppercase mb-10 tracking-wide">HERE IS OUR ESTIMATE IT MAY CHANGE SUBJECT TO FURTHER DISCUSSION</h3>
+            {/* PAGE 2: WELCOME & WORKFLOW */}
+            <div className={pageStyle + " pdf-page px-20 py-28"}>
+                <div className="mb-16">
+                    <h3 className="text-4xl font-serif italic text-stone-900 mb-6">Congratulations</h3>
+                    <p className="text-stone-500 text-[13px] leading-relaxed max-w-[450px]">
+                        Thank you for considering us to be part of your legacy. It’s an honor to capture the moments you’ll cherish for decades to come. Our team is committed to excellence and storytelling of the highest caliber.
+                    </p>
+                </div>
 
-                <table className="w-full border-collapse border border-gray-800 text-center text-[12px]">
-                    <thead>
-                        <tr>
-                            <th className="border-b border-r border-gray-800 bg-[#c0d6e4] py-3 px-1 w-10 uppercase">SL.NO</th>
-                            <th className="border-b border-r border-gray-800 bg-[#c0d6e4] py-3 px-2 uppercase">EVENTS</th>
-                            <th className="border-b border-r border-gray-800 bg-[#c0d6e4] py-3 px-2 uppercase">SERVICES</th>
-                            <th className="border-b border-r border-gray-800 bg-[#c0d6e4] py-3 px-2 uppercase">EQUIPMENT USED</th>
-                            <th className="border-b border-r border-gray-800 bg-[#c0d6e4] py-3 px-2 uppercase">DATE &<br />Location</th>
-                            <th className="border-b border-gray-800 bg-[#c0d6e4] py-3 px-2 uppercase w-20">Price per session</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data.events?.map((ev, i) => (
-                            <tr key={i}>
-                                <td className="border-b border-r border-gray-800 py-4 font-bold">{i + 1}</td>
-                                <td className="border-b border-r border-gray-800 py-4 font-bold max-w-[100px] wrap-break-word whitespace-pre-wrap">{ev.eventName}</td>
-                                <td className="border-b border-r border-gray-800 py-4 text-xs max-w-[160px] whitespace-pre-wrap">{ev.services}</td>
-                                <td className="border-b border-r border-gray-800 py-4 text-xs font-medium max-w-[120px] whitespace-pre-wrap">{ev.equipment}</td>
-                                <td className="border-b border-r border-gray-800 py-4 font-bold text-xs max-w-[100px] whitespace-pre-wrap">{ev.dateLocation}</td>
-                                <td className="border-b border-gray-800 py-4 font-bold">{Number(ev.price).toLocaleString('en-IN')}/-</td>
-                            </tr>
-                        ))}
-                        {/* Empty spacer row if few items to fill some space */}
-                        {(!data.events || data.events.length < 5) && (
-                            <tr>
-                                <td className="border-r border-gray-800 py-8"></td>
-                                <td className="border-r border-gray-800 py-8"></td>
-                                <td className="border-r border-gray-800 py-8"></td>
-                                <td className="border-r border-gray-800 py-8"></td>
-                                <td className="border-r border-gray-800 py-8"></td>
-                                <td className="py-8"></td>
-                            </tr>
-                        )}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colSpan="6" className="bg-black text-white text-center py-4 font-bold text-sm tracking-widest uppercase">
-                                TOTAL = {eventsTotal.toLocaleString('en-IN')}.00 INR ({numberToIndianWords(eventsTotal)})
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-
-            {/* PAGE 4: DELIVERABLES */}
-            <div className={pageStyle + " pdf-page px-16 py-24 flex flex-col items-center"}>
-                <h3 className="font-bold text-2xl uppercase mb-4 tracking-wide mt-10">DELIVERABLES</h3>
-                <table className="w-[95%] border-collapse border border-gray-800 text-center text-[13px] font-bold mb-4">
-                    <tbody>
-                        <tr>
-                            <td className="border border-gray-800 py-6 w-1/3 bg-[#fdfdfd]">Deliverables</td>
-                            <td className="border border-gray-800 py-6 w-2/3 leading-relaxed">
-                                {deliverablesList.map((d, i) => (
-                                    <div key={i}>{d}</div>
+                <div className="grid grid-cols-1 gap-12">
+                     {/* Timeline Table */}
+                    <div className="bg-stone-50 p-10 rounded-sm">
+                        <h4 className="text-[10px] font-bold tracking-[0.4em] text-stone-400 uppercase mb-8">Post-Production Timeline</h4>
+                        <table className="w-full text-left text-[12px]">
+                            <tbody className="divide-y divide-stone-200">
+                                {timelineList.map((item, i) => (
+                                    <tr key={i}>
+                                        <td className="py-4 font-bold text-stone-900 pr-4">{item.deliverable}</td>
+                                        <td className="py-4 text-stone-500 text-right italic">{item.time}</td>
+                                    </tr>
                                 ))}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colSpan="2" className="border border-gray-800 bg-[#e4dfed] py-4 uppercase">
-                                ALBUM AND EDITING = {(data.deliverablesPrice || 0).toLocaleString('en-IN')} INR ({numberToIndianWords(data.deliverablesPrice || 0)})
-                            </td>
-                        </tr>
-                        {Number(data.extraCharges || 0) > 0 && (
-                            <tr>
-                                <td colSpan="2" className="border border-gray-800 bg-blue-50 py-3 uppercase text-[#333]">
-                                    EXTRA CHARGES / TAXES = (+){Number(data.extraCharges).toLocaleString('en-IN')} INR
-                                </td>
-                            </tr>
-                        )}
-                        {Number(data.discount || 0) > 0 && (
-                            <tr>
-                                <td colSpan="2" className="border border-gray-800 bg-red-50 py-3 uppercase text-red-600">
-                                    DISCOUNT = (-){Number(data.discount).toLocaleString('en-IN')} INR
-                                </td>
-                            </tr>
-                        )}
-                        <tr>
-                            <td colSpan="2" className="bg-black text-white py-4 text-sm leading-relaxed uppercase tracking-wider">
-                                GRAND TOTAL = {(data.total || 0).toLocaleString('en-IN')} INR<br />
-                                ({numberToIndianWords(data.total || 0)})
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <div className="absolute bottom-16 left-16 right-16 text-xs text-[#0a488e] italic space-y-1">
-                    <p><span className="font-bold">NOTE:</span> The Services provided are all customizable according to your requirements.</p>
-                    <p>We give these services based on what we feel is right for the event and number of people in attendance.</p>
-                    <p className="font-bold">Equipment that will be used during the event will be top of the line SONY ALPHA SERIES Cameras only</p>
+                    {/* Simple Workflow */}
+                    <div className="px-4">
+                        <h4 className="text-[10px] font-bold tracking-[0.4em] text-stone-400 uppercase mb-8">Service Workflow</h4>
+                        <div className="space-y-6 text-[12px] text-stone-600">
+                            {[
+                                "Booking confirmation with 50% initial payment.",
+                                "Project briefing & vendor synchronization.",
+                                "High-speed data processing and delivery.",
+                                "Final asset delivery and collection of remaining payment."
+                            ].map((step, i) => (
+                                <div key={i} className="flex gap-4 items-center">
+                                    <span className="w-8 h-8 rounded-full border border-stone-200 flex items-center justify-center text-[10px] text-stone-400">{i+1}</span>
+                                    <p>{step}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* PAGE 5: TERMS AND CONDITIONS */}
+            {/* PAGE 3: INVESTMENT DETAILS */}
             <div className={pageStyle + " pdf-page px-16 py-24"}>
-                <h3 className="font-bold text-[18px] uppercase mb-1 tracking-wide">TERMS & CONDITIONS</h3>
-                <p className="text-[#ed1c24] font-bold text-[13px] mb-8 leading-relaxed">
-                    We kindly ask you to review our Terms & Conditions carefully before making an advance payment. By completing the payment, you confirm your understanding and acceptance of these terms, helping us serve you better.
+                <div className="text-center mb-16">
+                    <p className="text-[10px] tracking-[0.4em] text-stone-400 uppercase mb-2">Detailed Investment</p>
+                    <h3 className="text-3xl font-serif italic text-stone-900">Project Sessions & Fees</h3>
+                </div>
+
+                <div className="border border-stone-100 rounded-sm overflow-hidden shadow-sm">
+                    <table className="w-full border-collapse">
+                        <thead className="bg-stone-50 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                            <tr>
+                                <th className="p-6 text-left border-r border-stone-100">Event / Context</th>
+                                <th className="p-6 text-left border-r border-stone-100">Inclusions</th>
+                                <th className="p-6 text-right">Investment</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-[12px] text-stone-800">
+                             {data.events?.map((ev, i) => (
+                                <tr key={i} className="border-t border-stone-100">
+                                    <td className="p-6 border-r border-stone-100 align-top">
+                                        <div className="font-bold mb-1">{ev.eventName}</div>
+                                        <div className="text-[10px] text-stone-400 uppercase tracking-widest">{ev.dateLocation}</div>
+                                    </td>
+                                    <td className="p-6 border-r border-stone-100 align-top leading-relaxed text-stone-500">
+                                        {ev.services}
+                                    </td>
+                                    <td className="p-6 text-right font-bold align-top whitespace-nowrap">
+                                        ₹ {Number(ev.price).toLocaleString('en-IN')}/-
+                                    </td>
+                                </tr>
+                             ))}
+                        </tbody>
+                        <tfoot className="bg-[#1A1A1A] text-white">
+                            <tr>
+                                <td colSpan="2" className="p-6 font-bold text-sm tracking-widest uppercase">Base Total Investment</td>
+                                <td className="p-6 text-right font-bold text-lg">₹ {eventsTotal.toLocaleString('en-IN')}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <p className="mt-4 text-[10px] text-stone-400 italic text-right px-2">
+                    {numberToIndianWords(eventsTotal)} Only
                 </p>
+            </div>
 
-                <div className="space-y-6 text-[12px] text-gray-700 leading-relaxed text-justify">
-                    <div className="flex gap-4">
-                        <span className="text-[#555] mt-1 text-[10px]">?</span>
-                        <div>
-                            <span className="font-bold text-black text-[13px]">BOOKING CONFIRMATION AND PAYMENTS:</span><br />
-                            To confirm booking for our photography, videography, and other services, you are requested to pay an advance amount of 50% of the total project cost plus the traveling charges (if any). We follow a strict "first come first serve" policy. Without the advance payment, we cannot guarantee to block specific dates for you. The remaining balance of the total amount can be paid prior to the 1st day of the photo shoot or preferably two days in advance. We accept cash, cheque, and online transfer. We will share the transaction details once you confirm to us your preferred mode of payment.
-                        </div>
-                    </div>
+            {/* PAGE 4: ASSETS & SUMMARY */}
+            <div className={pageStyle + " pdf-page px-20 py-28 flex flex-col"}>
+                <div className="mb-20">
+                     <h3 className="text-[10px] tracking-[0.4em] text-stone-400 uppercase mb-8">Deliverables Checklist</h3>
+                     <div className="grid grid-cols-1 gap-4">
+                         {deliverablesList.map((d, i) => (
+                            <div key={i} className="flex items-center gap-4 py-3 border-b border-stone-100 text-[13px] text-stone-700">
+                                 <span className="w-1.5 h-1.5 bg-stone-900"></span>
+                                 {d}
+                            </div>
+                         ))}
+                     </div>
+                </div>
 
-                    <div className="flex gap-4">
-                        <span className="text-[#555] mt-1 text-[10px]">?</span>
-                        <div>
-                            <span className="font-bold text-black text-[13px]">CANCELLATIONS AND RESCHEDULING:</span><br />
-                            Client will be responsible for payment of all expenses incurred up to the time of cancellation of the assignment, plus 50 percent of Photographer's fee. However, if notice of cancellation is given less than two (2) business days before the shoot date, the client will be charged a 100% fee. All cancellations must be in writing. Likewise, requests for rescheduling the photo shoot shall be intimated to us well in advance of the initial agreed date. In case of delayed intimation, we may not guarantee booking on your preferred new dates.
-                        </div>
-                    </div>
+                <div className="mt-auto bg-stone-50 p-12 text-center rounded-sm">
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.5em] mb-4">Total Value of Services</p>
+                    <h2 className="text-4xl font-serif text-stone-900 mb-2">₹ {(data.total || 0).toLocaleString('en-IN')}.00</h2>
+                    <p className="text-[11px] italic text-stone-500">{numberToIndianWords(data.total || 0)}</p>
+                </div>
 
-                    <div className="flex gap-4">
-                        <span className="text-[#555] mt-1 text-[10px]">?</span>
-                        <div>
-                            <span className="font-bold text-black text-[13px]">DISTURBANCE AT THE EVENT:</span><br />
-                            you are looking for multiple photographers and videographers, we recommend booking within TEAM ALPHA as we have good rapport with our team members. If there are any other photographers/videographers (who are not a part of TEAM ALPHA), they must be briefed to cooperate with our team members. As candid photography and cinematography concentrates on special moments, subjects and detailing, there are chances that our crew members will appear on other team's camera frames and vice-versa. Any guests or family members behave rudely or threaten the photographers during the event, the situation should be handled by you. We believe to maintain professionalism of high standards and expect the same from all our clients. If there are any unavoidable circumstances, the entire crew will leave the premises with no further photoshoot. There shall also be no refund of any fees.
-                        </div>
-                    </div>
-
-                    <div className="flex gap-4">
-                        <span className="text-[#555] mt-1 text-[10px]">?</span>
-                        <div>
-                            <span className="font-bold text-black text-[13px]">TRAVELING:</span><br />
-                            We are a team based in Bengaluru. For any events/venue outside Bengaluru, all the travel expenses and accommodation must be taken care of by the client for the entire crew. If there are any events happening during the late night and the next event is scheduled in the early morning, accommodation must be taken care of by the client for the entire crew. This is applicable for Bengaluru events as well.
-                        </div>
-                    </div>
+                <div className="mt-20 pt-10 border-t border-stone-100 text-center">
+                    <p className="text-[10px] text-stone-400 uppercase tracking-widest">Equipped with Pro Sony Cinema Series & GM Prime Lenses</p>
                 </div>
             </div>
 
-            {/* PAGE 6: DATA MANAGEMENT TERMS & CONDITIONS */}
-            <div className={pageStyle + " pdf-page px-16 py-24 flex flex-col justify-between"}>
-                <div>
-                    <h3 className="font-bold text-[18px] mb-8 text-[#222]">Wedding Photography Data Management — Terms & Conditions</h3>
+            {/* PAGE 5: THE FINE PRINT */}
+            <div className={pageStyle + " pdf-page px-20 py-24"}>
+                 <div className="mb-16">
+                   <h3 className="text-3xl font-serif text-stone-900 mb-2">The Fine Print</h3>
+                   <p className="text-[10px] tracking-[0.3em] text-stone-400 uppercase">Terms & Conditions of Service</p>
+                </div>
 
-                    <div className="space-y-8 text-[13px] text-black leading-relaxed text-justify">
-                        <div>
-                            <span className="font-bold">1. Data Storage & Security</span><br />
-                            As part of our commitment to delivering a premium experience, all final edited images are stored securely in our professional archive system for a period of 6 months from the date of delivery. We take every precaution to safeguard your wedding memories during this period through multiple redundant backups.
-                        </div>
-
-                        <div>
-                            <span className="font-bold">2. Client Responsibility</span><br />
-                            Upon delivery of your final gallery and/or HDD, SSD it becomes the client's responsibility to download, store, and back up their images. We highly recommend saving your photos on multiple devices and cloud services to ensure long-term preservation.
-                        </div>
-
-                        <div>
-                            <span className="font-bold">3. Limitations of Liability</span><br />
-                            While we employ best-in-class data management practices, we cannot be held liable for any data loss resulting from circumstances beyond our control (e.g. hardware failure, natural disasters, force majeure) after the guaranteed 6-month storage period.
-                        </div>
-
-                        <div>
-                            <span className="font-bold">4. Requests for Additional Copies</span><br />
-                            Should you require an additional copy of your images after the initial delivery and/or after the 6-month storage period, we will do our best to accommodate your request, subject to availability. An additional fee may apply for this service. for any data loss additional fee to made to Recover the data
-                        </div>
+                <div className="grid grid-cols-1 gap-10 text-[11px] text-stone-500 leading-relaxed">
+                    <div className="space-y-2">
+                        <h4 className="font-bold text-stone-900 uppercase tracking-widest text-[10px]">Booking & Payments</h4>
+                        <p>50% advance to secure dates. First-come-first-serve basis. Raw data delivered post full payment settlement.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="font-bold text-stone-900 uppercase tracking-widest text-[10px]">Cancellations</h4>
+                        <p>Client responsible for expenses incurred up to time of cancellation. Cancellation within 2 days of shoot incurs 100% project fee.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="font-bold text-stone-900 uppercase tracking-widest text-[10px]">Crew Safety</h4>
+                        <p>Rude or threatening behavior towards team members results in immediate withdrawal without refund.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="font-bold text-stone-900 uppercase tracking-widest text-[10px]">Travel Logistics</h4>
+                        <p>Travel and hotel expenses for outstation shoots to be covered by the client for the entire crew.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="font-bold text-stone-900 uppercase tracking-widest text-[10px]">Data Management</h4>
+                        <p>Archive stored for 6 months. Client recommended to maintain private backups post-delivery.</p>
                     </div>
                 </div>
 
-                <div className="mt-auto pt-20">
-                    <h4 className="font-bold text-[18px] mb-2 uppercase">CONTACT US</h4>
-                    <div className="text-[13px] text-[#555] space-y-1">
-                        <p>PHONE NUMBER: +91 91106 03953</p>
-                        <p>EMAIL: <a href="mailto:info@teamalphacrew.com" className="text-blue-500">info@teamalphacrew.com</a></p>
-                        <p>INSTAGRAM: <a href="https://www.instagram.com/teamalpha_crew/" className="text-blue-500">@teamalpha_crew</a></p>
-                    </div>
+                <div className="absolute bottom-16 left-20 right-20 flex justify-between items-center text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                    <span>Team Alpha Crew</span>
+                    <span>Bengaluru, India</span>
                 </div>
             </div>
         </div >

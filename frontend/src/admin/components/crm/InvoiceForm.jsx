@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { FileText, Send, IndianRupee, Plus, Trash2, X, Download, LayoutTemplate, Camera, ChevronRight, ChevronLeft, Loader2, Save } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { toPng } from "html-to-image";
+import { toJpeg } from "html-to-image";
 
 import jsPDF from "jspdf";
 import EstimatePreview from "./EstimatePreview";
@@ -68,14 +68,15 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
 
-        const imgData = await toPng(page, {
-          quality: 1,
-          backgroundColor: null,
-          pixelRatio: 2
+        const imgData = await toJpeg(page, {
+          quality: 0.95,
+          backgroundColor: '#ffffff',
+          pixelRatio: 2,
+          cacheBust: true,
         });
 
         if (i > 0) pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
       }
 
       pdf.save(`Estimate_${clientName || "Client"}.pdf`);
