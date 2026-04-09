@@ -23,7 +23,7 @@ app.use(express.static(distPath));
 
 // IMPORTANT: Handle React's client-side routing (SPA)
 // This ensures that refreshing the page on mobile doesn't cause a 404
-app.get('/*', (req, res) => {
+app.get('(.*)', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
