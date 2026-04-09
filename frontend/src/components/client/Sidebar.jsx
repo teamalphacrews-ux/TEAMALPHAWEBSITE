@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { io } from "socket.io-client";
 import { useAuth } from "../../context/AuthContext";
+import new_logo from "../../assets/new_logo_original.png";
+
 
 export default function ClientSidebar({ onClose }) {
   const navigate = useNavigate();
@@ -75,13 +77,24 @@ export default function ClientSidebar({ onClose }) {
     <div className="w-[280px] lg:w-[260px] h-full lg:h-[calc(100vh-40px)] m-0 lg:m-5 lg:ml-8 lg:mt-6 relative z-50 flex flex-col bg-white rounded-none lg:rounded-[32px] border-r lg:border border-black/[0.03] shadow-2xl lg:shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden py-10 px-6 animate-in slide-in-from-left-4 duration-700">
       
       <div className="mb-14 px-2 flex justify-between items-center text-center mx-auto">
-        <Link to="/portal" className="flex flex-col gap-4 group items-center">
-          <div className="w-16 h-16 bg-black rounded-[20px] flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-110 shadow-[0_8px_20px_rgb(0,0,0,0.2)] border border-white/10">
-            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover scale-150" />
-          </div>
-          <div className="text-center mt-2">
+        <Link to="/portal" className="flex flex-col gap-0 group items-center">
+          <img
+            src={new_logo}
+            alt="Team Alpha Logo"
+            style={{
+              width: "120px",
+              height: "auto",
+              background: "transparent",
+              border: "none",
+              boxShadow: "none",
+              padding: 0,
+              margin: 0,
+              objectFit: "contain"
+            }}
+          />
+          <div className="text-center mt-[-12px]">
             <span className="block text-[13px] font-bold tracking-[0.3em] uppercase text-stone-800 transition-colors group-hover:text-luxury-gold">Team Alpha</span>
-            <span className="block text-[7px] tracking-[0.2em] font-medium uppercase text-stone-400 mt-1.5">High-End Wedding Cinema</span>
+            <span className="block text-[7px] tracking-[0.2em] font-medium uppercase text-stone-400 mt-1">High-End Wedding Cinema</span>
           </div>
         </Link>
         {onClose && (

@@ -3,6 +3,7 @@ import { Link as ScrollLink } from 'react-scroll';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import new_logo from "../assets/new_logo_original.png";
 
 
 const Navbar = () => {
@@ -53,9 +54,18 @@ const Navbar = () => {
         {/* Logo */}
         <RouterLink to="/" className="cursor-pointer hover:opacity-80 transition flex items-center gap-3">
           <img
-            src="/logo.png"
-            alt="Logo"
-            className="h-40 w-auto object-contain transition-all duration-300"
+            src={new_logo}
+            alt="Team Alpha Logo"
+            style={{
+              height: "160px",
+              width: "auto",
+              background: "transparent",
+              border: "none",
+              boxShadow: "none",
+              padding: 0,
+              margin: 0,
+              objectFit: "contain"
+            }}
           />
           <div className="flex flex-col">
             <span className="text-2xl font-serif font-bold tracking-[0.2em] leading-none">TEAM ALPHA</span>

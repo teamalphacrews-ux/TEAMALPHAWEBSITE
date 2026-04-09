@@ -4,6 +4,8 @@ import { User, Shield, Mail, Lock, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import API_BASE_URL from '../utils/apiConfig';
+import new_logo from "../assets/new_logo_original.png";
+
 
 const AuthPage = () => {
     const { user, login } = useAuth();
@@ -79,7 +81,20 @@ const AuthPage = () => {
                         className="mb-8"
                     >
                         <Link to="/" className="flex items-center gap-2.5 group">
-                            <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
+                            <img
+                                src={new_logo}
+                                alt="Team Alpha Logo"
+                                style={{
+                                    height: "40px",
+                                    width: "auto",
+                                    background: "transparent",
+                                    border: "none",
+                                    boxShadow: "none",
+                                    padding: 0,
+                                    margin: 0,
+                                    objectFit: "contain"
+                                }}
+                            />
                             <span className="text-xl font-serif font-black tracking-[0.2em] text-[#1a1a1a]">ALPHA</span>
                         </Link>
                     </motion.div>

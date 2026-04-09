@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import { io } from "socket.io-client";
 import { useAuth } from "../../../context/AuthContext";
+import new_logo from "../../../assets/new_logo_original.png";
+
 import {
   LayoutDashboard,
   Users,
@@ -83,13 +85,24 @@ const Sidebar = function Sidebar({ onClose }) {
   return (
     <div className="w-[280px] lg:w-64 h-full bg-[#fdfbf7] lg:bg-white/55 lg:backdrop-blur-[14px] rounded-none lg:rounded-[24px] border-r border-[#e6e3df] lg:border-white/40 px-6 py-10 flex flex-col shadow-2xl lg:shadow-[0_4px_15px_rgba(0,0,0,0.03)] relative z-50">
       <div className="flex justify-between items-center mb-12 px-2">
-        <Link to="/" className="flex flex-col gap-4 group transition-transform hover:scale-[1.02]">
-          <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
-            <img src="/team-alpha-logo.png" alt="Team Alpha Logo" className="w-full h-full object-contain p-1 rounded-2xl" />
-          </div>
-          <div>
+        <Link to="/" className="flex flex-col gap-0 group transition-transform hover:scale-[1.02]">
+          <img
+            src={new_logo}
+            alt="Team Alpha Logo"
+            style={{
+              width: "120px",
+              height: "auto",
+              background: "transparent",
+              border: "none",
+              boxShadow: "none",
+              padding: 0,
+              margin: 0,
+              objectFit: "contain"
+            }}
+          />
+          <div className="mt-[-12px]">
             <h1 className="font-luxury text-2xl tracking-tighter text-[#2d2d2d]">Team Alpha</h1>
-            <p className="text-[9px] uppercase tracking-[0.3em] text-[#8a8a8a] font-bold mt-1">The Wedding Artist</p>
+            <p className="text-[9px] uppercase tracking-[0.3em] text-[#8a8a8a] font-bold">The Wedding Artist</p>
           </div>
         </Link>
         {onClose && (
