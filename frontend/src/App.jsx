@@ -39,6 +39,7 @@ const AdminActivityLog = lazy(() => import('./admin/pages/ActivityLog'));
 const AdminChats = lazy(() => import('./admin/pages/Chats'));
 const AdminDriveGalleryDetail = lazy(() => import('./admin/pages/DriveGalleryDetail'));
 const AdminClientEvents = lazy(() => import('./admin/pages/ClientEvents'));
+const AdminUserManagement = lazy(() => import('./admin/pages/UserManagement'));
 
 const PortalLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -169,6 +170,7 @@ function App() {
                 <Route path="calendar" element={<AdminCalendarPage />} />
                 <Route path="activity-log" element={<AdminActivityLog />} />
                 <Route path="chats" element={<AdminChats />} />
+                <Route path="users" element={<AdminUserManagement />} />
               </Route>
             </Route>
             {/* Catch-All Route for invalid URLs */}

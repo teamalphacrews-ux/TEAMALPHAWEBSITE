@@ -34,6 +34,10 @@ const io = require('socket.io')(server, {
     cors: { origin: "*", methods: ["GET", "POST", "PATCH"] }
 });
 
+// Tracks online users for WhatsApp-style ticks
+const onlineUsers = new Map();
+app.set('onlineUsers', onlineUsers);
+
 // CRITICAL: Attach io instance so routes can access it for real-time broadcasts
 app.set('io', io);
 
@@ -72,15 +76,35 @@ app.use((req, res, next) => {
     next();
 });
 
+
 io.on('connection', (socket) => {
     // Silent connection
 
     socket.on('join_chat', (roomId) => {
         socket.join(roomId);
+        
+        // Track online status for delivery ticks
+        if (!onlineUsers.has(roomId)) {
+            onlineUsers.set(roomId, new Set());
+        }
+        onlineUsers.get(roomId).add(socket.id);
+        
+        // Broadcast that this user is online so pending messages can be marked delivered
+        io.emit('user_online', { userId: roomId });
     });
 
-    socket.on('disconnect', (reason) => {
-        // Silent disconnect
+    socket.on('disconnect', () => {
+        // Remove from online tracking
+        for (let [userId, sockets] of onlineUsers.entries()) {
+            if (sockets.has(socket.id)) {
+                sockets.delete(socket.id);
+                if (sockets.size === 0) {
+                    onlineUsers.delete(userId);
+                    io.emit('user_offline', { userId });
+                }
+                break;
+            }
+        }
     });
 
     socket.on('typing_start', (data) => {
@@ -396,6 +420,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/google-sheets', require('./routes/googleSheetRoutes'));
 app.use('/api/media', require('./routes/media'));
 app.use('/api/drive-gallery', require('./routes/driveGalleryRoutes'));
+app.use('/api/admin-users', require('./routes/adminUserRoutes'));
 
 // --- Standalone API Configuration ---
 // Root route for initial verification

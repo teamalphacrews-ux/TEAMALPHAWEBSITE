@@ -174,6 +174,15 @@ export default function Chats() {
         // 2. STRICTURE: Re-fetch conversations for latest message snippet
         fetchConversations();
       }
+
+      // --- WhatsApp Logic: Auto-Ack Delivery ---
+      if (!isOutbound) {
+          // If we are recipient, tell the sender we got it for the double grey tick
+          newSocket.emit('message_delivered', { 
+            messageId: message._id, 
+            senderId: senderId 
+          });
+      }
     });
 
     newSocket.on('room_updated', (data) => dispatch(handleRoomUpdate(data)));

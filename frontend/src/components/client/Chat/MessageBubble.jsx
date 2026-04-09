@@ -72,9 +72,10 @@ export default function MessageBubble({
   const statusIcon = () => {
     if (message.status === 'error') return <AlertCircle size={10} className="text-red-500" />;
     if (message.status === 'pending') return <div className="w-2.5 h-2.5 border-b border-r border-white animate-spin rounded-full opacity-50" />;
-    if (message.status === 'seen') return <CheckCheck size={10} className="text-luxury-gold" />;
-    if (message.status === 'delivered') return <CheckCheck size={10} className="text-white/40" />;
-    return <Check size={10} className="text-white/40" />;
+    if (message.status === 'seen') return <CheckCheck size={11} strokeWidth={3} className="text-[#34B7F1]" />;
+    if (message.status === 'delivered') return <CheckCheck size={11} strokeWidth={3} className={isOwn ? "text-white/40" : "text-stone-400"} />;
+    // Default: sent (single tick)
+    return <Check size={11} strokeWidth={3} className={isOwn ? "text-white/40" : "text-stone-400"} />;
   };
 
   const isNewIncoming = !isOwn && (Date.now() - new Date(message.timestamp).getTime() < 5000);

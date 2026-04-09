@@ -21,6 +21,8 @@ const UserSchema = new mongoose.Schema({
     googleEmail: String,
     googleWebhookId: String,
     googleResourceId: String,
+    vaultPassword: { type: String }, // Reversible encrypted password for the vault
+    iv: { type: String }, // Initialization vector for AES decryption
     lastChatClearAt: { type: Date }
 }, { timestamps: true });
 

@@ -18,6 +18,7 @@ import {
   LogOut,
   MessageSquare,
   Bell,
+  Shield,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -80,6 +81,7 @@ const Sidebar = function Sidebar({ onClose }) {
     { name: "Finance", path: "/admin/finance", icon: IndianRupee },
     { name: "Calendar", path: "/admin/calendar", icon: Calendar },
     { name: "Activity Log", path: "/admin/activity-log", icon: Bell },
+    { name: "User Management", path: "/admin/users", icon: Shield },
   ];
 
   return (

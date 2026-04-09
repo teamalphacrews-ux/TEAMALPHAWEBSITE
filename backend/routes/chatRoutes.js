@@ -28,6 +28,10 @@ router.post('/', auth, async (req, res) => {
         const user = await User.findById(req.user.id);
         const senderName = user ? (user.name || `${user.firstName} ${user.lastName}`.trim()) : 'Alpha Admin';
 
+        // Determine initial status based on recipient online status
+        const onlineUsers = req.app.get('onlineUsers');
+        const isRecipientOnline = onlineUsers && onlineUsers.has(String(recipient));
+
         const newMessage = new Message({
             sender: req.user.id,
             senderName: senderName,
@@ -38,7 +42,7 @@ router.post('/', auth, async (req, res) => {
             replyTo: replyTo || null,
             seen: false,
             isRead: false,
-            status: 'sent'
+            status: isRecipientOnline ? 'delivered' : 'sent'
         });
 
         const savedMessage = await newMessage.save();
