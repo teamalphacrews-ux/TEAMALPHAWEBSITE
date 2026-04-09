@@ -31,7 +31,7 @@ const app = express();
 app.use(compression()); // Compress all responses
 const server = require('http').createServer(app);
 const io = require('socket.io')(server, {
-    cors: { origin: "*", methods: ["GET", "POST"] }
+    cors: { origin: "*", methods: ["GET", "POST", "PATCH"] }
 });
 
 // CRITICAL: Attach io instance so routes can access it for real-time broadcasts
@@ -60,7 +60,7 @@ app.use(cors({
             callback(new Error('Not allowed by CORS'));
         }
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "x-auth-token", "Authorization", "x-sheet-id", "x-sheet-name"],
     credentials: true
 }));
