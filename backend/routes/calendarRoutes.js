@@ -16,7 +16,9 @@ router.get('/sync-status', auth, async (req, res) => {
         const isSynced = !!user.googleAccessToken;
         res.json({ 
             isSynced, 
-            email: isSynced ? user.googleEmail : user.email 
+            email: isSynced ? user.googleEmail : user.email,
+            lastSyncAt: user.googleLastSyncAt,
+            syncError: user.googleSyncError
         });
     } catch (error) {
         res.status(500).json({ message: error.message });

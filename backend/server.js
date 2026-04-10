@@ -358,7 +358,7 @@ authRouter.post('/google/webhook', async (req, res) => {
         const { pollGoogleCalendar } = require('./services/googleCalendarService');
         const user = await User.findOne({ googleResourceId: resourceId, googleWebhookId: channelId });
         if (user) {
-            console.log(`🔄 Triggering Instant Sync for ${user.email}`);
+            console.log(`🔄 Triggering Instant Sync for ${user.email} (via Webhook)`);
             await pollGoogleCalendar(user, req.app.get('io'));
         }
         res.sendStatus(200);
@@ -393,8 +393,14 @@ authRouter.get('/google/callback', async (req, res) => {
         }, { new: true });
 
         // Register Webhook Channel
-        const { setupGoogleWebhook } = require('./services/googleCalendarService');
+        const { setupGoogleWebhook, pollGoogleCalendar } = require('./services/googleCalendarService');
         await setupGoogleWebhook(user);
+
+        // TRIGGER INITIAL FULL SYNC IMMEDIATELY
+        // We run this in the background so the user can be redirected immediately
+        pollGoogleCalendar(user, req.app.get('io'), true).catch(err => {
+            console.error("Initial Sync Error:", err.message);
+        });
 
         // Redirect back to frontend calendar page
         const frontendUrl = process.env.FRONTEND_URL || 'https://team-alpha-d64k.onrender.com';

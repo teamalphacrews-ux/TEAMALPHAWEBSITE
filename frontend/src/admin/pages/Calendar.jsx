@@ -68,6 +68,14 @@ export default function Calendar() {
                 setSyncStatus({ isSynced: false, email: "" });
             }
             
+            if (data.action === 'SYNC_ERROR') {
+                toast.error(data.error, { id: 'sync-error', duration: 6000 });
+            }
+
+            if (data.action === 'SYNC') {
+                toast.success("Calendar updated in real-time");
+            }
+            
             // Instantly update UI for local database changes
             fetchEvents();
             handleFetchSyncStatus();
@@ -280,23 +288,40 @@ export default function Calendar() {
                     {/* Sync Status Pill - High Visibility */}
                     <div className={`
                         inline-flex items-center gap-3 px-6 py-3.5 rounded-full border-2 border-black/5
-                        ${syncStatus.isSynced ? 'bg-white text-[#5B6A57]' : 'bg-red-50 text-red-400'}
+                        ${syncStatus.isSynced ? (syncStatus.syncError ? 'bg-amber-50 text-amber-600' : 'bg-white text-[#5B6A57]') : 'bg-red-50 text-red-400'}
                         transition-all duration-700 shadow-sm hover:shadow-md cursor-help group
                     `}>
                         <div className="relative">
-                            <span className={`block w-2.5 h-2.5 rounded-full ${syncStatus.isSynced ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`}></span>
-                            {syncStatus.isSynced && (
+                            <span className={`block w-2.5 h-2.5 rounded-full ${syncStatus.isSynced ? (syncStatus.syncError ? 'bg-amber-500' : 'bg-green-500 animate-pulse') : 'bg-red-400'}`}></span>
+                            {(syncStatus.isSynced && !syncStatus.syncError) && (
                                 <span className="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-25"></span>
                             )}
                         </div>
                         <div className="flex flex-col overflow-hidden">
                             <span className="text-[8px] font-bold uppercase tracking-[0.2em] opacity-40 leading-none mb-0.5">
-                                {syncStatus.isSynced ? 'Google Live' : 'Offline Mode'}
+                                {syncStatus.isSynced 
+                                    ? (syncStatus.syncError ? 'Sync Warning' : 'Google Live') 
+                                    : 'Offline Mode'}
                             </span>
                             <span className="text-[10px] font-bold uppercase tracking-wider truncate max-w-[140px] leading-none">
-                                {syncStatus.isSynced ? syncStatus.email : 'No Sync Active'}
+                                {syncStatus.isSynced 
+                                    ? (syncStatus.syncError ? 'Action Required' : syncStatus.email) 
+                                    : 'No Sync Active'}
                             </span>
+                            {syncStatus.lastSyncAt && !syncStatus.syncError && (
+                                <span className="text-[7px] font-bold opacity-30 mt-1 uppercase tracking-tighter">
+                                    Last synced: {format(new Date(syncStatus.lastSyncAt), 'HH:mm:ss')}
+                                </span>
+                            )}
                         </div>
+                        
+                        {/* Tooltip for Error */}
+                        {syncStatus.syncError && (
+                            <div className="absolute top-full left-0 mt-4 p-4 bg-white border-4 border-black/5 rounded-2xl shadow-2xl z-[100] w-64 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-2">Sync Error</p>
+                                <p className="text-[11px] font-medium leading-relaxed text-[#2d2d2d]">{syncStatus.syncError}</p>
+                            </div>
+                        )}
                     </div>
 
                     <button
