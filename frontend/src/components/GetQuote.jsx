@@ -114,8 +114,8 @@ const GetQuote = () => {
                                             type="button"
                                             onClick={() => handleEventTypeChange(type)}
                                             className={`px-4 py-2 text-xs border transition-all duration-300 ${formData.eventTypes.includes(type)
-                                                    ? 'bg-black text-white border-black'
-                                                    : 'border-gray-300 text-gray-600 hover:border-black'
+                                                ? 'bg-black text-white border-black'
+                                                : 'border-gray-300 text-gray-600 hover:border-black'
                                                 }`}
                                         >
                                             {type}
@@ -139,13 +139,17 @@ const GetQuote = () => {
 
                             <div className="grid md:grid-cols-2 gap-8">
                                 <input
-                                    type="text"
+                                    type={formData.date ? "date" : "text"}
                                     name="date"
                                     value={formData.date}
                                     onChange={handleChange}
                                     placeholder="Date of Event"
-                                    onFocus={(e) => e.target.type = 'date'}
-                                    onBlur={(e) => e.target.type = 'text'}
+                                    onFocus={(e) => (e.target.type = "date")}
+                                    onBlur={(e) => {
+                                        if (!e.target.value) {
+                                            e.target.type = "text";
+                                        }
+                                    }}
                                     className="bg-transparent border-b border-gray-400 py-3 focus:outline-none focus:border-black transition w-full placeholder-gray-500 font-light"
                                 />
                                 <input
