@@ -49,7 +49,7 @@ const GetQuote = () => {
     };
 
     return (
-        <div className="font-sans text-[#1C1C1C] bg-[#F7F5F2] min-h-screen selection:bg-black selection:text-white pt-24">
+        <div className="font-sans text-[#1C1C1C] bg-[#F7F5F2] min-h-screen selection:bg-black selection:text-white pt-40">
             <section id="contact" className="py-12 px-6 bg-[#F7F5F2]">
                 <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-20">
                     {/* Info */}

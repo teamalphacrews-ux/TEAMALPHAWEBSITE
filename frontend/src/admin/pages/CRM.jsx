@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useOutletContext } from "react-router-dom";
 import axios from "axios";
-import { Plus, Search, Filter, MoreHorizontal, FileText, CheckSquare, Users } from "lucide-react";
+import { Plus, Search, Filter, MoreHorizontal, FileText, CheckSquare, Users, ArrowUpDown } from "lucide-react";
 import LeadDetails from "../components/crm/LeadDetails";
 import LeadForm from "../components/crm/LeadForm";
 import InvoiceForm from "../components/crm/InvoiceForm";
@@ -23,6 +23,7 @@ export default function CRM() {
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [sortBy, setSortBy] = useState("newest");
   const { setIsFocusMode } = useOutletContext();
   const [user, setUser] = useState(null);
 
@@ -143,12 +144,21 @@ export default function CRM() {
     setShowLeadForm(false);
   };
 
-  const filteredLeads = leads.filter(lead => {
-    const nameMatch = (lead.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-    const emailMatch = (lead.email || "").toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterStatus === "All" || lead.status === filterStatus;
-    return (nameMatch || emailMatch) && matchesFilter;
-  });
+  const filteredLeads = leads
+    .filter(lead => {
+      const nameMatch = (lead.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const emailMatch = (lead.email || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFilter = filterStatus === "All" || lead.status === filterStatus;
+      return (nameMatch || emailMatch) && matchesFilter;
+    })
+    .sort((a, b) => {
+      if (sortBy === "name-asc") return (a.name || "").localeCompare(b.name || "");
+      if (sortBy === "name-desc") return (b.name || "").localeCompare(a.name || "");
+      if (sortBy === "newest") return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      if (sortBy === "oldest") return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      if (sortBy === "status") return (a.status || "").localeCompare(b.status || "");
+      return 0;
+    });
 
   return (
     <div className="space-y-6 md:space-y-10 w-full animate-in fade-in duration-1500">
@@ -216,7 +226,21 @@ export default function CRM() {
                 </div>
                 <div className="relative">
                   <select
-                    className="appearance-none flex items-center justify-center gap-2 px-8 py-3 bg-white border border-[#e6e3df] rounded-2xl text-[10px] font-bold uppercase tracking-widest text-warmgray hover:text-charcoal transition-all shadow-sm focus:outline-none"
+                    className="appearance-none flex items-center justify-center gap-2 px-8 py-3 bg-white border border-[#e6e3df] rounded-2xl text-[10px] font-bold uppercase tracking-widest text-warmgray hover:text-charcoal transition-all shadow-sm focus:outline-none pr-10"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="status">By Status</option>
+                  </select>
+                  <ArrowUpDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-warmgray" />
+                </div>
+                <div className="relative">
+                  <select
+                    className="appearance-none flex items-center justify-center gap-2 px-8 py-3 bg-white border border-[#e6e3df] rounded-2xl text-[10px] font-bold uppercase tracking-widest text-warmgray hover:text-charcoal transition-all shadow-sm focus:outline-none pr-10"
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
                   >

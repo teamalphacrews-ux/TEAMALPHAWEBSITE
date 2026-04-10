@@ -3,16 +3,27 @@ import { Link as ScrollLink } from 'react-scroll';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
 import new_logo from "../assets/new_logo_original.png";
 
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { scrollY } = useScroll();
+  const [hidden, setHidden] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious();
+    if (latest > previous && latest > 150) {
+      setHidden(true);
+    } else {
+      setHidden(false);
+    }
+  });
 
   const isHomePage = location.pathname === '/';
 
@@ -49,7 +60,15 @@ const Navbar = () => {
   const textColor = scrolled || !isHomePage ? 'text-[#3A3A3A]' : 'text-white';
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled || !isHomePage ? 'bg-[#F2EFEA]/95 backdrop-blur-md shadow-sm py-4' : 'bg-transparent py-6'}`}>
+    <motion.nav
+      variants={{
+        visible: { y: 0 },
+        hidden: { y: "-100%" },
+      }}
+      animate={hidden ? "hidden" : "visible"}
+      transition={{ duration: 0.35, ease: "easeInOut" }}
+      className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled || !isHomePage ? 'bg-[#F2EFEA]/95 backdrop-blur-md shadow-sm py-4' : 'bg-transparent py-6'}`}
+    >
       <div className={`max-w-7xl mx-auto px-6 flex justify-between items-center transition-colors duration-300 ${textColor}`}>
         {/* Logo */}
         <RouterLink to="/" className="cursor-pointer hover:opacity-80 transition flex items-center gap-3">
@@ -57,7 +76,7 @@ const Navbar = () => {
             src={new_logo}
             alt="Team Alpha Logo"
             style={{
-              height: "160px",
+              height: scrolled || !isHomePage ? "80px" : "160px",
               width: "auto",
               background: "transparent",
               border: "none",
@@ -203,7 +222,7 @@ const Navbar = () => {
           </div>
         </div>
       )}
-    </nav>
+    </motion.nav>
   );
 };
 

@@ -37,6 +37,7 @@ export default function Finance() {
     const [filterCategory, setFilterCategory] = useState("All");
     const [activeAnalyticsTab, setActiveAnalyticsTab] = useState("Trend");
     const [expandedChart, setExpandedChart] = useState(null);
+    const [sortByPending, setSortByPending] = useState("Pending (High)");
 
     useEffect(() => {
         fetchData();
@@ -159,6 +160,14 @@ export default function Finance() {
         if (filterCategory === "Income") return tx.type === 'income';
         if (filterCategory === "Expense") return tx.type === 'expense';
         return true;
+    });
+
+    const sortedPendingPayments = [...pendingPayments].sort((a, b) => {
+        if (sortByPending === "Pending (High)") return b.pending - a.pending;
+        if (sortByPending === "Pending (Low)") return a.pending - b.pending;
+        if (sortByPending === "Name (A-Z)") return a.name.localeCompare(b.name);
+        if (sortByPending === "Total (High)") return b.total - a.total;
+        return 0;
     });
 
     const formatCurrency = (amount) => {
@@ -642,14 +651,29 @@ export default function Finance() {
             </div>
 
             <motion.div variants={itemVariants} className="bg-white rounded-[3rem] border border-black/5 shadow-[0_8px_40px_rgba(0,0,0,0.08)] p-8 md:p-12 hover:shadow-2xl transition-all duration-500">
-                <div className="flex justify-between items-center mb-12">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
                     <div className="flex items-center gap-4">
                         <div className="w-2 h-10 bg-rose-600 rounded-full"></div>
                         <h4 className="font-serif text-3xl md:text-4xl text-[#1a1a1a]">Pending Client Receivables</h4>
                     </div>
-                    <div className="flex items-center gap-3 bg-rose-500/10 text-rose-700 px-6 py-3 rounded-2xl border border-rose-500/20">
-                        <AlertCircle size={16} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest pt-0.5">Critical Follow-ups</span>
+                    <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                        <div className="relative group/select min-w-[180px]">
+                            <select
+                                value={sortByPending}
+                                onChange={(e) => setSortByPending(e.target.value)}
+                                className="appearance-none w-full bg-white border border-black/5 p-3.5 pr-10 rounded-2xl transition-all text-[#555] group-hover/select:bg-stone-50 text-[10px] font-bold uppercase tracking-widest focus:outline-none shadow-sm"
+                            >
+                                <option value="Pending (High)">Highest Pending</option>
+                                <option value="Pending (Low)">Lowest Pending</option>
+                                <option value="Name (A-Z)">Name A-Z</option>
+                                <option value="Total (High)">Total Value</option>
+                            </select>
+                            <ChevronRight size={14} className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-[#555] pointer-events-none" />
+                        </div>
+                        <div className="flex items-center gap-3 bg-rose-500/10 text-rose-700 px-6 py-3.5 rounded-2xl border border-rose-500/20">
+                            <AlertCircle size={16} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest pt-0.5">Critical Follow-ups</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -663,7 +687,7 @@ export default function Finance() {
                             <div className="col-span-2 text-right">Status</div>
                         </div>
 
-                        {pendingPayments.map((p, idx) => (
+                        {sortedPendingPayments.map((p, idx) => (
                             <motion.div 
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
