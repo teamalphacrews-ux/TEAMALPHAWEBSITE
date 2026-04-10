@@ -12,6 +12,7 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
   const [selectedClientId, setSelectedClientId] = useState("");
   const [availableClients, setAvailableClients] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [thumbnailFile, setThumbnailFile] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
 
   useEffect(() => {

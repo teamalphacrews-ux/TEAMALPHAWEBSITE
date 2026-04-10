@@ -68,7 +68,7 @@ export default function ClientSidebar({ onClose }) {
 
   const navLinks = [
     { name: "Dashboard", path: "/portal", icon: Home, exact: true },
-    { name: "My Gallery", path: "/portal/gallery", icon: Image },
+    { name: "Edited Photos", path: "/portal/gallery", icon: Image },
     { name: "Concierge", path: "/portal/chats", icon: MessageSquare, hasUnread: unreadCount > 0 },
     { name: "The Vault", path: "/portal/cloud", icon: Cloud },
   ];
