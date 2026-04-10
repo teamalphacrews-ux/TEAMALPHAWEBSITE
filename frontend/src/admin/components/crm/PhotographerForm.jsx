@@ -12,7 +12,7 @@ export default function PhotographerForm({ onClose, onAdded }) {
         name: "",
         email: "",
         phone: "",
-        specialty: "Lead",
+        specialty: "LEAD PHOTOGRAPHER",
         status: "Active"
     });
     const [loading, setLoading] = useState(false);
@@ -104,14 +104,17 @@ export default function PhotographerForm({ onClose, onAdded }) {
                                 value={formData.specialty}
                                 onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
                             >
-                                <option>Lead Photographer</option>
-                                <option>Second Photographer</option>
-                                <option>Videographer</option>
-                                <option>Drone Operator</option>
-                                <option>Editor</option>
-                                <option>Cinematographer</option>
-                                <option>LED Wall Operator</option>
-                                <option>Live Streamer</option>
+                                <option value="LEAD PHOTOGRAPHER">Lead Photographer</option>
+                                <option value="LEAD CANDID PHOTOGRAPHER">Lead Candid Photographer</option>
+                                <option value="LEAD CINEMATOGRAPHER">Lead Cinematographer</option>
+                                <option value="CONVENTIONAL PHOTOGRAPHER">Conventional Photographer</option>
+                                <option value="CONVENTIONAL VIDEOGRAPHER">Conventional Videographer</option>
+                                <option value="SPOT EDITOR">Spot Editor</option>
+                                <option value="EDITOR">Editor</option>
+                                <option value="DRONE OPERATOR">Drone Operator</option>
+                                <option value="ASSISTANT">Assistant</option>
+                                <option value="LIVE STREAMER">Live Streamer</option>
+                                <option value="LED WALL OPERATOR">LED Wall Operator</option>
                             </select>
                         </div>
                         <div className="space-y-2">

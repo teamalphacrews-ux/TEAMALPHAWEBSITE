@@ -139,17 +139,11 @@ const GetQuote = () => {
 
                             <div className="grid md:grid-cols-2 gap-8">
                                 <input
-                                    type={formData.date ? "date" : "text"}
+                                    type="text"
                                     name="date"
                                     value={formData.date}
                                     onChange={handleChange}
-                                    placeholder="Date of Event"
-                                    onFocus={(e) => (e.target.type = "date")}
-                                    onBlur={(e) => {
-                                        if (!e.target.value) {
-                                            e.target.type = "text";
-                                        }
-                                    }}
+                                    placeholder="Date of Event (e.g. DD-MM-YYYY)"
                                     className="bg-transparent border-b border-gray-400 py-3 focus:outline-none focus:border-black transition w-full placeholder-gray-500 font-light"
                                 />
                                 <input
