@@ -66,7 +66,7 @@ router.get('/', auth, async (req, res) => {
 router.post('/create', auth, async (req, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Access denied' });
     
-    const { firstName, lastName, email, password, role, leadId } = req.body;
+    const { firstName, lastName, email, password, role, leadId, cloudLink, cloudPassword } = req.body;
 
     try {
         let user = await User.findOne({ email });
@@ -87,7 +87,9 @@ router.post('/create', auth, async (req, res) => {
             role: role || 'client',
             leadId: leadId || null,
             vaultPassword: encryptedData,
-            iv: iv
+            iv: iv,
+            cloudLink: cloudLink || '',
+            cloudPassword: cloudPassword || ''
         });
 
         await user.save();
@@ -104,7 +106,7 @@ router.post('/create', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Access denied' });
     
-    const { firstName, lastName, email, role, password } = req.body;
+    const { firstName, lastName, email, role, password, cloudLink, cloudPassword } = req.body;
 
     try {
         let user = await User.findById(req.params.id);
@@ -114,6 +116,8 @@ router.put('/:id', auth, async (req, res) => {
         if (lastName) user.lastName = lastName;
         if (email) user.email = email;
         if (role) user.role = role;
+        if (cloudLink !== undefined) user.cloudLink = cloudLink;
+        if (cloudPassword !== undefined) user.cloudPassword = cloudPassword;
         
         // If password is changed, update both hash and vault
         if (password && password !== '••••••••') {

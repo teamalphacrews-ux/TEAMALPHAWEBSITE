@@ -24,7 +24,9 @@ export default function UserManagement() {
     email: '',
     password: '',
     role: 'client',
-    leadId: ''
+    leadId: '',
+    cloudLink: '',
+    cloudPassword: ''
   });
 
   // Edit User Modal
@@ -72,7 +74,7 @@ export default function UserManagement() {
       await axios.post(`${API_URL}/api/admin-users/create`, formData, authHeader);
       toast.success('User account created successfully');
       setShowCreateModal(false);
-      setFormData({ firstName: '', lastName: '', email: '', password: '', role: 'client', leadId: '' });
+      setFormData({ firstName: '', lastName: '', email: '', password: '', role: 'client', leadId: '', cloudLink: '', cloudPassword: '' });
       fetchUsers();
     } catch (err) {
       toast.error(err.response?.data?.msg || 'Creation failed');
@@ -399,6 +401,29 @@ export default function UserManagement() {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2.5">
+                      <label className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5">Cloud Link (Gallery/Drive)</label>
+                      <input 
+                        type="url" 
+                        placeholder="https://..."
+                        value={formData.cloudLink}
+                        onChange={(e) => setFormData({...formData, cloudLink: e.target.value})}
+                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium placeholder:text-stone-200" 
+                      />
+                    </div>
+                    <div className="space-y-2.5">
+                      <label className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5">Cloud Password</label>
+                      <input 
+                        type="text" 
+                        placeholder="External Pass..."
+                        value={formData.cloudPassword}
+                        onChange={(e) => setFormData({...formData, cloudPassword: e.target.value})}
+                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium placeholder:text-stone-200" 
+                      />
+                    </div>
+                  </div>
+
                   <div className="pt-4">
                     <button 
                       disabled={isCreating}
@@ -499,6 +524,27 @@ export default function UserManagement() {
                         placeholder="Leave blank to keep"
                         value={editingUser.password || ''}
                         onChange={(e) => setEditingUser({...editingUser, password: e.target.value})}
+                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2.5">
+                      <label className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5">Cloud Link</label>
+                      <input 
+                        type="url" 
+                        value={editingUser.cloudLink || ''}
+                        onChange={(e) => setEditingUser({...editingUser, cloudLink: e.target.value})}
+                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium" 
+                      />
+                    </div>
+                    <div className="space-y-2.5">
+                      <label className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5">Cloud Password</label>
+                      <input 
+                        type="text" 
+                        value={editingUser.cloudPassword || ''}
+                        onChange={(e) => setEditingUser({...editingUser, cloudPassword: e.target.value})}
                         className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium" 
                       />
                     </div>
