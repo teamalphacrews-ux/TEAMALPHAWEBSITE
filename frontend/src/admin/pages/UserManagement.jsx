@@ -127,7 +127,7 @@ export default function UserManagement() {
   );
 
   return (
-    <div className="min-h-screen -m-10 p-12 bg-transparent relative font-sans selection:bg-rose-100 selection:text-rose-900 overflow-visible">
+    <div className="min-h-screen -m-4 md:-m-10 p-6 md:p-12 bg-transparent relative font-sans selection:bg-rose-100 selection:text-rose-900 overflow-visible">
       {/* Immersive Background Layer */}
       <div className="fixed inset-0 bg-[#fdfaf6] -z-20" />
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -137,22 +137,22 @@ export default function UserManagement() {
       </div>
 
       {/* 1. Page Header - Symmetrical Layout */}
-      <div className="relative z-10 max-w-7xl mx-auto mb-16 px-8 pt-8">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-10">
+      <div className="relative z-10 max-w-7xl mx-auto mb-10 md:mb-16 px-4 md:px-8 pt-6 md:pt-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
           <div className="space-y-1.5 translate-x-1">
             <div className="flex items-center gap-5 mb-2">
               <div className="w-1.5 h-12 bg-[#e3ae97] rounded-full shadow-[0_0_25px_rgba(227,174,151,0.4)] animate-pulse" />
-              <h1 className="font-luxury text-6xl md:text-7xl text-[#1a1a1a] tracking-tight leading-none">System Registry</h1>
+              <h1 className="font-luxury text-4xl md:text-7xl text-[#1a1a1a] tracking-tight leading-none">System Registry</h1>
             </div>
-            <p className="text-[11px] md:text-[11px] text-stone-400 font-black uppercase tracking-[0.5em] pl-[1.8rem] opacity-70">
+            <p className="text-[10px] md:text-[11px] text-stone-400 font-black uppercase tracking-[0.3em] md:tracking-[0.5em] pl-[1.8rem] opacity-70">
               Real-Time User Access <span className="text-stone-300 mx-1">/</span> <span className="text-stone-900">Secure Logs</span>
             </p>
           </div>
           
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 w-full md:w-auto">
             <button
               onClick={() => setShowCreateModal(true)}
-              className="group px-10 py-4 bg-[#1a1a1a] text-white rounded-full text-[11px] font-black uppercase tracking-[0.4em] transition-all hover:bg-stone-800 hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] hover:translate-y-[-3px] active:translate-y-0 flex items-center gap-4 overflow-hidden shadow-xl"
+              className="group w-full md:w-auto px-6 md:px-10 py-3.5 md:py-4 bg-[#1a1a1a] text-white rounded-full text-[10px] md:text-[11px] font-black uppercase tracking-[0.4em] transition-all hover:bg-stone-800 hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] hover:translate-y-[-3px] active:translate-y-0 flex items-center justify-center gap-4 overflow-hidden shadow-xl"
             >
               <UserPlus size={16} className="group-hover:rotate-12 transition-transform duration-300" strokeWidth={1.5} />
               <span className="relative">
@@ -165,19 +165,19 @@ export default function UserManagement() {
       </div>
 
       {/* 2. Unified Master Card - Symmetrical Design */}
-      <div className="relative z-10 max-w-7xl mx-auto bg-white rounded-[56px] shadow-[0_50px_150px_rgba(0,0,0,0.08)] border border-stone-50 overflow-hidden mb-32">
+      <div className="relative z-10 max-w-7xl mx-auto bg-white rounded-[32px] md:rounded-[56px] shadow-[0_50px_150px_rgba(0,0,0,0.08)] border border-stone-50 overflow-hidden mb-12 md:mb-32 mx-4 md:mx-auto">
         
         {/* Card Header (Symmetric) */}
-        <div className="px-16 py-12 border-b border-stone-100 flex flex-col md:flex-row justify-between items-center gap-8 bg-white/60 backdrop-blur-xl">
-          <div className="flex items-center gap-6">
-            <h3 className="font-luxury text-4xl text-stone-900">Recent Users</h3>
-            <div className="px-5 py-2 bg-stone-100 text-stone-500 text-[10px] font-black uppercase tracking-widest rounded-full border border-stone-200/50">
-              {filteredUsers.length} active entries
+        <div className="px-6 md:px-16 py-8 md:py-12 border-b border-stone-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white/60 backdrop-blur-xl">
+          <div className="flex items-center gap-4 md:gap-6">
+            <h3 className="font-luxury text-2xl md:text-4xl text-stone-900">Recent Users</h3>
+            <div className="px-3 md:px-5 py-1.5 md:py-2 bg-stone-100 text-stone-500 text-[8px] md:text-[10px] font-black uppercase tracking-widest rounded-full border border-stone-200/50">
+              {filteredUsers.length} entries
             </div>
           </div>
 
           {/* Inline Integrated Search */}
-          <div className="relative group w-full md:w-96 scale-110 md:translate-x-[-1rem]">
+          <div className="relative group w-full md:w-96 md:scale-110 md:translate-x-[-1rem]">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-stone-300 size-4.5" strokeWidth={1} />
             <input
               type="text"
@@ -206,22 +206,23 @@ export default function UserManagement() {
                   initial={{ opacity: 0, x: -15 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.04 }}
-                  className="relative grid grid-cols-12 items-center px-16 py-8 transition-all hover:bg-stone-50/60 group border-l-[6px] border-transparent hover:border-l-[#e3ae9733]"
+                  className="relative flex flex-col md:grid md:grid-cols-12 items-start md:items-center px-6 md:px-16 py-8 transition-all hover:bg-stone-50/60 group border-l-[6px] border-transparent hover:border-l-[#e3ae9733] gap-6 md:gap-0"
                 >
                   {/* Identity */}
-                  <div className="col-span-4 flex items-center gap-8">
-                    <div className="w-13 h-13 rounded-3xl bg-stone-100 border border-stone-200/50 flex items-center justify-center font-serif text-[18px] text-stone-800 font-bold shadow-sm group-hover:shadow-md transition-all group-hover:scale-105">
-                      {user.firstName[0]}{user.lastName[0]}
+                  <div className="col-span-4 flex items-center gap-6 md:gap-8 w-full">
+                    <div className="w-12 h-12 md:w-13 md:h-13 flex-shrink-0 rounded-2xl md:rounded-3xl bg-stone-100 border border-stone-200/50 flex items-center justify-center font-serif text-[16px] md:text-[18px] text-stone-800 font-bold shadow-sm group-hover:shadow-md transition-all group-hover:scale-105">
+                      {user.firstName?.[0] || user.email?.[0] || '?'}{user.lastName?.[0] || ''}
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-[16px] font-black text-stone-800 tracking-tight leading-none group-hover:text-black transition-colors">{user.firstName} {user.lastName}</p>
-                      <p className="text-[12px] text-stone-400 font-medium tracking-tight truncate max-w-[240px]">{user.email}</p>
+                    <div className="space-y-1 min-w-0">
+                      <p className="text-[15px] md:text-[16px] font-black text-stone-800 tracking-tight leading-none group-hover:text-black transition-colors truncate">{user.firstName} {user.lastName}</p>
+                      <p className="text-[11px] md:text-[12px] text-stone-400 font-medium tracking-tight truncate max-w-[200px] md:max-w-[240px]">{user.email}</p>
                     </div>
                   </div>
 
                   {/* Role */}
-                  <div className="col-span-2">
-                    <span className={`inline-flex items-center px-5 py-2 rounded-full text-[8.5px] font-black uppercase tracking-[0.25em] border shadow-sm ${user.role === 'admin'
+                  <div className="col-span-2 flex md:block items-center gap-3">
+                    <span className="md:hidden text-[8px] font-bold uppercase tracking-widest text-stone-300">Role:</span>
+                    <span className={`inline-flex items-center px-4 md:px-5 py-1.5 md:py-2 rounded-full text-[8.5px] font-black uppercase tracking-[0.25em] border shadow-sm ${user.role === 'admin'
                       ? 'bg-stone-900 border-stone-800 text-white'
                       : 'bg-white border-stone-100 text-stone-400'
                       }`}>
@@ -230,49 +231,53 @@ export default function UserManagement() {
                   </div>
 
                   {/* Association Status */}
-                  <div className="col-span-3">
+                  <div className="col-span-3 flex md:block items-center gap-3">
+                    <span className="md:hidden text-[8px] font-bold uppercase tracking-widest text-stone-300">Status:</span>
                     {user.leadId ? (
-                      <div className="inline-flex items-center gap-2.5 px-5 py-2 bg-white border border-stone-100/50 rounded-2xl text-stone-400 text-[10px] font-bold uppercase tracking-widest shadow-sm">
-                        <LinkIcon size={11} strokeWidth={2} className="text-[#e3ae97]" />
-                        <span>Attached Record</span>
+                      <div className="inline-flex items-center gap-2.5 px-4 md:px-5 py-1.5 md:py-2 bg-white border border-stone-100/50 rounded-2xl text-stone-400 text-[9px] md:text-[10px] font-bold uppercase tracking-widest shadow-sm">
+                        <LinkIcon size={10} strokeWidth={2} className="text-[#e3ae97]" />
+                        <span>Attached</span>
                       </div>
                     ) : (
-                      <span className="text-stone-200 text-[10px] font-black uppercase tracking-[0.2em] opacity-30 select-none">Solo Vault</span>
+                      <span className="text-stone-300 md:text-stone-200 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] opacity-60 md:opacity-30 select-none">Solo Vault</span>
                     )}
                   </div>
 
                   {/* Vault Entry */}
-                  <div className="col-span-2">
-                    <div className="flex items-center gap-3 group/pass">
-                      <div className="bg-stone-50/80 px-5 py-2 rounded-2xl text-[12px] font-mono font-medium text-stone-500 border border-transparent min-w-[120px] flex justify-center tracking-widest relative overflow-hidden group-hover/pass:bg-white group-hover/pass:border-stone-100 transition-all shadow-sm">
+                  <div className="col-span-2 flex md:block items-center gap-3 w-full md:w-auto">
+                    <span className="md:hidden text-[8px] font-bold uppercase tracking-widest text-stone-300">Vault:</span>
+                    <div className="flex items-center gap-3 group/pass flex-1 md:flex-initial">
+                      <div className="bg-stone-50/80 px-4 md:px-5 py-2 rounded-2xl text-[12px] font-mono font-medium text-stone-500 border border-transparent min-w-[100px] md:min-w-[120px] flex justify-center tracking-widest relative overflow-hidden group-hover/pass:bg-white group-hover/pass:border-stone-100 transition-all shadow-sm">
                         {visiblePasswords[user._id] ? (user.plainPassword || 'UNSET') : '••••••••'}
                       </div>
                       <button
                         onClick={() => togglePassword(user._id)}
-                        className="p-2.5 text-stone-200 hover:text-stone-800 transition-all opacity-40 group-hover:opacity-100 scale-110"
+                        className="p-2 text-stone-300 hover:text-stone-800 transition-all opacity-100 md:opacity-40 md:group-hover:opacity-100 md:scale-110"
                         title="Display Code"
                       >
-                        {visiblePasswords[user._id] ? <EyeOff size={18} strokeWidth={1} /> : <Eye size={18} strokeWidth={1} />}
+                        {visiblePasswords[user._id] ? <EyeOff size={16} strokeWidth={1} /> : <Eye size={16} strokeWidth={1} />}
                       </button>
                     </div>
                   </div>
 
                   {/* Registry Actions */}
-                  <div className="col-span-1 flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+                  <div className="col-span-1 flex items-center justify-start md:justify-end gap-3 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 md:translate-x-2 md:group-hover:translate-x-0 w-full md:w-auto border-t md:border-t-0 pt-4 md:pt-0 border-stone-50">
                     <button
                       onClick={() => {
                         setEditingUser({ ...user, password: user.plainPassword });
                         setShowEditModal(true);
                       }}
-                      className="p-3.5 bg-white text-stone-400 hover:text-stone-900 border border-stone-100/50 hover:border-stone-200 rounded-[18px] shadow-md transition-all active:scale-95"
+                      className="flex-1 md:flex-none p-3.5 bg-white text-stone-400 hover:text-stone-900 border border-stone-100/50 hover:border-stone-200 rounded-[18px] shadow-sm md:shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 md:gap-0"
                     >
                       <Edit3 size={17} strokeWidth={1} />
+                      <span className="md:hidden text-[10px] font-black uppercase tracking-widest">Edit</span>
                     </button>
                     <button
                       onClick={() => handleDelete(user._id)}
-                      className="p-3.5 bg-white text-stone-400 hover:text-red-500 border border-stone-100/50 hover:border-red-100 rounded-[18px] shadow-md transition-all active:scale-95"
+                      className="flex-1 md:flex-none p-3.5 bg-white text-stone-400 hover:text-red-500 border border-stone-100/50 hover:border-red-100 rounded-[18px] shadow-sm md:shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 md:gap-0"
                     >
                       <Trash2 size={17} strokeWidth={1} />
+                      <span className="md:hidden text-[10px] font-black uppercase tracking-widest">Remove</span>
                     </button>
                   </div>
                 </motion.div>
@@ -295,14 +300,14 @@ export default function UserManagement() {
               className="relative bg-white w-full max-w-xl rounded-[48px] shadow-[0_50px_120px_rgba(0,0,0,0.12)] border border-stone-50 flex flex-col max-h-[85vh]"
             >
               {/* Internal Header */}
-              <div className="px-10 pt-10 pb-4 flex justify-between items-center bg-white z-10 rounded-t-[48px]">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 rounded-2xl bg-stone-900 text-white flex items-center justify-center shadow-lg">
+              <div className="px-6 md:px-10 pt-8 md:pt-10 pb-4 flex justify-between items-center bg-white z-10 rounded-t-[48px]">
+                <div className="flex items-center gap-4 md:gap-5">
+                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-stone-900 text-white flex items-center justify-center shadow-lg">
                     <Plus size={24} strokeWidth={1.5} />
                   </div>
                   <div>
-                    <h2 className="font-luxury text-3xl text-stone-900 tracking-tight leading-none">Initialize</h2>
-                    <p className="text-[8.5px] font-black uppercase tracking-[3px] text-stone-300 mt-1.5">New Access Protocol</p>
+                    <h2 className="font-luxury text-2xl md:text-3xl text-stone-900 tracking-tight leading-none">Initialize</h2>
+                    <p className="text-[7.5px] md:text-[8.5px] font-black uppercase tracking-[2px] md:tracking-[3px] text-stone-300 mt-1.5">New Access Protocol</p>
                   </div>
                 </div>
                 <button onClick={() => setShowCreateModal(false)} className="p-3 rounded-full hover:bg-stone-50 transition-colors text-stone-300 hover:text-stone-900">
@@ -326,7 +331,7 @@ export default function UserManagement() {
                         <option value="">Search lead repository...</option>
                         {leads.map(lead => (
                           <option key={lead._id} value={lead._id}>
-                            {lead.firstName} {lead.lastName} — {lead.phone}
+                            {lead.name} — {lead.phone}
                           </option>
                         ))}
                       </select>
