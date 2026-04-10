@@ -211,18 +211,22 @@ router.post('/expense', auth, async (req, res) => {
 router.put('/expense/:id', auth, async (req, res) => {
     try {
         const { title, amount, category, date, status } = req.body;
-
-        if (amount && (isNaN(amount) || amount <= 0)) {
-            return res.status(400).json({ error: "Amount must be a positive number" });
-        }
+        // PRESERVE EXISTING VALUES: Only overwrite changed fields
+        const updateFields = {};
+        if (category) updateFields.category = category;
+        if (amount) updateFields.amount = amount;
+        if (title) updateFields.description = title;
+        if (date) updateFields.date = date;
+        if (status) updateFields.status = status;
 
         const updated = await Finance.findByIdAndUpdate(
             req.params.id,
-            { category: category, amount, description: title, date, status },
+            { $set: updateFields },
             { new: true }
         );
 
         if (updated) {
+            // FIX: UPDATE LOG INSTEAD OF CREATE - We notify of modification, but don't duplicate the entry
             await Notification.create({
                 title: "Finance Record Modified",
                 description: `Updated ${updated.category} entry: "${updated.description}" (₹${updated.amount}).`,

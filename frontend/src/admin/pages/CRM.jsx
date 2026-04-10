@@ -62,7 +62,15 @@ export default function CRM() {
 
 
   const handleGenerateInvoice = (lead) => {
-    setInvoiceDefaults({ clientName: lead.name });
+    // FIX: Show existing invoice if it already exists for this client name
+    const existing = invoices.find(inv => inv.clientName === lead.name);
+    if (existing) {
+        setEditingInvoice(existing);
+        setInvoiceDefaults({ clientName: lead.name });
+    } else {
+        setEditingInvoice(null);
+        setInvoiceDefaults({ clientName: lead.name });
+    }
     setShowInvoiceForm(true);
   };
 
@@ -142,6 +150,14 @@ export default function CRM() {
   const handleLeadAdded = (newLead) => {
     setLeads([newLead, ...leads]);
     setShowLeadForm(false);
+  };
+
+  // FIX: STATE SYNC ISSUE
+  const handleLeadUpdated = (updatedLead) => {
+    setLeads(prev => prev.map(l => l._id === updatedLead._id ? updatedLead : l));
+    if (selectedLead && selectedLead._id === updatedLead._id) {
+        setSelectedLead(updatedLead);
+    }
   };
 
   const filteredLeads = leads
@@ -441,7 +457,7 @@ export default function CRM() {
         showLeadForm && (
           <LeadForm
             onClose={() => setShowLeadForm(false)}
-            onLeadAdded={handleLeadAdded}
+            onLeadAdded={handleLeadUpdated}
           />
         )
       }
@@ -477,7 +493,9 @@ export default function CRM() {
           <LeadDetails
             user={user}
             lead={selectedLead}
+            existingInvoice={invoices.find(inv => inv.clientName === selectedLead.name)}
             onClose={() => setSelectedLead(null)}
+            onUpdate={handleLeadUpdated}
             onGenerateInvoice={() => handleGenerateInvoice(selectedLead)}
           />
         )

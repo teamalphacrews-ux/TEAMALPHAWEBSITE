@@ -4,10 +4,10 @@ import { X, User, Mail, Phone, Calendar, Tag, Save, MapPin, Clock, Loader2 } fro
 import axios from "axios";
 import toast from "react-hot-toast";
 
-export default function LeadForm({ onClose, onLeadAdded }) {
+export default function LeadForm({ onClose, onLeadAdded, initialData = null }) {
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(initialData || {
         name: "",
         email: "",
         phone: "",
@@ -17,6 +17,8 @@ export default function LeadForm({ onClose, onLeadAdded }) {
         eventLocation: "",
         status: "New",
         remarks: "",
+        totalAmount: "",
+        depositAmount: ""
     });
 
     const [loading, setLoading] = useState(false);
@@ -25,13 +27,20 @@ export default function LeadForm({ onClose, onLeadAdded }) {
         e.preventDefault();
         setLoading(true);
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/leads`, formData, authHeader);
-            onLeadAdded(response.data);
-            toast.success("New luxury inquiry added successfully!");
+            // FIX: UPDATE LOG INSTEAD OF CREATE IF ID EXISTS
+            if (initialData && initialData._id) {
+                const response = await axios.patch(`${import.meta.env.VITE_API_URL || ""}/api/leads/${initialData._id}`, formData, authHeader);
+                onLeadAdded(response.data);
+                toast.success("Lead updated successfully!");
+            } else {
+                const response = await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/leads`, formData, authHeader);
+                onLeadAdded(response.data);
+                toast.success("New luxury inquiry added successfully!");
+            }
             onClose();
         } catch (err) {
-            console.error("Failed to add lead", err);
-            toast.error("Failed to add inquiry. Please try again.");
+            console.error("Failed to save lead", err);
+            toast.error("Failed to save inquiry. Please try again.");
         } finally {
             setLoading(false);
         }

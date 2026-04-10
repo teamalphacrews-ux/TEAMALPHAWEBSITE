@@ -45,16 +45,19 @@ router.get('/:id', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         const updateData = { ...req.body };
+        // PRESERVE EXISTING VALUES
         const updatedInvoice = await Invoice.findByIdAndUpdate(
             req.params.id,
-            updateData,
+            { $set: updateData },
             { new: true }
         );
         if (!updatedInvoice) return res.status(404).json({ message: "Invoice not found" });
 
+        // FIX: Update existing activity trace instead of creating a generic one if possible
+        // For now, we keep the history but make it clear it's an update
         await Notification.create({
-            title: "Invoice Updated",
-            description: `Invoice for ${updatedInvoice.clientName} is now marked as ${updatedInvoice.status}.`,
+            title: "Invoice Protocol Updated",
+            description: `Registry updated for ${updatedInvoice.clientName}: Status is now ${updatedInvoice.status}.`,
             type: "Invoice"
         });
 

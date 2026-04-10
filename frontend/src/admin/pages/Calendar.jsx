@@ -39,6 +39,13 @@ const EVENT_TYPE_COLORS = {
 
 export default function Calendar() {
     const [selectedDate, setSelectedDate] = useState(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 1024);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
     const API = import.meta.env.VITE_API_URL || API_BASE_URL;
@@ -274,111 +281,94 @@ export default function Calendar() {
     const [isRegistryOpen, setIsRegistryOpen] = useState(false);
 
     return (
-        <div className="min-h-screen text-[#2d2d2d] px-12 pb-20 animate-in fade-in duration-1000 overflow-x-hidden">
-            {/* Header Area */}
-            <div className="flex flex-row justify-between items-center gap-8 py-12">
-                <div>
-                    <h1 className="font-serif text-6xl text-[#2d2d2d] tracking-tight">Studio Calendar</h1>
-                    <p className="text-xs text-[#BB998B] mt-4 font-bold uppercase tracking-[0.4em] opacity-80">
+        <div className="min-h-screen text-[#2d2d2d] px-4 md:px-12 pb-20 animate-in fade-in duration-1000 overflow-x-hidden">
+            {/* MOBILE RESPONSIVE FIX: Header Area */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 py-8 md:py-12">
+                <div className="md:max-w-xl">
+                    <h1 className="font-serif text-4xl md:text-6xl text-[#2d2d2d] tracking-tight">Studio Calendar</h1>
+                    <p className="text-[9px] md:text-xs text-[#BB998B] mt-3 md:mt-4 font-bold uppercase tracking-[0.2em] md:tracking-[0.4em] opacity-80 leading-relaxed md:leading-normal">
                         Coordinating luxury moments across the globe
                     </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 w-auto relative z-20">
+                <div className="flex flex-wrap items-center gap-3 md:gap-4 w-full md:w-auto relative z-20">
                     {/* Sync Status Pill - High Visibility */}
                     <div className={`
-                        inline-flex items-center gap-3 px-6 py-3.5 rounded-full border-2 border-black/5
+                        inline-flex items-center gap-3 px-5 md:px-6 py-3 md:py-3.5 rounded-full border-2 border-black/5
                         ${syncStatus.isSynced ? (syncStatus.syncError ? 'bg-amber-50 text-amber-600' : 'bg-white text-[#5B6A57]') : 'bg-red-50 text-red-400'}
-                        transition-all duration-700 shadow-sm hover:shadow-md cursor-help group
+                        transition-all duration-700 shadow-sm hover:shadow-md cursor-help group flex-1 md:flex-none justify-center md:justify-start
                     `}>
-                        <div className="relative">
-                            <span className={`block w-2.5 h-2.5 rounded-full ${syncStatus.isSynced ? (syncStatus.syncError ? 'bg-amber-500' : 'bg-green-500 animate-pulse') : 'bg-red-400'}`}></span>
+                        <div className="relative shrink-0">
+                            <span className={`block w-2 md:w-2.5 h-2 md:h-2.5 rounded-full ${syncStatus.isSynced ? (syncStatus.syncError ? 'bg-amber-500' : 'bg-green-500 animate-pulse') : 'bg-red-400'}`}></span>
                             {(syncStatus.isSynced && !syncStatus.syncError) && (
                                 <span className="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-25"></span>
                             )}
                         </div>
                         <div className="flex flex-col overflow-hidden">
-                            <span className="text-[8px] font-bold uppercase tracking-[0.2em] opacity-40 leading-none mb-0.5">
+                            <span className="text-[7px] md:text-[8px] font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] opacity-40 leading-none mb-0.5 whitespace-nowrap">
                                 {syncStatus.isSynced 
                                     ? (syncStatus.syncError ? 'Sync Warning' : 'Google Live') 
                                     : 'Offline Mode'}
                             </span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider truncate max-w-[140px] leading-none">
+                            <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider truncate max-w-[100px] md:max-w-[140px] leading-none">
                                 {syncStatus.isSynced 
                                     ? (syncStatus.syncError ? 'Action Required' : syncStatus.email) 
                                     : 'No Sync Active'}
                             </span>
-                            {syncStatus.lastSyncAt && !syncStatus.syncError && (
-                                <span className="text-[7px] font-bold opacity-30 mt-1 uppercase tracking-tighter">
-                                    Last synced: {format(new Date(syncStatus.lastSyncAt), 'HH:mm:ss')}
-                                </span>
-                            )}
                         </div>
-                        
-                        {/* Tooltip for Error */}
-                        {syncStatus.syncError && (
-                            <div className="absolute top-full left-0 mt-4 p-4 bg-white border-4 border-black/5 rounded-2xl shadow-2xl z-[100] w-64 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-2">Sync Error</p>
-                                <p className="text-[11px] font-medium leading-relaxed text-[#2d2d2d]">{syncStatus.syncError}</p>
-                            </div>
-                        )}
                     </div>
 
-                    <button
-                        onClick={handleSyncNow}
-                        disabled={isSyncing || loading}
-                        className="bg-white border-2 border-gray-100 px-7 py-4 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center gap-2 shadow-sm active:scale-95"
-                    >
-                        <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} /> REFRESH
-                    </button>
-                    <button
-                        onClick={syncStatus.isSynced ? handleDisconnect : handleConnectGoogle}
-                        className={`
-                            ${syncStatus.isSynced ? 'bg-[#D1C4D1] hover:bg-[#C4B5CD]' : 'bg-white border-2 border-gray-100 hover:bg-gray-50'} 
-                            text-[#2d2d2d] px-7 py-4 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm active:scale-95
-                        `}
-                    >
-                        {syncStatus.isSynced ? <LogOut size={14} /> : <Plus size={14} />}
-                        {syncStatus.isSynced ? 'DISCONNECT' : 'SYNC GOOGLE'}
-                    </button>
-                    <button
-                        onClick={() => navigate('/admin/crm')}
-                        className="bg-white border border-gray-200 px-7 py-4 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center gap-2 shadow-sm active:scale-95"
-                    >
-                        <Users size={14} /> TEAMS
-                    </button>
+                    <div className="grid grid-cols-2 md:flex md:items-center gap-2 md:gap-4 w-full md:w-auto">
+                        <button
+                            onClick={handleSyncNow}
+                            disabled={isSyncing || loading}
+                            className="bg-white border-2 border-gray-100 px-4 md:px-7 py-3 md:py-4 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                        >
+                            <RefreshCw size={12} className={isSyncing ? "animate-spin" : ""} /> REFRESH
+                        </button>
+                        <button
+                            onClick={syncStatus.isSynced ? handleDisconnect : handleConnectGoogle}
+                            className={`
+                                ${syncStatus.isSynced ? 'bg-[#D1C4D1] hover:bg-[#C4B5CD]' : 'bg-white border-2 border-gray-100 hover:bg-gray-50'} 
+                                text-[#2d2d2d] px-4 md:px-7 py-3 md:py-4 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95
+                            `}
+                        >
+                            {syncStatus.isSynced ? <LogOut size={12} /> : <Plus size={12} />}
+                            {syncStatus.isSynced ? 'OFF' : 'SYNC'}
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Main Application Interface */}
-            <div className="grid grid-cols-12 gap-10">
+            <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8 lg:gap-10">
                 
                 {/* 1. THE CALENDAR BOARD */}
-                <div className="col-span-8 bg-white/40 backdrop-blur-xl rounded-3xl p-12 border-4 border-black/5 shadow-2xl shadow-black/5 flex flex-col gap-12 transition-all">
+                <div className="col-span-8 bg-white/40 backdrop-blur-xl rounded-[2rem] md:rounded-3xl p-4 md:p-12 border-4 border-black/5 shadow-2xl shadow-black/5 flex flex-col gap-8 md:gap-12 transition-all">
                     
                     {/* Board Header: Month & Year */}
-                    <div className="flex flex-row justify-between items-center px-4">
-                        <div className="flex items-baseline gap-4">
-                            <h3 className="font-serif text-5xl text-[#2d2d2d]">{format(currentDate, 'MMMM')}</h3>
-                            <span className="text-2xl font-bold text-[#2d2d2d]/20 tracking-[0.2em]">{format(currentDate, 'yyyy')}</span>
+                    <div className="flex flex-row justify-between items-center px-2 md:px-4">
+                        <div className="flex items-baseline gap-2 md:gap-4">
+                            <h3 className="font-serif text-2xl md:text-5xl text-[#2d2d2d]">{format(currentDate, 'MMMM')}</h3>
+                            <span className="text-sm md:text-2xl font-bold text-[#2d2d2d]/20 tracking-[0.2em]">{format(currentDate, 'yyyy')}</span>
                         </div>
-                        <div className="flex items-center gap-3 w-auto">
-                            <button onClick={jumpToToday} className="flex-none text-[10px] font-bold uppercase tracking-widest bg-white/60 hover:bg-white px-6 py-3.5 rounded-2xl transition-all shadow-sm mr-2 border border-black/5 text-center">Today</button>
-                            <button onClick={prevMonth} className="flex-none p-3.5 bg-white/60 hover:bg-white rounded-2xl transition-all shadow-sm border border-black/5 flex justify-center">
-                                <ChevronLeft size={22} className="text-[#2d2d2d]" />
+                        <div className="flex items-center gap-1.5 md:gap-3 w-auto">
+                            <button onClick={jumpToToday} className="flex-none text-[8px] md:text-[10px] font-bold uppercase tracking-widest bg-white/60 hover:bg-white px-3 md:px-6 py-2 md:py-3.5 rounded-xl md:rounded-2xl transition-all shadow-sm border border-black/5 text-center">Today</button>
+                            <button onClick={prevMonth} className="flex-none p-2 md:p-3.5 bg-white/60 hover:bg-white rounded-xl md:rounded-2xl transition-all shadow-sm border border-black/5 flex justify-center">
+                                <ChevronLeft size={16} className="text-[#2d2d2d]" />
                             </button>
-                            <button onClick={nextMonth} className="flex-none p-3.5 bg-white/60 hover:bg-white rounded-2xl transition-all shadow-sm border border-black/5 flex justify-center">
-                                <ChevronRight size={22} className="text-[#2d2d2d]" />
+                            <button onClick={nextMonth} className="flex-none p-2 md:p-3.5 bg-white/60 hover:bg-white rounded-xl md:rounded-2xl transition-all shadow-sm border border-black/5 flex justify-center">
+                                <ChevronRight size={16} className="text-[#2d2d2d]" />
                             </button>
                         </div>
                     </div>
 
                     {/* Branded Day Labels Row */}
-                    <div className="w-full pb-6">
+                    <div className="w-full pb-0 md:pb-6">
                         <div className="w-full">
-                            <div className="grid grid-cols-7 gap-6 px-4">
+                            <div className="grid grid-cols-7 gap-1 md:gap-6 px-0 md:px-4">
                         {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(day => (
-                            <div key={day} className="text-[9px] font-bold text-[#2d2d2d]/40 tracking-[0.5em] text-center pb-4 border-b-2 border-black/5">
+                            <div key={day} className="text-[7px] md:text-[9px] font-bold text-[#2d2d2d]/40 tracking-[0.1em] md:tracking-[0.5em] text-center pb-3 md:pb-4 border-b-2 border-black/5">
                                 {day}
                             </div>
                         ))}
@@ -442,13 +432,14 @@ export default function Calendar() {
                                     <motion.div
                                         key={day.toISOString()}
                                         layout
-                                        onMouseEnter={() => setHoveredIdx(gridIdx)}
-                                        onMouseLeave={() => setHoveredIdx(null)}
+                                        onMouseEnter={() => !isMobile && setHoveredIdx(gridIdx)}
+                                        onMouseLeave={() => !isMobile && setHoveredIdx(null)}
                                         animate={{
-                                            x, y,
-                                            scale: isHovered ? 1.5 : 1,
-                                            zIndex: isHovered ? 50 : (isTop || isBottom || isLeft || isRight ? 40 : 1),
-                                            boxShadow: isHovered ? "0 30px 60px -15px rgba(0,0,0,0.15)" : "0 4px 6px -1px rgba(0,0,0,0.02)"
+                                            x: isMobile ? 0 : x, 
+                                            y: isMobile ? 0 : y,
+                                            scale: isHovered && !isMobile ? 1.5 : 1,
+                                            zIndex: isHovered && !isMobile ? 50 : (isTop || isBottom || isLeft || isRight ? 40 : 1),
+                                            boxShadow: isHovered && !isMobile ? "0 30px 60px -15px rgba(0,0,0,0.15)" : "0 4px 6px -1px rgba(0,0,0,0.02)"
                                         }}
                                         transition={{ 
                                             type: "spring", 
@@ -467,20 +458,20 @@ export default function Calendar() {
                                         }}
                                         style={{ backgroundColor: cardColor }}
                                         className={`
-                                            min-h-[110px] p-5 rounded-2xl cursor-pointer relative group flex flex-col items-start
+                                            min-h-[70px] md:min-h-[110px] p-2 md:p-5 rounded-xl md:rounded-2xl cursor-pointer relative group flex flex-col items-start transition-shadow
                                             ${!isCurrentMonth ? 'opacity-25 grayscale shadow-none pointer-events-none' : ''}
-                                            ${isTodayDate ? 'ring-4 ring-black/10 ring-offset-4 ring-offset-transparent' : ''}
+                                            ${isTodayDate ? 'ring-2 md:ring-4 ring-black/10 ring-offset-2 md:ring-offset-4 ring-offset-transparent' : ''}
                                         `}
                                     >
-                                        {/* High-Contrast Bold Solid Border */}
-                                        <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-2xl overflow-hidden">
-                                            <rect width="100%" height="100%" fill="none" rx="14" ry="14" stroke="rgba(0,0,0,0.08)" strokeWidth="2.5" />
+                                        {/* CALENDAR GRID FIX: Bold Solid Border */}
+                                        <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-xl md:rounded-2xl overflow-hidden">
+                                            <rect width="100%" height="100%" fill="none" rx="10" ry="10" stroke="rgba(0,0,0,0.06)" strokeWidth="1.5" className="md:rx-14 md:ry-14 md:stroke-width-2.5" />
                                         </svg>
 
-                                        <div className="flex w-full justify-between items-start mb-2 group-hover:scale-110 transition-transform origin-left relative z-10">
-                                            <span className="text-sm font-bold text-[#2d2d2d]">{format(day, 'd')}</span>
-                                            {isTodayDate && <div className="w-1.5 h-1.5 rounded-full bg-black/40" />}
-                                            {!isCurrentMonth && <span className="text-[7px] font-bold opacity-30 text-black uppercase tracking-tighter">{format(day, 'MMM')}</span>}
+                                        <div className="flex w-full justify-between items-start mb-1 md:mb-2 group-hover:scale-105 transition-transform origin-left relative z-10">
+                                            <span className="text-[10px] md:text-sm font-bold text-[#2d2d2d] leading-none">{format(day, 'd')}</span>
+                                            {isTodayDate && <div className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-black/40" />}
+                                            {!isCurrentMonth && <span className="text-[6px] md:text-[7px] font-bold opacity-30 text-black uppercase tracking-tighter">{format(day, 'MMM')}</span>}
                                             
                                             {/* Quick-Add Button */}
                                             {isCurrentMonth && (
@@ -504,8 +495,8 @@ export default function Calendar() {
                                             )}
                                         </div>
 
-                                        <div className="flex flex-col gap-1 w-full overflow-hidden relative z-10 flex-1">
-                                            {dayEvents.slice(0, 3).map(event => (
+                                        <div className="flex flex-col gap-0.5 md:gap-1 w-full overflow-hidden relative z-10 flex-1">
+                                            {dayEvents.slice(0, isMobile ? 1 : 3).map(event => (
                                                 <motion.div 
                                                     key={event._id}
                                                     whileHover={{ scale: 1.02, x: 2 }}
@@ -514,17 +505,17 @@ export default function Calendar() {
                                                         setSelectedEvent(event);
                                                         setIsModalOpen(true);
                                                     }}
-                                                    className="w-full px-2 py-1 rounded-lg bg-white/30 hover:bg-white/50 backdrop-blur-sm border border-black/5 flex items-center gap-1.5 cursor-pointer transition-colors"
+                                                    className="w-full px-1 md:px-2 py-0.5 md:py-1 rounded-md md:rounded-lg bg-white/30 hover:bg-white/50 backdrop-blur-sm border border-black/5 flex items-center gap-1 md:gap-1.5 cursor-pointer transition-colors"
                                                 >
-                                                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: EVENT_TYPE_COLORS[event.type] || '#2d2d2d' }} />
-                                                    <span className="text-[10px] font-black text-[#2d2d2d] leading-none truncate uppercase tracking-tighter">
+                                                    <div className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full shrink-0" style={{ backgroundColor: EVENT_TYPE_COLORS[event.type] || '#2d2d2d' }} />
+                                                    <span className="text-[8px] md:text-[10px] font-black text-[#2d2d2d] leading-none truncate uppercase tracking-tighter">
                                                         {event.title}
                                                     </span>
                                                 </motion.div>
                                             ))}
-                                            {dayEvents.length > 3 && (
-                                                <div className="text-[8px] font-black text-black/40 uppercase pl-1 pt-0.5">
-                                                    + {dayEvents.length - 3} more
+                                            {dayEvents.length > (isMobile ? 1 : 3) && (
+                                                <div className="text-[6px] md:text-[8px] font-black text-black/40 uppercase pl-0.5 md:pl-1 pt-0.5">
+                                                    + {dayEvents.length - (isMobile ? 1 : 3)}
                                                 </div>
                                             )}
                                         </div>
@@ -540,13 +531,13 @@ export default function Calendar() {
                 {/* 2. SIDEBAR COMPONENT */}
                 <div className="col-span-4 flex flex-col gap-10">
                     {/* Upcoming Registry */}
-                    <div className="bg-white/40 backdrop-blur-xl rounded-3xl border-4 border-black/5 p-10 shadow-sm flex flex-col relative overflow-hidden">
+                    <div className="bg-white/40 backdrop-blur-xl rounded-[2rem] md:rounded-3xl border-4 border-black/5 p-6 md:p-10 shadow-sm flex flex-col relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-8 opacity-5">
                             <CalendarIcon size={80} />
                         </div>
-                        <h4 className="font-serif text-3xl mb-12 text-[#2d2d2d] relative z-10">Upcoming Events</h4>
+                        <h4 className="font-serif text-2xl md:text-3xl mb-8 md:mb-12 text-[#2d2d2d] relative z-10">Upcoming Events</h4>
 
-                        <div className="space-y-6 mb-12 relative z-10 min-h-[300px]">
+                        <div className="space-y-4 md:space-y-6 mb-8 md:mb-12 relative z-10 min-h-[auto] md:min-h-[300px]">
                             {loading ? (
                                 <div className="space-y-6">
                                     {[1,2,3].map(i => (
@@ -561,38 +552,38 @@ export default function Calendar() {
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: idx * 0.1 }}
                                         whileHover={{ x: -10, scale: 1.02 }}
-                                        className="rounded-[1.5rem] p-6 flex items-center gap-6 shadow-sm border border-black/5 cursor-pointer group relative overflow-hidden"
+                                        className="rounded-[1.25rem] md:rounded-[1.5rem] p-4 md:p-6 flex items-center gap-4 md:gap-6 shadow-sm border border-black/5 cursor-pointer group relative overflow-hidden"
                                         style={{ backgroundColor: EVENT_TYPE_COLORS[event.type] || PASTEL_COLORS.neutral }}
                                         onClick={() => { setSelectedEvent(event); setIsModalOpen(true); }}
                                     >
-                                        <div className="w-20 h-20 bg-white/40 rounded-full border border-white/40 flex flex-col items-center justify-center shrink-0 shadow-inner">
-                                            <span className="text-[10px] font-bold uppercase opacity-40 mb-1">{format(parseISO(event.start), 'MMM')}</span>
-                                            <span className="text-2xl font-bold leading-none text-[#2d2d2d]">{format(parseISO(event.start), 'dd')}</span>
+                                        <div className="w-14 h-14 md:w-20 md:h-20 bg-white/40 rounded-full border border-white/40 flex flex-col items-center justify-center shrink-0 shadow-inner">
+                                            <span className="text-[8px] md:text-[10px] font-bold uppercase opacity-40 mb-0.5 md:mb-1">{format(parseISO(event.start), 'MMM')}</span>
+                                            <span className="text-xl md:text-2xl font-bold leading-none text-[#2d2d2d]">{format(parseISO(event.start), 'dd')}</span>
                                         </div>
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <h5 className="text-lg font-bold text-[#2d2d2d] leading-tight tracking-tight group-hover:text-black transition-colors">{event.title}</h5>
-                                                {event.isReadOnly && <Lock size={12} className="text-[#2d2d2d]/30" />}
+                                            <div className="flex items-center gap-2 mb-1 md:mb-2">
+                                                <h5 className="text-sm md:text-lg font-bold text-[#2d2d2d] leading-tight tracking-tight group-hover:text-black transition-colors">{event.title}</h5>
+                                                {event.isReadOnly && <Lock size={10} className="text-[#2d2d2d]/30" />}
                                             </div>
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-2 text-[10px] text-[#2d2d2d]/40 font-bold uppercase tracking-widest">
-                                                    <Clock size={12} /> {format(parseISO(event.start), 'hh:mm a')}
+                                            <div className="flex flex-col gap-0.5 md:gap-1">
+                                                <div className="flex items-center gap-2 text-[8px] md:text-[10px] text-[#2d2d2d]/40 font-bold uppercase tracking-widest">
+                                                    <Clock size={10} /> {format(parseISO(event.start), 'hh:mm a')}
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[10px] text-[#2d2d2d]/40 font-bold uppercase tracking-widest">
-                                                    <MapPin size={12} /> {event.location || 'Studio HQ'}
+                                                <div className="flex items-center gap-2 text-[8px] md:text-[10px] text-[#2d2d2d]/40 font-bold uppercase tracking-widest">
+                                                    <MapPin size={10} /> {event.location || 'Studio HQ'}
                                                 </div>
                                             </div>
                                         </div>
                                         {/* Type Badge */}
-                                        <div className="absolute top-4 right-4 bg-black/5 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest opacity-40">
+                                        <div className="absolute top-3 right-3 bg-black/5 px-2 py-0.5 rounded-full text-[6px] md:text-[8px] font-bold uppercase tracking-widest opacity-40">
                                             {event.type}
                                         </div>
                                     </motion.div>
                                 ))
                             ) : (
-                                <div className="h-64 flex flex-col items-center justify-center text-center opacity-30 border-2 border-dashed border-black/10 rounded-[2rem]">
-                                    <CalendarIcon size={32} className="mb-4" />
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.3em]">No upcoming events</p>
+                                <div className="h-48 md:h-64 flex flex-col items-center justify-center text-center opacity-30 border-2 border-dashed border-black/10 rounded-[1.5rem] md:rounded-[2rem]">
+                                    <CalendarIcon size={24} className="mb-3" />
+                                    <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] md:tracking-[0.3em]">No upcoming events</p>
                                 </div>
                             )}
                         </div>
@@ -601,22 +592,22 @@ export default function Calendar() {
                             whileHover={{ scale: 1.02, backgroundColor: "#EBE7D8" }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setIsRegistryOpen(true)}
-                            className="w-full py-5 bg-[#F3F0E6] border-2 border-dashed border-black/5 rounded-[1.5rem] text-[10px] font-bold uppercase tracking-[0.3em] transition-all text-[#2d2d2d] outline-none shadow-sm relative z-10"
+                            className="w-full py-4 md:py-5 bg-[#F3F0E6] border-2 border-dashed border-black/5 rounded-[1.25rem] md:rounded-[1.5rem] text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all text-[#2d2d2d] outline-none shadow-sm relative z-10"
                         >
                             FULL STUDIO SCHEDULE
                         </motion.button>
                     </div>
 
                     {/* Team Sync Card */}
-                    <div className="bg-white/40 backdrop-blur-xl rounded-3xl border-4 border-black/5 p-10 shadow-sm relative overflow-hidden">
+                    <div className="bg-white/40 backdrop-blur-xl rounded-[2rem] md:rounded-3xl border-4 border-black/5 p-6 md:p-10 shadow-sm relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-8 opacity-5">
                             <Users size={80} />
                         </div>
-                        <h4 className="font-serif text-3xl mb-8 text-[#2d2d2d] relative z-10">Team Sync</h4>
-                        <p className="text-[11px] text-[#2d2d2d]/60 leading-relaxed mb-10 font-medium relative z-10">
+                        <h4 className="font-serif text-2xl md:text-3xl mb-6 md:mb-8 text-[#2d2d2d] relative z-10">Team Sync</h4>
+                        <p className="text-[10px] md:text-[11px] text-[#2d2d2d]/60 leading-relaxed mb-8 md:mb-10 font-medium relative z-10">
                             Standard synchronization active across all specialized units. 
                         </p>
-                        <div className="flex flex-wrap gap-3 mb-12 relative z-10">
+                        <div className="flex flex-wrap gap-2 md:gap-3 mb-8 md:mb-12 relative z-10">
                             {[
                                 { n: 'A', c: '#FCA5A5' }, { n: 'S', c: '#FDE68A' }, { n: 'H', c: '#7DD3FC' }, 
                                 { n: 'H', c: '#C4B5FD' }, { n: 'VB', c: '#A9AC83' }, { n: 'JP', c: '#E8D0DC' }
@@ -627,7 +618,7 @@ export default function Calendar() {
                                     animate={{ scale: [1, 1.05, 1] }}
                                     transition={{ duration: 4, repeat: Infinity, delay: i * 0.5 }}
                                     whileHover={{ scale: 1.2, rotate: 5, zIndex: 10 }}
-                                    className="w-12 h-12 rounded-full flex items-center justify-center text-xs font-bold text-[#2d2d2d] border-2 border-white/80 shadow-sm cursor-pointer"
+                                    className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold text-[#2d2d2d] border-2 border-white/80 shadow-sm cursor-pointer"
                                 >
                                     {team.n}
                                 </motion.div>
@@ -637,7 +628,7 @@ export default function Calendar() {
                             whileHover={{ scale: 1.02, backgroundColor: "#EBE7D8" }}
                             whileTap={{ scale: 0.98 }}
                             onClick={handleTeamSync} 
-                            className="w-full py-5 bg-[#F3F0E6] border-2 border-dashed border-black/5 rounded-[1.5rem] text-[10px] font-bold uppercase tracking-[0.3em] transition-all text-[#2d2d2d] outline-none shadow-sm relative z-10"
+                            className="w-full py-4 md:py-5 bg-[#F3F0E6] border-2 border-dashed border-black/5 rounded-[1.25rem] md:rounded-[1.5rem] text-[8px] md:text-[10px] font-bold uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all text-[#2d2d2d] outline-none shadow-sm relative z-10"
                         >
                             COORDINATE LEAD TEAM
                         </motion.button>
