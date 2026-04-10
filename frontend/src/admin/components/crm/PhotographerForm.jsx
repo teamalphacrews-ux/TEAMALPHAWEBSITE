@@ -34,7 +34,7 @@ export default function PhotographerForm({ onClose, onAdded }) {
 
     return createPortal(
         <div className="fixed inset-0 bg-black/10 backdrop-blur-[6px] z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <div 
+            <div
                 className="bg-white/70 backdrop-blur-[24px] w-full max-w-lg rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-white/60 overflow-hidden animate-in zoom-in-95 duration-400 relative flex flex-col"
             >
                 {/* Premium Gradient Header */}
@@ -43,8 +43,8 @@ export default function PhotographerForm({ onClose, onAdded }) {
                         <h2 className="font-serif text-2xl text-[#2d2d2d] tracking-tight">Studio Artist Registry</h2>
                         <p className="text-[9px] text-[#8a8a8a] mt-2 font-bold uppercase tracking-[0.2em] bg-white/50 px-3 py-1 rounded-full border border-white/40 inline-block">Team Expansion Registry</p>
                     </div>
-                    <button 
-                        onClick={onClose} 
+                    <button
+                        onClick={onClose}
                         className="p-2.5 bg-white/60 hover:bg-white text-[#8a8a8a] hover:text-[#2d2d2d] rounded-full transition-all hover:rotate-90 hover:shadow-md"
                     >
                         <X size={18} />
@@ -104,11 +104,14 @@ export default function PhotographerForm({ onClose, onAdded }) {
                                 value={formData.specialty}
                                 onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
                             >
-                                <option>Lead</option>
-                                <option>Second</option>
-                                <option>Video</option>
-                                <option>Drone</option>
+                                <option>Lead Photographer</option>
+                                <option>Second Photographer</option>
+                                <option>Videographer</option>
+                                <option>Drone Operator</option>
                                 <option>Editor</option>
+                                <option>Cinematographer</option>
+                                <option>LED Wall Operator</option>
+                                <option>Live Streamer</option>
                             </select>
                         </div>
                         <div className="space-y-2">

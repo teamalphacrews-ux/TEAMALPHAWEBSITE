@@ -17,19 +17,19 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
 
   useEffect(() => {
     if (isOpen) {
-        fetchClients();
+      fetchClients();
     }
   }, [isOpen]);
 
   const fetchClients = async () => {
     try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get(`${API_BASE_URL}/api/drive-gallery/users/clients`, {
-            headers: { 'x-auth-token': token }
-        });
-        setAvailableClients(res.data);
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_BASE_URL}/api/drive-gallery/users/clients`, {
+        headers: { 'x-auth-token': token }
+      });
+      setAvailableClients(res.data);
     } catch (err) {
-        console.error("Failed to fetch clients:", err);
+      console.error("Failed to fetch clients:", err);
     }
   };
 
@@ -55,14 +55,14 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
     formData.append('name', name);
     if (password) formData.append('password', password);
     if (selectedClientId) formData.append('clientId', selectedClientId);
-    
+
     if (thumbnailFile) {
-        formData.append('thumbnail', thumbnailFile);
+      formData.append('thumbnail', thumbnailFile);
     }
 
     try {
       const res = await axios.post(`${API_BASE_URL}/api/drive-gallery`, formData, {
-        headers: { 
+        headers: {
           'x-auth-token': token,
           'Content-Type': 'multipart/form-data'
         }
@@ -92,13 +92,13 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose}
           className="absolute inset-0 bg-white/40 backdrop-blur-md"
         />
-        
-        <motion.div 
+
+        <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
@@ -117,8 +117,8 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
           <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
             <div className="space-y-3">
               <label className="text-[10px] uppercase font-bold tracking-widest text-[#8a8a8a] ml-1">Client Name</label>
-              <input 
-                type="text" placeholder="e.g. Prakruthi & Vikas"
+              <input
+                type="text" placeholder="e.g. Sachitha & Yogesh"
                 value={name} onChange={(e) => setName(e.target.value)}
                 className="search-bar w-full py-4 px-6 focus:ring-4 focus:ring-[#cfe8d5]/40 outline-none transition-all placeholder:text-[#8a8a8a] text-sm"
               />
@@ -126,16 +126,16 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
 
             <div className="space-y-3">
               <label className="text-[10px] uppercase font-bold tracking-widest text-[#8a8a8a] ml-1">Link Client Account</label>
-              <select 
+              <select
                 value={selectedClientId}
                 onChange={(e) => setSelectedClientId(e.target.value)}
                 className="search-bar w-full py-4 px-6 focus:ring-4 focus:ring-[#cfe8d5]/40 outline-none transition-all text-sm appearance-none bg-white/50"
               >
                 <option value="">Select a registered client (Optional)</option>
                 {availableClients.map(client => (
-                    <option key={client._id} value={client._id}>
-                        {client.firstName} {client.lastName} ({client.email})
-                    </option>
+                  <option key={client._id} value={client._id}>
+                    {client.firstName} {client.lastName} ({client.email})
+                  </option>
                 ))}
               </select>
               <p className="text-[9px] text-[#8a8a8a] italic ml-1">Linking an account ensures the client sees this gallery immediately upon login.</p>
@@ -143,7 +143,7 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
 
             <div className="space-y-3">
               <label className="text-[10px] uppercase font-bold tracking-widest text-[#8a8a8a] ml-1">Set Access Password</label>
-              <input 
+              <input
                 type="text" placeholder="Secure code for client access"
                 value={password} onChange={(e) => setPassword(e.target.value)}
                 className="search-bar w-full py-4 px-6 focus:ring-4 focus:ring-[#cfe8d5]/40 outline-none transition-all placeholder:text-[#8a8a8a] text-sm"
@@ -153,12 +153,12 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
 
             <div className="space-y-3">
               <label className="text-[10px] uppercase font-bold tracking-widest text-[#8a8a8a] ml-1">Cover Thumbnail</label>
-              
+
               <div className="relative group">
                 {thumbnailPreview ? (
                   <div className="relative aspect-video rounded-3xl overflow-hidden border-2 border-dashed border-[#cfe8d5] group-hover:border-[#cfe8d5]/80 transition-all">
                     <img src={thumbnailPreview} className="w-full h-full object-cover" alt="Preview" />
-                    <button 
+                    <button
                       type="button" onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); }}
                       className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black transition-all backdrop-blur-md"
                     >
@@ -171,8 +171,8 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
                       <Upload size={24} className="text-[#3c9b7a]" />
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-widest text-[#8a8a8a]">Upload Client Cover</span>
-                    <input 
-                      type="file" accept="image/*" className="hidden" 
+                    <input
+                      type="file" accept="image/*" className="hidden"
                       onChange={handleFileChange}
                     />
                   </label>
@@ -187,7 +187,7 @@ export default function CreateGalleryModal({ isOpen, onClose, onGalleryCreated }
               </p>
             </div>
 
-            <button 
+            <button
               type="submit" disabled={isSubmitting}
               className="add-btn w-full py-5 text-sm tracking-[0.4em] shadow-xl shadow-[#cfe8d5]/30 disabled:opacity-50"
             >

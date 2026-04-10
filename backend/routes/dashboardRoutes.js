@@ -57,23 +57,110 @@ router.get('/stats', auth, async (req, res) => {
     }
 });
 
+const GalleryEvent = require('../models/GalleryEvent');
+
 router.get('/recent-activity', auth, async (req, res) => {
     try {
+        // Fetch 5 most recent leads
         const leads = await Lead.find().sort({ updatedAt: -1 }).limit(5);
+        
+        // Fetch 5 most recent gallery folders (events)
+        const recentEvents = await GalleryEvent.find()
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .populate({
+                path: 'clientId',
+                model: 'DriveGallery',
+                populate: {
+                    path: 'clientId',
+                    model: 'User',
+                    populate: {
+                        path: 'leadId',
+                        model: 'Lead'
+                    }
+                }
+            });
 
-        const activity = await Promise.all(leads.map(async (lead) => {
+        const activity = [];
+
+        // Add lead updates to activity
+        for (const lead of leads) {
             const photoCount = await Gallery.countDocuments({ albumName: lead.name });
-            return {
+            activity.push({
                 _id: lead._id,
                 name: `${lead.eventType || 'Event'} of ${lead.name}`,
                 date: new Date(lead.updatedAt).toLocaleDateString(),
                 count: `${photoCount} photos`,
-                status: lead.status === 'Converted' ? 'Delivered' : (lead.status === 'New' ? 'Reviewing' : lead.status)
-            };
-        }));
+                status: lead.status === 'Converted' ? 'Delivered' : (lead.status === 'New' ? 'Reviewing' : lead.status),
+                timestamp: lead.updatedAt,
+                rawName: lead.name,
+                rawDate: lead.eventDate,
+                rawType: lead.eventType
+            });
+        }
 
-        res.json(activity);
+        // Add gallery event folders to activity
+        for (const event of recentEvents) {
+            let lead = event.clientId?.clientId?.leadId;
+            const clientName = event.clientId?.name || event.clientId?.clientId?.firstName || "Unknown Client";
+
+            // FALLBACK: If direct ID linkage is missing, search for the Lead by name matching the DriveGallery/Client name
+            if (!lead && event.clientId?.name) {
+                const searchName = event.clientId.name.trim();
+                lead = await Lead.findOne({
+                    name: { $regex: new RegExp('^' + searchName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }
+                });
+            }
+
+            // If we found a Lead, use its ID for consistency with Edit/Delete features
+            // If NO Lead exists, we still show the event for the User/Client
+            const activityId = lead ? lead._id : event._id;
+            const displayName = lead ? lead.name : clientName;
+
+            const leadIndex = activity.findIndex(a => a._id?.toString() === activityId?.toString());
+            
+            if (leadIndex !== -1) {
+                const leadEntry = activity[leadIndex];
+                const timeDiff = Math.abs(new Date(event.createdAt) - new Date(leadEntry.timestamp));
+                
+                if (new Date(event.createdAt) >= new Date(leadEntry.timestamp) || timeDiff < 10000) {
+                    activity[leadIndex] = {
+                        _id: activityId,
+                        name: `${event.name} for ${displayName}`,
+                        date: new Date(event.createdAt).toLocaleDateString(),
+                        count: `New Gallery Folder`,
+                        status: 'Delivered',
+                        timestamp: event.createdAt,
+                        rawName: displayName,
+                        rawDate: event.eventDate || (lead ? lead.eventDate : null),
+                        rawType: event.name,
+                        isLead: !!lead
+                    };
+                }
+            } else {
+                activity.push({
+                    _id: activityId,
+                    name: `${event.name} for ${displayName}`,
+                    date: new Date(event.createdAt).toLocaleDateString(),
+                    count: `New Gallery Folder`,
+                    status: 'Delivered',
+                    timestamp: event.createdAt,
+                    rawName: displayName,
+                    rawDate: event.eventDate || (lead ? lead.eventDate : null),
+                    rawType: event.name,
+                    isLead: !!lead
+                });
+            }
+        }
+
+        // Sort by most recent overall and take top 5
+        const sortedActivity = activity
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 5);
+
+        res.json(sortedActivity);
     } catch (err) {
+        console.error("Recent activity error:", err);
         res.status(500).json({ error: err.message });
     }
 });

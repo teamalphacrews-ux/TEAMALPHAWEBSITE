@@ -12,6 +12,9 @@ const cloudinary = require('cloudinary').v2;
 const CloudinaryStorageModule = require('multer-storage-cloudinary');
 const CloudinaryStorage = CloudinaryStorageModule.CloudinaryStorage || CloudinaryStorageModule;
 
+const User = require('../models/User');
+const Lead = require('../models/Lead');
+
 // Configure Cloudinary
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -80,6 +83,31 @@ router.post('/', auth, (req, res) => {
             });
 
             await client.save();
+            
+            // TOUCH LEAD: Update Lead's timestamp for real-time dashboard activity
+            // Use ID link if available, fallback to name-based search for legacy records
+            let leadToUpdate = null;
+            if (clientId) {
+                const user = await User.findById(clientId);
+                if (user && user.leadId) leadToUpdate = user.leadId;
+            }
+            
+            if (!leadToUpdate && name) {
+                const searchName = name.trim();
+                const fallbackLead = await Lead.findOne({
+                    name: { $regex: new RegExp('^' + searchName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }
+                });
+                if (fallbackLead) leadToUpdate = fallbackLead._id;
+            }
+
+            if (leadToUpdate) {
+                // UPDATE: Mark lead as 'Converted' (Delivered) and touch its timestamp
+                await Lead.findByIdAndUpdate(leadToUpdate, { 
+                    status: 'Converted',
+                    updatedAt: new Date() 
+                });
+            }
+
             res.status(201).json(client);
         } catch (error) {
             console.error("Client Creation Error:", error);
@@ -124,6 +152,34 @@ router.post('/:clientId/events', auth, (req, res) => {
             });
 
             await event.save();
+
+            // TOUCH LEAD: Update Lead's timestamp for real-time dashboard activity
+            // Find parent gallery first to resolve client/lead link
+            const gallery = await DriveGallery.findById(clientId);
+            if (gallery) {
+                let leadToTouch = null;
+                if (gallery.clientId) {
+                    const user = await User.findById(gallery.clientId);
+                    if (user && user.leadId) leadToTouch = user.leadId;
+                }
+
+                if (!leadToTouch && gallery.name) {
+                    const searchName = gallery.name.trim();
+                    const fallbackLead = await Lead.findOne({
+                        name: { $regex: new RegExp('^' + searchName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }
+                    });
+                    if (fallbackLead) leadToTouch = fallbackLead._id;
+                }
+
+                if (leadToTouch) {
+                    // UPDATE: Mark lead as 'Converted' (Delivered) and touch its timestamp
+                    await Lead.findByIdAndUpdate(leadToTouch, { 
+                        status: 'Converted',
+                        updatedAt: new Date() 
+                    });
+                }
+            }
+
             res.status(201).json(event);
         } catch (error) {
             console.error("Event Creation Error:", error);
