@@ -67,7 +67,7 @@ const Services = () => {
                     <p className="text-gray-700 leading-relaxed font-light mb-8">
                         Transforming your dream wedding into reality. From concept to execution, we curate every detail with precision and creativity.
                     </p>
-                    <a href="https://www.vivahasya.in" target="_blank" rel="noopener noreferrer" className="border-b border-black pb-1 hover:opacity-60 transition">
+                    <a href="https://www.instagram.com/vivahasya.celebrations?igsh=MTZyeWY4bndrYW5nNQ==q" target="_blank" rel="noopener noreferrer" className="border-b border-black pb-1 hover:opacity-60 transition">
                         Visit Vivahasya
                     </a>
                 </div>
