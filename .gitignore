@@ -1,2 +1,6 @@
 # Everything is being tracked.
 node_modules
+backend/.env
+frontend/.env
+.env
+*.env
