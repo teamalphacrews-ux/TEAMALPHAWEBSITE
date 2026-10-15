@@ -77,3 +77,16 @@ Avoid unverified claims that any proposed functionality already exists in Team A
 - For NAS, store asset location/checksum/backup status metadata; never expose local SMB credentials to browser.
 - Use original icons/assets; no competitor branding, screenshots or copyrighted design assets in production.
 - Screen designs are reference inspiration; test functionality before comparing operational performance.
+
+
+## Product scope decision — 16 October 2026
+**Team Alpha Studio OS is an internal, single-studio operational system, not a multi-tenant SaaS product.**
+
+Architecture and delivery implications:
+- One studio organization, with role-based access for owner/admin, office/operations, photographer, cinematographer, editor and finance; enforce permissions on the server.
+- No public studio signup, tenant provisioning, subscription plans, SaaS billing or per-studio tenancy layer.
+- Internal dashboard behind authentication; separately permissioned client-facing portal links may be provided for individual wedding projects.
+- Keep project, enquiry, client, crew, post-production, finance and asset records related to Team Alpha's operations.
+- Prefer simple maintainable configuration over speculative multi-tenant abstractions. Preserve existing deployment/auth/data structures until reviewed; migrate safely.
+- Stage delivery: secure app shell and design system → enquiry CRM → projects and crew calendar → post-production and client requests → finance and contracts → WhatsApp automations and NAS metadata.
+- Require regression tests, permissions checks, staging verification and owner approval before merging or deploying.
