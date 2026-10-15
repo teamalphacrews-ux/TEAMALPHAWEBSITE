@@ -39,3 +39,41 @@ The competitor URL was not accessible through available inspection tools. A scre
 
 ## Change control
 Work only on feat/premium-redesign-revepod-audit. Keep main unchanged. Do not merge, deploy or modify production secrets without explicit approval.
+
+
+## RevePod screenshot-based competitive audit — 16 October 2026
+Source: 18 user-supplied desktop screenshots; observations describe visible UI only, not tested functionality.
+
+### Visible navigation and modules
+- Dashboard: date range, receipts, balance due, net profit, weddings booked, enquiry pipeline, conversion, action queue, weekly crew calendar, deliveries due, incomplete projects, booking outlook.
+- Enquiries: tabs for enquiries/landing page/analytics; search and status/source/time filters, add enquiry.
+- Quotations: gated in provided account; feature description mentions client acceptance, change requests and revision history, but implementation unverified.
+- Projects: all/active/completed/archived, CSV import/export, sorting, event list.
+- Crew Scheduling: month/week/day/list/by-crew modes and unassigned events.
+- Post Production: active/upcoming/completed/archived tasks, project/member/type/status filters.
+- Client Requests: open/done requests for extra photos, re-edits and album changes.
+- Data: storage location of captured footage by crew/event; CSV tools.
+- Finances: received, balance due, team payouts, expenses, net profit; project finance, expenses, crew, accounts, transactions and invoices tabs.
+- Team: roster and freelancer priority, contact visibility in client portal.
+- RevePod AI: visible WhatsApp/email/log tabs and configurable notification triggers (new project, team added, event assignment, post-production assignment, payment due/received, deliverable ready). Screenshots do not prove delivery reliability or AI behavior.
+- Settings: services, packages, payment/invoice, contracts, documents, team access, domain, security. Invoice settings mention GST, bank details and UPI QR.
+- Profile: brand logo, studio information, currency, timezone.
+
+### Original Team Alpha product direction
+Build a unified Team Alpha Studio OS with a distinct premium editorial design, not a visual clone: deep plum/charcoal navigation, champagne accent, warm ivory surfaces, restrained typography, accessible contrast, deliberate spacing and reduced-motion-aware transitions. Keep public portfolio styling distinct from operational dashboard.
+
+### Priority order
+P0: authentication/authorization and tenant isolation, security and secrets review, backup/restore, route audit, verified CI.
+P1: design tokens and responsive dashboard shell, enquiries pipeline, project overview and conversion from lead to project, WhatsApp follow-up with consent.
+P2: crew availability/conflict detection, deliverable pipeline, client request portal, payment ledger and invoices with GST configuration.
+P3: media/NAS metadata tracking (no unapproved direct NAS access), contract templates, analytics, automation logs and optional AI.
+Avoid unverified claims that any proposed functionality already exists in Team Alpha.
+
+### Technical design constraints
+- Preserve current React/Vite/Express/Mongoose contracts until inspected and regression-tested.
+- For finance, use auditable transaction records, server-side validation, integer paise and explicit tax handling.
+- For WhatsApp, use approved providers, opt-in/opt-out, template approval, delivery status and rate limiting.
+- For client portal, enforce project-scoped permissions and signed media URLs.
+- For NAS, store asset location/checksum/backup status metadata; never expose local SMB credentials to browser.
+- Use original icons/assets; no competitor branding, screenshots or copyrighted design assets in production.
+- Screen designs are reference inspiration; test functionality before comparing operational performance.
