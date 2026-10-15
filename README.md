@@ -1,20 +1,26 @@
-<<<<<<< HEAD
+# Team Alpha — Wedding Photography Platform
 
-# Alpha Home
+Team Alpha is a wedding photography website and business platform with a React frontend and an Express backend.
 
-This project is a React-based wedding photography portfolio website.
+## Project structure
+- `frontend/`: React, Vite, Tailwind CSS website and admin interface.
+- `backend/`: Express API and integrations.
 
-## Features
--   Modern, responsive design
--   Gallery with Album View (Grid & Masonry)
--   Services section
--   Contact form
+## Local development
+1. Install Node.js and npm.
+2. In `backend/`, run `npm install`, copy `.env.example` to `.env`, and fill in local credentials. Never commit `.env`.
+3. In `frontend/`, run `npm install` and configure any required local environment variables.
+4. Start the backend with `npm run dev` from `backend/`.
+5. Start the frontend with `npm run dev` from `frontend/`.
 
-## Getting Started
-1.  Clone the repository
-2.  Run `npm install`
-3.  Run `npm run dev`
-=======
-# TeamAlpha
-Team Alpha wedding photography platform
->>>>>>> 103ce95be545b7ba6a54ffde2398ad75a834f2af
+The backend depends on services such as MongoDB and Cloudinary; set these up before testing their features. Refer to actual application configuration for frontend API URLs.
+
+## Quality checks
+- Frontend: `npm run lint`, `npm run build`.
+- Backend: `npm start` (requires configured services).
+
+## Redesign
+See [Premium Redesign Plan](docs/PREMIUM_REDESIGN_PLAN.md) for phased changes, verification and release gates.
+
+## Security
+Never commit secrets, API tokens, private keys or customer data. Check Git history and rotate any previously exposed credentials.
