@@ -76,7 +76,7 @@ export default function ActivityLog() {
         <div className="space-y-6 md:space-y-10 animate-in fade-in duration-1500 w-full">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 animate-in slide-in-from-top-8 duration-1000 fill-mode-forwards">
                 <div>
-                    <h1 className="font-serif text-4xl md:text-5xl text-charcoal animate-gentle-fade">System Activity Log</h1>
+                    <h1 className="font-serif text-4xl md:text-5xl text-charcoal animate-gentle-fade">Studio activity</h1>
                     <p className="text-[10px] md:text-xs text-warmgray mt-3 font-bold uppercase tracking-[0.4em]">Real-Time Registry Notifications</p>
                 </div>
 

@@ -13,6 +13,7 @@ const Testimonials = lazy(() => import('./components/Testimonials'));
 const Contact = lazy(() => import('./components/Contact'));
 const Footer = lazy(() => import('./components/Footer'));
 const GetQuote = lazy(() => import('./components/GetQuote'));
+const SharedQuotation = lazy(() => import('./pages/SharedQuotation'));
 const AuthPage = lazy(() => import('./components/AuthPage'));
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -31,6 +32,14 @@ import ClientSidebar from './components/client/Sidebar';
 // Admin imports
 import AdminLayout from './admin/components/common/Layout';
 const AdminDashboard = lazy(() => import('./admin/pages/Dashboard'));
+const AdminQuotations = lazy(() => import('./admin/pages/Quotations'));
+const AdminClients = lazy(() => import('./admin/pages/Clients'));
+const AdminDataManagement = lazy(() => import('./admin/pages/DataManagement'));
+const AdminSettings = lazy(() => import('./admin/pages/Settings'));
+const AdminIntegrations = lazy(() => import('./admin/pages/Integrations'));
+const AdminProjects = lazy(() => import('./admin/pages/Projects'));
+const AdminCrew = lazy(() => import('./admin/pages/Crew'));
+const AdminPostProduction = lazy(() => import('./admin/pages/PostProduction'));
 const AdminCRM = lazy(() => import('./admin/pages/CRM'));
 const AdminSmartGallery = lazy(() => import('./admin/pages/SmartGallery'));
 const AdminFinance = lazy(() => import('./admin/pages/Finance'));
@@ -132,6 +141,7 @@ function App() {
       <Suspense fallback={<div className="flex h-screen w-full items-center justify-center text-xl">Loading...</div>}>
         <AnimatePresence mode="wait">
           <Routes location={location}>
+            <Route path="/quote/:token" element={<SharedQuotation />} />
             {/* Main Website Routes */}
             <Route path="/" element={
               <>
@@ -163,6 +173,14 @@ function App() {
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="crm" element={<AdminCRM />} />
+                <Route path="quotations" element={<AdminQuotations />} />
+                <Route path="clients" element={<AdminClients />} />
+                <Route path="data" element={<AdminDataManagement />} />
+                <Route path="settings" element={<AdminSettings />} />
+                <Route path="integrations" element={<AdminIntegrations />} />
+                <Route path="projects" element={<AdminProjects />} />
+                <Route path="crew" element={<AdminCrew />} />
+                <Route path="post-production" element={<AdminPostProduction />} />
                 <Route path="gallery" element={<AdminSmartGallery />} />
                 <Route path="gallery/:id" element={<AdminClientEvents />} />
                 <Route path="gallery/event/:eventId" element={<AdminDriveGalleryDetail />} />

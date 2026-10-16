@@ -1,72 +1,53 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
-
-export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
-
-    const cleanToken = (raw) => {
-        if (!raw || typeof raw !== 'string') return null;
-        const cleaned = raw.replace(/^["']|["']$/g, '').trim();
-        return cleaned === 'null' || cleaned === 'undefined' ? null : cleaned;
-    };
-
-    useEffect(() => {
-        const storedToken = cleanToken(localStorage.getItem('token'));
-        const storedUser = localStorage.getItem('user');
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
-        }
-        setLoading(false);
-    }, []);
-
-    const login = (userData, userToken) => {
-        const sanitizedToken = cleanToken(userToken);
-        setToken(sanitizedToken);
-        setUser(userData);
-        if (sanitizedToken) localStorage.setItem('token', sanitizedToken);
-        localStorage.setItem('user', JSON.stringify(userData));
-        if (userData.role === 'admin') navigate('/admin');
-        else navigate('/portal');
-    };
-
-    const logout = () => {
-        // Clear gallery specific access
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('gallery_unlocked_')) {
-                localStorage.removeItem(key);
-            }
-        });
-        
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/');
-    };
-
-    const updateUser = (userData) => {
-        const newUser = { ...user, ...userData };
-        setUser(newUser);
-        localStorage.setItem('user', JSON.stringify(newUser));
-    };
-
-    return (
-        <AuthContext.Provider value={{ user, token, loading, login, logout, updateUser }}>
-            {!loading && children}
-        </AuthContext.Provider>
-    );
+const cleanToken = raw => {
+  if (!raw || typeof raw !== 'string') return null;
+  const cleaned = raw.replace(/^["']|["']$/g, '').trim();
+  return cleaned && cleaned !== 'null' && cleaned !== 'undefined' ? cleaned : null;
+};
+const readStoredSession = () => {
+  try {
+    const rawToken = localStorage.getItem('token');
+    const token = cleanToken(rawToken);
+    if (token && rawToken !== token) localStorage.setItem('token', token);
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    return token && user && typeof user === 'object' ? { token, user } : { token: null, user: null };
+  } catch { return { token: null, user: null }; }
 };
 
+export const AuthProvider = ({ children }) => {
+  const [session, setSession] = useState(readStoredSession);
+  const navigate = useNavigate();
+  const login = useCallback((user, userToken) => {
+    const token = cleanToken(userToken);
+    if (!token || !user) return;
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    setSession({ token, user });
+    navigate(user.role === 'admin' ? '/admin' : '/portal');
+  }, [navigate]);
+  const logout = useCallback(() => {
+    Object.keys(localStorage).forEach(key => { if (key.startsWith('gallery_unlocked_')) localStorage.removeItem(key); });
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setSession({ user: null, token: null });
+    navigate('/auth');
+  }, [navigate]);
+  const updateUser = useCallback(userData => {
+    setSession(current => {
+      const user = { ...current.user, ...userData };
+      localStorage.setItem('user', JSON.stringify(user));
+      return { ...current, user };
+    });
+  }, []);
+  const value = useMemo(() => ({ ...session, loading: false, login, logout, updateUser }), [session, login, logout, updateUser]);
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+// eslint-disable-next-line react-refresh/only-export-components -- Preserve the existing provider and consumer-hook import API.
 export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
 };

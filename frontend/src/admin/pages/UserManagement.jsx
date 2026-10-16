@@ -144,7 +144,7 @@ export default function UserManagement() {
           <div className="space-y-1.5 translate-x-1">
             <div className="flex items-center gap-5 mb-2">
               <div className="w-1.5 h-12 bg-[#e3ae97] rounded-full shadow-[0_0_25px_rgba(227,174,151,0.4)] animate-pulse" />
-              <h1 className="font-luxury text-4xl md:text-7xl text-[#1a1a1a] tracking-tight leading-none">System Registry</h1>
+              <h1 className="font-luxury text-4xl md:text-7xl text-[#1a1a1a] tracking-tight leading-none">Team &amp; access</h1>
             </div>
             <p className="text-[10px] md:text-[11px] text-stone-400 font-black uppercase tracking-[0.3em] md:tracking-[0.5em] pl-[1.8rem] opacity-70">
               Real-Time User Access <span className="text-stone-300 mx-1">/</span> <span className="text-stone-900">Secure Logs</span>

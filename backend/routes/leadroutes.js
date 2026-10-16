@@ -6,56 +6,28 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
+const { createLeadHandler } = require('../utils/createLead');
 
 const router = express.Router();
 
-router.get('/', auth, async (req, res) => {
+router.use(auth, requireAdmin);
+
+// Webhook receipts and database operators cannot be set through CRM mass assignment.
+const editableLeadFields = new Set(['name', 'email', 'phone', 'status', 'remarks', 'eventType',
+    'eventDate', 'eventTime', 'eventLocation', 'followUpDate', 'notes', 'tasks', 'people',
+    'paymentStatus', 'totalAmount', 'depositAmount', 'galleryTag', 'cloudLink', 'cloudPassword']);
+const allowedLeadFields = data => Object.fromEntries(Object.entries(data).filter(([key]) => editableLeadFields.has(key)));
+
+router.get('/', async (req, res) => {
     const leads = await Lead.find().populate('tasks');
     res.json(leads);
 });
 
-router.post('/', auth, async (req, res) => {
-    try {
-        const { createAccount, firstName, lastName, accountEmail, password, ...leadData } = req.body;
-
-        // Save lead
-        const lead = new Lead(leadData);
-        await lead.save();
-
-        // Create User Account if requested
-        if (createAccount && firstName && lastName && password) {
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
-
-            const newUser = new User({
-                firstName,
-                lastName,
-                email: accountEmail || req.body.email,
-                password: hashedPassword,
-                role: 'client',
-                galleryTag: leadData.galleryTag,
-                cloudLink: leadData.cloudLink,
-                cloudPassword: leadData.cloudPassword,
-                leadId: lead._id
-            });
-            await newUser.save();
-        }
-
-        await Notification.create({
-            title: "New Lead Acquired",
-            description: `${lead.name} has been added to the registry as a new ${lead.status} lead.`,
-            type: "Lead"
-        });
-
-        res.json(lead);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
-});
+router.post('/', createLeadHandler({ Lead, User, Notification, bcrypt, allowedLeadFields }));
 
 // Task specific management
-router.post('/:id/tasks', auth, async (req, res) => {
+router.post('/:id/tasks', async (req, res) => {
     const task = new Task({ ...req.body, lead: req.params.id });
     await task.save();
     await Lead.findByIdAndUpdate(req.params.id, { $push: { tasks: task._id } });
@@ -63,13 +35,13 @@ router.post('/:id/tasks', auth, async (req, res) => {
 });
 
 // PATCH Lead
-router.patch('/:id', auth, async (req, res) => {
+router.patch('/:id', async (req, res) => {
     try {
         const { status } = req.body;
         const oldLead = await Lead.findById(req.params.id);
         if (!oldLead) return res.status(404).json({ error: "Lead not found" });
 
-        const updatedLead = await Lead.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updatedLead = await Lead.findByIdAndUpdate(req.params.id, allowedLeadFields(req.body), { new: true, runValidators: true });
 
         // Update corresponding User if linked or email matches
         if (updatedLead) {
@@ -101,7 +73,7 @@ router.patch('/:id', auth, async (req, res) => {
 });
 
 // POST Remind Photographer
-router.post('/:id/remind/:photographerName', auth, async (req, res) => {
+router.post('/:id/remind/:photographerName', async (req, res) => {
     try {
         const lead = await Lead.findById(req.params.id);
         const photographer = await Photographer.findOne({ name: req.params.photographerName });
@@ -117,7 +89,7 @@ router.post('/:id/remind/:photographerName', auth, async (req, res) => {
 });
 
 // DELETE Lead
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         await Lead.findByIdAndDelete(req.params.id);
         res.json({ message: "Lead deleted successfully" });

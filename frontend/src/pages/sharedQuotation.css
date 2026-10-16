@@ -1,0 +1,237 @@
+.shared-quotation {
+  min-height: 100vh;
+  background: #f7f3ee;
+  color: #302636;
+  font-family: Inter, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.shared-quotation header {
+  text-align: center;
+  padding: 30px;
+  background: #fff;
+}
+.shared-quotation header a {
+  display: block;
+  letter-spacing: 0.22em;
+  color: #423147;
+  font-weight: 800;
+  text-decoration: none;
+}
+.shared-quotation header span {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+.shared-hero {
+  text-align: center;
+  padding: 65px 24px 90px;
+  background: radial-gradient(ellipse at top right, #806d80, #342738);
+  color: #fff;
+}
+.shared-hero > p:first-child {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+}
+.shared-hero h1 {
+  font:
+    clamp(30px, 5vw, 48px) / 1.25 Georgia,
+    serif;
+  max-width: 800px;
+  margin: 15px auto;
+}
+.shared-countdown {
+  display: inline-block;
+  padding: 8px 20px;
+  border: 1px solid #a999a4;
+  border-radius: 30px;
+  font-size: 13px;
+}
+.shared-quotation main {
+  max-width: 960px;
+  margin: -34px auto 0;
+  padding: 0 22px;
+  position: relative;
+}
+.shared-paper {
+  background: #fff;
+  padding: 38px;
+  margin-bottom: 24px;
+  border: 1px solid #ece4dd;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px #38294008;
+}
+.shared-document-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: start;
+}
+.shared-document-top p {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.shared-document-top h2 {
+  font:
+    30px/1.25 Georgia,
+    serif;
+  margin: 8px 0 26px;
+}
+.shared-document-top > span {
+  white-space: nowrap;
+  background: #f1ebf3;
+  color: #63476e;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+.shared-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  border-top: 1px solid #eee5e0;
+  padding: 24px 0;
+  font-size: 12px;
+  color: #887e88;
+}
+.shared-meta strong {
+  display: block;
+  color: #382e3e;
+  font-size: 14px;
+}
+.shared-table {
+  overflow: auto;
+}
+.shared-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+}
+.shared-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: left;
+  color: #857488;
+}
+.shared-table th,
+.shared-table td {
+  padding: 18px 10px;
+  border-bottom: 1px solid #eee8e3;
+}
+.shared-table td:first-child {
+  white-space: pre-wrap;
+  min-width: 200px;
+}
+.shared-table th:last-child,
+.shared-table td:last-child {
+  text-align: right;
+}
+.shared-paper dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 340px;
+  margin: 26px 0 32px auto;
+  gap: 8px;
+}
+.shared-paper dd {
+  text-align: right;
+  margin: 0;
+}
+.shared-paper dt {
+  color: #857488;
+}
+.shared-terms {
+  white-space: pre-wrap;
+}
+.shared-accept input:not([type="checkbox"]) {
+  display: block;
+  width: 100%;
+  border: 1px solid #ddd1df;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 8px 0 20px;
+  box-sizing: border-box;
+}
+.shared-consent {
+  display: flex;
+  gap: 12px;
+  align-items: start;
+  margin: 20px 0;
+}
+.shared-consent input {
+  margin-top: 7px;
+}
+.shared-paper button {
+  background: #503b57;
+  color: #fff;
+  border: 0;
+  padding: 13px 25px;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.shared-paper button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.shared-paper .shared-secondary {
+  background: #f3edf4;
+  color: #503b57;
+}
+.shared-quotation footer {
+  text-align: center;
+  padding: 26px;
+  font-size: 11px;
+  color: #8f7f90;
+}
+.shared-quotation [role="alert"] {
+  background: #fff0ef;
+  padding: 12px;
+  color: #963c3c;
+}
+@media (max-width: 600px) {
+  .shared-paper {
+    padding: 22px;
+  }
+  .shared-document-top {
+    display: block;
+  }
+  .shared-meta {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .shared-hero {
+    padding: 40px 20px 70px;
+  }
+  .shared-quotation main {
+    padding: 0 12px;
+  }
+}
+@media print {
+  .shared-hero,
+  .shared-accept,
+  .shared-quotation button,
+  .shared-quotation footer {
+    display: none;
+  }
+  .shared-quotation main {
+    margin: 0;
+    max-width: none;
+    padding: 0;
+  }
+  .shared-paper {
+    box-shadow: none;
+    border: 0;
+  }
+  .shared-quotation {
+    background: #fff;
+  }
+  .shared-table {
+    overflow: visible;
+  }
+  .shared-table table {
+    min-width: 0;
+  }
+}
+
+.shared-quotation .shared-hero h1 { color: #fff; }

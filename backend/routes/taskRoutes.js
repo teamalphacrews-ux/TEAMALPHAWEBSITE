@@ -2,11 +2,14 @@ const express = require('express');
 const Task = require('../models/Task');
 const Lead = require('../models/Lead');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
 
 const router = express.Router();
 
+router.use(auth, requireAdmin);
+
 // GET all tasks (global)
-router.get('/', auth, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const tasks = await Task.find().populate('lead').sort({ createdAt: -1 });
         res.json(tasks);
@@ -16,7 +19,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // POST create a global task (no lead)
-router.post('/', auth, async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const task = new Task(req.body);
         await task.save();
@@ -27,7 +30,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // PATCH update task (status or title)
-router.patch('/:id', auth, async (req, res) => {
+router.patch('/:id', async (req, res) => {
     try {
         const { title, status, dueDate } = req.body;
         const task = await Task.findById(req.params.id);
@@ -51,7 +54,7 @@ router.patch('/:id', auth, async (req, res) => {
 });
 
 // DELETE task
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         const task = await Task.findByIdAndDelete(req.params.id);
         if (task && task.lead) {
