@@ -4,6 +4,7 @@ const leadSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true },
     phone: String,
+    webhookEventId: { type: String, unique: true, sparse: true, immutable: true, select: false },
     status: {
         type: String,
         enum: ['New', 'Follow-up', 'Meeting', 'Negotiation', 'Converted', 'Archived'],

@@ -2,6 +2,7 @@ const express = require('express');
 const Gallery = require('../models/Gallery');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -17,6 +18,8 @@ cloudinary.config({
 
 const router = express.Router();
 
+router.use(auth, requireAdmin);
+
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
@@ -27,7 +30,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
-router.post('/upload', auth, (req, res, next) => {
+router.post('/upload', (req, res, next) => {
     upload.single('file')(req, res, async function (err) {
         if (err) {
             console.error("Multer upload error full details:", JSON.stringify(err, null, 2));
@@ -48,7 +51,7 @@ router.post('/upload', auth, (req, res, next) => {
     });
 });
 
-router.get('/', auth, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const items = await Gallery.find().sort({ uploadedAt: -1 });
         res.json(items);
@@ -57,7 +60,7 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-router.post('/', auth, async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const item = new Gallery(req.body);
         await item.save();
@@ -82,7 +85,7 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-router.patch('/:id/favorite', auth, async (req, res) => {
+router.patch('/:id/favorite', async (req, res) => {
     try {
         const item = await Gallery.findById(req.params.id);
         if (!item) return res.status(404).json({ error: 'Item not found' });
@@ -94,7 +97,7 @@ router.patch('/:id/favorite', auth, async (req, res) => {
     }
 });
 
-router.patch('/:id/select', auth, async (req, res) => {
+router.patch('/:id/select', async (req, res) => {
     try {
         const item = await Gallery.findById(req.params.id);
         if (!item) return res.status(404).json({ error: 'Item not found' });
@@ -106,7 +109,7 @@ router.patch('/:id/select', auth, async (req, res) => {
     }
 });
 
-router.patch('/:id/cover', auth, async (req, res) => {
+router.patch('/:id/cover', async (req, res) => {
     try {
         const item = await Gallery.findById(req.params.id);
         if (!item) return res.status(404).json({ error: 'Item not found' });
@@ -124,7 +127,7 @@ router.patch('/:id/cover', auth, async (req, res) => {
     }
 });
 
-router.patch('/rename-folder', auth, async (req, res) => {
+router.patch('/rename-folder', async (req, res) => {
     const { oldName, newName } = req.body;
     try {
         const query = oldName === 'Default Client'
@@ -137,7 +140,7 @@ router.patch('/rename-folder', auth, async (req, res) => {
     }
 });
 
-router.patch('/rename-category', auth, async (req, res) => {
+router.patch('/rename-category', async (req, res) => {
     const { clientFolder, oldCategory, newCategory } = req.body;
     try {
         const folderQuery = clientFolder === 'Default Client'
@@ -154,7 +157,7 @@ router.patch('/rename-category', auth, async (req, res) => {
     }
 });
 
-router.patch('/:id', auth, async (req, res) => {
+router.patch('/:id', async (req, res) => {
     try {
         const item = await Gallery.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.json(item);
@@ -163,7 +166,7 @@ router.patch('/:id', auth, async (req, res) => {
     }
 });
 
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         await Gallery.findByIdAndDelete(req.params.id);
         res.json({ message: 'Item deleted successfully' });
@@ -172,7 +175,7 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
-router.delete('/folder/:folderName', auth, async (req, res) => {
+router.delete('/folder/:folderName', async (req, res) => {
     try {
         const folderName = req.params.folderName;
         const query = folderName === 'Default Client'
@@ -185,7 +188,7 @@ router.delete('/folder/:folderName', auth, async (req, res) => {
     }
 });
 
-router.delete('/folder/:folderName/category/:categoryName', auth, async (req, res) => {
+router.delete('/folder/:folderName/category/:categoryName', async (req, res) => {
     try {
         const { folderName, categoryName } = req.params;
         const folderQuery = folderName === 'Default Client'

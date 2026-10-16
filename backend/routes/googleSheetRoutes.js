@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
+
 const GoogleSheetsService = require('../services/GoogleSheetsService');
 const SheetConfig = require('../models/SheetConfig');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
+
+router.use(auth, requireAdmin);
 
 // Middleware to extract sheet ID and Name from headers
 const getSheetContext = (req) => ({
@@ -27,7 +31,7 @@ router.put('/cell', async (req, res) => {
         const result = await GoogleSheetsService.updateCell(spreadsheetId, rowId, colIndex, value, preferredSheetName);
         
         if (req.io) {
-            req.io.emit('sheet_cell_updated', { rowId, colIndex, value });
+            req.io.to('admin').emit('sheet_cell_updated', { rowId, colIndex, value });
         }
         
         res.json(result);
@@ -44,7 +48,7 @@ router.put('/batch-update', async (req, res) => {
         
         if (req.io) {
             updates.forEach(u => {
-                req.io.emit('sheet_cell_updated', { rowId: u.rowId, colIndex: u.colIndex, value: u.value });
+                req.io.to('admin').emit('sheet_cell_updated', { rowId: u.rowId, colIndex: u.colIndex, value: u.value });
             });
         }
         
@@ -87,7 +91,7 @@ router.delete('/row/:rowId', async (req, res) => {
     }
 });
 
-router.delete('/column/:colIndex', auth, async (req, res) => {
+router.delete('/column/:colIndex', async (req, res) => {
     const { colIndex } = req.params;
     const { spreadsheetId, preferredSheetName } = getSheetContext(req);
     try {
@@ -99,7 +103,7 @@ router.delete('/column/:colIndex', auth, async (req, res) => {
 });
 
 // Dropdown configuration
-router.get('/config/dropdowns', auth, async (req, res) => {
+router.get('/config/dropdowns', async (req, res) => {
     try {
         let configs = await SheetConfig.find();
         
@@ -121,7 +125,7 @@ router.get('/config/dropdowns', auth, async (req, res) => {
     }
 });
 
-router.post('/config/dropdowns', auth, async (req, res) => {
+router.post('/config/dropdowns', async (req, res) => {
     const { type, options } = req.body;
     try {
         const config = await SheetConfig.findOneAndUpdate(

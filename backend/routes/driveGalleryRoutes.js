@@ -4,6 +4,7 @@ const DriveGallery = require('../models/DriveGallery');
 const GalleryEvent = require('../models/GalleryEvent');
 const GoogleDriveService = require('../services/googleDriveService');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
@@ -37,7 +38,7 @@ const upload = multer({ storage: thumbnailStorage });
  * @route   GET /api/drive-gallery/users/clients
  * @desc    List all registered client users for dropdown
  */
-router.get('/users/clients', auth, async (req, res) => {
+router.get('/users/clients', auth, requireAdmin, async (req, res) => {
     try {
         const User = require('../models/User');
         const clients = await User.find({ role: 'client' }).select('firstName lastName email');
@@ -51,7 +52,7 @@ router.get('/users/clients', auth, async (req, res) => {
  * @route   POST /api/drive-gallery
  * @desc    Create a new Client Collection (Top Level)
  */
-router.post('/', auth, (req, res) => {
+router.post('/', auth, requireAdmin, (req, res) => {
     upload.single('thumbnail')(req, res, async function (err) {
         if (err) {
             console.error("Multer upload error (Client):", err);
@@ -120,7 +121,7 @@ router.post('/', auth, (req, res) => {
  * @route   POST /api/drive-gallery/:clientId/events
  * @desc    Create a new Event under a Client
  */
-router.post('/:clientId/events', auth, (req, res) => {
+router.post('/:clientId/events', auth, requireAdmin, (req, res) => {
     upload.single('thumbnail')(req, res, async function (err) {
         if (err) {
             console.error("Multer upload error (Event):", err);
@@ -205,7 +206,7 @@ router.get('/:clientId/events', auth, async (req, res) => {
  * @route   GET /api/drive-gallery
  * @desc    Get all gallery collections
  */
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, requireAdmin, async (req, res) => {
     try {
         const galleries = await DriveGallery.find().sort({ createdAt: -1 });
         res.json(galleries);
@@ -322,7 +323,7 @@ router.get('/proxy/:fileId', async (req, res) => {
  * @route   DELETE /api/drive-gallery/:id
  * @desc    Remove a client and all its events
  */
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, requireAdmin, async (req, res) => {
     try {
         await DriveGallery.findByIdAndDelete(req.params.id);
         await GalleryEvent.deleteMany({ clientId: req.params.id });
@@ -336,7 +337,7 @@ router.delete('/:id', auth, async (req, res) => {
  * @route   GET /api/drive-gallery/event/:eventId
  * @desc    Get single event info
  */
-router.get('/event/:eventId', auth, async (req, res) => {
+router.get('/event/:eventId', auth, requireAdmin, async (req, res) => {
     try {
         const event = await GalleryEvent.findById(req.params.eventId);
         res.json(event);
@@ -429,7 +430,7 @@ router.post('/verify/:id', async (req, res) => {
  * @route   GET /api/drive-gallery/:id
  * @desc    Get client info
  */
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', auth, requireAdmin, async (req, res) => {
     try {
         const client = await DriveGallery.findById(req.params.id);
         res.json(client);
@@ -442,7 +443,7 @@ router.get('/:id', auth, async (req, res) => {
  * @route   PATCH /api/drive-gallery/:id
  * @desc    Update a Client
  */
-router.patch('/:id', auth, upload.single('thumbnail'), async (req, res) => {
+router.patch('/:id', auth, requireAdmin, upload.single('thumbnail'), async (req, res) => {
     try {
         const { name, password, clientId } = req.body;
         const updateData = {};
@@ -466,7 +467,7 @@ router.patch('/:id', auth, upload.single('thumbnail'), async (req, res) => {
  * @route   PATCH /api/drive-gallery/events/:eventId
  * @desc    Update an Event
  */
-router.patch('/events/:eventId', auth, upload.single('thumbnail'), async (req, res) => {
+router.patch('/events/:eventId', auth, requireAdmin, upload.single('thumbnail'), async (req, res) => {
     try {
         const { name, driveLink, eventDate } = req.body;
         const updateData = {};
@@ -489,7 +490,7 @@ router.patch('/events/:eventId', auth, upload.single('thumbnail'), async (req, r
  * @route   DELETE /api/drive-gallery/events/:eventId
  * @desc    Remove an Event
  */
-router.delete('/events/:eventId', auth, async (req, res) => {
+router.delete('/events/:eventId', auth, requireAdmin, async (req, res) => {
     try {
         await GalleryEvent.findByIdAndDelete(req.params.eventId);
         res.json({ message: "Event removed" });

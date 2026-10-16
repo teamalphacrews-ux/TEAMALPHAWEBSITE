@@ -68,7 +68,7 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
 
     useEffect(() => {
         // ALWAYS use the dynamic API_URL for socket connection
-        socketRef.current = io(API_URL);
+        socketRef.current = io(API_URL, { auth: { token: localStorage.getItem('token') } });
 
         socketRef.current.on('connect', () => {
             // Silently connected

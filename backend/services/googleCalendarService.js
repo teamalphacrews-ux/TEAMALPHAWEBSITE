@@ -294,7 +294,7 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
         });
 
         if (hasChanges && io) {
-            io.emit('calendar_update', { 
+            io.to('admin').emit('calendar_update', {
                 action: 'SYNC', 
                 email: user.googleEmail || user.email,
                 lastSyncAt: new Date()
@@ -315,7 +315,7 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
         await User.findByIdAndUpdate(user._id, { googleSyncError: errorMessage });
         
         if (io) {
-            io.emit('calendar_update', { 
+            io.to('admin').emit('calendar_update', {
                 action: 'SYNC_ERROR', 
                 email: user.googleEmail || user.email,
                 error: errorMessage 

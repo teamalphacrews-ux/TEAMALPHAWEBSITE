@@ -31,6 +31,10 @@ import ClientSidebar from './components/client/Sidebar';
 // Admin imports
 import AdminLayout from './admin/components/common/Layout';
 const AdminDashboard = lazy(() => import('./admin/pages/Dashboard'));
+const AdminIntegrations = lazy(() => import('./admin/pages/Integrations'));
+const AdminProjects = lazy(() => import('./admin/pages/Projects'));
+const AdminCrew = lazy(() => import('./admin/pages/Crew'));
+const AdminPostProduction = lazy(() => import('./admin/pages/PostProduction'));
 const AdminCRM = lazy(() => import('./admin/pages/CRM'));
 const AdminSmartGallery = lazy(() => import('./admin/pages/SmartGallery'));
 const AdminFinance = lazy(() => import('./admin/pages/Finance'));
@@ -163,6 +167,10 @@ function App() {
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="crm" element={<AdminCRM />} />
+                <Route path="integrations" element={<AdminIntegrations />} />
+                <Route path="projects" element={<AdminProjects />} />
+                <Route path="crew" element={<AdminCrew />} />
+                <Route path="post-production" element={<AdminPostProduction />} />
                 <Route path="gallery" element={<AdminSmartGallery />} />
                 <Route path="gallery/:id" element={<AdminClientEvents />} />
                 <Route path="gallery/event/:eventId" element={<AdminDriveGalleryDetail />} />

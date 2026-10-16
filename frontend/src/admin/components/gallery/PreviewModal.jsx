@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Maximize2, Trash2, Heart } from "lucide-react";
+import { motion as Motion, AnimatePresence } from "framer-motion";
+import { X, Download, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../../../utils/apiConfig";
 
 export default function PreviewModal({ item, onClose, onDelete }) {
+  const [loadedFileId, setLoadedFileId] = useState(null);
   if (!item) return null;
 
   const isVideo = item.mimeType?.includes("video/");
-  const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-  const token = localStorage.getItem('token');
 
   const proxyUrl = `${API_BASE_URL}/api/drive-gallery/proxy/${item.fileId}`;
   // Fast Optimized Preview (High Res but not the massive original)
@@ -17,16 +17,16 @@ export default function PreviewModal({ item, onClose, onDelete }) {
   const placeholderUrl = item.thumbnailLink || proxyUrl;
   const downloadUrl = item.webContentLink || item.webViewLink || previewUrl;
 
-  const [isLoaded, setIsLoaded] = useState(false);
+  const isLoaded = loadedFileId === item.fileId;
 
   const handleDownload = () => {
-    window.open(downloadUrl, "_blank");
+    window.open(downloadUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-8">
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -34,7 +34,7 @@ export default function PreviewModal({ item, onClose, onDelete }) {
           className="absolute inset-0 bg-black/95 backdrop-blur-md"
         />
 
-        <motion.div
+        <Motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
@@ -43,6 +43,7 @@ export default function PreviewModal({ item, onClose, onDelete }) {
           {/* Close Button */}
           <button
             onClick={onClose}
+            aria-label="Close media preview"
             className="absolute top-0 right-0 p-2 text-white/50 hover:text-white transition-all transform hover:rotate-90 pointer-events-auto z-50"
           >
             <X size={32} strokeWidth={1.5} />
@@ -75,7 +76,7 @@ export default function PreviewModal({ item, onClose, onDelete }) {
                 <img
                   src={previewUrl}
                   alt={item.name}
-                  onLoad={() => setIsLoaded(true)}
+                  onLoad={() => setLoadedFileId(item.fileId)}
                   className={`max-w-full max-h-[80vh] rounded-2xl shadow-2xl object-contain bg-white/5 transition-opacity duration-700 ${isLoaded ? 'opacity-100' : 'opacity-0 absolute'}`}
                   onError={(e) => {
                     if (e.target.src !== proxyUrl) {
@@ -108,7 +109,8 @@ export default function PreviewModal({ item, onClose, onDelete }) {
                 Download Original
               </button>
 
-              <button
+              {onDelete && item._id && <button
+                aria-label={`Delete ${item.name}`}
                 onClick={() => {
                   if (window.confirm("Permanently delete this asset?")) {
                     onDelete(item._id);
@@ -118,10 +120,10 @@ export default function PreviewModal({ item, onClose, onDelete }) {
                 className="p-4 bg-white/5 border border-white/10 text-white/40 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all"
               >
                 <Trash2 size={20} />
-              </button>
+              </button>}
             </div>
           </div>
-        </motion.div>
+        </Motion.div>
       </div>
     </AnimatePresence>
   );

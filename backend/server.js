@@ -25,6 +25,8 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const { initCronJobs } = require('./services/ReminderService');
 const auth = require('./middleware/auth');
+const requireAdmin = require('./middleware/requireAdmin');
+const { parseProfileUpdate } = require('./utils/profileUpdate');
 const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
@@ -77,96 +79,12 @@ app.use((req, res, next) => {
 });
 
 
-io.on('connection', (socket) => {
-    // Silent connection
-
-    socket.on('join_chat', (roomId) => {
-        socket.join(roomId);
-        
-        // Track online status for delivery ticks
-        if (!onlineUsers.has(roomId)) {
-            onlineUsers.set(roomId, new Set());
-        }
-        onlineUsers.get(roomId).add(socket.id);
-        
-        // Broadcast that this user is online so pending messages can be marked delivered
-        io.emit('user_online', { userId: roomId });
-    });
-
-    socket.on('disconnect', () => {
-        // Remove from online tracking
-        for (let [userId, sockets] of onlineUsers.entries()) {
-            if (sockets.has(socket.id)) {
-                sockets.delete(socket.id);
-                if (sockets.size === 0) {
-                    onlineUsers.delete(userId);
-                    io.emit('user_offline', { userId });
-                }
-                break;
-            }
-        }
-    });
-
-    socket.on('typing_start', (data) => {
-        socket.to(data.roomId).emit('display_typing', data);
-    });
-
-    socket.on('typing_stop', (data) => {
-        socket.to(data.roomId).emit('hide_typing', data);
-    });
-
-    socket.on('message_delivered', async (data) => {
-        try {
-            const Message = require('./models/Message');
-            await Message.findByIdAndUpdate(data.messageId, { status: 'delivered' });
-            socket.to(data.senderId).emit('message_status_update', { messageId: data.messageId, status: 'delivered' });
-        } catch (err) { }
-    });
-
-    socket.on('mark_read', async (data) => {
-        try {
-            const { roomId, readerType } = data; // roomId is the userId, readerType is 'admin' or 'user'
-            const ChatRoom = require('./models/ChatRoom');
-            const Message = require('./models/Message');
-
-            // 1. Mark all messages as seen in DB
-            const adminIds = ['admin', 'hardcoded-admin-id']; // Simplified for socket logic
-            if (readerType === 'admin') {
-                await Message.updateMany({ sender: roomId, seen: false }, { $set: { seen: true, status: 'seen' } });
-                await ChatRoom.findOneAndUpdate({ userId: roomId }, { $set: { unreadCountAdmin: 0 } });
-            } else {
-                await Message.updateMany({ recipient: roomId, seen: false }, { $set: { seen: true, status: 'seen' } });
-                await ChatRoom.findOneAndUpdate({ userId: roomId }, { $set: { unreadCountUser: 0 } });
-            }
-
-            // 2. Fetch updated counts
-            const updatedRoom = await ChatRoom.findOne({ userId: roomId });
-
-            // 3. Emit room_updated to sync everyone
-            io.emit('room_updated', {
-                roomId,
-                unreadCountAdmin: updatedRoom?.unreadCountAdmin || 0,
-                unreadCountUser: updatedRoom?.unreadCountUser || 0
-            });
-
-            // Legacy sync for old components
-            socket.broadcast.to(roomId).emit('chat_seen', roomId);
-            socket.broadcast.to('admin').emit('chat_seen', roomId);
-
-        } catch (err) {
-            console.error('Error in mark_read socket:', err.message);
-        }
-    });
-
-    socket.on('chat_seen', (data) => {
-        const chatId = typeof data === 'string' ? data : data.chatId;
-        socket.broadcast.to(chatId).emit('chat_seen', data);
-        socket.broadcast.to('admin').emit('chat_seen', data);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
-    });
+const { registerStudioSockets } = require('./realtime/studioSocket');
+registerStudioSockets(io, {
+    User,
+    Message: require('./models/Message'),
+    ChatRoom: require('./models/ChatRoom'),
+    onlineUsers
 });
 
 app.set('io', io);
@@ -261,7 +179,7 @@ authRouter.get('/me', auth, async (req, res) => {
         if (req.user.id === "hardcoded-admin-id") {
             return res.json({ id: "hardcoded-admin-id", firstName: "System", role: "admin" });
         }
-        const user = await User.findById(req.user.id).select('-password');
+        const user = await User.findById(req.user.id).select('firstName lastName email role galleryTag cloudLink cloudPassword leadId createdAt updatedAt');
         res.json(user);
     } catch (err) {
         console.error(err.message);
@@ -271,52 +189,34 @@ authRouter.get('/me', auth, async (req, res) => {
 
 authRouter.put('/profile', auth, async (req, res) => {
     try {
-        const { name, role } = req.body;
-
+        const updateData = parseProfileUpdate(req.body, req.user.role);
         if (req.user.id === "hardcoded-admin-id") {
-            // For the system admin in .env, we return the data so the UI updates for the session
-            // even though it isn't stored in a specific DB collection.
-            const nameParts = (name || "System Admin").trim().split(/\s+/);
             return res.json({
                 id: "hardcoded-admin-id",
-                firstName: nameParts[0],
-                lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : '',
-                role: role || "admin",
+                firstName: updateData.firstName,
+                lastName: updateData.lastName || '',
+                role: 'admin',
                 msg: "System Admin updated for session"
             });
         }
-
-        let updateData = {};
-
-        if (name) {
-            const nameParts = name.trim().split(/\s+/);
-            updateData.firstName = nameParts[0];
-            updateData.lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-        }
-
-        if (role) {
-            updateData.role = role;
-        }
-
         const user = await User.findByIdAndUpdate(
             req.user.id,
             { $set: updateData },
-            { new: true }
-        ).select('-password');
-
+            { new: true, runValidators: true }
+        ).select('firstName lastName email role galleryTag cloudLink cloudPassword leadId createdAt updatedAt');
         if (!user) return res.status(404).json({ msg: "User not found" });
-
         res.json(user);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        if (err.status) return res.status(err.status).json({ msg: err.message });
+        console.error('Profile update failed:', err.message);
+        res.status(500).json({ msg: 'Unable to update profile' });
     }
 });
 
 // Google OAuth Routes
 const { google } = require('googleapis');
 
-authRouter.get('/google', auth, (req, res) => {
+authRouter.get('/google', auth, requireAdmin, (req, res) => {
     try {
         const oauth2Client = new google.auth.OAuth2(
             process.env.GOOGLE_CLIENT_ID,
@@ -413,6 +313,7 @@ authRouter.get('/google/callback', async (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/webhooks', require('./routes/webhookRoutes'));
 app.use('/api/chats', chatRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/gallery', galleryRoutes);

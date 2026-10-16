@@ -2,10 +2,13 @@ const express = require('express');
 const Invoice = require('../models/Invoice');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
 
 const router = express.Router();
 
-router.get('/', auth, async (req, res) => {
+router.use(auth, requireAdmin);
+
+router.get('/', async (req, res) => {
     try {
         const invoices = await Invoice.find().sort({ createdAt: -1 });
         res.json(invoices);
@@ -14,7 +17,7 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-router.post('/', auth, async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const invoice = new Invoice(req.body);
         await invoice.save();
@@ -31,7 +34,7 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const invoice = await Invoice.findById(req.params.id);
         if (!invoice) return res.status(404).json({ message: "Invoice not found" });
@@ -42,7 +45,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Update Invoice
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', async (req, res) => {
     try {
         const updateData = { ...req.body };
         // PRESERVE EXISTING VALUES
@@ -68,7 +71,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // Delete Invoice
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         const deleted = await Invoice.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ message: "Invoice not found" });

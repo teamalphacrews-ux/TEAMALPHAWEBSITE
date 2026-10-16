@@ -17,14 +17,15 @@ module.exports = function (req, res, next) {
 
     // Verify token
     try {
-        console.log(`--- [AUTH] --- Attempting verification for: ${token.substring(0, 10)}...`);
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log(`--- [AUTH/SUCCESS] --- User: ${decoded.user.id} (Role: ${decoded.user.role})`);
+        if (!decoded.user || typeof decoded.user.id !== 'string' || typeof decoded.user.role !== 'string') {
+            return res.status(401).json({ msg: 'Token is not valid' });
+        }
         req.user = decoded.user;
         next();
     } catch (err) {
         console.error('--- [AUTH/ERROR] --- Validation failed:', err.message);
         // Possible reasons: "jwt malformed", "jwt expired", "invalid signature"
-        res.status(401).json({ msg: `Token is not valid: ${err.message}` });
+        res.status(401).json({ msg: 'Token is not valid' });
     }
 };
