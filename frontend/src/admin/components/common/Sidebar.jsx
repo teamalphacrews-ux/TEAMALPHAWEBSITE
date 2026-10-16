@@ -4,24 +4,28 @@ import { useSelector, useDispatch } from 'react-redux';
 import { fetchUnreadCounts, setAdminUnreadCount, handleRoomUpdate } from '../../../store/slices/chatSlice';
 import { io } from 'socket.io-client';
 import { useAuth } from '../../../context/AuthContext';
-import { LayoutDashboard, UsersRound, Images, Wallet, CalendarDays, X, LogOut, MessageSquare, Bell, Settings2, FolderHeart, Clapperboard, ArrowUpRight, Aperture, Webhook } from 'lucide-react';
+import { LayoutDashboard, UsersRound, Images, Wallet, CalendarDays, X, LogOut, MessageSquare, Bell, Settings2, FolderHeart, Clapperboard, ArrowUpRight, Aperture, Webhook, FileText, HardDrive, UserRound } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 const groups = [
   { label: 'WORKSPACE', items: [
     { name: 'Overview', path: '/admin', icon: LayoutDashboard, exact: true },
     { name: 'Enquiries', path: '/admin/crm', icon: MessageSquare },
+    { name: 'Quotations', path: '/admin/quotations', icon: FileText },
     { name: 'Projects', path: '/admin/projects', icon: FolderHeart },
     { name: 'Crew & scheduling', path: '/admin/crew', icon: UsersRound },
     { name: 'Post production', path: '/admin/post-production', icon: Clapperboard },
     { name: 'Calendar', path: '/admin/calendar', icon: CalendarDays },
   ]},
   { label: 'STUDIO', items: [
+    { name: 'Clients', path: '/admin/clients', icon: UserRound },
+    { name: 'Data & backups', path: '/admin/data', icon: HardDrive },
     { name: 'Client galleries', path: '/admin/gallery', icon: Images },
     { name: 'Finances', path: '/admin/finance', icon: Wallet },
     { name: 'Conversations', path: '/admin/chats', icon: MessageSquare },
     { name: 'Activity', path: '/admin/activity-log', icon: Bell },
     { name: 'Integrations', path: '/admin/integrations', icon: Webhook },
+    { name: 'Settings', path: '/admin/settings', icon: Settings2 },
     { name: 'Team & access', path: '/admin/users', icon: Settings2 },
   ]},
 ];

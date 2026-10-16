@@ -6,6 +6,7 @@ const requireAdmin = require('../middleware/requireAdmin');
 const { sendEventNotification } = require('../services/ReminderService');
 const { syncToGoogle, pollGoogleCalendar } = require('../services/googleCalendarService');
 
+const { eventFields,crewOverlap } = require('../utils/studioCalendar');
 const router = express.Router();
 
 router.use(auth, requireAdmin);
@@ -97,17 +98,11 @@ router.get('/', async (req, res) => {
 // Create new event
 router.post('/', async (req, res) => {
     try {
-        const { start, end, location } = req.body;
-
-        // Check for overlapping events at the same location or same time
-        // Overlap restriction removed to allow multiple events per day.
-        // The business layer now permits overlapping bookings for comprehensive studio mapping.
-
-        const event = new Event({
-            ...req.body,
-            userId: req.user.id, // Associate event with user
-            origin: 'local'      // Explicitly mark as born on website
-        });
+        const values=eventFields(req.body);
+        const candidates=values.teamMembers.length?await Event.find({start:{$lt:values.end},end:{$gt:values.start}}).select('title start end teamMembers').lean():[];
+        const conflict=crewOverlap(values,candidates);
+        if(conflict)return res.status(409).json({message:'Assigned crew overlap with '+conflict.title});
+        const event = new Event({ ...values, ...( /^[a-f\d]{24}$/i.test(req.user.id)?{userId:req.user.id}:{} ), origin:'local' });
         await event.save();
 
         // Trigger Google Calendar Sync (Awaited for real status)
@@ -142,28 +137,14 @@ router.post('/', async (req, res) => {
 // Update event
 router.patch('/:id', async (req, res) => {
     try {
-        const { start, end } = req.body;
-
-        if (start || end) {
-            const currentEvent = await Event.findById(req.params.id);
-            const newStart = start ? new Date(start) : currentEvent.start;
-            const newEnd = end ? new Date(end) : currentEvent.end;
-
-            const overlapping = await Event.findOne({
-                _id: { $ne: req.params.id },
-                start: { $lt: newEnd },
-                end: { $gt: newStart }
-            });
-
-            if (overlapping) {
-                return res.status(400).json({ 
-                    message: "Scheduling Conflict: Update would overlap with another event.",
-                    conflictingEvent: overlapping.title
-                });
-            }
-        }
-
-        const event = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const current=await Event.findById(req.params.id);
+        if(!current)return res.status(404).json({message:'Event not found'});
+        if(current.isReadOnly)return res.status(403).json({message:'This Google-managed event is read only'});
+        const values=eventFields(req.body,current.toObject());
+        const candidates=values.teamMembers.length?await Event.find({_id:{$ne:req.params.id},start:{$lt:values.end},end:{$gt:values.start}}).select('title start end teamMembers').lean():[];
+        const conflict=crewOverlap(values,candidates);
+        if(conflict)return res.status(409).json({message:'Assigned crew overlap with '+conflict.title});
+        const event=await Event.findByIdAndUpdate(req.params.id,{$set:values},{new:true,runValidators:true});
 
         // Trigger Google Calendar Sync (Awaited for real status)
         if (event) {
@@ -196,7 +177,9 @@ router.patch('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
-        if (event && event.googleEventId) {
+        if (!event) return res.status(404).json({message:'Event not found'});
+        if (event.isReadOnly) return res.status(403).json({message:'This Google-managed event is read only'});
+        if (event.googleEventId) {
             try {
                 await syncToGoogle(event, 'DELETE', req.user.id);
             } catch (syncError) {

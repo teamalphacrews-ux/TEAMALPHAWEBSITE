@@ -9,6 +9,7 @@ import AdminProfileModal from './AdminProfileModal';
 const API = import.meta.env.VITE_API_URL || '';
 const destinations = [
   ['Overview', '/admin', 'dashboard studio summary'], ['Enquiries', '/admin/crm', 'leads crm follow-up'],
+  ['Quotations', '/admin/quotations', 'proposals pricing services terms'], ['Clients', '/admin/clients', 'client accounts contact directory'], ['Data & backups', '/admin/data', 'nas storage folders backup checks'], ['Settings', '/admin/settings', 'studio profile configuration'],
   ['Projects', '/admin/projects', 'weddings bookings'], ['Crew & scheduling', '/admin/crew', 'photographers team assignments'],
   ['Post production', '/admin/post-production', 'tasks editing delivery'], ['Calendar', '/admin/calendar', 'shoots events dates'],
   ['Client galleries', '/admin/gallery', 'photos albums drive'], ['Finances', '/admin/finance', 'invoices expenses payments'],

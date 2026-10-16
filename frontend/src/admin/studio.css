@@ -235,3 +235,8 @@ textarea.studio-input { min-height: 90px; resize: vertical; }
 .studio-badge.green, .studio-badge.success { color:#4d6b50; }
 .studio-task-due.overdue, .studio-badge.rose, .studio-badge.danger { color:#995c50; }
 .studio-table th, .studio-field > label, .studio-tabs button, .studio-tabs a { color:#786d7d; }
+
+/* Keep account controls accessible as the studio navigation grows. */
+.studio-sidebar { overflow:hidden; }
+.studio-nav { overflow-y:auto; min-height:0; padding-right:2px; scrollbar-width:thin; scrollbar-color:#67586d transparent; }
+.studio-brand-row, .studio-workspace-label, .studio-sidebar-bottom { flex-shrink:0; }

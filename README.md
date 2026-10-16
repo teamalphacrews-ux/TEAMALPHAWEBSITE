@@ -4,7 +4,7 @@ Private, single-studio wedding photography operations, with an existing public p
 
 ## Workspace
 
-Sign in at `/auth` and open `/admin` for the studio overview. The redesigned workspace includes Enquiries, converted-lead Projects, Crew & scheduling, Post production, Client galleries, Finances, Conversations, Activity, Integrations, and Team & access. The public portfolio and restricted client portal keep their existing routes.
+Sign in at `/auth` and open `/admin` for the studio overview. The redesigned workspace includes Enquiries, Quotations, converted-lead Projects, Crew & scheduling, Post production, Calendar, Clients, Client galleries, Finances, Data & backups, Conversations, Activity, Integrations, Settings, and Team & access. The public portfolio and restricted client portal keep their existing routes.
 
 ## Local development
 

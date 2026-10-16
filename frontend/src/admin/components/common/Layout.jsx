@@ -27,7 +27,7 @@ export default function Layout() {
     <div className="studio-workspace">
       {!isFocusMode && <Topbar onMenuClick={() => setIsSidebarOpen(true)} />}
       <div className="studio-preview-label" hidden={!user?.isPreview}>DESIGN PREVIEW · SAMPLE DATA · Changes in this local preview are temporary.</div>
-        <main id="studio-main" className={"studio-main" + (["/admin/calendar", "/admin/finance", "/admin/users", "/admin/activity-log", "/admin/chats"].includes(location.pathname) ? " studio-legacy-page" : "")} key={location.pathname} tabIndex={-1}>
+        <main id="studio-main" className={"studio-main" + (["/admin/users", "/admin/activity-log", "/admin/chats"].includes(location.pathname) ? " studio-legacy-page" : "")} key={location.pathname} tabIndex={-1}>
         <Suspense fallback={<div className="studio-loading" role="status"><span className="studio-loader" /> Opening your workspace…</div>}>
           <Outlet context={{ setIsFocusMode }} />
         </Suspense>
