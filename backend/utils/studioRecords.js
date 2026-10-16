@@ -84,7 +84,7 @@ function quotation(body) {
     const quantity = number(item.quantity, "quantity", 1000, true);
     if (!quantity) bad("Quantity must be at least one");
     return {
-      description: text(item.description, "item description", 300, true),
+      description: text(item.description, "item description", 4000, true),
       quantity,
       unitPricePaise: number(item.unitPricePaise, "price", 1000000000, true),
     };

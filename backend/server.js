@@ -313,6 +313,7 @@ authRouter.get('/google/callback', async (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/quotes', require('./routes/publicQuoteRoutes'));
 app.use('/api/studio', require('./routes/studioRoutes'));
 app.use('/api/webhooks', require('./routes/webhookRoutes'));
 app.use('/api/chats', chatRoutes);

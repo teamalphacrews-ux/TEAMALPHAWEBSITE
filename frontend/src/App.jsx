@@ -13,6 +13,7 @@ const Testimonials = lazy(() => import('./components/Testimonials'));
 const Contact = lazy(() => import('./components/Contact'));
 const Footer = lazy(() => import('./components/Footer'));
 const GetQuote = lazy(() => import('./components/GetQuote'));
+const SharedQuotation = lazy(() => import('./pages/SharedQuotation'));
 const AuthPage = lazy(() => import('./components/AuthPage'));
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -140,6 +141,7 @@ function App() {
       <Suspense fallback={<div className="flex h-screen w-full items-center justify-center text-xl">Loading...</div>}>
         <AnimatePresence mode="wait">
           <Routes location={location}>
+            <Route path="/quote/:token" element={<SharedQuotation />} />
             {/* Main Website Routes */}
             <Route path="/" element={
               <>

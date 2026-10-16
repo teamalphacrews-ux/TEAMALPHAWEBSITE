@@ -294,7 +294,7 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
                     </div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4">
                       <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-red-600">Administrative Gesture (Discount ₹)</span>
-                      <input type="number" className="w-full sm:w-40 bg-white border text-left sm:text-right border-red-100 rounded-xl px-5 py-3 text-[13px] font-black focus:outline-none focus:border-red-400 text-red-600 shadow-inner" value={discount} onChange={e => setDiscount(Number(e.target.value))} placeholder="0" />
+                      <input type="number" className="w-full sm:w-40 bg-white border text-left sm:text-right border-red-100 rounded-xl px-5 py-3 text-[13px] font-black focus:outline-none focus:border-red-400 text-red-600 shadow-inner" min="0" step="0.01" max={eventsTotal + Number(deliverablesPrice)} aria-label="Invoice discount in rupees" value={discount} onChange={e => setDiscount(Number(e.target.value))} placeholder="0" />
                     </div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4">
                       <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-blue-700">Auxiliary Provisions / Tax (₹)</span>

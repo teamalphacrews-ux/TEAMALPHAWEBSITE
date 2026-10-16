@@ -261,6 +261,11 @@ test("every expanded studio route denies client access before storage operations
     ["POST", "/clients"],
     ["PATCH", "/clients/x"],
     ["GET", "/quotations"],
+    ["POST", "/quotations/x/share"],
+    ["GET", "/quote-templates"],
+    ["POST", "/quote-templates"],
+    ["PUT", "/quote-templates/x"],
+    ["DELETE", "/quote-templates/x"],
     ["POST", "/quotations"],
     ["PUT", "/quotations/x"],
     ["GET", "/assets"],
@@ -291,6 +296,8 @@ test("quotation update uses an atomic revision lease and returns conflict rather
   );
   assert.equal(result.status, 409);
   assert.equal(captured.filter.revision, 4);
+  assert.deepEqual(captured.filter.status, {$ne:"Accepted"});
+  assert.equal(captured.update.$unset.shareTokenHash,1);
   assert.equal(captured.update.$inc.revision, 1);
   assert.equal(captured.update.$set.totalPaise, 35402);
 });
@@ -346,4 +353,15 @@ test("booking payment records validate monetary precision and deposit bounds", (
     assert.throws(() => records.bookingPayment({ ...body, ...patch }), {
       status: 400,
     });
+});
+
+test("template saving excludes client identity and validates amounts", async t => {
+ const Template=require("../models/QuoteTemplate");let saved;
+ t.mock.method(Template,"create",async value=>{saved=value;return value;});
+ const result=await dispatch(router,"POST","/quote-templates",{...quote,name:"Wedding collection",validityDays:21});
+ assert.equal(result.status,201);assert.equal(saved.name,"Wedding collection");assert.equal(saved.clientName,undefined);assert.equal(saved.email,undefined);assert.equal(saved.lead,undefined);assert.equal(saved.validityDays,21);
+ assert.equal((await dispatch(router,"POST","/quote-templates",{...quote,name:"Bad",validityDays:0})).status,400);
+});
+test("admin cannot fabricate client acceptance or publish without sharing", async () => {
+ for (const status of ["Accepted","Sent"])assert.equal((await dispatch(router,"POST","/quotations",{...quote,status})).status,400);
 });

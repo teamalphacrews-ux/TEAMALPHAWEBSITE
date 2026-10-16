@@ -1,5 +1,15 @@
-import { useState } from "react";
-import { Plus, Pencil, Printer, Trash2, FileText } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  Plus,
+  Pencil,
+  Printer,
+  Trash2,
+  FileText,
+  Link as LinkIcon,
+  Copy,
+  BookmarkPlus,
+  Layers,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { OperationsModal } from "../components/operations/OperationsUI";
 import {
@@ -35,8 +45,9 @@ export default function Quotations() {
     "/api/studio/quotations",
     "/api/leads",
     "/api/studio/settings",
+    "/api/studio/quote-templates",
   ]);
-  const [quotes = [], leads = [], settings = {}] = data;
+  const [quotes = [], leads = [], settings = {}, templates = []] = data;
   const [query, setQuery] = useState(""),
     [filter, setFilter] = useState("Active"),
     [editing, setEditing] = useState(undefined),
@@ -44,6 +55,77 @@ export default function Quotations() {
     [form, setForm] = useState(blank),
     [busy, setBusy] = useState(false),
     [saveError, setSaveError] = useState("");
+  const [share, setShare] = useState(null),
+    [templateDialog, setTemplateDialog] = useState(null),
+    [templateName, setTemplateName] = useState(""),
+    [showTemplates, setShowTemplates] = useState(false);
+  const shareQuote = async (q) => {
+    setBusy(true);
+    try {
+      const result = await workspaceRequest(
+        "post",
+        `/api/studio/quotations/${q._id}/share`,
+        {},
+      );
+      setPreview(null);
+      setShare({
+        url: `${window.location.origin}/quote/${result.token}`,
+        quote: result.quote,
+      });
+      reload();
+    } catch (e) {
+      toast.error(recordError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const saveTemplate = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setSaveError("");
+    try {
+      await workspaceRequest("post", "/api/studio/quote-templates", {
+        ...templateDialog,
+        name: templateName,
+        validityDays: settings.quotationValidityDays || 14,
+      });
+      setTemplateDialog(null);
+      reload();
+      toast.success("Template saved");
+    } catch (e) {
+      setSaveError(recordError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const applyTemplate = (template) => {
+    open(null);
+    setForm((c) => ({
+      ...c,
+      title: template.title,
+      items: template.items.map((i) => ({ ...i })),
+      discountPaise: template.discountPaise,
+      taxRateBps: template.taxRateBps,
+      terms: template.terms,
+      validUntil: new Date(
+        Date.now() + (template.validityDays || 14) * 86400000,
+      )
+        .toISOString()
+        .slice(0, 10),
+    }));
+    setShowTemplates(false);
+  };
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setClock(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
+  const stage = (q) =>
+    ["Draft", "Sent"].includes(q.status) &&
+    q.validUntil &&
+    clock >= Date.parse(q.validUntil.slice(0, 10) + "T18:30:00Z")
+      ? "Expired"
+      : q.status;
   const open = (quote) => {
     setEditing(quote || null);
     setPreview(null);
@@ -53,6 +135,7 @@ export default function Quotations() {
       quote
         ? {
             ...quote,
+            status: quote.status === "Sent" ? "Draft" : quote.status,
             lead: quote.lead?._id || quote.lead || "",
             validUntil: quote.validUntil?.slice(0, 10) || "",
           }
@@ -114,7 +197,7 @@ export default function Quotations() {
       (filter === "All" ||
         (filter === "Active"
           ? q.status !== "Archived"
-          : q.status === filter)) &&
+          : stage(q) === filter)) &&
       [q.clientName, q.email, q.title]
         .join(" ")
         .toLowerCase()
@@ -127,6 +210,13 @@ export default function Quotations() {
         title="Quotations"
         description="Thoughtful proposals, clear commitments and clear revision history."
       >
+        <button
+          className="studio-button"
+          onClick={() => setShowTemplates(!showTemplates)}
+        >
+          <Layers size={14} />
+          Templates ({templates.length})
+        </button>
         <button className="studio-button primary" onClick={() => open(null)}>
           <Plus size={14} />
           Create quotation
@@ -142,19 +232,19 @@ export default function Quotations() {
           },
           {
             label: "Sent for review",
-            value: quotes.filter((q) => q.status === "Sent").length,
-            note: "Manually recorded delivery stage",
+            value: quotes.filter((q) => stage(q) === "Sent").length,
+            note: "Client links open for review",
           },
           {
             label: "Accepted",
             value: quotes.filter((q) => q.status === "Accepted").length,
-            note: "Recorded by your studio",
+            note: "Client acceptance recorded",
           },
           {
             label: "Open proposal value",
             value: rupees(
               quotes
-                .filter((q) => ["Draft", "Sent"].includes(q.status))
+                .filter((q) => ["Draft", "Sent"].includes(stage(q)))
                 .reduce((s, q) => s + q.totalPaise, 0) / 100,
             ),
             note: "Draft and sent quotations",
@@ -162,6 +252,52 @@ export default function Quotations() {
         ]}
       />
       <WorkspaceError error={error} retry={reload} />
+      {showTemplates && (
+        <section className="studio-card workspace-template-list">
+          <h2>Saved quotation templates</h2>
+          <p className="studio-muted">
+            Reusable services, prices, discounts and terms. Client details are
+            never copied.
+          </p>
+          {!templates.length ? (
+            <p>Save any proposal as a template to begin.</p>
+          ) : (
+            templates.map((t) => (
+              <div className="workspace-template-row" key={t._id}>
+                <div>
+                  <strong>{t.name}</strong>
+                  <small>
+                    {t.items.length} services · {t.validityDays} days validity
+                  </small>
+                </div>
+                <button
+                  className="studio-button small"
+                  onClick={() => applyTemplate(t)}
+                >
+                  Use template
+                </button>
+                <button
+                  className="studio-icon-button"
+                  aria-label={"Archive template " + t.name}
+                  onClick={async () => {
+                    try {
+                      await workspaceRequest(
+                        "delete",
+                        `/api/studio/quote-templates/${t._id}`,
+                      );
+                      reload();
+                    } catch (e) {
+                      toast.error(recordError(e));
+                    }
+                  }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))
+          )}
+        </section>
+      )}
       <section className="studio-card">
         <div className="studio-toolbar">
           <WorkspaceSearch
@@ -180,6 +316,7 @@ export default function Quotations() {
               "All",
               "Draft",
               "Sent",
+              "Expired",
               "Accepted",
               "Declined",
               "Archived",
@@ -232,7 +369,7 @@ export default function Quotations() {
                               : "gold")
                         }
                       >
-                        {q.status}
+                        {stage(q)}
                       </span>
                     </td>
                     <td>v{q.revision}</td>
@@ -247,6 +384,7 @@ export default function Quotations() {
                       <button
                         className="studio-icon-button"
                         aria-label={"Edit quotation " + q.clientName}
+                        disabled={q.status === "Accepted"}
                         onClick={() => open(q)}
                       >
                         <Pencil size={15} />
@@ -267,6 +405,32 @@ export default function Quotations() {
           busy={busy}
           error={saveError}
         >
+          <label className="studio-field">
+            <span>Start from template</span>
+            <select
+              className="studio-input"
+              defaultValue=""
+              onChange={(e) => {
+                const t = templates.find((t) => t._id === e.target.value);
+                if (t)
+                  setForm((c) => ({
+                    ...c,
+                    title: t.title,
+                    items: t.items.map((i) => ({ ...i })),
+                    discountPaise: t.discountPaise,
+                    taxRateBps: t.taxRateBps,
+                    terms: t.terms,
+                  }));
+              }}
+            >
+              <option value="">Choose a saved template…</option>
+              {templates.map((t) => (
+                <option key={t._id} value={t._id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="studio-form-grid">
             <WorkspaceField
               label="Linked enquiry"
@@ -290,7 +454,7 @@ export default function Quotations() {
               name="status"
               value={form.status}
               onChange={change}
-              options={["Draft", "Sent", "Accepted", "Declined", "Archived"]}
+              options={["Draft", "Declined", "Archived"]}
             />
             <WorkspaceField
               label="Client name"
@@ -316,11 +480,13 @@ export default function Quotations() {
               required
             />
             <WorkspaceField
-              label="Valid until"
+              label="Accept by / expiry date"
               name="validUntil"
               value={form.validUntil}
               onChange={change}
               type="date"
+              required
+              help="Acceptance closes at 11:59 PM IST on this date."
             />
           </div>
           <div className="workspace-quote-items">
@@ -328,7 +494,9 @@ export default function Quotations() {
               <div className="workspace-quote-item" key={index}>
                 <label className="studio-field">
                   <span>Service {index + 1}</span>
-                  <input
+                  <textarea
+                    rows={3}
+                    maxLength={4000}
                     className="studio-input"
                     aria-label={"Service " + (index + 1)}
                     value={item.description}
@@ -447,8 +615,9 @@ export default function Quotations() {
             <strong>{rupees(total / 100)}</strong>
           </div>
           <p className="studio-muted">
-            Status is recorded manually. Saving does not send an email or create
-            a client booking.
+            Share the saved proposal to let the client accept it. Revising a
+            shared proposal invalidates its previous link; share the new
+            revision. Accepted proposals are locked.
           </p>
         </WorkspaceDialog>
       )}
@@ -463,7 +632,30 @@ export default function Quotations() {
                 Print / save PDF
               </button>
               <button
-                className="studio-button primary"
+                className="studio-button"
+                onClick={() => {
+                  setTemplateDialog(preview);
+                  setPreview(null);
+                  setTemplateName(preview.title);
+                  setSaveError("");
+                }}
+              >
+                <BookmarkPlus size={14} />
+                Save as template
+              </button>
+              {["Draft", "Sent"].includes(preview.status) && (
+                <button
+                  className="studio-button primary"
+                  disabled={busy}
+                  onClick={() => shareQuote(preview)}
+                >
+                  <LinkIcon size={14} />
+                  Share with client
+                </button>
+              )}
+              <button
+                disabled={preview.status === "Accepted"}
+                className="studio-button"
                 onClick={() => open(preview)}
               >
                 <Pencil size={14} />
@@ -532,6 +724,30 @@ export default function Quotations() {
               </p>
             )}
           </article>
+          <div className="workspace-revision-history">
+            <h3>Quotation timeline</h3>
+            <p>Created · {recordDate(preview.createdAt)}</p>
+            {preview.sharedAt && (
+              <p>Shared for review · {recordDate(preview.sharedAt)}</p>
+            )}
+            <p>
+              Acceptance closes · {recordDate(preview.validUntil)} · 11:59 PM
+              IST
+            </p>
+            {preview.acceptedAt && (
+              <p>
+                Accepted by {preview.acceptedBy} ·{" "}
+                {recordDate(preview.acceptedAt)}
+              </p>
+            )}
+            {preview.invoiceId && (
+              <p>
+                Linked invoice ·{" "}
+                {String(preview.invoiceId).slice(-6).toUpperCase()} ·{" "}
+                <a href="/admin/finance">Open finance</a>
+              </p>
+            )}
+          </div>
           {preview.history?.length > 0 && (
             <div className="workspace-revision-history">
               <h3>Revision history</h3>
@@ -544,6 +760,77 @@ export default function Quotations() {
             </div>
           )}
         </OperationsModal>
+      )}
+      {share && (
+        <OperationsModal title="Share quotation" onClose={() => setShare(null)}>
+          <p>
+            The client can review services, pricing and terms, then accept
+            before {recordDate(share.quote.validUntil)}, 11:59 PM IST. This
+            private link grants access to this quotation.
+          </p>
+          <label className="studio-field">
+            <span>Client quotation link</span>
+            <input className="studio-input" readOnly value={share.url} />
+          </label>
+          <div className="workspace-share-actions">
+            <button
+              className="studio-button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(share.url);
+                  toast.success("Link copied");
+                } catch {
+                  toast.error("Select and copy the link above.");
+                }
+              }}
+            >
+              <Copy size={14} />
+              Copy link
+            </button>
+            <a
+              className="studio-button primary"
+              target="_blank"
+              rel="noreferrer"
+              href={`https://wa.me/?text=${encodeURIComponent(`Hi ${share.quote.clientName}, please review your Team Alpha quotation and accept by ${recordDate(share.quote.validUntil)}: ${share.url}`)}`}
+            >
+              Share via WhatsApp
+            </a>
+            <a
+              className="studio-button"
+              target="_blank"
+              rel="noreferrer"
+              href={share.url}
+            >
+              View client quotation
+            </a>
+          </div>
+          <p className="studio-muted">
+            WhatsApp opens with a prepared message. Choose the client and send
+            it there.
+          </p>
+        </OperationsModal>
+      )}
+      {templateDialog && (
+        <WorkspaceDialog
+          title="Save quotation template"
+          onClose={() => setTemplateDialog(null)}
+          onSubmit={saveTemplate}
+          busy={busy}
+          error={saveError}
+        >
+          <WorkspaceField
+            label="Template name"
+            name="templateName"
+            value={templateName}
+            onChange={(_, v) => setTemplateName(v)}
+            required
+            maxLength={120}
+          />
+          <p>
+            Save services, pricing, discount and terms for future clients.
+            Client name, email and project are excluded.
+          </p>
+        </WorkspaceDialog>
       )}
     </div>
   );

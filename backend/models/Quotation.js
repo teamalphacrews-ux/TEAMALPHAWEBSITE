@@ -1,6 +1,13 @@
 const mongoose = require("mongoose");
 const schema = new mongoose.Schema(
   {
+    shareToken: { type: String, select: false },
+    shareTokenHash: { type: String, select: false },
+    sharedAt: Date,
+    acceptedAt: Date,
+    invoiceGeneratedAt: Date,
+    acceptedBy: String,
+    invoiceId: { type: mongoose.Schema.Types.ObjectId, ref: "Invoice" },
     clientName: { type: String, required: true },
     email: { type: String, required: true },
     lead: { type: mongoose.Schema.Types.ObjectId, ref: "Lead", default: null },
@@ -24,6 +31,13 @@ const schema = new mongoose.Schema(
     ],
   },
   { timestamps: true },
+);
+schema.index(
+  { shareTokenHash: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { shareTokenHash: { $type: "string" } },
+  },
 );
 module.exports =
   mongoose.models.Quotation || mongoose.model("Quotation", schema);
