@@ -5,28 +5,7 @@ const Lead = require('../models/Lead');
 const AdminSettings = require('../models/AdminSettings');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-
-const ENCRYPTION_KEY = process.env.VAULT_SECRET || 'AlphaPhotographySecureVaultKey32'; // Must be 32 chars
-const IV_LENGTH = 16;
-
-// Utility functions for encryption
-function encrypt(text) {
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
-    let encrypted = cipher.update(text);
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
-    return { iv: iv.toString('hex'), encryptedData: encrypted.toString('hex') };
-}
-
-function decrypt(text, iv) {
-    const ivBuffer = Buffer.from(iv, 'hex');
-    const encryptedText = Buffer.from(text, 'hex');
-    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), ivBuffer);
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString();
-}
+const { encrypt, decrypt } = require('../utils/vaultCrypto');
 
 // @route   GET api/admin-users
 // @desc    Get all users (Client/Admin) with decrypted passwords
@@ -42,6 +21,7 @@ router.get('/', auth, async (req, res) => {
                 try {
                     decryptedPass = decrypt(u.vaultPassword, u.iv);
                 } catch (e) {
+                    if (e.code === 'VAULT_CONFIGURATION') throw e;
                     decryptedPass = 'Error';
                 }
             }
@@ -56,6 +36,7 @@ router.get('/', auth, async (req, res) => {
 
         res.json(decryptedUsers);
     } catch (err) {
+        if (err.code === 'VAULT_CONFIGURATION') return res.status(503).json({ msg: err.message });
         res.status(500).json({ msg: 'Server Error' });
     }
 });
@@ -95,6 +76,7 @@ router.post('/create', auth, async (req, res) => {
         await user.save();
         res.json({ msg: 'User created successfully', user: { id: user._id, firstName, lastName, email, role: user.role } });
     } catch (err) {
+        if (err.code === 'VAULT_CONFIGURATION') return res.status(503).json({ msg: err.message });
         console.error(err);
         res.status(500).json({ msg: 'Failed to create user' });
     }
@@ -132,6 +114,7 @@ router.put('/:id', auth, async (req, res) => {
         await user.save();
         res.json({ msg: 'User updated successfully' });
     } catch (err) {
+        if (err.code === 'VAULT_CONFIGURATION') return res.status(503).json({ msg: err.message });
         res.status(500).json({ msg: 'Update failed' });
     }
 });
