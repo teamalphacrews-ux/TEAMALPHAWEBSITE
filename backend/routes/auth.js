@@ -53,49 +53,8 @@ router.post('/register', async (req, res) => {
 });
 
 // Login
-router.post('/login', async (req, res) => {
-    try {
-        const { email, password, role } = req.body;
-
-        // Check user
-        let user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ msg: 'Invalid Credentials' });
-        }
-
-        // Check Role if specified (optional, but good for UI flow)
-        if (role && user.role !== role) {
-            return res.status(400).json({ msg: 'Invalid Role for this user' });
-        }
-
-        // Check password
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ msg: 'Invalid Credentials' });
-        }
-
-        // Return token
-        const payload = {
-            user: {
-                id: user.id,
-                role: user.role,
-            },
-        };
-
-        jwt.sign(
-            payload,
-            process.env.JWT_SECRET,
-            { expiresIn: '30d' },
-            (err, token) => {
-                if (err) throw err;
-                res.json({ token, user: { id: user.id, firstName: user.firstName, lastName: user.lastName, email, role: user.role } });
-            }
-        );
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-});
+const { createLoginHandler } = require('../utils/adminBootstrap');
+router.post('/login', createLoginHandler({ User }));
 
 // @route    GET api/auth/google
 // @desc     Redirect to Google OAuth consent screen

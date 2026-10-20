@@ -36,6 +36,21 @@ test('clients can only join their own room; admins can join studio and client ro
     assert.equal(canJoinRoom({ id: 'hardcoded-admin-id', role: 'admin' }, '../anything'), false);
 });
 
+test('legacy virtual administrator tokens cannot bypass saved account authorization on sockets', async () => {
+    const authenticate = createSocketAuth({
+        User: { findById() { assert.fail('Invalid ObjectIds must not reach the database'); } },
+        getSecret: () => secret,
+        systemAdminEnabled: () => true,
+    });
+    const socket = { handshake: { auth: {
+        token: jwt.sign({ user: { id: 'hardcoded-admin-id', role: 'admin' } }, secret),
+    } } };
+    let failure;
+    await authenticate(socket, error => { failure = error; });
+    assert.ok(failure instanceof Error);
+    assert.equal(socket.user, undefined);
+});
+
 function harness() {
     const handlers = {};
     const joined = [];

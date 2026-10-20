@@ -151,44 +151,11 @@ authRouter.post('/register', async (req, res) => {
     }
 });
 
-authRouter.post('/login', async (req, res) => {
-    try {
-        const { email, password, role } = req.body;
-        if (
-            process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD &&
-            email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD
-        ) {
-            const payload = { user: { id: "hardcoded-admin-id", role: "admin" } };
-            const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' });
-            return res.json({
-                token,
-                user: { id: "hardcoded-admin-id", firstName: "System", lastName: "Admin", email, role: "admin" }
-            });
-        }
-
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ msg: "Invalid Credentials" });
-        if (role && user.role !== role) return res.status(400).json({ msg: "Invalid Role" });
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ msg: "Invalid Credentials" });
-
-        const payload = { user: { id: user.id, role: user.role } };
-        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
-            if (err) throw err;
-            res.json({ token, user: { id: user.id, firstName: user.firstName, lastName: user.lastName, email, role: user.role } });
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ msg: "Login failed" });
-    }
-});
+const { createLoginHandler } = require('./utils/adminBootstrap');
+authRouter.post('/login', createLoginHandler({ User }));
 
 authRouter.get('/me', auth, async (req, res) => {
     try {
-        if (req.user.id === "hardcoded-admin-id") {
-            return res.json({ id: "hardcoded-admin-id", firstName: "System", role: "admin" });
-        }
         const user = await User.findById(req.user.id).select('firstName lastName email role galleryTag cloudLink cloudPassword leadId createdAt updatedAt');
         res.json(user);
     } catch (err) {
@@ -200,15 +167,6 @@ authRouter.get('/me', auth, async (req, res) => {
 authRouter.put('/profile', auth, async (req, res) => {
     try {
         const updateData = parseProfileUpdate(req.body, req.user.role);
-        if (req.user.id === "hardcoded-admin-id") {
-            return res.json({
-                id: "hardcoded-admin-id",
-                firstName: updateData.firstName,
-                lastName: updateData.lastName || '',
-                role: 'admin',
-                msg: "System Admin updated for session"
-            });
-        }
         const user = await User.findByIdAndUpdate(
             req.user.id,
             { $set: updateData },

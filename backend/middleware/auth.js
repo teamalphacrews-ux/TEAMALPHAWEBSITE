@@ -32,22 +32,8 @@ function createAuth({
       return res.status(401).json({ msg: "Token is not valid" });
     }
 
-    // Keep the explicit deployment bootstrap available without inventing a
-    // database account. Removing either configured credential disables it.
-    if (identity.id === "hardcoded-admin-id") {
-      if (
-        identity.role !== "admin" ||
-        typeof env.ADMIN_EMAIL !== "string" ||
-        !env.ADMIN_EMAIL.trim() ||
-        typeof env.ADMIN_PASSWORD !== "string" ||
-        !env.ADMIN_PASSWORD.trim()
-      ) {
-        return res.status(401).json({ msg: "Token is not valid" });
-      }
-      req.user = { id: identity.id, role: "admin" };
-      return next();
-    }
-
+    // First login now saves the administrator. Legacy virtual tokens require
+    // a fresh login instead of bypassing saved-account role revocation.
     if (!/^[a-f\d]{24}$/i.test(identity.id))
       return res.status(401).json({ msg: "Token is not valid" });
     let current;

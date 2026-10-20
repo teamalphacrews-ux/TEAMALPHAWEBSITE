@@ -8,7 +8,7 @@ Use Node.js 24 for both services. With Render root directories configured as sho
 
 | Service | Root directory | Build command | Start command |
 | --- | --- | --- | --- |
-| Public website and Studio OS frontend | `frontend` | `npm ci && npm run build` | `npm start` |
+| Public website and Studio OS frontend | `frontend` | `npm ci --include=dev && npm run build` | `npm start` |
 | Studio OS API and background jobs | `backend` | `npm ci --legacy-peer-deps` | `npm start` |
 
 Use **Node web services**, including for the frontend. Its Express server serves the built SPA and `/api/website` gateway. Uploading only `dist` to a static host would omit enquiry delivery and live reviews. Render supplies `PORT`; both services bind to `0.0.0.0`.
@@ -18,6 +18,8 @@ Configure each service to use the approved release branch/commit. The repository
 ## Production configuration
 
 Store private values in each service's environment settings. Never commit `.env` files, credentials or production database exports.
+
+The frontend build needs its development dependencies, including Vite and Tailwind, even when `NODE_ENV=production`. Keep `--include=dev` in its install command.
 
 ### Frontend service
 
@@ -42,6 +44,8 @@ Without webhook configuration the enquiry form reports that online delivery is b
 
 Preserve the existing `MONGO_URI`, `JWT_SECRET`, and `VAULT_SECRET`; do not generate replacement values during an ordinary code release. Set `NODE_ENV=production` and `FRONTEND_URL` to the actual frontend HTTPS origin. The latter controls CORS, shared quote/invoice URLs and OAuth return destinations.
 
+For a newly authorized empty database, include `/teamalpha` (or the chosen application database name) in `MONGO_URI` and URL-encode its database-user credentials. Grant that user read/write access only to this database, including index creation. Generate a strong stable `JWT_SECRET` and a separate 32+ character `ENQUIRY_WEBHOOK_SECRET` without whitespace. `VAULT_SECRET` must be exactly 32 UTF-8 bytes: use 32 ASCII characters. The current vault code uses the string directly as an AES-256 key; a 64-character hex string is not decoded and will not work.
+
 Configure the integrations used by the studio:
 
 | Capability | Environment names |
@@ -52,9 +56,11 @@ Configure the integrations used by the studio:
 | Existing reminder mail | `EMAIL_USER`, `EMAIL_PASS` |
 | Google OAuth/calendar | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `WEBHOOK_URL` |
 | Google Drive/Sheets service account | `GOOGLE_CLIENT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `GOOGLE_SHEET_ID` where used |
-| Existing optional system-admin login | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, only if already used by the studio |
+| First saved administrator on a new database | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, configured privately for initial sign-in |
 
 Google redirect/webhook URLs must point to the deployed backend HTTPS endpoints and match the provider configuration. Do not enable `STUDIO_LOCAL_PREVIEW` in production. Missing SMTP or Cloudinary settings produce explicit delivery/upload errors; do not substitute fixture responses.
+
+The first configured administrator login creates a saved user with a hashed password and a real database identity. Existing saved passwords and roles take precedence; deployment credentials never promote or overwrite an existing account, and cannot create another bootstrap owner after a saved administrator exists. Use a strong ASCII bootstrap password of at most 72 bytes (bcrypt's password limit), save it privately, and sign in through `/auth`. Legacy virtual administrator tokens require a fresh login. Saved identity is required for persistent profiles and Google Calendar configuration.
 
 ## Database and deployment sequence
 
@@ -93,6 +99,6 @@ Local `preview-server.cjs`, preview accounts, temporary sample data, screenshot-
 
 The complete release includes the luxury public frontend, client/project enquiry synchronization, quotation/invoice approval and sharing, production progress/support, and mobile Studio OS updates. Deployment hardening adds single-use browser-bound Google OAuth with PKCE, current-user REST permission checks, private authenticated Drive previews/uploads, and database/index readiness before API traffic or workers.
 
-Local checks: 140 backend tests and 52 frontend tests pass; lint:studio, lint:public, lint:mobile and changed private-media component lint pass; production build passes (Vite 7.3.7, 3.11 seconds on this Mac). The broad inherited legacy-directory lint still has unrelated pre-existing errors and is not claimed clean. No live database writes were used for these checks. Local dist is not uploaded: Render must build source using its verified production VITE_API_URL.
+Local checks: 154 backend tests and 52 frontend tests pass; lint:studio, lint:public, lint:mobile and changed private-media component lint pass; production build passes (Vite 7.3.7, 3.11 seconds on this Mac). The backend suite includes the saved-administrator bootstrap follow-up and retired virtual-token checks. The broad inherited legacy-directory lint still has unrelated pre-existing errors and is not claimed clean. No live database writes were used for these checks. Local dist is not uploaded: Render must build source using its verified production VITE_API_URL.
 
 The owner requested new free Render services and a new free MongoDB database. No preview fixtures or sample data should be imported. On a fresh database, configure ADMIN_EMAIL and ADMIN_PASSWORD privately for initial bootstrap sign-in, then create saved team accounts. JWT_SECRET and VAULT_SECRET must be strong private values; keep them stable after launch. Provider account terms and credential creation require the owner's direct input. Free hosting can sleep; background scheduled jobs require a running backend.

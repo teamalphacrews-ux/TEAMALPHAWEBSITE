@@ -131,7 +131,7 @@ test("invalid, missing and expired credentials never query the database", async 
   assert.equal(f.lookups.length, 0);
 });
 
-test("bootstrap administrator access requires both configured credentials and an admin token", async () => {
+test("legacy virtual administrator tokens are rejected even with configured bootstrap credentials", async () => {
   const virtual = signed("admin", "hardcoded-admin-id");
   for (const config of [
     {},
@@ -151,8 +151,8 @@ test("bootstrap administrator access requires both configured credentials and an
     ADMIN_PASSWORD: "synthetic-bootstrap-value",
   });
   assert.equal(
-    (await request(configured.auth, virtual, { admin: true })).passed,
-    true,
+    (await request(configured.auth, virtual, { admin: true })).statusCode,
+    401,
   );
   assert.equal(
     (

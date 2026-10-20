@@ -29,7 +29,7 @@ For separate production hosts, set `VITE_API_URL` to the real backend HTTPS orig
 
 `lint:studio` includes the redesigned screens, public website and shared mobile components. The repository-wide `npm run lint` also includes inherited client/legacy modules, which have not received a full lint remediation in this change.
 
-Build output and Vite caches are generated locally rather than committed. The original frontend lockfile was unreadable; the replacement is valid JSON and supports `npm ci`. A frontend production host must run `npm ci` and `npm run build` before `npm start`.
+Build output and Vite caches are generated locally rather than committed. The original frontend lockfile was unreadable; the replacement is valid JSON and supports `npm ci`. A frontend production host must run `npm ci --include=dev` and `npm run build` before `npm start` so production environment settings do not omit its build tools.
 
 ## Incoming enquiry webhook
 

@@ -4,22 +4,18 @@ const isAdmin = user => user.role === 'admin';
 const validRoomId = value => typeof value === 'string' && /^[a-f\d]{24}$/i.test(value);
 const canJoinRoom = (user, roomId) => roomId === user.id || (isAdmin(user) && (roomId === 'admin' || validRoomId(roomId)));
 
-function createSocketAuth({ User, getSecret = () => process.env.JWT_SECRET,
-    systemAdminEnabled = () => !!(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) }) {
+function createSocketAuth({ User, getSecret = () => process.env.JWT_SECRET }) {
     return async (socket, next) => {
         try {
             const token = socket.handshake?.auth?.token;
             if (typeof token !== 'string' || !token) return next(new Error('Authentication required'));
             const decoded = jwt.verify(token, getSecret());
             if (!decoded.user || typeof decoded.user.id !== 'string') return next(new Error('Invalid authentication'));
-            if (decoded.user.id === 'hardcoded-admin-id' && decoded.user.role === 'admin' && systemAdminEnabled()) {
-                socket.user = { id: 'hardcoded-admin-id', role: 'admin' };
-            } else {
-                const user = await User.findById(decoded.user.id).select('_id role');
-                if (!user) return next(new Error('Invalid authentication'));
-                // Read the current database role so revoked access takes effect on reconnect.
-                socket.user = { id: String(user._id), role: user.role };
-            }
+            if (!validRoomId(decoded.user.id)) return next(new Error('Invalid authentication'));
+            const user = await User.findById(decoded.user.id).select('_id role');
+            if (!user) return next(new Error('Invalid authentication'));
+            // Read the current database role so revoked access takes effect on reconnect.
+            socket.user = { id: String(user._id), role: user.role };
             return next();
         } catch {
             return next(new Error('Invalid authentication'));
