@@ -57,6 +57,16 @@ export default function Settings() {
         wide: true,
       },
     ],
+    branding: [
+      {label:"Default cover image URL",name:"coverImage",help:"Use an existing /assets/ image path or an HTTPS image URL."},
+      {label:"Color theme",name:"colorTheme",type:"color"},
+      {label:"Font theme",name:"fontTheme",options:["modern","classic","editorial"]},
+    ],
+    payments: [
+      {label:"Bank transfer instructions",name:"bankDetails",type:"textarea",wide:true,help:"Only include the details you want clients to see on invoices."},
+      {label:"UPI ID",name:"upiId"},
+      {label:"Payment instructions",name:"paymentInstructions",type:"textarea",wide:true},
+    ],
     proposals: [
       {
         label: "Document reference prefix",
@@ -108,6 +118,8 @@ export default function Settings() {
         {[
           ["profile", "Studio profile"],
           ["proposals", "Proposals & delivery"],
+          ["branding", "Branding"],
+          ["payments", "Payment methods"],
           ["connections", "Connections & access"],
         ].map(([id, label]) => (
           <button

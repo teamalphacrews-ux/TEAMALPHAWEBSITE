@@ -99,6 +99,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const values=eventFields(req.body);
+        await require("./quoteWorkflowRoutes").references({contactId:values.contactId,studioProjectId:values.studioProjectId});
         const candidates=values.teamMembers.length?await Event.find({start:{$lt:values.end},end:{$gt:values.start}}).select('title start end teamMembers').lean():[];
         const conflict=crewOverlap(values,candidates);
         if(conflict)return res.status(409).json({message:'Assigned crew overlap with '+conflict.title});
@@ -141,6 +142,7 @@ router.patch('/:id', async (req, res) => {
         if(!current)return res.status(404).json({message:'Event not found'});
         if(current.isReadOnly)return res.status(403).json({message:'This Google-managed event is read only'});
         const values=eventFields(req.body,current.toObject());
+        await require("./quoteWorkflowRoutes").references({contactId:values.contactId,studioProjectId:values.studioProjectId});
         const candidates=values.teamMembers.length?await Event.find({_id:{$ne:req.params.id},start:{$lt:values.end},end:{$gt:values.start}}).select('title start end teamMembers').lean():[];
         const conflict=crewOverlap(values,candidates);
         if(conflict)return res.status(409).json({message:'Assigned crew overlap with '+conflict.title});

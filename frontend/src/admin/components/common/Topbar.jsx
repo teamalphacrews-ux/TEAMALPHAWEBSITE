@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Search, Menu, ChevronRight, ArrowUpRight, CheckCheck, X } from 'lucide-react';
+import { Bell, Search, Menu, ArrowUpRight, CheckCheck, X } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
@@ -8,13 +8,14 @@ import AdminProfileModal from './AdminProfileModal';
 
 const API = import.meta.env.VITE_API_URL || '';
 const destinations = [
+  ["Contacts", "/admin/contacts", "clients leads address"], ["Projects", "/admin/studio-projects", "contact projects documents"], ["Quote templates", "/admin/quote-templates", "reusable proposal templates"],
   ['Overview', '/admin', 'dashboard studio summary'], ['Enquiries', '/admin/crm', 'leads crm follow-up'],
-  ['Quotations', '/admin/quotations', 'proposals pricing services terms'], ['Clients', '/admin/clients', 'client accounts contact directory'], ['Data & backups', '/admin/data', 'nas storage folders backup checks'], ['Settings', '/admin/settings', 'studio profile configuration'],
-  ['Projects', '/admin/projects', 'weddings bookings'], ['Crew & scheduling', '/admin/crew', 'photographers team assignments'],
+  ['Quotations', '/admin/quotations', 'proposals pricing services terms'], ['Data & backups', '/admin/data', 'nas storage folders backup checks'], ['Settings', '/admin/settings', 'studio profile configuration'],
+  ['Production projects', '/admin/projects', 'weddings bookings'], ['Crew & scheduling', '/admin/crew', 'photographers team assignments'],
   ['Post production', '/admin/post-production', 'tasks editing delivery'], ['Calendar', '/admin/calendar', 'shoots events dates'],
-  ['Client galleries', '/admin/gallery', 'photos albums drive'], ['Finances', '/admin/finance', 'invoices expenses payments'],
+  ['Finance', '/admin/finance', 'invoices expenses payments'],
   ['Integrations', '/admin/integrations', 'webhook enquiries connect automation'],
-  ['Conversations', '/admin/chats', 'messages chat'], ['Activity', '/admin/activity-log', 'notifications'], ['Team & access', '/admin/users', 'settings permissions users'],
+  ['Client support', '/admin/chats', 'messages chat client project help'], ['Activity', '/admin/activity-log', 'notifications'], ['Team & access', '/admin/users', 'settings permissions users'],
 ];
 
 export default function Topbar({ onMenuClick }) {
@@ -28,7 +29,7 @@ export default function Topbar({ onMenuClick }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const panelRef = useRef(null);
-  const active = destinations.find(item => item[1] === location.pathname)?.[0] || 'Workspace';
+  const active = destinations.find(item => item[1] !== '/admin' && (item[1] === location.pathname || location.pathname.startsWith(item[1] + '/')))?.[0] || (location.pathname.startsWith('/admin/invoices/') ? 'Invoice' : 'Overview');
   useEffect(() => {
     const controller = new AbortController();
     const fetchNotifications = async () => {
@@ -63,15 +64,15 @@ export default function Topbar({ onMenuClick }) {
   const matches = destinations.filter(item => (item[0] + ' ' + item[2]).toLowerCase().includes(query.toLowerCase()));
   return <>
     <header className="studio-topbar" ref={panelRef}>
-      <div className="studio-topbar-context"><button className="studio-menu-button studio-icon-button" aria-label="Open navigation" onClick={onMenuClick}><Menu size={21} /></button><span>Workspace</span><ChevronRight size={13} /><strong>{active}</strong></div>
+      <div className="studio-topbar-context"><button type="button" className="studio-menu-button studio-icon-button" aria-label="Open navigation" onClick={onMenuClick}><Menu size={21} /></button><strong>{active}</strong></div>
       <div className="studio-topbar-actions">
-        <div className="studio-global-search"><Search size={16} /><input aria-label="Search workspace pages" placeholder="Find in your studio…" value={query} onFocus={() => { setSearchOpen(true); setShowNotifications(false); }} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && matches[0]) { navigate(matches[0][1]); setSearchOpen(false); setQuery(''); } }} /><span className="studio-search-hint">↵</span>
-          {searchOpen && <div className="studio-search-results"><p className="studio-eyebrow">GO TO WORKSPACE</p>{matches.length ? matches.map(item => <Link to={item[1]} key={item[1]} onClick={() => { setSearchOpen(false); setQuery(''); }}>{item[0]}<ArrowUpRight size={14} /></Link>) : <p className="studio-muted">No matching workspace.</p>}</div>}
+        <div className="studio-global-search"><Search size={16} /><input aria-label="Search workspace pages" aria-controls="studio-page-results" placeholder="Search pages" value={query} onFocus={() => { setSearchOpen(true); setShowNotifications(false); }} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && matches[0]) { navigate(matches[0][1]); setSearchOpen(false); setQuery(''); } }} />
+          {searchOpen && <div id="studio-page-results" className="studio-search-results"><p className="studio-search-label">Pages</p>{matches.length ? matches.map(item => <Link to={item[1]} key={item[1]} onClick={() => { setSearchOpen(false); setQuery(''); }}>{item[0]}<ArrowUpRight size={14} /></Link>) : <p className="studio-muted">No matching workspace.</p>}</div>}
         </div>
-        <div className="studio-notification-wrap"><button className="studio-icon-button studio-notification-button" aria-label={'Notifications' + (unread ? ', ' + unread + ' unread' : '')} aria-expanded={showNotifications} onClick={() => { setShowNotifications(value => !value); setSearchOpen(false); }}><Bell size={18} />{unread > 0 && <i />}</button>
-          {showNotifications && <section className="studio-notification-panel" aria-label="Notifications"><div className="studio-notification-heading"><h2>Studio activity</h2><button className="studio-icon-button" aria-label="Close notifications" onClick={() => setShowNotifications(false)}><X size={16} /></button></div>{notificationError ? <p className="studio-empty">Activity is unavailable. Try again shortly.</p> : notifications.length ? <div className="studio-notification-list">{notifications.slice(0, 6).map(item => <Link key={item._id} to="/admin/activity-log" className={item.isRead ? '' : 'is-unread'} onClick={() => setShowNotifications(false)}><span className="studio-status-dot" /><div><strong>{item.title}</strong><p>{item.description}</p></div></Link>)}</div> : <p className="studio-empty">You’re all caught up.</p>}<div className="studio-notification-footer"><button onClick={markAll} disabled={!unread}><CheckCheck size={14} /> Mark all read</button><Link to="/admin/activity-log" onClick={() => setShowNotifications(false)}>View all <ArrowUpRight size={14} /></Link></div></section>}
+        <div className="studio-notification-wrap"><button type="button" className="studio-icon-button studio-notification-button" aria-label={'Notifications' + (unread ? ', ' + unread + ' unread' : '')} aria-expanded={showNotifications} onClick={() => { setShowNotifications(value => !value); setSearchOpen(false); }}><Bell size={18} />{unread > 0 && <i />}</button>
+          {showNotifications && <section className="studio-notification-panel" aria-label="Notifications"><div className="studio-notification-heading"><h2>Notifications</h2><button type="button" className="studio-icon-button" aria-label="Close notifications" onClick={() => setShowNotifications(false)}><X size={16} /></button></div>{notificationError ? <p className="studio-empty">Activity is unavailable. Try again shortly.</p> : notifications.length ? <div className="studio-notification-list">{notifications.slice(0, 6).map(item => <Link key={item._id} to="/admin/activity-log" className={item.isRead ? '' : 'is-unread'} onClick={() => setShowNotifications(false)}><span className="studio-status-dot" /><div><strong>{item.title}</strong><p>{item.description}</p></div></Link>)}</div> : <p className="studio-empty">You’re all caught up.</p>}<div className="studio-notification-footer"><button type="button" onClick={markAll} disabled={!unread}><CheckCheck size={14} /> Mark all read</button><Link to="/admin/activity-log" onClick={() => setShowNotifications(false)}>View all <ArrowUpRight size={14} /></Link></div></section>}
         </div>
-        <span className="studio-topbar-divider" /><button className="studio-profile-button" onClick={() => setShowProfile(true)} aria-label="Edit your profile"><span className="studio-avatar">{user?.firstName?.[0] || 'A'}{user?.lastName?.[0] || ''}</span></button>
+        <span className="studio-topbar-divider" /><button type="button" className="studio-profile-button" onClick={() => setShowProfile(true)} aria-label="Edit your profile"><span className="studio-avatar">{user?.firstName?.[0] || 'A'}{user?.lastName?.[0] || ''}</span></button>
       </div>
     </header>
     {showProfile && <AdminProfileModal profile={user} onClose={() => setShowProfile(false)} onSave={updated => { updateUser(updated); setShowProfile(false); toast.success('Profile updated'); }} />}

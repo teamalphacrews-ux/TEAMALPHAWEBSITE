@@ -1,5 +1,7 @@
 # Team Alpha frontend redesign — delivery
 
+This report records the frontend phase at commit 6fb2fa7. The later user-authorized full frontend/backend production release is documented in [PRODUCTION_RELEASE.md](../docs/PRODUCTION_RELEASE.md).
+
 ## Technical and design audit
 
 The application is React 19 with Vite 7, React Router, existing Motion/lucide components and a separate Express CRM backend. Existing public components mixed generic marketing layouts with client-login navigation. Private gallery and studio settings APIs require administrator authentication, so they cannot safely serve a public portfolio. The current backend already has an authenticated enquiry webhook; this change reuses that contract through a same-origin frontend server boundary.

@@ -11,8 +11,6 @@ const auth = require("../middleware/auth");
 const requireAdmin = require("../middleware/requireAdmin");
 const validate = require("../utils/studioRecords");
 const crypto = require("crypto");
-const QuoteTemplate = require("../models/QuoteTemplate");
-const { expired, tokenHash } = require("../utils/quoteLifecycle");
 const router = express.Router();
 router.use(auth, requireAdmin);
 const wrap = (fn) => async (req, res) => {
@@ -213,10 +211,12 @@ router.post(
         ),
         { status: 400 },
       );
-    await project(values.lead);
-    res.status(201).json(
-      await Quotation.create({
+    await require("./quoteWorkflowRoutes").references(values);
+    const quote = await Quotation.create({
         ...values,
+        documentNumber: values.documentNumber || `TA-Q-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
+        issueDate: values.issueDate || new Date().toISOString().slice(0,10),
+        timeline: [{kind:"created",message:"Draft quote created.",at:new Date()}],
         history: [
           {
             revision: 1,
@@ -225,8 +225,9 @@ router.post(
             changedAt: new Date(),
           },
         ],
-      }),
-    );
+      });
+    await require("../services/enquiryPipeline").syncQuote(quote);
+    res.status(201).json(quote);
   }),
 );
 router.put(
@@ -240,7 +241,7 @@ router.put(
         ),
         { status: 400 },
       );
-    await project(values.lead);
+    await require("./quoteWorkflowRoutes").references(values);
     // Atomic revision guard prevents one editor from overwriting another's saved proposal.
     if (!Number.isSafeInteger(req.body.revision))
       throw Object.assign(new Error("A revision is required"), { status: 400 });
@@ -249,15 +250,17 @@ router.put(
         _id: req.params.id,
         revision: req.body.revision,
         status: { $ne: "Accepted" },
+        acceptedAt: {$exists:false},
       },
       {
         $set: {
           ...values,
-          status: values.status === "Archived" ? "Archived" : "Draft",
+          status: ["Archived","Cancelled","Declined"].includes(values.status) ? values.status : "Draft",
         },
-        $unset: { shareToken: 1, shareTokenHash: 1, sharedAt: 1 },
+        $unset: { shareToken: 1, shareTokenHash: 1, sharedAt: 1, expiredNotifiedAt:1 },
         $inc: { revision: 1 },
         $push: {
+          timeline: {kind:"revised",message:"Quotation revised.",at:new Date()},
           history: {
             $each: [
               {
@@ -278,113 +281,8 @@ router.put(
         new Error("This quotation changed. Refresh and try again."),
         { status: 409 },
       );
+    await require("../services/enquiryPipeline").syncQuote(quote);
     res.json(quote);
-  }),
-);
-
-router.post(
-  "/quotations/:id/share",
-  wrap(async (req, res) => {
-    const q = await Quotation.findById(req.params.id).select(
-      "+shareToken +shareTokenHash",
-    );
-    if (!q) throw notFound();
-    if (!["Draft", "Sent"].includes(q.status) || expired(q))
-      throw Object.assign(
-        new Error(
-          "Set a future expiry date on an open quotation before sharing.",
-        ),
-        { status: 400 },
-      );
-    const token = q.shareToken || crypto.randomBytes(32).toString("hex");
-    const result = await Quotation.findOneAndUpdate(
-      { _id: q._id, revision: q.revision, status: q.status },
-      {
-        $set: {
-          status: "Sent",
-          shareToken: token,
-          shareTokenHash: tokenHash(token),
-          sharedAt: q.sharedAt || new Date(),
-        },
-      },
-      { new: true },
-    );
-    if (!result)
-      throw Object.assign(
-        new Error("This quotation changed. Refresh and try again."),
-        { status: 409 },
-      );
-    res.json({ token, quote: result });
-  }),
-);
-const templateValues = (body) => {
-  if (
-    !body ||
-    typeof body.name !== "string" ||
-    !body.name.trim() ||
-    body.name.trim().length > 120
-  )
-    throw Object.assign(
-      new Error("Enter a template name up to 120 characters."),
-      { status: 400 },
-    );
-  const validityDays = body.validityDays ?? 14;
-  if (!Number.isInteger(validityDays) || validityDays < 1 || validityDays > 365)
-    throw Object.assign(new Error("Validity must be 1–365 days."), {
-      status: 400,
-    });
-  const q = validate.quotation({
-    ...body,
-    clientName: "Template",
-    email: "template@example.com",
-    lead: null,
-    status: "Draft",
-    validUntil: null,
-  });
-  return {
-    name: body.name.trim(),
-    title: q.title,
-    items: q.items,
-    discountPaise: q.discountPaise,
-    taxRateBps: q.taxRateBps,
-    terms: q.terms,
-    validityDays,
-  };
-};
-router.get(
-  "/quote-templates",
-  wrap(async (req, res) =>
-    res.json(await QuoteTemplate.find({ archived: false }).sort({ name: 1 })),
-  ),
-);
-router.post(
-  "/quote-templates",
-  wrap(async (req, res) =>
-    res.status(201).json(await QuoteTemplate.create(templateValues(req.body))),
-  ),
-);
-router.put(
-  "/quote-templates/:id",
-  wrap(async (req, res) => {
-    const record = await QuoteTemplate.findOneAndUpdate(
-      { _id: req.params.id, archived: false },
-      { $set: templateValues(req.body) },
-      { new: true, runValidators: true },
-    );
-    if (!record) throw notFound();
-    res.json(record);
-  }),
-);
-router.delete(
-  "/quote-templates/:id",
-  wrap(async (req, res) => {
-    const record = await QuoteTemplate.findOneAndUpdate(
-      { _id: req.params.id, archived: false },
-      { $set: { archived: true } },
-      { new: true },
-    );
-    if (!record) throw notFound();
-    res.json({ archived: true });
   }),
 );
 
@@ -402,7 +300,7 @@ router.post(
   "/assets",
   wrap(async (req, res) => {
     const values = validate.asset(req.body);
-    await project(values.lead);
+    await require("./quoteWorkflowRoutes").references(values);
     res.status(201).json(await AssetRecord.create(values));
   }),
 );
@@ -410,7 +308,7 @@ router.put(
   "/assets/:id",
   wrap(async (req, res) => {
     const values = validate.asset(req.body);
-    await project(values.lead);
+    await require("./quoteWorkflowRoutes").references(values);
     const previous = await AssetRecord.findOne({
       _id: req.params.id,
       archived: false,

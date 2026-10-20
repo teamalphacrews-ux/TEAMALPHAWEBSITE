@@ -1,6 +1,16 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const adminUserId = "507f1f77bcf86cd79943fd01";
+const clientUserId = "507f1f77bcf86cd79943fd02";
+// Authorization uses the saved account role, independent of JWT role claims.
+test.beforeEach((t) => {
+  t.mock.method(User, "findById", (id) => ({
+    select: async () => id === adminUserId ? { _id: id, role: "admin" }
+      : id === clientUserId ? { _id: id, role: "client" } : null,
+  }));
+});
 const records = require("../utils/studioRecords");
 const { eventFields, crewOverlap } = require("../utils/studioCalendar");
 const quote = {
@@ -219,7 +229,7 @@ test("server calendar checks shared crew, permits independent and adjacent shoot
 });
 function dispatch(router, method, url, body, role = "admin") {
   const token = jwt.sign(
-    { user: { id: "507f1f77bcf86cd799439011", role } },
+    { user: { id: role === "admin" ? adminUserId : clientUserId, role } },
     process.env.JWT_SECRET,
   );
   return new Promise((resolve, reject) =>
@@ -358,9 +368,9 @@ test("booking payment records validate monetary precision and deposit bounds", (
 test("template saving excludes client identity and validates amounts", async t => {
  const Template=require("../models/QuoteTemplate");let saved;
  t.mock.method(Template,"create",async value=>{saved=value;return value;});
- const result=await dispatch(router,"POST","/quote-templates",{...quote,name:"Wedding collection",validityDays:21});
+ const result=await dispatch(require("../routes/quoteWorkflowRoutes"),"POST","/quote-templates",{...quote,name:"Wedding collection",validityDays:21});
  assert.equal(result.status,201);assert.equal(saved.name,"Wedding collection");assert.equal(saved.clientName,undefined);assert.equal(saved.email,undefined);assert.equal(saved.lead,undefined);assert.equal(saved.validityDays,21);
- assert.equal((await dispatch(router,"POST","/quote-templates",{...quote,name:"Bad",validityDays:0})).status,400);
+ assert.equal((await dispatch(require("../routes/quoteWorkflowRoutes"),"POST","/quote-templates",{...quote,name:"Bad",validityDays:0})).status,400);
 });
 test("admin cannot fabricate client acceptance or publish without sharing", async () => {
  for (const status of ["Accepted","Sent"])assert.equal((await dispatch(router,"POST","/quotations",{...quote,status})).status,400);

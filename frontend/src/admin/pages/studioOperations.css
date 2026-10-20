@@ -249,3 +249,9 @@
 .studio-ops .ops-cover-picker > input { color:#786d7d; width:100%; font-size:11px; padding:0; }
 .studio-ops .ops-cover-picker > input::file-selector-button { border:1px solid #dbcebb; color:#80623b; background:#f7f1e7; border-radius:4px; padding:8px 12px; font:inherit; cursor:pointer; margin-right:10px; }
 .studio-ops .ops-cover-error { font-size:11px; color:#925a56; margin:4px 0 0; }
+
+.ops-client-visibility { display:flex; gap:12px; padding:16px; background:#f3f6fb; border:1px solid #e3eaf4; border-radius:7px; align-items:flex-start; font-size:12px; }
+.ops-client-visibility input { margin-top:4px; accent-color:#086df1; }
+.ops-client-visibility strong { display:block; font-weight:500; color:#40516a; margin-bottom:6px; }
+.ops-client-visibility small { display:block; font-size:11px; line-height:1.7; color:#8290a3; }
+.ops-published-update { display:block; font-size:10px; color:#6b88af; margin-top:6px; }

@@ -2,13 +2,23 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const User = require("../models/User");
+const adminUserId = "507f1f77bcf86cd79943fd01";
+const clientUserId = "507f1f77bcf86cd79943fd02";
+// Authorization uses the saved account role, independent of JWT role claims.
+test.beforeEach((t) => {
+  t.mock.method(User, "findById", (id) => ({
+    select: async () => id === adminUserId ? { _id: id, role: "admin" }
+      : id === clientUserId ? { _id: id, role: "client" } : null,
+  }));
+});
 const auth = require('../middleware/auth');
 const requireAdmin = require('../middleware/requireAdmin');
 const { parseProfileUpdate } = require('../utils/profileUpdate');
 const { buildStudioOverview } = require('../utils/studioOverview');
 
 process.env.JWT_SECRET = 'test-only-studio-secret-never-use-in-production';
-const tokenFor = (role, id = '507f1f77bcf86cd799439011') => jwt.sign({ user: { id, role } }, process.env.JWT_SECRET);
+const tokenFor = (role, id = role === "admin" ? adminUserId : clientUserId) => jwt.sign({ user: { id, role } }, process.env.JWT_SECRET);
 
 function dispatch(router, { method = 'GET', url = '/', headers = {}, body } = {}) {
     return new Promise((resolve, reject) => {
@@ -30,7 +40,7 @@ test('JWT and role boundary reject missing, invalid, expired and client credenti
         [undefined, 401], ['invalid-token', 401],
         [jwt.sign({ user: { id: 'x', role: 'admin' } }, process.env.JWT_SECRET, { expiresIn: -1 }), 401],
         [jwt.sign({ user: { id: 'x' } }, process.env.JWT_SECRET), 401],
-        [tokenFor('client'), 403], [tokenFor('client', 'hardcoded-admin-id'), 403],
+        [tokenFor('client'), 403], [tokenFor('client', 'hardcoded-admin-id'), 401],
         [tokenFor('admin'), 200]
     ];
     for (const [token, status] of cases) {

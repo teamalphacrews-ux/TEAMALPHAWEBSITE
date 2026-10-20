@@ -13,7 +13,7 @@ try {
 require('dotenv').config();
 
 const User = require('./models/User');
-const connectDB = require('./config/db');
+const { createRuntimeReadiness } = require('./utils/runtimeReadiness');
 const leadRoutes = require('./routes/leadroutes');
 const galleryRoutes = require('./routes/galleryRoutes');
 const financeRoutes = require('./routes/financeRoutes');
@@ -30,6 +30,12 @@ const { parseProfileUpdate } = require('./utils/profileUpdate');
 const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
+const readiness = createRuntimeReadiness({
+    connect: () => mongoose.connect(process.env.MONGO_URI, { family: 4 }),
+    getConnectionState: () => mongoose.connection.readyState,
+    models: ['Lead', 'Quotation', 'Invoice', 'StudioContact', 'StudioProject',
+        'ContactDocument', 'ProjectMessage', 'QuoteDelivery'].map(name => require(`./models/${name}`))
+});
 app.use(compression()); // Compress all responses
 const server = require('http').createServer(app);
 const io = require('socket.io')(server, {
@@ -71,6 +77,10 @@ app.use(cors({
     credentials: true
 }));
 
+// Health remains reachable while the database/indexes initialize; other APIs fail closed.
+app.get('/api/health', readiness.health);
+app.use('/api', readiness.requireReady);
+
 // --- Socket.IO Middleware ---
 // Attach socket instance to req so routes can emit events
 app.use((req, res, next) => {
@@ -94,9 +104,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     etag: true
 }));
 
-connectDB().then(() => {
-    console.log("Database connection sequence complete.");
+readiness.initialize(() => {
+    console.log("Database connection and index initialization complete.");
     initCronJobs();
+    require('./services/quoteWorkflow').startQuoteWorker();
+    require('node-cron').schedule('* * * * *',()=>require('./services/invoiceDelivery').runInvoiceDeliveryJobs().catch(()=>console.error('Invoice delivery worker failed.')));
 
     // --- Google Calendar Polling ---
     const { pollGoogleCalendar } = require('./services/googleCalendarService');
@@ -115,8 +127,6 @@ connectDB().then(() => {
         }
     }, 60000); // Every 60 seconds
 
-}).catch(err => {
-    console.error("Delayed Cron initialization due to DB issue:", err.message);
 });
 
 const authRouter = express.Router();
@@ -214,34 +224,16 @@ authRouter.put('/profile', auth, async (req, res) => {
 });
 
 // Google OAuth Routes
-const { google } = require('googleapis');
-
-authRouter.get('/google', auth, requireAdmin, (req, res) => {
-    try {
-        const oauth2Client = new google.auth.OAuth2(
-            process.env.GOOGLE_CLIENT_ID,
-            process.env.GOOGLE_CLIENT_SECRET,
-            process.env.GOOGLE_REDIRECT_URI
-        );
-
-        const scopes = [
-            'https://www.googleapis.com/auth/calendar',
-            'https://www.googleapis.com/auth/userinfo.email',
-            'https://www.googleapis.com/auth/userinfo.profile'
-        ];
-        const url = oauth2Client.generateAuthUrl({
-            access_type: 'offline',
-            prompt: 'consent',
-            scope: scopes,
-            state: req.user.id
-        });
-
-        res.json({ url });
-    } catch (error) {
-        console.error('Google OAuth URL generation error:', error);
-        res.status(500).json({ msg: "Failed to generate Google OAuth URL" });
-    }
-});
+const { createGoogleOAuthHandlers } = require('./utils/oauthState');
+const googleOAuth = createGoogleOAuthHandlers({ User, onConnected: async (user, req) => {
+    const { setupGoogleWebhook, pollGoogleCalendar } = require('./services/googleCalendarService');
+    await setupGoogleWebhook(user);
+    pollGoogleCalendar(user, req.app.get('io'), true).catch(() => {
+        console.error('Initial Google calendar synchronization failed.');
+    });
+} });
+authRouter.get('/google', auth, requireAdmin, googleOAuth.start);
+authRouter.get('/google/begin', googleOAuth.begin);
 
 authRouter.post('/google/webhook', async (req, res) => {
     const resourceId = req.headers['x-goog-resource-id'];
@@ -268,55 +260,17 @@ authRouter.post('/google/webhook', async (req, res) => {
     }
 });
 
-authRouter.get('/google/callback', async (req, res) => {
-    const { code, state: userId } = req.query;
-    try {
-        const oauth2Client = new google.auth.OAuth2(
-            process.env.GOOGLE_CLIENT_ID,
-            process.env.GOOGLE_CLIENT_SECRET,
-            process.env.GOOGLE_REDIRECT_URI
-        );
-
-        const { tokens } = await oauth2Client.getToken(code);
-        oauth2Client.setCredentials(tokens);
-
-        // Fetch Google User Info (specifically email)
-        const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
-        const userInfo = await oauth2.userinfo.get();
-        const googleEmail = userInfo.data.email;
-
-        const user = await User.findByIdAndUpdate(userId, {
-            googleAccessToken: tokens.access_token,
-            googleRefreshToken: tokens.refresh_token,
-            googleTokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
-            googleEmail: googleEmail
-        }, { new: true });
-
-        // Register Webhook Channel
-        const { setupGoogleWebhook, pollGoogleCalendar } = require('./services/googleCalendarService');
-        await setupGoogleWebhook(user);
-
-        // TRIGGER INITIAL FULL SYNC IMMEDIATELY
-        // We run this in the background so the user can be redirected immediately
-        pollGoogleCalendar(user, req.app.get('io'), true).catch(err => {
-            console.error("Initial Sync Error:", err.message);
-        });
-
-        // Redirect back to frontend calendar page
-        const frontendUrl = process.env.FRONTEND_URL || 'https://team-alpha-d64k.onrender.com';
-        res.redirect(`${frontendUrl.replace(/\/$/, "")}/admin/calendar?sync=success`);
-    } catch (err) {
-        console.error('Callback error:', err.message);
-        const frontendUrl = process.env.FRONTEND_URL || 'https://team-alpha-d64k.onrender.com';
-        res.redirect(`${frontendUrl.replace(/\/$/, "")}/admin/calendar?sync=error`);
-    }
-});
+authRouter.get('/google/callback', googleOAuth.callback);
 
 app.use('/api/auth', authRouter);
 app.use('/api/quotes', require('./routes/publicQuoteRoutes'));
+app.use('/api/studio', require('./routes/documentCoverRoutes'));
+app.use('/api/studio', require('./routes/quoteWorkflowRoutes'));
 app.use('/api/studio', require('./routes/studioRoutes'));
+app.use('/api/public-invoices', require('./routes/publicInvoiceRoutes'));
 app.use('/api/webhooks', require('./routes/webhookRoutes'));
 app.use('/api/chats', chatRoutes);
+app.use('/api/project-support', require('./routes/projectSupportRoutes'));
 app.use('/api/leads', leadRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/finance', financeRoutes);
@@ -330,6 +284,7 @@ app.use('/api/google-sheets', require('./routes/googleSheetRoutes'));
 app.use('/api/media', require('./routes/media'));
 app.use('/api/drive-gallery', require('./routes/driveGalleryRoutes'));
 app.use('/api/admin-users', require('./routes/adminUserRoutes'));
+app.use('/api', require('./routes/contactRoutes'));
 
 // --- Standalone API Configuration ---
 // Root route for initial verification
@@ -338,16 +293,6 @@ app.get('/', (req, res) => {
         message: "🚀 Team Alpha API is running successfully!",
         version: "1.0.0",
         documentation: "/api/health"
-    });
-});
-
-// Health check route for Render/monitoring
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'Online',
-        environment: process.env.NODE_ENV || 'production',
-        database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
-        timestamp: new Date().toISOString()
     });
 });
 

@@ -36,13 +36,22 @@ const PublicNotFound = lazy(() =>
 );
 const SharedQuotation = lazy(() => import("./pages/SharedQuotation"));
 const AuthPage = lazy(() => import("./components/AuthPage"));
+
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Admin imports
 const AdminLayout = lazy(() => import("./admin/components/common/Layout"));
 const AdminDashboard = lazy(() => import("./admin/pages/Dashboard"));
+const AdminContacts = lazy(() => import("./admin/pages/Contacts"));
+const AdminContactDetail = lazy(() => import("./admin/pages/ContactDetail"));
+const AdminStudioProjects = lazy(() => import("./admin/pages/StudioProjects"));
+const AdminStudioProjectDetail = lazy(
+  () => import("./admin/pages/StudioProjectDetail"),
+);
+const AdminQuoteTemplates = lazy(() => import("./admin/pages/QuoteTemplates"));
+const InvoiceWorkspace = lazy(() => import("./admin/pages/InvoiceWorkspace"));
+const PublicInvoice = lazy(() => import("./pages/PublicInvoice"));
 const AdminQuotations = lazy(() => import("./admin/pages/Quotations"));
-const AdminClients = lazy(() => import("./admin/pages/Clients"));
 const AdminDataManagement = lazy(() => import("./admin/pages/DataManagement"));
 const AdminSettings = lazy(() => import("./admin/pages/Settings"));
 const AdminIntegrations = lazy(() => import("./admin/pages/Integrations"));
@@ -50,21 +59,17 @@ const AdminProjects = lazy(() => import("./admin/pages/Projects"));
 const AdminCrew = lazy(() => import("./admin/pages/Crew"));
 const AdminPostProduction = lazy(() => import("./admin/pages/PostProduction"));
 const AdminCRM = lazy(() => import("./admin/pages/CRM"));
-const AdminSmartGallery = lazy(() => import("./admin/pages/SmartGallery"));
 const AdminFinance = lazy(() => import("./admin/pages/Finance"));
 const AdminCalendarPage = lazy(() => import("./admin/pages/Calendar"));
 const AdminActivityLog = lazy(() => import("./admin/pages/ActivityLog"));
-const AdminChats = lazy(() => import("./admin/pages/Chats"));
-const AdminDriveGalleryDetail = lazy(
-  () => import("./admin/pages/DriveGalleryDetail"),
-);
-const AdminClientEvents = lazy(() => import("./admin/pages/ClientEvents"));
+const AdminChats = lazy(() => import("./admin/pages/ProjectSupport"));
 const AdminUserManagement = lazy(() => import("./admin/pages/UserManagement"));
 
 import { Toaster } from "react-hot-toast";
 
 function App() {
   const location = useLocation();
+
   return (
     <div className="font-sans text-[#1C1C1C] bg-[#F7F5F2] min-h-screen selection:bg-black selection:text-white">
       <Toaster position="top-right" />
@@ -78,6 +83,10 @@ function App() {
         <AnimatePresence mode="wait">
           <Routes location={location}>
             <Route path="/quote/:token" element={<SharedQuotation />} />
+            <Route path="/invoice/:token" element={<PublicInvoice />} />
+            <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+              <Route path="/quote-preview/:id" element={<SharedQuotation />} />
+            </Route>
             <Route element={<PublicLayout />}>
               <Route index element={<LuxuryHome />} />
               <Route
@@ -115,7 +124,27 @@ function App() {
                 <Route index element={<AdminDashboard />} />
                 <Route path="crm" element={<AdminCRM />} />
                 <Route path="quotations" element={<AdminQuotations />} />
-                <Route path="clients" element={<AdminClients />} />
+                <Route path="contacts" element={<AdminContacts />} />
+                <Route path="contacts/:id" element={<AdminContactDetail />} />
+                <Route
+                  path="studio-projects"
+                  element={<AdminStudioProjects />}
+                />
+                <Route
+                  path="studio-projects/:id"
+                  element={<AdminStudioProjectDetail />}
+                />
+                <Route
+                  path="quote-templates"
+                  element={<AdminQuoteTemplates />}
+                />
+                <Route path="templates" element={<AdminQuoteTemplates />} />
+                <Route path="invoices/new" element={<InvoiceWorkspace />} />
+                <Route path="invoices/:id" element={<InvoiceWorkspace />} />
+                <Route
+                  path="clients"
+                  element={<Navigate to="/admin/contacts" replace />}
+                />
                 <Route path="data" element={<AdminDataManagement />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="integrations" element={<AdminIntegrations />} />
@@ -125,11 +154,9 @@ function App() {
                   path="post-production"
                   element={<AdminPostProduction />}
                 />
-                <Route path="gallery" element={<AdminSmartGallery />} />
-                <Route path="gallery/:id" element={<AdminClientEvents />} />
                 <Route
-                  path="gallery/event/:eventId"
-                  element={<AdminDriveGalleryDetail />}
+                  path="gallery/*"
+                  element={<Navigate to="/admin/studio-projects" replace />}
                 />
                 <Route path="finance" element={<AdminFinance />} />
                 <Route path="calendar" element={<AdminCalendarPage />} />

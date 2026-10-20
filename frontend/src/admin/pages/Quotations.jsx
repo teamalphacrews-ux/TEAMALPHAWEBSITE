@@ -1,837 +1,1902 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   Plus,
-  Pencil,
-  Printer,
+  ArrowLeft,
+  X,
+  ChevronDown,
   Trash2,
-  FileText,
-  Link as LinkIcon,
   Copy,
-  BookmarkPlus,
-  Layers,
+  Pencil,
+  MoveUp,
+  MoveDown,
+  ImagePlus,
+  Printer,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { OperationsModal } from "../components/operations/OperationsUI";
 import {
-  WorkspaceHeader,
-  WorkspaceMetrics,
-  WorkspaceError,
-  WorkspaceSearch,
-  WorkspaceEmpty,
-  WorkspaceDialog,
-  WorkspaceField,
-} from "../components/operations/WorkspaceUI";
-import {
   useWorkspaceData,
   workspaceRequest,
   recordError,
-  recordDate,
   rupees,
+  recordDate,
 } from "../components/operations/workspaceData";
-const blank = {
+import "./quotationWorkspace.css";
+const covers = [
+  "/assets/banner.jpg",
+  "/assets/services/wedding.jpg",
+  "/assets/services/pre_wedding.jpg",
+  "/assets/services/engagement.jpg",
+  "/assets/services/haldi.jpg",
+  "/assets/studio-wedding.webp",
+  "/assets/studio-pre-wedding.webp",
+];
+const blankItem = () => ({
+  title: "Photography coverage",
+  description: "",
+  quantity: 1,
+  unitPricePaise: 0,
+});
+const dateOnly = (d) => new Date(d).toISOString().slice(0, 10);
+const quoteNumber = (q) =>
+  q.documentNumber || q._id?.slice(-6).toUpperCase() || "New";
+const defaultForm = (settings) => ({
   clientName: "",
   email: "",
   lead: "",
+  contactId: "",
+  studioProjectId: "",
   title: "Wedding photography & cinematography",
-  validUntil: "",
+  documentNumber: "",
+  issueDate: dateOnly(Date.now()),
+  validUntil: dateOnly(Date.now() + 30 * 86400000),
   status: "Draft",
-  items: [{ description: "", quantity: 1, unitPricePaise: 0 }],
+  items: [blankItem()],
+  discountType: "amount",
+  discountValue: 0,
   discountPaise: 0,
   taxRateBps: 0,
-  terms: "",
-};
+  terms: settings.quotationTerms || "",
+  notes: settings.defaultDeliverables || "",
+  autoCreateInvoice: true,
+  expiryEnabled: true,
+  remindersEnabled: false,
+  reminderDays: [3, 7, 14, 21, 30],
+  design: {
+    coverImage: settings.coverImage || covers[0],
+    colorTheme: settings.colorTheme || "#202622",
+    fontTheme: settings.fontTheme || "modern",
+  },
+});
+const normalize = (q) => ({
+  ...q,
+  issueDate: dateOnly(q.issueDate || q.createdAt || Date.now()),
+  validUntil: q.validUntil ? dateOnly(q.validUntil) : "",
+  lead: q.lead?._id || q.lead || "",
+  contactId: q.contactId?._id || q.contactId || "",
+  studioProjectId: q.studioProjectId?._id || q.studioProjectId || "",
+  discountType: q.discountType || "amount",
+  discountValue: q.discountValue ?? q.discountPaise / 100,
+  items: q.items.map((i) => ({
+    ...i,
+    title: i.title || i.description.split("\n")[0],
+    description: i.title
+      ? i.description
+      : i.description.split("\n").slice(1).join("\n"),
+  })),
+  autoCreateInvoice: q.autoCreateInvoice !== false,
+  expiryEnabled: q.expiryEnabled !== false,
+  reminderDays: q.reminderDays || [3, 7, 14, 21, 30],
+  design: q.design || {
+    coverImage: covers[0],
+    colorTheme: "#202622",
+    fontTheme: "modern",
+  },
+});
+function Field({ label, children }) {
+  return (
+    <label className="qw-field">
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}
+function Toggle({ label, checked, onChange, help }) {
+  return (
+    <div className="qw-setting">
+      <strong>{label}</strong>
+      <label className="qw-toggle">
+        <input
+          type="checkbox"
+          aria-label={label}
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+        />
+        <span />
+        {checked ? "On" : "Off"}
+      </label>
+      {help && <p>{help}</p>}
+    </div>
+  );
+}
 export default function Quotations() {
+  const [searchParams, setSearchParams] = useSearchParams(),
+    location = useLocation();
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/studio/quotations",
     "/api/leads",
     "/api/studio/settings",
     "/api/studio/quote-templates",
+    "/api/contacts",
+    "/api/studio-projects",
   ]);
-  const [quotes = [], leads = [], settings = {}, templates = []] = data;
-  const [query, setQuery] = useState(""),
-    [filter, setFilter] = useState("Active"),
-    [editing, setEditing] = useState(undefined),
-    [preview, setPreview] = useState(null),
-    [form, setForm] = useState(blank),
+  const [
+    quotes = [],
+    leads = [],
+    settings = {},
+    templates = [],
+    contacts = [],
+    projects = [],
+  ] = data;
+  const [filter, setFilter] = useState("All"),
+    [search, setSearch] = useState(""),
+    [current, setCurrent] = useState(null),
+    [form, setForm] = useState({}),
+    [mode, setMode] = useState("list"),
+    [step, setStep] = useState(0),
     [busy, setBusy] = useState(false),
-    [saveError, setSaveError] = useState("");
-  const [share, setShare] = useState(null),
-    [templateDialog, setTemplateDialog] = useState(null),
-    [templateName, setTemplateName] = useState(""),
-    [showTemplates, setShowTemplates] = useState(false);
-  const shareQuote = async (q) => {
-    setBusy(true);
-    try {
-      const result = await workspaceRequest(
-        "post",
-        `/api/studio/quotations/${q._id}/share`,
-        {},
-      );
-      setPreview(null);
-      setShare({
-        url: `${window.location.origin}/quote/${result.token}`,
-        quote: result.quote,
-      });
-      reload();
-    } catch (e) {
-      toast.error(recordError(e));
-    } finally {
-      setBusy(false);
-    }
+    [saveError, setSaveError] = useState(""),
+    [dirty, setDirty] = useState(false),
+    [savedAt, setSavedAt] = useState(""),
+    [actionMenu, setActionMenu] = useState(false),
+    [designOpen, setDesignOpen] = useState(false),
+    [modal, setModal] = useState(""),
+    [modalValue, setModalValue] = useState(""),
+    [shareUrl, setShareUrl] = useState(""),
+    [discount, setDiscount] = useState({ type: "amount", value: 0 }),
+    [email, setEmail] = useState({
+      subject: "",
+      message: "",
+      sendCopy: true,
+      scheduledFor: "",
+    }),
+    [history, setHistory] = useState([]),
+    [clock, setClock] = useState(() => Date.now());
+  const formRef = useRef(form),
+    currentRef = useRef(current),
+    saveRef = useRef(null),
+    timerRef = useRef(null),
+    versionRef = useRef(0),
+    prefilled = useRef(""),
+    generationRef = useRef(0),
+    lastSavedVersion = useRef(-1);
+  useEffect(() => {
+    const documentGeneration = generationRef;
+    const t = setInterval(() => setClock(Date.now()), 60000);
+    return () => {
+      documentGeneration.current++;
+      clearInterval(t);
+      clearTimeout(timerRef.current);
+    };
+  }, []);
+  const loadQuote = (q) => {
+    versionRef.current++;
+    lastSavedVersion.current = versionRef.current;
+    generationRef.current++;
+    clearTimeout(timerRef.current);
+    setCurrent(q);
+    currentRef.current = q;
+    const f = normalize(q);
+    formRef.current = f;
+    setForm(f);
+    setMode(q.status === "Accepted" ? "detail" : "editor");
+    setDirty(false);
+    setSaveError("");
+    setSavedAt("All changes saved");
+    setBusy(false);
   };
-  const saveTemplate = async (e) => {
-    e.preventDefault();
+  const saveDraft = async () => {
+    const invocation = generationRef.current;
+    const stale = () => Object.assign(new Error("This quotation is no longer open."), { cancelled: true });
+    clearTimeout(timerRef.current);
+    // All callers wait on the full save, including revision and identity updates.
+    // A second waiter rechecks the lock before starting its own write.
+    while (saveRef.current) {
+      const pending = saveRef.current;
+      try { await pending.promise; }
+      catch (error) { if (pending.generation === invocation) throw error; }
+      if (generationRef.current !== invocation) throw stale();
+    }
+    if (generationRef.current !== invocation) throw stale();
+    if (versionRef.current === lastSavedVersion.current && currentRef.current)
+      return currentRef.current;
+    const snapshot = formRef.current, record = currentRef.current;
+    const version = versionRef.current, generation = generationRef.current;
+    if (!snapshot.clientName?.trim() || !snapshot.email?.trim() || !snapshot.items?.length ||
+        snapshot.items.some(i => !i.title?.trim() && !i.description?.trim())) {
+      const error = new Error("Complete the client name, email and quotation items before continuing.");
+      setSaveError(error.message);
+      throw error;
+    }
+    setBusy(true);
+    setSaveError("");
+    const promise = (async () => {
+      try {
+        const result = await workspaceRequest(record ? "put" : "post",
+          `/api/studio/quotations${record ? "/" + record._id : ""}`,
+          { ...snapshot, status: snapshot.status === "Sent" ? "Draft" : snapshot.status, revision: record?.revision });
+        if (generation !== generationRef.current) throw stale();
+        lastSavedVersion.current = version;
+        if (!record) {
+          prefilled.current = "?quote=" + encodeURIComponent(result._id);
+          setSearchParams({ quote: result._id }, { replace: true });
+        }
+        setCurrent(result);
+        currentRef.current = result;
+        if (version === versionRef.current) {
+          const next = normalize(result);
+          setForm(next); formRef.current = next;
+          setDirty(false); setSavedAt("All changes saved");
+        } else if (formRef.current.contactId === snapshot.contactId && formRef.current.studioProjectId === snapshot.studioProjectId && !formRef.current.lead) {
+          const next = { ...formRef.current, lead: result.lead?._id || result.lead || "" };
+          formRef.current = next; setForm(next);
+        }
+        reload();
+        return result;
+      } catch (error) {
+        if (generation === generationRef.current && !error.cancelled) setSaveError(recordError(error));
+        throw error;
+      } finally {
+        if (saveRef.current?.promise === promise) saveRef.current = null;
+        if (generation === generationRef.current) setBusy(false);
+      }
+    })();
+    saveRef.current = { promise, generation, version };
+    const result = await promise;
+    if (generation === generationRef.current && versionRef.current !== lastSavedVersion.current) return saveDraft();
+    return result;
+  };
+  const change = (name, value) => {
+    const next = { ...formRef.current, [name]: value };
+    formRef.current = next;
+    setForm(next);
+    versionRef.current++;
+    setDirty(true);
+    setSavedAt("Unsaved changes");
+    clearTimeout(timerRef.current);
+    if (currentRef.current && currentRef.current.status !== "Accepted")
+      timerRef.current = setTimeout(() => {
+        saveDraft().catch(() => {});
+      }, 1100);
+  };
+  const setDraft = (value) => {
+    setBusy(false);
+    versionRef.current++;
+    lastSavedVersion.current = -1;
+    generationRef.current++;
+    clearTimeout(timerRef.current);
+    currentRef.current = null;
+    setCurrent(null);
+    formRef.current = value;
+    setForm(value);
+    setDirty(true);
+    setMode("editor");
+    setStep(0);
+    setSaveError("");
+    setSavedAt("Unsaved changes");
+  };
+
+  const status = (q) =>
+    ["Draft", "Sent"].includes(q.status) &&
+    q.expiryEnabled !== false &&
+    q.validUntil &&
+    clock >= Date.parse(dateOnly(q.validUntil) + "T18:30:00Z")
+      ? "Expired"
+      : q.status === "Sent"
+        ? "Open"
+        : q.status;
+  const subtotal = (form.items || []).reduce(
+    (s, i) => s + Number(i.quantity) * Number(i.unitPricePaise),
+    0,
+  );
+  const discountPaise =
+    form.discountType === "percent"
+      ? Math.round((subtotal * Number(form.discountValue || 0)) / 100)
+      : Math.round(Number(form.discountValue || 0) * 100);
+  const tax = Math.round(
+      ((subtotal - discountPaise) * Number(form.taxRateBps || 0)) / 10000,
+    ),
+    total = subtotal - discountPaise + tax;
+  const close = () => {
+    if (dirty) {
+      setModal("leave");
+      return;
+    }
+    generationRef.current++;
+    clearTimeout(timerRef.current);
+    setMode("list");
+    setCurrent(null);
+    currentRef.current = null;
+    setActionMenu(false);
+    setSearchParams({});
+  };
+  const updateItem = (index, patch) =>
+    change(
+      "items",
+      form.items.map((i, n) => (n === index ? { ...i, ...patch } : i)),
+    );
+  const reorder = (index, offset) => {
+    const a = [...form.items];
+    [a[index], a[index + offset]] = [a[index + offset], a[index]];
+    change("items", a);
+  };
+  const act = async (action) => {
+    const generation = generationRef.current;
     setBusy(true);
     setSaveError("");
     try {
-      await workspaceRequest("post", "/api/studio/quote-templates", {
-        ...templateDialog,
-        name: templateName,
-        validityDays: settings.quotationValidityDays || 14,
-      });
-      setTemplateDialog(null);
+      let q = currentRef.current;
+      if (dirty || !q) q = await saveDraft();
+      if (generation !== generationRef.current) return;
+      if (!q) throw Error("Complete the client and item fields first.");
+      const result = await workspaceRequest(
+        "post",
+        `/api/studio/quotations/${q._id}/${action}`,
+        {},
+      );
+      if (generation !== generationRef.current) return;
+      if (action === "duplicate") {
+        loadQuote(result);
+        toast.success("Quotation duplicated");
+      } else if (action === "share") {
+        setCurrent(result.quote);
+        currentRef.current = result.quote;
+        setShareUrl(`${window.location.origin}/quote/${result.token}`);
+        setMode("detail");
+        setModal("link");
+      } else {
+        setMode("list");
+        setCurrent(null);
+        currentRef.current = null;
+        toast.success(
+          action === "cancel" ? "Quote cancelled" : "Quote archived",
+        );
+      }
       reload();
-      toast.success("Template saved");
+      setActionMenu(false);
+    } catch (e) {
+      if (generation === generationRef.current && !e.cancelled) setSaveError(recordError(e));
+    } finally {
+      if (generation === generationRef.current) setBusy(false);
+    }
+  };
+  const preview = async () => {
+    const generation = generationRef.current;
+    try {
+      const q =
+        dirty || !currentRef.current ? await saveDraft() : currentRef.current;
+      if (q && generation === generationRef.current)
+        window.open(`/quote-preview/${q._id}`, "_blank", "noopener,noreferrer");
+    } catch {
+      /* inline error */
+    }
+  };
+  const prepareSend = async () => {
+    const generation = generationRef.current;
+    try {
+      const q =
+        dirty || !currentRef.current ? await saveDraft() : currentRef.current;
+      if (!q || generation !== generationRef.current) return;
+      setCurrent(q);
+      setEmail({
+        subject: `Quote #${quoteNumber(q)} from ${settings.studioName || "TEAM ALPHA"}`,
+        message: `Hi ${q.clientName},\n\nPlease take a moment to review your quote. Click the button below to get started.\n\nThanks,\n${settings.studioName || "TEAM ALPHA"}`,
+        sendCopy: true,
+        scheduledFor: "",
+        idempotencyKey: crypto.randomUUID(),
+      });
+      setMode("send");
+    } catch {
+      /* inline error */
+    }
+  };
+  const send = async (schedule) => {
+    setBusy(true);
+    setSaveError("");
+    try {
+      const response = await workspaceRequest(
+        "post",
+        `/api/studio/quotations/${current._id}/${schedule ? "schedule" : "email"}`,
+        {
+          ...email,
+          ...(schedule
+            ? { scheduledFor: new Date(email.scheduledFor).toISOString() }
+            : {}),
+        },
+      );
+      if (schedule) toast.success("Quote scheduled");
+      else if (response.delivery?.status === "sent")
+        toast.success("Quote email sent");
+      else toast("Delivery is pending. Check Email History before resending.");
+      setMode("list");
+      reload();
     } catch (e) {
       setSaveError(recordError(e));
     } finally {
       setBusy(false);
     }
   };
-  const applyTemplate = (template) => {
-    open(null);
-    setForm((c) => ({
-      ...c,
-      title: template.title,
-      items: template.items.map((i) => ({ ...i })),
-      discountPaise: template.discountPaise,
-      taxRateBps: template.taxRateBps,
-      terms: template.terms,
-      validUntil: new Date(
-        Date.now() + (template.validityDays || 14) * 86400000,
-      )
-        .toISOString()
-        .slice(0, 10),
-    }));
-    setShowTemplates(false);
-  };
-  const [clock, setClock] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setClock(Date.now()), 60000);
-    return () => clearInterval(id);
-  }, []);
-  const stage = (q) =>
-    ["Draft", "Sent"].includes(q.status) &&
-    q.validUntil &&
-    clock >= Date.parse(q.validUntil.slice(0, 10) + "T18:30:00Z")
-      ? "Expired"
-      : q.status;
-  const open = (quote) => {
-    setEditing(quote || null);
-    setPreview(null);
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + (settings.quotationValidityDays ?? 14));
-    setForm(
-      quote
-        ? {
-            ...quote,
-            status: quote.status === "Sent" ? "Draft" : quote.status,
-            lead: quote.lead?._id || quote.lead || "",
-            validUntil: quote.validUntil?.slice(0, 10) || "",
+  const actionItems = () => (
+    <div className="qw-dropdown">
+      {!current?.acceptedAt && current?.status !== "Accepted" && (
+        <button
+          onClick={() => {
+            setModalValue(form.documentNumber || quoteNumber(current || {}));
+            setModal("number");
+            setActionMenu(false);
+          }}
+        >
+          Edit Quote Number
+        </button>
+      )}
+      <button
+        onClick={() => {
+          setModalValue(form.title);
+          setModal("template");
+          setActionMenu(false);
+        }}
+      >
+        Create Template
+      </button>
+      <button
+        onClick={() => {
+          setModalValue(form.studioProjectId || "");
+          setModal("project");
+          setActionMenu(false);
+        }}
+      >
+        Link to Project
+      </button>
+      <button onClick={() => act("duplicate")}>Duplicate</button>
+      {!current?.acceptedAt && current?.status !== "Accepted" && (
+        <button
+          onClick={() => {
+            setModal("cancel");
+            setActionMenu(false);
+          }}
+        >
+          Cancel Quote
+        </button>
+      )}
+      <button
+        onClick={() => {
+          setModal("archive");
+          setActionMenu(false);
+        }}
+      >
+        Delete
+      </button>
+      <button
+        onClick={async () => {
+          try {
+            await workspaceRequest(
+              "delete",
+              `/api/studio/quotations/${current._id}/schedule`,
+            );
+            toast.success("Scheduled sending cancelled");
+          } catch (e) {
+            setSaveError(recordError(e));
           }
-        : {
-            ...blank,
-            items: [{ description: "", quantity: 1, unitPricePaise: 0 }],
-            validUntil: expiry.toISOString().slice(0, 10),
-            terms: [
-              settings.quotationTerms,
-              settings.paymentInstructions,
-              settings.defaultDeliverables,
-            ]
-              .filter(Boolean)
-              .join("\n\n"),
-          },
-    );
-    setSaveError("");
+          setActionMenu(false);
+        }}
+      >
+        Cancel Scheduled Sending
+      </button>
+      <button
+        onClick={async () => {
+          try {
+            setHistory(
+              await workspaceRequest(
+                "get",
+                `/api/studio/quotations/${current._id}/email-history`,
+              ),
+            );
+            setModal("history");
+          } catch (e) {
+            setSaveError(recordError(e));
+          }
+          setActionMenu(false);
+        }}
+      >
+        Email History
+      </button>
+    </div>
+  );
+  const applyTemplate = (t) => {
+    lastSavedVersion.current = -1;
+    const f = {
+      ...formRef.current,
+      title: t.title,
+      items: t.items.map((i) => ({
+        ...i,
+        title: i.title || i.description,
+        description: i.title ? i.description : "",
+      })),
+      discountType: t.discountType || "amount",
+      discountValue: t.discountValue ?? t.discountPaise / 100,
+      taxRateBps: t.taxRateBps,
+      terms: t.terms,
+      notes: t.notes || "",
+      autoCreateInvoice: t.autoCreateInvoice !== false,
+      expiryEnabled: t.expiryEnabled !== false,
+      remindersEnabled: !!t.remindersEnabled,
+      reminderDays: t.reminderDays || [3, 7, 14, 21, 30],
+      design: t.design || formRef.current.design,
+      validUntil: dateOnly(clock + (t.validityDays || 30) * 86400000),
+    };
+    setDraft(f);
   };
-  const change = (name, value) =>
-    setForm((current) => ({ ...current, [name]: value }));
-  const updateItem = (index, name, value) =>
-    setForm((current) => ({
-      ...current,
-      items: current.items.map((item, i) =>
-        i === index ? { ...item, [name]: value } : item,
-      ),
-    }));
-  const subtotal = form.items.reduce(
-    (sum, item) => sum + Number(item.quantity) * Number(item.unitPricePaise),
-    0,
-  );
-  const tax = Math.round(
-    ((subtotal - Number(form.discountPaise)) * Number(form.taxRateBps)) / 10000,
-  );
-  const total = subtotal - Number(form.discountPaise) + tax;
-  const save = async (event) => {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setSaveError("");
-    try {
-      const result = await workspaceRequest(
-        editing ? "put" : "post",
-        "/api/studio/quotations" + (editing ? "/" + editing._id : ""),
-        form,
+  useEffect(() => {
+    const signature = location.search;
+    if (
+      !signature ||
+      prefilled.current === signature ||
+      loading ||
+      !data.length
+    )
+      return;
+    let active = true;
+    Promise.resolve().then(() => {
+      if (!active) return;
+      prefilled.current = signature;
+      if (searchParams.get("quote") === currentRef.current?._id) return;
+      const quote = quotes.find((q) => q._id === searchParams.get("quote"));
+      if (quote) {
+        loadQuote(quote);
+        return;
+      }
+      const template = templates.find(
+        (t) => t._id === searchParams.get("template"),
       );
-      setEditing(undefined);
-      setPreview(result);
-      reload();
-      toast.success("Quotation saved");
-    } catch (err) {
-      setSaveError(recordError(err));
-    } finally {
-      setBusy(false);
-    }
-  };
+      if (template) {
+        formRef.current = defaultForm(settings);
+        applyTemplate(template);
+        setMode("wizard");
+        setStep(1);
+        return;
+      }
+      const contact = contacts.find(
+        (c) => c._id === searchParams.get("contact"),
+      );
+      if (contact) {
+        const f = {
+          ...defaultForm(settings),
+          clientName: [contact.firstName, contact.lastName]
+            .filter(Boolean)
+            .join(" "),
+          email: contact.email,
+          contactId: contact._id,
+          studioProjectId: searchParams.get("project") || "",
+        };
+        setDraft(f);
+        setMode("wizard");
+        setStep(0);
+      }
+    });
+    return () => {
+      active = false;
+    };
+    // Query-driven navigation initializes a specific document only after its records load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, data, location.search]);
   const visible = quotes.filter(
     (q) =>
-      (filter === "All" ||
-        (filter === "Active"
-          ? q.status !== "Archived"
-          : stage(q) === filter)) &&
-      [q.clientName, q.email, q.title]
+      (filter === "All" || status(q) === filter) &&
+      [q.clientName, q.documentNumber, q.title]
         .join(" ")
         .toLowerCase()
-        .includes(query.toLowerCase()),
+        .includes(search.toLowerCase()),
   );
   return (
-    <div>
-      <WorkspaceHeader
-        eyebrow="A BEAUTIFUL FIRST IMPRESSION"
-        title="Quotations"
-        description="Thoughtful proposals, clear commitments and clear revision history."
-      >
-        <button
-          className="studio-button"
-          onClick={() => setShowTemplates(!showTemplates)}
-        >
-          <Layers size={14} />
-          Templates ({templates.length})
-        </button>
-        <button className="studio-button primary" onClick={() => open(null)}>
-          <Plus size={14} />
-          Create quotation
-        </button>
-      </WorkspaceHeader>
-      <WorkspaceMetrics
-        loading={loading || (!!error && !data.length)}
-        items={[
-          {
-            label: "Draft proposals",
-            value: quotes.filter((q) => q.status === "Draft").length,
-            note: "Ready for your final touches",
-          },
-          {
-            label: "Sent for review",
-            value: quotes.filter((q) => stage(q) === "Sent").length,
-            note: "Client links open for review",
-          },
-          {
-            label: "Accepted",
-            value: quotes.filter((q) => q.status === "Accepted").length,
-            note: "Client acceptance recorded",
-          },
-          {
-            label: "Open proposal value",
-            value: rupees(
-              quotes
-                .filter((q) => ["Draft", "Sent"].includes(stage(q)))
-                .reduce((s, q) => s + q.totalPaise, 0) / 100,
-            ),
-            note: "Draft and sent quotations",
-          },
-        ]}
-      />
-      <WorkspaceError error={error} retry={reload} />
-      {showTemplates && (
-        <section className="studio-card workspace-template-list">
-          <h2>Saved quotation templates</h2>
-          <p className="studio-muted">
-            Reusable services, prices, discounts and terms. Client details are
-            never copied.
-          </p>
-          {!templates.length ? (
-            <p>Save any proposal as a template to begin.</p>
+    <div className="qw-page">
+      {mode === "list" && (
+        <>
+          <header className="qw-list-header">
+            <h1>Quotes</h1>
+            <input
+              aria-label="Search quotes"
+              placeholder="Search quote or contact name"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <Link className="qw-text-button" to="/admin/quote-templates">
+              Templates
+            </Link>
+            <button
+              className="qw-primary"
+              onClick={() => {
+                setDraft(defaultForm(settings));
+                setMode("wizard");
+              }}
+            >
+              New Quote
+            </button>
+          </header>
+          <div className="qw-tabs">
+            {[
+              "All",
+              "Draft",
+              "Open",
+              "Accepted",
+              "Expired",
+              "Declined",
+              "Cancelled",
+              "Archived",
+            ].map((f) => (
+              <button
+                className={filter === f ? "active" : ""}
+                key={f}
+                onClick={() => setFilter(f)}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+          {error && (
+            <p role="alert">
+              {error} <button onClick={reload}>Retry</button>
+            </p>
+          )}
+          {loading ? (
+            <p>Loading quotations…</p>
           ) : (
-            templates.map((t) => (
-              <div className="workspace-template-row" key={t._id}>
-                <div>
-                  <strong>{t.name}</strong>
-                  <small>
-                    {t.items.length} services · {t.validityDays} days validity
-                  </small>
-                </div>
+            <div className="qw-list-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Quote</th>
+                    <th>Client</th>
+                    <th>Amount</th>
+                    <th>Expires</th>
+                    <th>Status</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((q) => (
+                    <tr key={q._id}>
+                      <td>
+                        <button
+                          onClick={() => {
+                            loadQuote(q);
+                            setMode(q.status === "Draft" ? "editor" : "detail");
+                          }}
+                        >
+                          Quote #{quoteNumber(q)}
+                        </button>
+                        <small>{q.title}</small>
+                      </td>
+                      <td>{q.clientName}</td>
+                      <td>{rupees(q.totalPaise / 100)}</td>
+                      <td>
+                        {q.expiryEnabled === false
+                          ? "No expiry"
+                          : recordDate(q.validUntil)}
+                      </td>
+                      <td>
+                        <span className="qw-badge">{status(q)}</span>
+                      </td>
+                      <td>
+                        <button
+                          aria-label={"Open quote " + q.clientName}
+                          onClick={() => {
+                            loadQuote(q);
+                            setMode(q.status === "Draft" ? "editor" : "detail");
+                          }}
+                        >
+                          •••
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!visible.length && (
+                <p className="qw-empty">
+                  No quotations yet. Create a quote to get started.
+                </p>
+              )}
+            </div>
+          )}
+        </>
+      )}
+      {mode === "wizard" && (
+        <div className="qw-fullscreen">
+          <header className="qw-doc-header">
+            <button
+              onClick={() => {
+                setDirty(false);
+                setMode("list");
+              }}
+            >
+              <X size={18} /> New Quote
+            </button>
+          </header>
+          <div className="qw-wizard">
+            <h1>
+              {step === 0
+                ? "How would you like to start?"
+                : "Who’s this new Quote for?"}
+            </h1>
+            {step === 0 ? (
+              <>
                 <button
-                  className="studio-button small"
-                  onClick={() => applyTemplate(t)}
+                  className="qw-template-choice"
+                  onClick={() => {
+                    setStep(1);
+                  }}
                 >
-                  Use template
+                  <Plus size={18} /> Blank quote
                 </button>
+                <p>Start with a template</p>
+                {templates.map((t) => (
+                  <button
+                    className="qw-template-choice"
+                    key={t._id}
+                    onClick={() => {
+                      applyTemplate(t);
+                      setMode("wizard");
+                      setStep(1);
+                    }}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+                {!templates.length && (
+                  <p>
+                    No templates saved yet. Prepare a blank quote, then use
+                    Create Template.
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <Field label="Client">
+                  <select
+                    value={form.contactId || form.lead || ""}
+                    onChange={(e) => {
+                      const c = contacts.find((c) => c._id === e.target.value),
+                        l = leads.find((l) => l._id === e.target.value);
+                      if (c) {
+                        if (form.contactId !== c._id) {
+                          const linked = projects.filter(p => String(p.contactId?._id || p.contactId) === c._id);
+                          change("studioProjectId", linked.length === 1 ? linked[0]._id : "");
+                        }
+                        change("lead", "");
+                        change("contactId", c._id);
+                        change(
+                          "clientName",
+                          [c.firstName, c.lastName].filter(Boolean).join(" "),
+                        );
+                        change("email", c.email);
+                      } else if (l) {
+                        change("contactId", l.contactId?._id || l.contactId || "");
+                        change("studioProjectId", l.studioProjectId?._id || l.studioProjectId || "");
+                        change("lead", l._id);
+                        change("clientName", l.name);
+                        change("email", l.email);
+                      }
+                    }}
+                  >
+                    <option value="">Select contact or enquiry</option>
+                    <optgroup label="Contacts">
+                      {contacts.map((c) => (
+                        <option key={c._id} value={c._id}>
+                          {c.firstName} {c.lastName}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Enquiries">
+                      {leads.map((l) => (
+                        <option key={l._id} value={l._id}>
+                          {l.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </Field>
+                {form.contactId && <Field label="Project">
+                  <select value={form.studioProjectId || ""} onChange={e => change("studioProjectId", e.target.value)}>
+                    <option value="">Select a project</option>
+                    {projects.filter(p => String(p.contactId?._id || p.contactId) === form.contactId).map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                  </select>
+                  <small>Link a project to keep this quote visible in its enquiry.</small>
+                </Field>}
+                <Field label="Client name">
+                  <input
+                    value={form.clientName}
+                    onChange={(e) => change("clientName", e.target.value)}
+                    required
+                  />
+                </Field>
+                <Field label="Email">
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => change("email", e.target.value)}
+                    required
+                  />
+                </Field>
                 <button
-                  className="studio-icon-button"
-                  aria-label={"Archive template " + t.name}
+                  className="qw-primary"
+                  disabled={!form.clientName || !form.email}
                   onClick={async () => {
+                    setMode("editor");
                     try {
-                      await workspaceRequest(
-                        "delete",
-                        `/api/studio/quote-templates/${t._id}`,
-                      );
-                      reload();
-                    } catch (e) {
-                      toast.error(recordError(e));
+                      await saveDraft();
+                    } catch {
+                      /* inline */
                     }
                   }}
                 >
-                  <Trash2 size={14} />
+                  Next
                 </button>
-              </div>
-            ))
-          )}
-        </section>
-      )}
-      <section className="studio-card">
-        <div className="studio-toolbar">
-          <WorkspaceSearch
-            value={query}
-            onChange={setQuery}
-            placeholder="Search quotations or clients…"
-          />
-          <select
-            className="studio-input workspace-select"
-            aria-label="Filter quotation status"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          >
-            {[
-              "Active",
-              "All",
-              "Draft",
-              "Sent",
-              "Expired",
-              "Accepted",
-              "Declined",
-              "Archived",
-            ].map((v) => (
-              <option key={v}>{v}</option>
-            ))}
-          </select>
+              </>
+            )}
+          </div>
         </div>
-        {loading || !visible.length ? (
-          <WorkspaceEmpty
-            loading={loading}
-            title="Make the next first impression"
-            description="Create a proposal with services, pricing, terms and a clear validity date."
-          />
-        ) : (
-          <div className="studio-table-wrap">
-            <table className="studio-table">
-              <thead>
-                <tr>
-                  <th>Proposal</th>
-                  <th>Valid until</th>
-                  <th>Total</th>
-                  <th>Stage</th>
-                  <th>Revision</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((q) => (
-                  <tr key={q._id}>
-                    <td>
-                      <button
-                        className="workspace-title-button"
-                        onClick={() => setPreview(q)}
-                      >
-                        {q.clientName}
-                      </button>
-                      <small>{q.title}</small>
-                    </td>
-                    <td>{recordDate(q.validUntil)}</td>
-                    <td>{rupees(q.totalPaise / 100)}</td>
-                    <td>
-                      <span
-                        className={
-                          "studio-badge " +
-                          (q.status === "Accepted"
-                            ? "green"
-                            : q.status === "Declined"
-                              ? "rose"
-                              : "gold")
-                        }
-                      >
-                        {stage(q)}
-                      </span>
-                    </td>
-                    <td>v{q.revision}</td>
-                    <td>
-                      <button
-                        className="studio-icon-button"
-                        aria-label={"View quotation " + q.clientName}
-                        onClick={() => setPreview(q)}
-                      >
-                        <FileText size={15} />
-                      </button>
-                      <button
-                        className="studio-icon-button"
-                        aria-label={"Edit quotation " + q.clientName}
-                        disabled={q.status === "Accepted"}
-                        onClick={() => open(q)}
-                      >
-                        <Pencil size={15} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-      {editing !== undefined && (
-        <WorkspaceDialog
-          title={editing ? "Revise quotation" : "Create a quotation"}
-          onClose={() => setEditing(undefined)}
-          onSubmit={save}
-          busy={busy}
-          error={saveError}
-        >
-          <label className="studio-field">
-            <span>Start from template</span>
-            <select
-              className="studio-input"
-              defaultValue=""
-              onChange={(e) => {
-                const t = templates.find((t) => t._id === e.target.value);
-                if (t)
-                  setForm((c) => ({
-                    ...c,
-                    title: t.title,
-                    items: t.items.map((i) => ({ ...i })),
-                    discountPaise: t.discountPaise,
-                    taxRateBps: t.taxRateBps,
-                    terms: t.terms,
-                  }));
-              }}
-            >
-              <option value="">Choose a saved template…</option>
-              {templates.map((t) => (
-                <option key={t._id} value={t._id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="studio-form-grid">
-            <WorkspaceField
-              label="Linked enquiry"
-              name="lead"
-              value={form.lead}
-              onChange={(name, value) => {
-                const lead = leads.find((l) => l._id === value);
-                setForm((c) => ({
-                  ...c,
-                  lead: value,
-                  ...(lead ? { clientName: lead.name, email: lead.email } : {}),
-                }));
-              }}
-              options={[
-                { value: "", label: "No linked enquiry" },
-                ...leads.map((l) => ({ value: l._id, label: l.name })),
-              ]}
-            />
-            <WorkspaceField
-              label="Stage"
-              name="status"
-              value={form.status}
-              onChange={change}
-              options={["Draft", "Declined", "Archived"]}
-            />
-            <WorkspaceField
-              label="Client name"
-              name="clientName"
-              value={form.clientName}
-              onChange={change}
-              required
-            />
-            <WorkspaceField
-              label="Client email"
-              name="email"
-              value={form.email}
-              onChange={change}
-              type="email"
-              required
-            />
-            <WorkspaceField
-              wide
-              label="Proposal title"
-              name="title"
-              value={form.title}
-              onChange={change}
-              required
-            />
-            <WorkspaceField
-              label="Accept by / expiry date"
-              name="validUntil"
-              value={form.validUntil}
-              onChange={change}
-              type="date"
-              required
-              help="Acceptance closes at 11:59 PM IST on this date."
-            />
-          </div>
-          <div className="workspace-quote-items">
-            {form.items.map((item, index) => (
-              <div className="workspace-quote-item" key={index}>
-                <label className="studio-field">
-                  <span>Service {index + 1}</span>
-                  <textarea
-                    rows={3}
-                    maxLength={4000}
-                    className="studio-input"
-                    aria-label={"Service " + (index + 1)}
-                    value={item.description}
-                    onChange={(e) =>
-                      updateItem(index, "description", e.target.value)
-                    }
-                    required
-                  />
-                </label>
-                <label className="studio-field">
-                  <span>Qty</span>
-                  <input
-                    className="studio-input"
-                    aria-label={"Quantity " + (index + 1)}
-                    type="number"
-                    min="1"
-                    max="1000"
-                    step="1"
-                    value={item.quantity}
-                    onChange={(e) =>
-                      updateItem(index, "quantity", Number(e.target.value))
-                    }
-                    required
-                  />
-                </label>
-                <label className="studio-field">
-                  <span>Unit price (₹)</span>
-                  <input
-                    className="studio-input"
-                    aria-label={"Unit price " + (index + 1)}
-                    type="number"
-                    min="0"
-                    max="10000000"
-                    step="0.01"
-                    value={item.unitPricePaise / 100}
-                    onChange={(e) =>
-                      updateItem(
-                        index,
-                        "unitPricePaise",
-                        Math.round(Number(e.target.value) * 100),
-                      )
-                    }
-                    required
-                  />
-                </label>
-                <button
-                  type="button"
-                  className="studio-icon-button"
-                  aria-label={"Remove service " + (index + 1)}
-                  disabled={form.items.length === 1}
-                  onClick={() =>
-                    setForm((c) => ({
-                      ...c,
-                      items: c.items.filter((_, i) => i !== index),
-                    }))
-                  }
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              className="studio-button small"
-              disabled={form.items.length >= 40}
-              onClick={() =>
-                setForm((c) => ({
-                  ...c,
-                  items: [
-                    ...c.items,
-                    { description: "", quantity: 1, unitPricePaise: 0 },
-                  ],
-                }))
-              }
-            >
-              <Plus size={13} />
-              Add service
-            </button>
-          </div>
-          <div className="studio-form-grid">
-            <WorkspaceField
-              label="Discount (₹)"
-              name="discountPaise"
-              value={form.discountPaise / 100}
-              onChange={(_, value) =>
-                change("discountPaise", Math.round(Number(value) * 100))
-              }
-              type="number"
-              min="0"
-              step="0.01"
-            />
-            <WorkspaceField
-              label="Tax rate (%)"
-              name="taxRateBps"
-              value={form.taxRateBps / 100}
-              onChange={(_, value) =>
-                change("taxRateBps", Math.round(Number(value) * 100))
-              }
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              help="Enter only the rate applicable to this proposal."
-            />
-            <WorkspaceField
-              wide
-              label="Terms & deliverables"
-              name="terms"
-              value={form.terms}
-              onChange={change}
-              type="textarea"
-            />
-          </div>
-          <div className="workspace-quote-total">
-            <span>Proposal total</span>
-            <strong>{rupees(total / 100)}</strong>
-          </div>
-          <p className="studio-muted">
-            Share the saved proposal to let the client accept it. Revising a
-            shared proposal invalidates its previous link; share the new
-            revision. Accepted proposals are locked.
-          </p>
-        </WorkspaceDialog>
       )}
-      {preview && (
-        <OperationsModal
-          title="Proposal preview"
-          onClose={() => setPreview(null)}
-          footer={
-            <>
-              <button className="studio-button" onClick={() => window.print()}>
-                <Printer size={14} />
-                Print / save PDF
-              </button>
+      {(mode === "editor" || mode === "detail") && (
+        <div className="qw-fullscreen">
+          <header className="qw-doc-header">
+            <button aria-label="Back to quotes" onClick={close}>
+              <ArrowLeft size={18} />
+            </button>
+            <div>
+              <strong>Quote #{quoteNumber(current || {})}</strong>
               <button
-                className="studio-button"
+                aria-label="Edit quote number"
+                disabled={
+                  !!current?.acceptedAt || current?.status === "Accepted"
+                }
                 onClick={() => {
-                  setTemplateDialog(preview);
-                  setPreview(null);
-                  setTemplateName(preview.title);
-                  setSaveError("");
+                  setModalValue(form.documentNumber || "");
+                  setModal("number");
                 }}
               >
-                <BookmarkPlus size={14} />
-                Save as template
+                <Pencil size={12} />
               </button>
-              {["Draft", "Sent"].includes(preview.status) && (
-                <button
-                  className="studio-button primary"
-                  disabled={busy}
-                  onClick={() => shareQuote(preview)}
-                >
-                  <LinkIcon size={14} />
-                  Share with client
+              <small>
+                {form.studioProjectId ? (
+                  <Link to={`/admin/studio-projects/${form.studioProjectId}`}>
+                    Linked project ↗
+                  </Link>
+                ) : (
+                  form.title
+                )}
+              </small>
+            </div>
+            <span className="qw-badge">
+              {status(current || { status: "Draft" })}
+            </span>
+            <span className="qw-save-state">{busy ? "Saving…" : savedAt}</span>
+            <div className="qw-header-actions">
+              <div className="qw-menu">
+                <button onClick={() => setActionMenu(!actionMenu)}>
+                  Actions <ChevronDown size={12} />
                 </button>
+                {actionMenu && actionItems()}
+              </div>
+              {mode === "editor" ? (
+                <>
+                  <button onClick={() => setDesignOpen(!designOpen)}>
+                    Edit Design
+                  </button>
+                  <button onClick={preview}>Preview</button>
+                  <button
+                    onClick={() => saveDraft().catch(() => {})}
+                    disabled={busy}
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="qw-primary"
+                    disabled={busy}
+                    onClick={prepareSend}
+                  >
+                    Send Quote
+                  </button>
+                </>
+              ) : (
+                <>
+                  {!current?.acceptedAt && current?.status !== "Accepted" && (
+                    <button
+                      onClick={() => {
+                        if (["Cancelled", "Declined"].includes(form.status))
+                          change("status", "Draft");
+                        setMode("editor");
+                      }}
+                    >
+                      Edit Quote
+                    </button>
+                  )}
+                  <button onClick={preview}>View Quote</button>
+                  {current?.invoiceId ? (
+                    <Link
+                      className="qw-primary"
+                      to={`/admin/invoices/${current.invoiceId}`}
+                    >
+                      View Invoice
+                    </Link>
+                  ) : (
+                    <button className="qw-primary" onClick={() => act("share")}>
+                      Share
+                    </button>
+                  )}
+                </>
               )}
+            </div>
+          </header>
+          {saveError && (
+            <p className="qw-error" role="alert">
+              {saveError}
+            </p>
+          )}
+          {mode === "editor" ? (
+            <div className="qw-editor">
+              <aside className="qw-settings">
+                <h3>Client</h3>
+                <div className="qw-client">
+                  <span>{form.clientName?.[0]}</span>
+                  <div>
+                    <strong>{form.clientName}</strong>
+                    <small>{form.email}</small>
+                  </div>
+                  <button
+                    aria-label="Change client"
+                    onClick={() => {
+                      setMode("wizard");
+                      setStep(1);
+                    }}
+                  >
+                    •••
+                  </button>
+                </div>
+                <h3>Settings</h3>
+                <Toggle
+                  label="Auto create invoice"
+                  checked={form.autoCreateInvoice}
+                  onChange={(v) => change("autoCreateInvoice", v)}
+                  help="Automatically generate a draft invoice once the quote is accepted."
+                />
+                <Toggle
+                  label="Document Expiry"
+                  checked={form.expiryEnabled}
+                  onChange={(v) => change("expiryEnabled", v)}
+                />
+                {form.expiryEnabled && (
+                  <>
+                    <input
+                      aria-label="Quote expiry date"
+                      type="date"
+                      value={form.validUntil}
+                      onChange={(e) => change("validUntil", e.target.value)}
+                    />
+                    <p>
+                      This document cannot be accepted after{" "}
+                      {recordDate(form.validUntil)}. Expiry is at 11:59 PM IST.
+                    </p>
+                  </>
+                )}
+                <Toggle
+                  label="Document Reminders"
+                  checked={form.remindersEnabled}
+                  onChange={(v) => change("remindersEnabled", v)}
+                />
+                {form.remindersEnabled && (
+                  <div className="qw-check-list">
+                    {[3, 7, 14, 21, 30].map((day) => (
+                      <label key={day}>
+                        <input
+                          type="checkbox"
+                          checked={form.reminderDays.includes(day)}
+                          onChange={(e) =>
+                            change(
+                              "reminderDays",
+                              e.target.checked
+                                ? [...form.reminderDays, day]
+                                : form.reminderDays.filter((d) => d !== day),
+                            )
+                          }
+                        />
+                        {day} days after sending
+                      </label>
+                    ))}
+                    <p>
+                      Automatically email contacts who have not accepted.
+                      Requires configured studio email.
+                    </p>
+                  </div>
+                )}
+                <Field label="Currency">
+                  <select value="INR" onChange={() => {}}>
+                    <option value="INR">INR · Indian Rupee</option>
+                  </select>
+                </Field>
+                <Field label="Quote date">
+                  <input
+                    type="date"
+                    value={form.issueDate}
+                    onChange={(e) => change("issueDate", e.target.value)}
+                  />
+                </Field>
+              </aside>
+              <section className="qw-editor-scroll">
+                <div className="qw-paper">
+                  <Field label="Proposal title">
+                    <input
+                      className="qw-title"
+                      value={form.title}
+                      onChange={(e) => change("title", e.target.value)}
+                    />
+                  </Field>
+                  <h2>Items</h2>
+                  <div className="qw-item-labels">
+                    <span>ITEMS</span>
+                    <span>QTY</span>
+                    <span>PRICE</span>
+                    <span>AMOUNT</span>
+                  </div>
+                  {form.items?.map((item, index) => (
+                    <div className="qw-item" key={index}>
+                      <div className="qw-item-copy">
+                        <input
+                          aria-label={`Item title ${index + 1}`}
+                          value={item.title}
+                          onChange={(e) =>
+                            updateItem(index, { title: e.target.value })
+                          }
+                          maxLength={300}
+                        />
+                        <textarea
+                          aria-label={`Item description ${index + 1}`}
+                          value={item.description}
+                          onChange={(e) =>
+                            updateItem(index, { description: e.target.value })
+                          }
+                          rows={Math.max(
+                            3,
+                            Math.min(
+                              10,
+                              item.description?.split("\n").length || 3,
+                            ),
+                          )}
+                          maxLength={4000}
+                        />
+                      </div>
+                      <input
+                        aria-label={`Quantity ${index + 1}`}
+                        type="number"
+                        min="1"
+                        max="1000"
+                        step="1"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          updateItem(index, {
+                            quantity: Number(e.target.value),
+                          })
+                        }
+                      />
+                      <input
+                        aria-label={`Price ${index + 1}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.unitPricePaise / 100}
+                        onChange={(e) =>
+                          updateItem(index, {
+                            unitPricePaise: Math.round(
+                              Number(e.target.value) * 100,
+                            ),
+                          })
+                        }
+                      />
+                      <strong>
+                        {rupees((item.quantity * item.unitPricePaise) / 100)}
+                      </strong>
+                      <div className="qw-item-tools">
+                        <button
+                          aria-label={`Move item ${index + 1} up`}
+                          disabled={index === 0}
+                          onClick={() => reorder(index, -1)}
+                        >
+                          <MoveUp size={12} />
+                        </button>
+                        <button
+                          aria-label={`Move item ${index + 1} down`}
+                          disabled={index === form.items.length - 1}
+                          onClick={() => reorder(index, 1)}
+                        >
+                          <MoveDown size={12} />
+                        </button>
+                        <button
+                          aria-label={`Duplicate item ${index + 1}`}
+                          disabled={form.items.length >= 40}
+                          onClick={() =>
+                            change("items", [
+                              ...form.items.slice(0, index + 1),
+                              { ...item },
+                              ...form.items.slice(index + 1),
+                            ])
+                          }
+                        >
+                          <Copy size={12} />
+                        </button>
+                        <button
+                          aria-label={`Delete item ${index + 1}`}
+                          disabled={form.items.length === 1}
+                          onClick={() =>
+                            change(
+                              "items",
+                              form.items.filter((_, n) => n !== index),
+                            )
+                          }
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="qw-total-area">
+                    <button
+                      className="qw-text-button"
+                      disabled={form.items?.length >= 40}
+                      onClick={() =>
+                        change("items", [...form.items, blankItem()])
+                      }
+                    >
+                      + Add Item
+                    </button>
+                    <dl>
+                      <dt>Subtotal</dt>
+                      <dd>{rupees(subtotal / 100)}</dd>
+                      <dt>
+                        <button
+                          onClick={() => {
+                            setDiscount({
+                              type: form.discountType,
+                              value: form.discountValue,
+                            });
+                            setModal("discount");
+                          }}
+                        >
+                          {discountPaise ? "Discount" : "Add discount"}
+                        </button>
+                      </dt>
+                      <dd>
+                        {discountPaise
+                          ? `− ${rupees(discountPaise / 100)}`
+                          : ""}
+                      </dd>
+                      <dt>
+                        <button
+                          onClick={() => {
+                            setModalValue(form.taxRateBps / 100);
+                            setModal("tax");
+                          }}
+                        >
+                          {form.taxRateBps ? "Tax" : "Add tax"}
+                        </button>
+                      </dt>
+                      <dd>{tax ? rupees(tax / 100) : ""}</dd>
+                      <dt>Total</dt>
+                      <dd>
+                        <strong>{rupees(total / 100)}</strong>
+                      </dd>
+                    </dl>
+                  </div>
+                  <Field label="Notes">
+                    <textarea
+                      value={form.notes || ""}
+                      onChange={(e) => change("notes", e.target.value)}
+                      rows={5}
+                    />
+                  </Field>
+                  <Field label="Terms & conditions">
+                    <textarea
+                      value={form.terms || ""}
+                      onChange={(e) => change("terms", e.target.value)}
+                      rows={5}
+                    />
+                  </Field>
+                </div>
+              </section>
+            </div>
+          ) : (
+            <section className="qw-detail">
+              <div className="qw-detail-summary">
+                <div>
+                  <span>Quote to</span>
+                  <strong>{form.clientName}</strong>
+                </div>
+                <div>
+                  <span>Quote Amount</span>
+                  <strong>{rupees(current.totalPaise / 100)}</strong>
+                </div>
+              </div>
+              <h2>Quote Details</h2>
+              <div className="qw-detail-meta">
+                <div>
+                  Client<strong>{form.clientName}</strong>
+                </div>
+                <div>
+                  Project
+                  <strong>
+                    {form.studioProjectId ? (
+                      <Link
+                        to={`/admin/studio-projects/${form.studioProjectId}`}
+                      >
+                        View project
+                      </Link>
+                    ) : (
+                      "None"
+                    )}
+                  </strong>
+                </div>
+                <div>
+                  Invoice
+                  <strong>
+                    {current.invoiceId ? (
+                      <Link to={`/admin/invoices/${current.invoiceId}`}>
+                        {String(current.invoiceId).slice(-6).toUpperCase()}
+                      </Link>
+                    ) : (
+                      "None"
+                    )}
+                  </strong>
+                </div>
+                <div>
+                  Quote number<strong>{quoteNumber(current)}</strong>
+                </div>
+                <div>
+                  Quote date<strong>{recordDate(form.issueDate)}</strong>
+                </div>
+                <div>
+                  Document expiry
+                  <strong>
+                    {form.expiryEnabled ? recordDate(form.validUntil) : "Off"}
+                  </strong>
+                </div>
+                <div>
+                  Reminders
+                  <strong>{form.remindersEnabled ? "On" : "Off"}</strong>
+                </div>
+              </div>
+              <div className="qw-read-paper">
+                <QuoteReadDocument quote={current} settings={settings} />
+              </div>
+              <h2>Timeline</h2>
+              <div className="qw-timeline">
+                {(current.timeline?.length
+                  ? current.timeline
+                  : [
+                      {
+                        message: "Draft quote created.",
+                        at: current.createdAt,
+                      },
+                      ...(current.sharedAt
+                        ? [
+                            {
+                              message: "Quote finalized and shared.",
+                              at: current.sharedAt,
+                            },
+                          ]
+                        : []),
+                      ...(current.acceptedAt
+                        ? [
+                            {
+                              message: `Quote accepted by ${current.acceptedBy}.`,
+                              at: current.acceptedAt,
+                            },
+                          ]
+                        : []),
+                    ]
+                )
+                  .slice()
+                  .reverse()
+                  .map((event, i) => (
+                    <p key={i}>
+                      <i />
+                      {event.message || event.action}
+                      <small>
+                        {new Date(event.at || event.createdAt).toLocaleString(
+                          "en-IN",
+                        )}
+                      </small>
+                    </p>
+                  ))}
+              </div>
+            </section>
+          )}
+          {designOpen && (
+            <aside className="qw-design">
+              <header>
+                <h2>Edit Design</h2>
+                <button
+                  aria-label="Close design"
+                  onClick={() => setDesignOpen(false)}
+                >
+                  <X size={16} />
+                </button>
+              </header>
+              <strong>Cover Image</strong>
               <button
-                disabled={preview.status === "Accepted"}
-                className="studio-button"
-                onClick={() => open(preview)}
+                className="qw-text-button"
+                onClick={() => {
+                  setModalValue("");
+                  setModal("photo");
+                }}
               >
-                <Pencil size={14} />
-                Edit proposal
+                <ImagePlus size={14} /> Add photo
               </button>
+              <div className="qw-cover-grid">
+                {covers.map((src) => (
+                  <button
+                    className={form.design?.coverImage === src ? "active" : ""}
+                    key={src}
+                    onClick={() =>
+                      change("design", { ...form.design, coverImage: src })
+                    }
+                  >
+                    <img src={src} alt="Document cover option" />
+                  </button>
+                ))}
+              </div>
+              <p>
+                Select a unique cover image for this document. Set default
+                cover, color and font in{" "}
+                <Link to="/admin/settings">Settings → Branding</Link>.
+              </p>
+              <Field label="Color theme">
+                <input
+                  type="color"
+                  value={form.design?.colorTheme || "#202622"}
+                  onChange={(e) =>
+                    change("design", {
+                      ...form.design,
+                      colorTheme: e.target.value,
+                    })
+                  }
+                />
+              </Field>
+              <Field label="Font theme">
+                <select
+                  value={form.design?.fontTheme || "modern"}
+                  onChange={(e) =>
+                    change("design", {
+                      ...form.design,
+                      fontTheme: e.target.value,
+                    })
+                  }
+                >
+                  {["modern", "classic", "editorial"].map((f) => (
+                    <option key={f}>{f}</option>
+                  ))}
+                </select>
+              </Field>
+              <h3>Preview</h3>
+              <img
+                className="qw-cover-preview"
+                src={form.design?.coverImage || covers[0]}
+                alt="Selected quotation cover"
+              />
+              <button className="qw-primary" onClick={preview}>
+                Preview Quote
+              </button>
+            </aside>
+          )}
+        </div>
+      )}
+      {mode === "send" && (
+        <div className="qw-fullscreen">
+          <header className="qw-doc-header">
+            <button onClick={() => setMode("editor")}>
+              <X size={16} /> Send Quote
+            </button>
+          </header>
+          <div className="qw-send">
+            <section>
+              <p>
+                To: <strong>{current.clientName}</strong> · {current.email}
+              </p>
+              <input
+                aria-label="Email subject"
+                value={email.subject}
+                onChange={(e) =>
+                  setEmail({ ...email, subject: e.target.value })
+                }
+              />
+              <textarea
+                aria-label="Email message"
+                value={email.message}
+                onChange={(e) =>
+                  setEmail({ ...email, message: e.target.value })
+                }
+              />
+              <button
+                className="qw-text-button"
+                onClick={() =>
+                  setEmail({
+                    ...email,
+                    message: `Hi ${current.clientName},\n\nYour quote is ready to review. Please review and accept by ${recordDate(current.validUntil)}.\n\nThanks,\n${settings.studioName || "TEAM ALPHA"}`,
+                  })
+                }
+              >
+                Insert email template
+              </button>
+              <div className="qw-send-footer">
+                <button onClick={() => setModal("schedule")}>Schedule</button>
+                <button onClick={() => setModal("manual")}>
+                  Send via link
+                </button>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={email.sendCopy}
+                    onChange={(e) =>
+                      setEmail({ ...email, sendCopy: e.target.checked })
+                    }
+                  />
+                  Send me a copy
+                </label>
+                <button
+                  className="qw-primary"
+                  disabled={busy}
+                  onClick={() => send(false)}
+                >
+                  Send
+                </button>
+              </div>
+              {saveError && (
+                <p className="qw-error" role="alert">
+                  {saveError}
+                </p>
+              )}
+            </section>
+            <section className="qw-email-preview">
+              <img src="/team-alpha-logo.png" alt="Team Alpha" />
+              <div>
+                Your quote is ready for review
+                <strong>Quote #{quoteNumber(current)}</strong>
+                {current.expiryEnabled !== false && (
+                  <span>Complete by {recordDate(current.validUntil)}</span>
+                )}
+              </div>
+              <p>{email.message}</p>
+              <button>REVIEW QUOTE</button>
+              <small>{settings.studioName || "TEAM ALPHA"}</small>
+            </section>
+          </div>
+        </div>
+      )}
+      {modal && (
+        <OperationsModal
+          title={
+            {
+              discount: "Add discount",
+              tax: "Add tax",
+              template: "Create template",
+              number: "Edit Quote Number",
+              project: "Link to Project",
+              photo: "Add photo",
+              link: "Get Quote Link",
+              manual: "Send via link",
+              schedule: "Schedule Quote",
+              history: "Email History",
+              cancel: "Cancel Quote",
+              archive: "Delete Quote",
+              leave: "Unsaved changes",
+            }[modal]
+          }
+          onClose={() => setModal("")}
+          footer={
+            <>
+              <button className="qw-button" onClick={() => setModal("")}>
+                Cancel
+              </button>
+              {modal === "discount" ? (
+                <>
+                  <button
+                    className="qw-button"
+                    onClick={() => {
+                      change("discountValue", 0);
+                      setModal("");
+                    }}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    className="qw-primary"
+                    onClick={() => {
+                      change("discountType", discount.type);
+                      change("discountValue", Number(discount.value));
+                      setModal("");
+                    }}
+                  >
+                    Apply
+                  </button>
+                </>
+              ) : modal === "link" ? (
+                <button
+                  className="qw-primary"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(shareUrl);
+                      toast.success("Link copied to clipboard");
+                    } catch {
+                      toast.error("Select and copy the link.");
+                    }
+                  }}
+                >
+                  Copy Link
+                </button>
+              ) : (
+                modal !== "history" && (
+                  <button
+                    className="qw-primary"
+                    disabled={busy}
+                    onClick={async () => {
+                      const generation = generationRef.current;
+                      let loaded = false;
+                      setBusy(true);
+                      try {
+                        if (modal === "manual") {
+                          setModal("");
+                          await act("share");
+                          return;
+                        }
+                        if (modal === "schedule") {
+                          await send(true);
+                          setModal("");
+                          return;
+                        }
+                        if (modal === "cancel" || modal === "archive") {
+                          setModal("");
+                          await act(modal);
+                          return;
+                        }
+                        if (modal === "leave") {
+                          generationRef.current++;
+                          currentRef.current = null;
+                          setCurrent(null);
+                          setSearchParams({});
+                          setBusy(false);
+                          clearTimeout(timerRef.current);
+                          setMode("list");
+                          setDirty(false);
+                          setModal("");
+                          return;
+                        }
+                        if (modal === "tax") {
+                          change(
+                            "taxRateBps",
+                            Math.round(Number(modalValue) * 100),
+                          );
+                          setModal("");
+                          return;
+                        }
+                        if (modal === "photo") {
+                          if (!/^https:\/\//.test(modalValue))
+                            throw Error("Use an HTTPS image URL.");
+                          change("design", {
+                            ...form.design,
+                            coverImage: modalValue,
+                          });
+                          setModal("");
+                          return;
+                        }
+                        const q =
+                          dirty || !currentRef.current
+                            ? await saveDraft()
+                            : currentRef.current;
+                        if (!q || generation !== generationRef.current) return;
+                        if (modal === "template")
+                          await workspaceRequest(
+                            "post",
+                            "/api/studio/quote-templates",
+                            {
+                              ...form,
+                              name: modalValue,
+                              validityDays:
+                                Math.max(
+                                  1,
+                                  Math.round(
+                                    (Date.parse(form.validUntil) -
+                                      Date.parse(form.issueDate)) /
+                                      86400000,
+                                  ),
+                                ) || 30,
+                            },
+                          );
+                        if (modal === "number") {
+                          const r = await workspaceRequest(
+                            "patch",
+                            `/api/studio/quotations/${q._id}/number`,
+                            { documentNumber: modalValue },
+                          );
+                          if (generation !== generationRef.current) return;
+                          loadQuote(r); loaded = true;
+                        }
+                        if (modal === "project") {
+                          const r = await workspaceRequest(
+                            "patch",
+                            `/api/studio/quotations/${q._id}/project`,
+                            {
+                              studioProjectId: modalValue || null,
+                              contactId: form.contactId || null,
+                              lead: form.lead || null,
+                            },
+                          );
+                          if (generation !== generationRef.current) return;
+                          loadQuote(r); loaded = true;
+                        }
+                        if (!loaded && generation !== generationRef.current) return;
+                        setModal("");
+                        reload();
+                        toast.success("Saved");
+                      } catch (e) {
+                        if (generation === generationRef.current && !e.cancelled) toast.error(recordError(e));
+                      } finally {
+                        if (loaded || generation === generationRef.current) setBusy(false);
+                      }
+                    }}
+                  >
+                    {["cancel", "archive", "manual", "leave"].includes(modal)
+                      ? "Confirm"
+                      : modal === "schedule"
+                        ? "Schedule"
+                        : "Save"}
+                  </button>
+                )
+              )}
             </>
           }
         >
-          <article className="studio-quote-document">
-            <div className="workspace-proposal-brand">
-              {settings.studioName || "Team Alpha"}
-              <span>PHOTOGRAPHY & CINEMATOGRAPHY</span>
-            </div>
-            <p className="studio-eyebrow">
-              A PROPOSAL FOR {preview.clientName}
-            </p>
-            <h2>{preview.title}</h2>
-            <p>{preview.email}</p>
-            <div className="workspace-proposal-meta">
-              <span>Valid until {recordDate(preview.validUntil)}</span>
-              <span>
-                {settings.invoicePrefix || "TA"}-Q-
-                {preview._id.slice(-6).toUpperCase()} · v{preview.revision} ·{" "}
-                {preview.status}
-              </span>
-            </div>
-            <table className="studio-table">
-              <thead>
-                <tr>
-                  <th>Service</th>
-                  <th>Qty</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {preview.items.map((item, index) => (
-                  <tr key={index}>
-                    <td>{item.description}</td>
-                    <td>{item.quantity}</td>
-                    <td>
-                      {rupees((item.quantity * item.unitPricePaise) / 100)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <dl className="workspace-summary">
-              <dt>Subtotal</dt>
-              <dd>{rupees(preview.subtotalPaise / 100)}</dd>
-              <dt>Discount</dt>
-              <dd>{rupees(preview.discountPaise / 100)}</dd>
-              <dt>Tax ({preview.taxRateBps / 100}%)</dt>
-              <dd>{rupees(preview.taxPaise / 100)}</dd>
-              <dt>Total</dt>
-              <dd>
-                <strong>{rupees(preview.totalPaise / 100)}</strong>
-              </dd>
-            </dl>
-            <h3>Terms & deliverables</h3>
-            <p className="workspace-preserve">
-              {preview.terms || "Terms to be agreed with the studio."}
-            </p>
-            {settings.email && (
-              <p>
-                {settings.email} · {settings.phone}
-              </p>
-            )}
-          </article>
-          <div className="workspace-revision-history">
-            <h3>Quotation timeline</h3>
-            <p>Created · {recordDate(preview.createdAt)}</p>
-            {preview.sharedAt && (
-              <p>Shared for review · {recordDate(preview.sharedAt)}</p>
-            )}
+          {modal === "photo" && (
+            <Field label="Upload an image">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={busy}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setBusy(true);
+                  try {
+                    const data = new FormData();
+                    data.append("image", file);
+                    const result = await workspaceRequest(
+                      "post",
+                      "/api/studio/document-covers",
+                      data,
+                    );
+                    change("design", {
+                      ...formRef.current.design,
+                      coverImage: result.url,
+                    });
+                    setModal("");
+                    toast.success("Cover photo uploaded");
+                  } catch (error) {
+                    toast.error(recordError(error));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              />
+              <small>JPEG, PNG or WebP · up to 8 MB</small>
+            </Field>
+          )}
+          {modal === "discount" ? (
+            <>
+              <Field label="Type">
+                <div className="qw-radio">
+                  <label>
+                    <input
+                      type="radio"
+                      checked={discount.type === "amount"}
+                      onChange={() =>
+                        setDiscount({ ...discount, type: "amount" })
+                      }
+                    />{" "}
+                    Amount off
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      checked={discount.type === "percent"}
+                      onChange={() =>
+                        setDiscount({ ...discount, type: "percent" })
+                      }
+                    />{" "}
+                    Percent off
+                  </label>
+                </div>
+              </Field>
+              <Field
+                label={discount.type === "percent" ? "Percent" : "Amount (₹)"}
+              >
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  max={discount.type === "percent" ? 100 : subtotal / 100}
+                  value={discount.value}
+                  onChange={(e) =>
+                    setDiscount({ ...discount, value: e.target.value })
+                  }
+                />
+              </Field>
+            </>
+          ) : modal === "link" ? (
+            <>
+              <p>Your contact can access the quote from the following link:</p>
+              <input
+                className="qw-link-input"
+                aria-label="Quote share link"
+                readOnly
+                value={shareUrl}
+              />
+              <div className="qw-share-options">
+                <a
+                  target="_blank"
+                  rel="noreferrer"
+                  href={`https://wa.me/?text=${encodeURIComponent(`Hi ${current?.clientName}, please review your Team Alpha quote: ${shareUrl}`)}`}
+                >
+                  Share via WhatsApp ↗
+                </a>
+                <a target="_blank" rel="noreferrer" href={shareUrl}>
+                  View client quote ↗
+                </a>
+              </div>
+            </>
+          ) : modal === "manual" ? (
             <p>
-              Acceptance closes · {recordDate(preview.validUntil)} · 11:59 PM
-              IST
+              This quote will be marked as sent without being automatically
+              emailed to your contact. Please send the link manually.
             </p>
-            {preview.acceptedAt && (
-              <p>
-                Accepted by {preview.acceptedBy} ·{" "}
-                {recordDate(preview.acceptedAt)}
-              </p>
-            )}
-            {preview.invoiceId && (
-              <p>
-                Linked invoice ·{" "}
-                {String(preview.invoiceId).slice(-6).toUpperCase()} ·{" "}
-                <a href="/admin/finance">Open finance</a>
-              </p>
-            )}
-          </div>
-          {preview.history?.length > 0 && (
-            <div className="workspace-revision-history">
-              <h3>Revision history</h3>
-              {preview.history.map((row, index) => (
-                <p key={index}>
-                  v{row.revision} · {row.status} ·{" "}
-                  {rupees(row.totalPaise / 100)} · {recordDate(row.changedAt)}
-                </p>
-              ))}
-            </div>
+          ) : modal === "schedule" ? (
+            <Field label="Send date and time">
+              <input
+                type="datetime-local"
+                value={email.scheduledFor}
+                onChange={(e) =>
+                  setEmail({ ...email, scheduledFor: e.target.value })
+                }
+              />
+            </Field>
+          ) : modal === "history" ? (
+            <>
+              {!history.length ? (
+                <p>No email deliveries recorded.</p>
+              ) : (
+                history.map((h, i) => (
+                  <p key={i}>
+                    {h.subject || h.kind} · {h.status} ·{" "}
+                    {recordDate(h.sentAt || h.dueAt || h.createdAt)}
+                    {h.error && <small>{h.error}</small>}
+                  </p>
+                ))
+              )}
+            </>
+          ) : ["cancel", "archive", "leave"].includes(modal) ? (
+            <p>
+              {modal === "cancel"
+                ? "Cancel this quotation and revoke client acceptance access?"
+                : modal === "archive"
+                  ? "Archive this quotation and remove it from active quotes? Its history is retained."
+                  : "Leave without saving these changes?"}
+            </p>
+          ) : modal === "project" ? (
+            <Field label="Project">
+              <select
+                value={modalValue}
+                onChange={(e) => setModalValue(e.target.value)}
+              >
+                <option value="">No project</option>
+                {projects
+                  .filter(
+                    (p) =>
+                      !form.contactId ||
+                      String(p.contactId?._id || p.contactId) ===
+                        form.contactId,
+                  )
+                  .map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+          ) : (
+            <Field
+              label={
+                {
+                  tax: "Tax rate (%)",
+                  template: "Template name",
+                  number: "Quote number",
+                  photo: "HTTPS image URL",
+                }[modal]
+              }
+            >
+              <input
+                type={modal === "tax" ? "number" : "text"}
+                min="0"
+                max={modal === "tax" ? 100 : undefined}
+                step="0.01"
+                value={modalValue}
+                onChange={(e) => setModalValue(e.target.value)}
+              />
+            </Field>
           )}
         </OperationsModal>
       )}
-      {share && (
-        <OperationsModal title="Share quotation" onClose={() => setShare(null)}>
-          <p>
-            The client can review services, pricing and terms, then accept
-            before {recordDate(share.quote.validUntil)}, 11:59 PM IST. This
-            private link grants access to this quotation.
-          </p>
-          <label className="studio-field">
-            <span>Client quotation link</span>
-            <input className="studio-input" readOnly value={share.url} />
-          </label>
-          <div className="workspace-share-actions">
-            <button
-              className="studio-button"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(share.url);
-                  toast.success("Link copied");
-                } catch {
-                  toast.error("Select and copy the link above.");
-                }
-              }}
-            >
-              <Copy size={14} />
-              Copy link
-            </button>
-            <a
-              className="studio-button primary"
-              target="_blank"
-              rel="noreferrer"
-              href={`https://wa.me/?text=${encodeURIComponent(`Hi ${share.quote.clientName}, please review your Team Alpha quotation and accept by ${recordDate(share.quote.validUntil)}: ${share.url}`)}`}
-            >
-              Share via WhatsApp
-            </a>
-            <a
-              className="studio-button"
-              target="_blank"
-              rel="noreferrer"
-              href={share.url}
-            >
-              View client quotation
-            </a>
-          </div>
-          <p className="studio-muted">
-            WhatsApp opens with a prepared message. Choose the client and send
-            it there.
-          </p>
-        </OperationsModal>
-      )}
-      {templateDialog && (
-        <WorkspaceDialog
-          title="Save quotation template"
-          onClose={() => setTemplateDialog(null)}
-          onSubmit={saveTemplate}
-          busy={busy}
-          error={saveError}
-        >
-          <WorkspaceField
-            label="Template name"
-            name="templateName"
-            value={templateName}
-            onChange={(_, v) => setTemplateName(v)}
-            required
-            maxLength={120}
-          />
-          <p>
-            Save services, pricing, discount and terms for future clients.
-            Client name, email and project are excluded.
-          </p>
-        </WorkspaceDialog>
-      )}
     </div>
+  );
+}
+export function QuoteReadDocument({ quote, settings = {} }) {
+  return (
+    <article className="qw-read-document">
+      <div className="qw-document-brand">
+        {settings.studioName || "TEAM ALPHA"}
+      </div>
+      <h2>Items</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ITEM</th>
+            <th>QTY</th>
+            <th>PRICE</th>
+            <th>AMOUNT</th>
+          </tr>
+        </thead>
+        <tbody>
+          {quote.items.map((i, n) => (
+            <tr key={n}>
+              <td>
+                <strong>{i.title}</strong>
+                <p>{i.description}</p>
+              </td>
+              <td>{i.quantity}</td>
+              <td>{rupees(i.unitPricePaise / 100)}</td>
+              <td>{rupees((i.unitPricePaise * i.quantity) / 100)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <dl>
+        <dt>Subtotal</dt>
+        <dd>{rupees(quote.subtotalPaise / 100)}</dd>
+        <dt>Discount</dt>
+        <dd>− {rupees(quote.discountPaise / 100)}</dd>
+        <dt>Tax</dt>
+        <dd>{rupees(quote.taxPaise / 100)}</dd>
+        <dt>Total</dt>
+        <dd>
+          <strong>{rupees(quote.totalPaise / 100)}</strong>
+        </dd>
+      </dl>
+      <h3>Notes</h3>
+      <p>{quote.notes || quote.terms}</p>
+      {quote.notes && quote.terms && (
+        <>
+          <h3>Terms</h3>
+          <p>{quote.terms}</p>
+        </>
+      )}
+      <button className="qw-print" onClick={() => window.print()}>
+        <Printer size={14} /> Print / save PDF
+      </button>
+    </article>
   );
 }

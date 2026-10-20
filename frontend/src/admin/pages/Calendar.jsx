@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Plus,
   ChevronLeft,
@@ -14,6 +14,8 @@ import {
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import EventForm from "../components/calendar/EventForm";
+import CalendarInsights from "../components/calendar/CalendarInsights";
+import { calendarMonthLoad } from "../components/operations/insightData";
 import { deriveCrewSchedule } from "../components/operations/crewSchedule";
 import { operationAPI } from "../components/operations/operationsUtils";
 import {
@@ -46,6 +48,7 @@ const time = (value) =>
     minute: "2-digit",
   });
 export default function Calendar() {
+  const [sessionParams]=useSearchParams();
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/calendar",
     "/api/photographers",
@@ -63,7 +66,10 @@ export default function Calendar() {
     ),
     [query, setQuery] = useState(""),
     [crewFilter, setCrewFilter] = useState("all"),
-    [editing, setEditing] = useState(undefined),
+    [editing, setEditing] = useState(()=>sessionParams.get("contact")?{
+      title:"Client session",type:"Meeting",contactId:sessionParams.get("contact"),studioProjectId:sessionParams.get("project")||null,
+      start:new Date(new Date().setHours(10,0,0,0)).toISOString(),end:new Date(new Date().setHours(11,0,0,0)).toISOString(),
+    }:undefined),
     [detail, setDetail] = useState(null),
     [deleting, setDeleting] = useState(null),
     [busy, setBusy] = useState(false),
@@ -99,12 +105,7 @@ export default function Calendar() {
     end.setDate(end.getDate() + 1);
     return new Date(event.start) < end && new Date(event.end) > start;
   };
-  const monthEvents = visible.filter(
-    (event) =>
-      new Date(event.start) <
-        new Date(month.getFullYear(), month.getMonth() + 1, 1) &&
-      new Date(event.end) >= month,
-  );
+  const monthEvents = calendarMonthLoad(visible, month).events;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60000);
@@ -178,7 +179,7 @@ export default function Calendar() {
       <WorkspaceHeader
         eyebrow="MAKE ROOM FOR EVERY STORY"
         title="Studio calendar"
-        description="Your shoots, consultations and crew assignments, thoughtfully together."
+        description="Shoots, consultations and crew assignments in one place."
       >
         <button
           className="studio-button"
@@ -231,6 +232,7 @@ export default function Calendar() {
         ]}
       />
       <WorkspaceError error={error} retry={reload} />
+      <CalendarInsights key={month.getFullYear() + "-" + month.getMonth()} events={visible} month={month} selected={selected} onSelect={setSelected} loading={loading} />
       <section className="studio-card workspace-calendar">
         <div className="workspace-calendar-heading">
           <div className="workspace-calendar-nav">

@@ -83,8 +83,16 @@ function quotation(body) {
     object(item);
     const quantity = number(item.quantity, "quantity", 1000, true);
     if (!quantity) bad("Quantity must be at least one");
+    const title = text(item.title, "item title", 240);
+    const description = text(
+      item.description,
+      "item description",
+      4000,
+      !title,
+    );
     return {
-      description: text(item.description, "item description", 4000, true),
+      title,
+      description,
       quantity,
       unitPricePaise: number(item.unitPricePaise, "price", 1000000000, true),
     };
@@ -93,17 +101,43 @@ function quotation(body) {
     (sum, item) => sum + item.quantity * item.unitPricePaise,
     0,
   );
-  const discountPaise = number(
-    body.discountPaise ?? 0,
-    "discount",
-    subtotalPaise,
-    true,
-  );
+  const discountType = choice(body.discountType || "amount", "discount type", [
+    "amount",
+    "percent",
+  ]);
+  let discountValue, discountPaise;
+  if (body.discountValue !== undefined) {
+    discountValue = number(
+      body.discountValue,
+      "discount",
+      discountType === "percent" ? 100 : subtotalPaise / 100,
+    );
+    if (Math.round(discountValue * 100) / 100 !== discountValue)
+      bad("Discount must have at most two decimal places");
+    discountPaise =
+      discountType === "percent"
+        ? Math.round((subtotalPaise * discountValue) / 100)
+        : Math.round(discountValue * 100);
+  } else {
+    discountPaise = number(
+      body.discountPaise ?? 0,
+      "discount",
+      subtotalPaise,
+      true,
+    );
+    discountValue =
+      discountType === "percent"
+        ? subtotalPaise
+          ? (discountPaise / subtotalPaise) * 100
+          : 0
+        : discountPaise / 100;
+  }
   const taxRateBps = number(body.taxRateBps ?? 0, "tax rate", 10000, true);
   const taxPaise = Math.round(
     ((subtotalPaise - discountPaise) * taxRateBps) / 10000,
   );
   return {
+    ...quoteMetadata(body),
     clientName: text(body.clientName, "client name", 120, true),
     email: email(body.email),
     lead: reference(body.lead),
@@ -114,15 +148,80 @@ function quotation(body) {
       "Sent",
       "Accepted",
       "Declined",
+      "Cancelled",
       "Archived",
     ]),
     items,
     discountPaise,
+    discountType,
+    discountValue,
     taxRateBps,
     subtotalPaise,
     taxPaise,
     totalPaise: subtotalPaise - discountPaise + taxPaise,
     terms: text(body.terms, "terms", 8000),
+  };
+}
+function bool(value, name, fallback) {
+  if (value === undefined) return fallback;
+  if (typeof value !== "boolean") bad("Invalid " + name);
+  return value;
+}
+function quoteMetadata(body) {
+  object(body);
+  const documentNumber = text(body.documentNumber, "document number", 40);
+  if (
+    documentNumber &&
+    !/^[A-Za-z0-9][A-Za-z0-9._/-]{0,39}$/.test(documentNumber)
+  )
+    bad(
+      "Use letters, numbers, dots, slashes or hyphens for the document number",
+    );
+  const reminderDays = body.reminderDays ?? [3, 7, 14, 21, 30];
+  if (
+    !Array.isArray(reminderDays) ||
+    reminderDays.length > 12 ||
+    reminderDays.some((d) => !Number.isInteger(d) || d < 1 || d > 365)
+  )
+    bad("Reminder days must be 1–365 days after sending");
+  const design = body.design || {};
+  object(design);
+  const coverImage = text(design.coverImage, "cover image", 1000);
+  if (
+    coverImage &&
+    ![
+      "/assets/studio-wedding.webp",
+      "/assets/studio-pre-wedding.webp",
+      "/assets/banner.jpg",
+      "/assets/services/wedding.jpg",
+      "/assets/services/pre_wedding.jpg",
+      "/assets/services/engagement.jpg",
+      "/assets/services/haldi.jpg",
+    ].includes(coverImage)
+  )
+    url(coverImage);
+  const colorTheme = text(design.colorTheme || "#1f2427", "color theme", 7);
+  if (!/^#[a-f0-9]{6}$/i.test(colorTheme)) bad("Use a six-digit color code");
+  return {
+    ...(documentNumber ? { documentNumber } : {}),
+    issueDate: date(body.issueDate),
+    contactId: reference(body.contactId),
+    studioProjectId: reference(body.studioProjectId),
+    clientPhone: text(body.clientPhone, "phone", 40),
+    autoCreateInvoice: bool(body.autoCreateInvoice, "automatic invoice", true),
+    expiryEnabled: bool(body.expiryEnabled, "document expiry", true),
+    remindersEnabled: bool(body.remindersEnabled, "document reminders", false),
+    reminderDays: [...new Set(reminderDays)].sort((a, b) => a - b),
+    notes: text(body.notes, "notes", 8000),
+    design: {
+      coverImage,
+      colorTheme,
+      fontTheme: choice(design.fontTheme || "modern", "font theme", [
+        "modern",
+        "classic",
+        "editorial",
+      ]),
+    },
   };
 }
 function asset(body, now = new Date()) {
@@ -164,7 +263,28 @@ function asset(body, now = new Date()) {
 }
 function settings(body) {
   object(body);
+  const branding = quoteMetadata({
+    design: {
+      coverImage: body.coverImage,
+      colorTheme: body.colorTheme,
+      fontTheme: body.fontTheme,
+    },
+  }).design;
+  const upiId = text(body.upiId, "UPI ID", 100);
+  if (upiId && !/^[A-Za-z0-9._-]{2,}@[A-Za-z0-9.-]{2,}$/.test(upiId))
+    bad("Use a valid UPI ID");
   return {
+    ...(body.coverImage !== undefined
+      ? { coverImage: branding.coverImage }
+      : {}),
+    ...(body.colorTheme !== undefined
+      ? { colorTheme: branding.colorTheme }
+      : {}),
+    ...(body.fontTheme !== undefined ? { fontTheme: branding.fontTheme } : {}),
+    ...(body.bankDetails !== undefined
+      ? { bankDetails: text(body.bankDetails, "bank details", 4000) }
+      : {}),
+    ...(body.upiId !== undefined ? { upiId } : {}),
     studioName: text(body.studioName, "studio name", 120, true),
     email: email(body.email, false),
     phone: text(body.phone, "phone", 40),
@@ -254,6 +374,7 @@ function bookingPayment(body) {
 }
 module.exports = {
   quotation,
+  quoteMetadata,
   asset,
   settings,
   client,

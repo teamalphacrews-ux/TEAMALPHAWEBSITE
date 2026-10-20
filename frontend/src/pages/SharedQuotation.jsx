@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import toast from "react-hot-toast";
+import { CheckCircle2, Download, Printer } from "lucide-react";
 import { API_BASE_URL } from "../utils/apiConfig";
+import { workspaceRequest } from "../admin/components/operations/workspaceData";
 import "./sharedQuotation.css";
-const money = (value) =>
-  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
-    value / 100,
-  );
-const date = (value) =>
-  value
-    ? new Date(value).toLocaleDateString("en-IN", {
+import ClientProjectWorkspace from "./ClientProjectWorkspace";
+const money = (v) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+  }).format((v || 0) / 100);
+const date = (v) =>
+  v
+    ? new Date(v).toLocaleDateString("en-IN", {
         day: "numeric",
         month: "long",
         year: "numeric",
@@ -17,21 +23,23 @@ const date = (value) =>
       })
     : "—";
 export default function SharedQuotation() {
-  const { token } = useParams();
-  const [quoteData, setQuote] = useState(null),
+  const { token, id } = useParams(),
+    key = token || id;
+  const [data, setData] = useState(null),
     [error, setError] = useState(""),
-    [name, setName] = useState(""),
-    [consent, setConsent] = useState(false),
     [busy, setBusy] = useState(false),
     [now, setNow] = useState(() => Date.now());
-  const quote = quoteData?.requestToken === token ? quoteData : null;
+  const quote = data?.requestKey === key ? data : null,
+    preview = !!id;
   useEffect(() => {
     let active = true;
-    axios
-      .get(`${API_BASE_URL}/api/quotes/${token}`)
-      .then((r) => {
+    const request = preview
+      ? workspaceRequest("get", `/api/studio/quotations/${id}/preview`)
+      : axios.get(`${API_BASE_URL}/api/quotes/${token}`).then((r) => r.data);
+    request
+      .then((q) => {
         if (active) {
-          setQuote({ ...r.data, requestToken: token });
+          setData({ ...q, requestKey: key });
           setError("");
         }
       })
@@ -39,125 +47,189 @@ export default function SharedQuotation() {
         if (active)
           setError(
             e.response?.data?.error ||
-              "Unable to load this quotation. Please retry.",
+              "This quotation is unavailable. Please contact the studio.",
           );
       });
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, id, key, preview]);
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
   }, []);
   const expired =
-    quote && quote.status !== "Accepted" && now >= Date.parse(quote.expiresAt);
-  const accept = async (e) => {
-    e.preventDefault();
-    if (busy) return;
+    quote &&
+    quote.status !== "Accepted" &&
+    quote.expiryEnabled !== false &&
+    quote.expiresAt &&
+    now >= Date.parse(quote.expiresAt);
+  const accept = async () => {
+    if (preview) {
+      toast.error("You cannot accept a quote in preview mode.");
+      return;
+    }
+    if (busy || expired) return;
     setBusy(true);
     setError("");
     try {
-      const r = await axios.post(`${API_BASE_URL}/api/quotes/${token}/accept`, {
-        acceptedBy: quote.status === "Accepted" ? quote.acceptedBy : name,
-        consent: quote.status === "Accepted" ? true : consent,
-        revision: quote.revision,
-      });
-      setQuote({ ...r.data, requestToken: token });
+      const { data: q } = await axios.post(
+        `${API_BASE_URL}/api/quotes/${token}/accept`,
+        {
+          acceptedBy: quote.acceptedBy || quote.clientName,
+          consent: true,
+          revision: quote.revision,
+        },
+      );
+      setData({ ...q, requestKey: key });
     } catch (e) {
       setError(
         e.response?.data?.error ||
-          "Unable to complete acceptance. Please retry; duplicate invoices will not be created.",
+          "Unable to record acceptance. Please retry safely.",
       );
     } finally {
       setBusy(false);
     }
   };
-  const remaining = quote ? Math.max(0, Date.parse(quote.expiresAt) - now) : 0;
-  return (
-    <div className="shared-quotation">
+  const remaining = quote?.expiresAt
+    ? Math.max(0, Date.parse(quote.expiresAt) - now)
+    : 0;
+  const style = quote
+    ? {
+        "--quote-accent": quote.design?.colorTheme || "#202622",
+        fontFamily:
+          quote.design?.fontTheme === "classic"
+            ? "Georgia, serif"
+            : quote.design?.fontTheme === "editorial"
+              ? "Palatino, Georgia, serif"
+              : "Inter, Arial, sans-serif",
+      }
+    : {};
+  const document = (
+    <div className="shared-quotation" style={style}>
       <meta name="robots" content="noindex,nofollow" />
       <meta name="referrer" content="no-referrer" />
-      <header>
-        <a href="/">{quote?.studio.name || "TEAM ALPHA"}</a>
-        <span>PHOTOGRAPHY & CINEMATOGRAPHY</span>
-      </header>
+      {preview && (
+        <div className="sq-owner-banner">
+          Previewing quote as Owner. Acceptance is disabled.
+        </div>
+      )}
       {!quote ? (
-        <main>
+        <main className="sq-loading">
           <h1>Your quotation</h1>
-          <p role="status">{error || "Loading your proposal…"}</p>
+          <p role="status">{error || "Loading your quote…"}</p>
         </main>
       ) : (
         <>
-          <section className="shared-hero">
-            <p>A PROPOSAL FOR {quote.clientName}</p>
-            <h1>
-              {quote.status === "Accepted"
-                ? "Thank you. Your quotation is accepted."
-                : expired
-                  ? "This quotation has expired."
-                  : `Your story starts here.`}
-            </h1>
+          <header
+            className="sq-hero"
+            style={{
+              backgroundImage: `linear-gradient(#10291e35,#14261e35),url("${quote.design?.coverImage || "/assets/banner.jpg"}")`,
+            }}
+          >
+            <img src="/team-alpha-logo.png" alt="Team Alpha" />
+            <strong>{quote.studio.name}</strong>
+            <h1>Hi {quote.clientName.split(" ")[0]},</h1>
             <p>
               {quote.status === "Accepted"
-                ? `Accepted by ${quote.acceptedBy} on ${date(quote.acceptedAt)}. ${quote.invoiceReady ? "Your invoice has been generated." : "Your invoice is being prepared."}`
-                : `Please review and accept by ${date(quote.validUntil)}, 11:59 PM IST.`}
+                ? "Thank you. Your quote has been accepted."
+                : expired
+                  ? "This quote has expired."
+                  : quote.expiryEnabled !== false
+                    ? `Please review and accept this quote by ${date(quote.validUntil)}.`
+                    : "Please review and accept your quote."}
             </p>
-            {!expired && quote.status !== "Accepted" && (
-              <strong className="shared-countdown">
-                {Math.floor(remaining / 86400000)} days ·{" "}
-                {Math.floor(remaining / 3600000) % 24} hours ·{" "}
-                {Math.floor(remaining / 60000) % 60} minutes remaining
-              </strong>
-            )}
-          </section>
+            {!expired &&
+              quote.status !== "Accepted" &&
+              quote.expiryEnabled !== false &&
+              quote.expiresAt && (
+                <small>
+                  {Math.floor(remaining / 86400000)} days ·{" "}
+                  {Math.floor(remaining / 3600000) % 24} hours remaining · 11:59
+                  PM IST
+                </small>
+              )}
+          </header>
           <main>
-            <section className="shared-paper">
-              <div className="shared-document-top">
+            <section className="sq-paper sq-summary">
+              <div className="sq-document-header">
+                <h2>
+                  Quote #
+                  {quote.documentNumber || quote._id.slice(-6).toUpperCase()}{" "}
+                  <span>
+                    {preview && quote.status === "Draft"
+                      ? "DRAFT"
+                      : quote.status === "Accepted"
+                        ? "ACCEPTED"
+                        : expired
+                          ? "EXPIRED"
+                          : "OPEN"}
+                  </span>
+                </h2>
                 <div>
-                  <p>
-                    QUOTATION {quote.studio.prefix}-Q-
-                    {quote._id.slice(-6).toUpperCase()}
-                  </p>
-                  <h2>{quote.title}</h2>
+                  <button
+                    aria-label="Print quote"
+                    onClick={() => window.print()}
+                  >
+                    <Printer size={19} />
+                  </button>
+                  <button
+                    aria-label="Download quote PDF"
+                    onClick={() => window.print()}
+                  >
+                    <Download size={19} />
+                  </button>
                 </div>
-                <span>
-                  {quote.status === "Accepted"
-                    ? "Accepted"
-                    : expired
-                      ? "Expired"
-                      : "Open for acceptance"}
-                </span>
               </div>
-              <div className="shared-meta">
+              <div className="sq-meta">
                 <div>
-                  Prepared for<strong>{quote.clientName}</strong>
+                  FROM<strong>{quote.studio.name}</strong>
                 </div>
                 <div>
-                  Issued
-                  <strong>{date(quote.sharedAt || quote.createdAt)}</strong>
+                  TO<strong>{quote.clientName}</strong>
                 </div>
                 <div>
-                  Expires<strong>{date(quote.validUntil)}</strong>
+                  QUOTE DATE
+                  <strong>{date(quote.issueDate || quote.createdAt)}</strong>
+                </div>
+                <div>
+                  EXPIRES
+                  <strong>
+                    {quote.expiryEnabled === false
+                      ? "No expiry"
+                      : date(quote.validUntil)}
+                  </strong>
                 </div>
               </div>
-              <div className="shared-table">
+            </section>
+            <section className="sq-paper">
+              <h2>Items</h2>
+              <div className="sq-table">
                 <table>
                   <thead>
                     <tr>
-                      <th>Services</th>
-                      <th>Qty</th>
-                      <th>Unit price</th>
-                      <th>Amount</th>
+                      <th>ITEM</th>
+                      <th>QTY</th>
+                      <th>PRICE</th>
+                      <th>AMOUNT</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {quote.items.map((item, i) => (
-                      <tr key={i}>
-                        <td>{item.description}</td>
-                        <td>{item.quantity}</td>
-                        <td>{money(item.unitPricePaise)}</td>
-                        <td>{money(item.quantity * item.unitPricePaise)}</td>
+                    {quote.items.map((i, n) => (
+                      <tr key={n}>
+                        <td>
+                          <strong>
+                            {i.title || i.description.split("\n")[0]}
+                          </strong>
+                          <p>
+                            {i.title
+                              ? i.description
+                              : i.description.split("\n").slice(1).join("\n")}
+                          </p>
+                        </td>
+                        <td>{i.quantity}</td>
+                        <td>{money(i.unitPricePaise)}</td>
+                        <td>{money(i.quantity * i.unitPricePaise)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -166,105 +238,82 @@ export default function SharedQuotation() {
               <dl>
                 <dt>Subtotal</dt>
                 <dd>{money(quote.subtotalPaise)}</dd>
-                <dt>Discount</dt>
+                <dt>
+                  Discount
+                  {quote.discountType === "percent"
+                    ? ` (${quote.discountValue}%)`
+                    : ""}
+                </dt>
                 <dd>− {money(quote.discountPaise)}</dd>
-                <dt>Tax ({quote.taxRateBps / 100}%)</dt>
-                <dd>{money(quote.taxPaise)}</dd>
+                {quote.taxPaise > 0 && (
+                  <>
+                    <dt>Tax ({quote.taxRateBps / 100}%)</dt>
+                    <dd>{money(quote.taxPaise)}</dd>
+                  </>
+                )}
                 <dt>Total</dt>
                 <dd>
                   <strong>{money(quote.totalPaise)}</strong>
                 </dd>
               </dl>
-              <h3>Terms & deliverables</h3>
-              <p className="shared-terms">
-                {quote.terms ||
-                  "Please contact the studio with any questions before accepting."}
-              </p>
-              <button
-                type="button"
-                className="shared-secondary"
-                onClick={() => window.print()}
-              >
-                Print / save PDF
-              </button>
-            </section>
-            <section className="shared-paper shared-accept">
-              <h2>
-                {quote.status === "Accepted"
-                  ? "Acceptance recorded"
-                  : expired
-                    ? "Need more time?"
-                    : "Ready to move forward?"}
-              </h2>
+              {(quote.notes || quote.terms) && (
+                <div className="sq-notes">
+                  <h3>NOTES</h3>
+                  <p>{quote.notes || quote.terms}</p>
+                  {quote.notes && quote.terms && (
+                    <>
+                      <h3>TERMS</h3>
+                      <p>{quote.terms}</p>
+                    </>
+                  )}
+                </div>
+              )}
               {error && <p role="alert">{error}</p>}
               {quote.status === "Accepted" ? (
-                <div>
+                <div className="sq-acceptance">
+                  <CheckCircle2 size={22} />
                   <p>
-                    Your studio has received your acceptance.{" "}
-                    {quote.invoiceReady
-                      ? "A linked invoice is available in their finance workspace."
-                      : "Invoice generation needs to finish. Use the button below to retry safely."}{" "}
-                    Acceptance does not record a payment.
+                    Accepted by {quote.acceptedBy} on {date(quote.acceptedAt)}.
                   </p>
-                  {!quote.invoiceReady && (
-                    <form onSubmit={accept}>
-                      <button disabled={busy}>
-                        {busy
-                          ? "Preparing invoice…"
-                          : "Finish invoice generation"}
-                      </button>
-                    </form>
+                  {quote.autoCreateInvoice !== false && !quote.invoiceReady && (
+                    <button onClick={accept} disabled={busy}>
+                      Finish invoice generation
+                    </button>
                   )}
                 </div>
               ) : expired ? (
-                <p>
-                  Contact the studio to request an updated quotation. Acceptance
-                  is closed.
+                <p className="sq-expired">
+                  Acceptance has closed. Please contact the studio for an
+                  updated quote.
                 </p>
               ) : (
-                <form onSubmit={accept}>
+                <div className="sq-accept">
                   <p>
-                    Review the services, total and terms above. Accepting
-                    confirms your agreement to this quotation.
+                    By selecting Accept Quote, you agree to the services, total
+                    and terms above.
                   </p>
-                  <label>
-                    Your full name
-                    <input
-                      aria-label="Your full name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      maxLength={120}
-                    />
-                  </label>
-                  <label className="shared-consent">
-                    <input
-                      type="checkbox"
-                      checked={consent}
-                      onChange={(e) => setConsent(e.target.checked)}
-                      required
-                    />
-                    I have reviewed and agree to the services, price and terms
-                    in this quotation.
-                  </label>
-                  <button disabled={busy || !consent || !name.trim()}>
-                    {busy ? "Recording acceptance…" : "Accept quotation"}
+                  <button disabled={busy} onClick={accept}>
+                    {busy ? "RECORDING ACCEPTANCE…" : "ACCEPT QUOTE"}
                   </button>
-                </form>
+                </div>
               )}
-              <p>
-                {quote.studio.email && (
-                  <a href={`mailto:${quote.studio.email}`}>
-                    {quote.studio.email}
-                  </a>
-                )}{" "}
-                {quote.studio.phone}
-              </p>
             </section>
           </main>
+          <footer>
+            TEAM ALPHA · STUDIO OS
+            {quote.studio.email && (
+              <a href={`mailto:${quote.studio.email}`}>{quote.studio.email}</a>
+            )}
+          </footer>
         </>
       )}
-      <footer>TEAM ALPHA · Made for the stories you create.</footer>
     </div>
+  );
+  return quote?.status === "Accepted" && !preview ? (
+    <ClientProjectWorkspace key={token} token={token} quote={quote}>
+      {document}
+    </ClientProjectWorkspace>
+  ) : (
+    document
   );
 }

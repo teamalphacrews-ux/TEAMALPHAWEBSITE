@@ -17,6 +17,7 @@ router.use(auth, requireAdmin);
 
 router.get('/studio-overview', async (req, res) => {
     try {
+        await require('../services/enquiryPipeline').reconcile();
         const now = new Date();
         const [leadCounts, upcomingEventCount, pendingTaskCount, overdueTaskCount,
             activeCrew, clientCollections, events, datedTasks, undatedTasks, recentLeads] = await Promise.all([

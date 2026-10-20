@@ -8,7 +8,7 @@ import {
   Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import InvoiceForm from "../components/crm/InvoiceForm";
+import {useNavigate} from "react-router-dom";
 import {
   WorkspaceHeader,
   WorkspaceMetrics,
@@ -25,12 +25,19 @@ import {
   recordDate,
   rupees,
 } from "../components/operations/workspaceData";
-import { paidAmount, remainingAmount } from "../components/studio/leadUtils";
+import { remainingAmount } from "../components/studio/leadUtils";
+import { FinanceInsights, ExpenseBreakdown } from "../components/finance/FinanceInsights";
+import { bookingCollections } from "../components/operations/insightData";
+import { contactPaymentTotals } from "../components/contacts/contactPaymentTotals";
 export default function Finance() {
+  const navigate=useNavigate();
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/studio/finance",
+    "/api/invoices",
   ]);
-  const { leads = [], invoices = [], entries = [] } = data[0] || {};
+  const { leads = [], entries = [] } = data[0] || {};
+  const invoices = data[1] || [];
+  const collections = bookingCollections(leads);
   const [tab, setTab] = useState("bookings"),
     [query, setQuery] = useState(""),
     [entry, setEntry] = useState(undefined),
@@ -38,7 +45,6 @@ export default function Finance() {
     [payment, setPayment] = useState(null),
     [busy, setBusy] = useState(false),
     [saveError, setSaveError] = useState(""),
-    [invoice, setInvoice] = useState(undefined),
     [deleting, setDeleting] = useState(null);
   const bookings = leads.filter((lead) => lead.status === "Converted");
   const paidExpenses = entries.filter(
@@ -46,10 +52,10 @@ export default function Finance() {
   );
   const sum = (rows, key) =>
     rows.reduce((total, row) => total + (Number(row[key]) || 0), 0);
-  const invoiceBalance = (row) =>
-    row.status === "Paid" || row.status === "Cancelled"
-      ? 0
-      : Math.max(0, (row.total || 0) - (row.advancePaid || 0));
+  const invoiceBalance = row => {
+    const totals = contactPaymentTotals([row]);
+    return totals.upcoming + totals.pastDue;
+  };
   const openEntry = (row) => {
     setEntry(row || null);
     setForm(
@@ -151,14 +157,6 @@ export default function Finance() {
       toast.error(recordError(err));
     }
   };
-  const categories = paidExpenses.reduce(
-    (map, row) => ({
-      ...map,
-      [row.category || "Other"]:
-        (map[row.category || "Other"] || 0) + row.amount,
-    }),
-    {},
-  );
   const expenseTotal = sum(paidExpenses, "amount");
   const visible = (
     tab === "bookings" ? bookings : tab === "invoices" ? invoices : entries
@@ -179,10 +177,10 @@ export default function Finance() {
     <div>
       <WorkspaceHeader
         eyebrow="A CONSIDERED VIEW OF YOUR BUSINESS"
-        title="Financial clarity."
+        title="Finance"
         description="Bookings, invoices and your cash ledger, each with a clear purpose."
       >
-        <button className="studio-button" onClick={() => setInvoice(null)}>
+        <button className="studio-button" onClick={() => navigate("/admin/invoices/new")}>
           <FileText size={14} />
           New invoice
         </button>
@@ -199,12 +197,12 @@ export default function Finance() {
         items={[
           {
             label: "Received on bookings",
-            value: rupees(bookings.reduce((s, l) => s + paidAmount(l), 0)),
+            value: rupees(collections.received),
             note: "CRM payment records only",
           },
           {
             label: "Booking balances",
-            value: rupees(bookings.reduce((s, l) => s + remainingAmount(l), 0)),
+            value: rupees(collections.remaining),
             note: "Confirmed enquiry balances",
           },
           {
@@ -220,6 +218,7 @@ export default function Finance() {
         ]}
       />
       <WorkspaceError error={error} retry={reload} />
+      <FinanceInsights entries={entries} leads={leads} loading={loading || (!!error && !data.length)} />
       <div className="workspace-info">
         <Wallet size={16} />
         <p>
@@ -317,12 +316,13 @@ export default function Finance() {
                               : "gold")
                           }
                         >
-                          {row.paymentStatus || row.status}
+                          {row.documentStatus === "Draft" ? "Draft" : row.documentStatus === "Cancelled" ? "Cancelled" : row.paymentStatus || row.status}
                         </span>
                         {tab === "invoices" && (
                           <select
                             className="studio-input workspace-invoice-status"
                             aria-label={"Invoice status for " + row.clientName}
+                            disabled={["Draft", "Cancelled"].includes(row.documentStatus)}
                             value={row.status}
                             onChange={(e) => invoiceStatus(row, e.target.value)}
                           >
@@ -352,7 +352,7 @@ export default function Finance() {
                           <button
                             className="studio-icon-button"
                             aria-label={"View invoice " + row.clientName}
-                            onClick={() => setInvoice(row)}
+                            onClick={() => navigate("/admin/invoices/"+row._id)}
                           >
                             <ArrowUpRight size={15} />
                           </button>
@@ -388,37 +388,7 @@ export default function Finance() {
           )}
         </section>
         <aside className="workspace-rail">
-          <section className="studio-card">
-            <h2 className="studio-section-title">Expense allocation</h2>
-            <p className="studio-card-subtitle">
-              Paid cash-ledger expenses by category.
-            </p>
-            {Object.entries(categories)
-              .sort((a, b) => b[1] - a[1])
-              .map(([label, value]) => (
-                <div className="workspace-allocation" key={label}>
-                  <div>
-                    <span>{label}</span>
-                    <strong>{rupees(value)}</strong>
-                  </div>
-                  <div className="workspace-progress">
-                    <span
-                      style={{
-                        width:
-                          (expenseTotal ? (value / expenseTotal) * 100 : 0) +
-                          "%",
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            {!paidExpenses.length && (
-              <WorkspaceEmpty
-                title="No paid expenses yet"
-                description="Record expenses to see the allocation."
-              />
-            )}
-          </section>
+          <ExpenseBreakdown entries={entries} loading={loading} onCategory={category => { setTab("ledger"); setQuery(category); }} />
           <section className="studio-card">
             <h2 className="studio-section-title">Cash ledger snapshot</h2>
             <p className="studio-card-subtitle">
@@ -576,15 +546,7 @@ export default function Finance() {
           </p>
         </WorkspaceDialog>
       )}
-      {invoice !== undefined && (
-        <InvoiceForm
-          initialData={invoice}
-          onClose={() => {
-            setInvoice(undefined);
-            reload();
-          }}
-        />
-      )}
+
     </div>
   );
 }

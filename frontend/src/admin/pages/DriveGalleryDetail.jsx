@@ -17,55 +17,43 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence } from "framer-motion";
 
 // Components
 import PreviewModal from "../components/gallery/PreviewModal";
 import LoadingScreen from "../../components/common/LoadingScreen";
+import ProtectedDriveImage from "../components/gallery/ProtectedDriveImage";
+import { API_BASE_URL } from "../../utils/apiConfig";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export default function DriveGalleryDetail() {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
   const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadedEventId, setLoadedEventId] = useState(null);
+  const loading = loadedEventId !== eventId;
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [selectedFile, setSelectedFile] = useState(null);
-  const [imagesLoaded, setImagesLoaded] = useState(0);
 
   useEffect(() => {
-    fetchEventData();
+    const controller = new AbortController();
+    const options = { headers: { 'x-auth-token': localStorage.getItem('token') }, signal: controller.signal };
+    Promise.all([
+      axios.get(`${API_BASE_URL}/api/drive-gallery/event/${eventId}`, options),
+      axios.get(`${API_BASE_URL}/api/drive-gallery/files/${eventId}`, options),
+    ]).then(([eventResponse, filesResponse]) => {
+      if (controller.signal.aborted) return;
+      setEvent(eventResponse.data);
+      setFiles(filesResponse.data);
+    }).catch(() => {
+      if (!controller.signal.aborted) toast.error("Failed to fetch event media.");
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoadedEventId(eventId);
+    });
+    return () => controller.abort();
   }, [eventId]);
-
-  const fetchEventData = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      
-      // Fetch Event Metadata
-      const eventRes = await axios.get(`${API_BASE_URL}/api/drive-gallery/event/${eventId}`, {
-        headers: { 'x-auth-token': token }
-      });
-      setEvent(eventRes.data);
-
-      // Fetch Files for this event
-      const filesRes = await axios.get(`${API_BASE_URL}/api/drive-gallery/files/${eventId}`, {
-        headers: { 'x-auth-token': token }
-      });
-      setFiles(filesRes.data);
-      setImagesLoaded(0); // Reset count on new fetch
-    } catch (err) {
-      toast.error("Failed to fetch event media.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const imageFiles = useMemo(() => files.filter(f => f.mimeType.startsWith('image/')), [files]);
-  const totalImages = imageFiles.length;
 
   const filteredFiles = useMemo(() => {
     return files.filter(f => {
@@ -84,9 +72,7 @@ export default function DriveGalleryDetail() {
   return (
     <div className="min-h-screen pb-24 animate-in fade-in duration-1000">
       <LoadingScreen 
-        isLoading={loading || (totalImages > 0 && imagesLoaded < totalImages)} 
-        total={totalImages} 
-        current={imagesLoaded} 
+        isLoading={loading}
       />
       
       {/* Header Bar */}
@@ -150,7 +136,7 @@ export default function DriveGalleryDetail() {
             columnClassName="my-masonry-grid_column"
           >
             {filteredFiles.map((file, idx) => (
-              <motion.div
+              <Motion.div
                 layout
                 key={file.id}
                 initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -166,24 +152,7 @@ export default function DriveGalleryDetail() {
                 className="relative group cursor-pointer overflow-hidden transition-all duration-500 rounded-2xl mb-6 bg-white shadow-sm hover:shadow-xl hover:shadow-[#cfe8d5]/20"
               >
                 <div className="w-full h-full relative overflow-hidden rounded-2xl">
-                    <motion.img 
-                      src={`${API_BASE_URL}/api/drive-gallery/proxy/${file.id}?thumbnail=true`} 
-                      alt={file.name} 
-                      loading="eager" 
-                      onLoad={() => setImagesLoaded(prev => prev + 1)}
-                      className="w-full h-auto block object-cover scale-100 group-hover:scale-110 transition-transform duration-700" 
-                      onError={(e) => {
-                        const currentSrc = e.target.src;
-                        if (!currentSrc.includes('fallback=true')) {
-                          // Try one fallback to raw stream if thumbnail redirect fails
-                          console.warn(`Fallback triggered for ${file.name}`);
-                          e.target.src = `${API_BASE_URL}/api/drive-gallery/proxy/${file.id}?thumbnail=false&fallback=true`;
-                        } else {
-                          // Both failed, count as "loaded" so we don't hang the screen, but it will show broken icon
-                          setImagesLoaded(prev => prev + 1);
-                        }
-                      }}
-                    />
+                    <ProtectedDriveImage file={file} className="w-full h-auto block object-cover scale-100 group-hover:scale-110 transition-transform duration-700" />
                     
                     {/* Minimal Subtle Overlay */}
                     <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -192,7 +161,7 @@ export default function DriveGalleryDetail() {
                       </div>
                     </div>
                 </div>
-              </motion.div>
+              </Motion.div>
             ))}
           </Masonry>
         </AnimatePresence>

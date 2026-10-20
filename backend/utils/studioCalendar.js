@@ -54,6 +54,11 @@ function eventFields(body, current = {}) {
   const lead = value.lead ? String(value.lead) : null;
   if (lead && !/^[a-f\d]{24}$/i.test(lead)) eventError("Invalid project link");
   output.lead = lead;
+  for(const key of ['contactId','studioProjectId']){
+    const id=value[key]?String(value[key]):null;
+    if(id&&!/^[a-f\d]{24}$/i.test(id))eventError('Invalid '+key);
+    if(value[key]!==undefined)output[key]=id;
+  }
   return output;
 }
 function crewOverlap(event, candidates) {

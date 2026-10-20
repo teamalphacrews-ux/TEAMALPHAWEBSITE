@@ -19,7 +19,7 @@ const quote = {
   status: "Sent",
   clientName: "Sample Client",
   email: "private@example.com",
-  lead: "private-project",
+  lead: "507f1f77bcf86cd799439011",
   validUntil: new Date("2099-12-31"),
   items: [{ description: "Wedding", quantity: 2, unitPricePaise: 100000 }],
   subtotalPaise: 200000,
@@ -88,13 +88,14 @@ test("invoice conversion preserves exact discounted and taxed quote totals", () 
   const i = invoiceFromQuote({ ...quote, acceptedAt: new Date() });
   assert.equal(i.total, 2124);
   assert.equal(i.discount, 200);
-  assert.equal(i.extraCharges, 324);
+  assert.equal(i.extraCharges, 0);
   assert.equal(i.sourceRevision, 2);
   assert.equal(i.sourceQuotation, quote._id);
+  assert.equal(i.leadId, quote.lead);
   assert.equal(invoiceValues(i).total, 2124);
-  assert.equal(invoiceValues({ ...i, discount: 300, total: 1 }).total, 2024);
-  assert.throws(() => invoiceValues({ ...i, discount: 3000 }), { status: 400 });
-  assert.throws(() => invoiceValues({ ...i, discount: -1 }), { status: 400 });
+  assert.equal(invoiceValues({ ...i, discount: 300, discountValue: 300, total: 1 }).total, 2006);
+  assert.throws(() => invoiceValues({ ...i, discountValue: 3000 }), { status: 400 });
+  assert.throws(() => invoiceValues({ ...i, discountValue: -1 }), { status: 400 });
 });
 test("invalid links and missing consent never claim a quotation", async (t) => {
   let touched = false;
@@ -131,6 +132,7 @@ test("expired and stale revisions cannot generate invoices", async (t) => {
   );
 });
 test("concurrent acceptance and retries use one atomic claim and one invoice ID", async (t) => {
+  t.mock.method(require('../services/enquiryPipeline'), 'syncQuote', async () => null);
   let q = { ...quote },
     claims = 0;
   const invoiceIds = new Set();
@@ -176,6 +178,7 @@ test("concurrent acceptance and retries use one atomic claim and one invoice ID"
   assert.equal(invoiceIds.size, 1);
 });
 test("acceptance retry repairs an interrupted invoice insert without a second invoice", async (t) => {
+  t.mock.method(require('../services/enquiryPipeline'), 'syncQuote', async () => null);
   let q = { ...quote },
     invoiceId,
     attempts = 0;

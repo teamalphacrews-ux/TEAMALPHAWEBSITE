@@ -1,12 +1,12 @@
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
-import { X, Loader2, UserRoundPlus } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { LEAD_STATUSES, PAYMENT_STATUSES, dateInput, studioApi, studioAuth } from "./leadUtils";
 import useStudioDialog from "./useStudioDialog";
 
-const emptyLead = { name: "", email: "", phone: "", status: "New", eventType: "Wedding", eventDate: "", eventTime: "", eventLocation: "", followUpDate: "", remarks: "", notes: "", totalAmount: "", depositAmount: "", paymentStatus: "Unpaid", galleryTag: "", cloudLink: "", cloudPassword: "", createAccount: false, firstName: "", lastName: "", accountEmail: "", password: "" };
+const emptyLead = { name: "", email: "", phone: "", status: "New", eventType: "Wedding", eventDate: "", eventTime: "", eventLocation: "", followUpDate: "", remarks: "", notes: "", totalAmount: "", depositAmount: "", paymentStatus: "Unpaid", cloudLink: "", cloudPassword: "",  };
 
 export default function StudioLeadForm({ initialData, onClose, onSaved }) {
   const [data, setData] = useState({ ...emptyLead, ...initialData, eventDate: dateInput(initialData?.eventDate), followUpDate: dateInput(initialData?.followUpDate) });
@@ -20,18 +20,18 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
   const submit = async (event) => {
     event.preventDefault();
     if (inFlight.current) return;
-    if (!data.name.trim() || !data.email.trim() || (data.createAccount && (!data.firstName.trim() || !data.lastName.trim()))) { setError("Please complete the required client details."); return; }
+    if (!data.name.trim() || !data.email.trim()) { setError("Please complete the required client details."); return; }
     if (Number(data.depositAmount) > Number(data.totalAmount)) { setError("The deposit cannot be greater than the project value."); return; }
     inFlight.current = true;
     setSaving(true);
     setError("");
-    const payload = { ...data, name: data.name.trim(), email: data.email.trim(), firstName: data.firstName.trim(), lastName: data.lastName.trim(), accountEmail: data.accountEmail.trim(), totalAmount: Number(data.totalAmount) || 0, depositAmount: Number(data.depositAmount) || 0, eventDate: data.eventDate || null, followUpDate: data.followUpDate || null };
+    const payload = { ...data, name: data.name.trim(), email: data.email.trim(), totalAmount: Number(data.totalAmount) || 0, depositAmount: Number(data.depositAmount) || 0, eventDate: data.eventDate || null, followUpDate: data.followUpDate || null };
     delete payload._id;
     delete payload.tasks;
     delete payload.createdAt;
     delete payload.updatedAt;
     delete payload.__v;
-    if (!data.createAccount || editing) ["createAccount", "firstName", "lastName", "accountEmail", "password"].forEach((key) => delete payload[key]);
+    ["createAccount", "firstName", "lastName", "accountEmail", "password", "galleryTag"].forEach((key) => delete payload[key]);
     try {
       const response = editing
         ? await axios.patch(`${studioApi}/api/leads/${initialData._id}`, payload, studioAuth())
@@ -70,17 +70,10 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
             <label className="studio-field">Project value (₹)<input type="number" min="0" className="studio-input" value={data.totalAmount} onChange={set("totalAmount")} /></label>
             <label className="studio-field">Deposit received (₹)<input type="number" min="0" className="studio-input" value={data.depositAmount} onChange={set("depositAmount")} /></label>
             <label className="studio-field">Payment status<select className="studio-input" value={data.paymentStatus} onChange={set("paymentStatus")}>{PAYMENT_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></label>
-            <label className="studio-field">Gallery tag<input className="studio-input" value={data.galleryTag} onChange={set("galleryTag")} placeholder="Client gallery tag" /></label>
             <label className="studio-field">Cloud folder link<input type="url" className="studio-input" value={data.cloudLink} onChange={set("cloudLink")} placeholder="https://" /></label>
             <label className="studio-field">Cloud folder password<input className="studio-input" value={data.cloudPassword} onChange={set("cloudPassword")} autoComplete="off" /></label>
           </div></div>
           <div className="studio-crm-form-section"><label className="studio-field">Internal notes<textarea rows={3} className="studio-input" value={data.notes} onChange={set("notes")} placeholder="Visible to your studio team" /></label></div>
-          {!editing && <div className="studio-crm-account"><label className="studio-crm-checkbox"><input type="checkbox" checked={data.createAccount} onChange={(event) => setData({ ...data, createAccount: event.target.checked })} /><UserRoundPlus size={17} /><span>Create a client portal account<small>Give the client access to their gallery and cloud delivery.</small></span></label>{data.createAccount && <div className="studio-form-grid">
-            <label className="studio-field">First name<input required className="studio-input" value={data.firstName} onChange={set("firstName")} /></label>
-            <label className="studio-field">Last name<input required className="studio-input" value={data.lastName} onChange={set("lastName")} /></label>
-            <label className="studio-field">Account email<input type="email" className="studio-input" value={data.accountEmail} onChange={set("accountEmail")} placeholder={data.email || "Uses the client email above"} /></label>
-            <label className="studio-field">Temporary password<input required type="password" className="studio-input" value={data.password} onChange={set("password")} autoComplete="new-password" /></label>
-          </div>}</div>}
           <footer className="studio-modal-footer"><button type="button" className="studio-button" onClick={onClose} disabled={saving}>Cancel</button><button type="submit" className="studio-button primary" disabled={saving}>{saving && <Loader2 className="studio-crm-spin" size={16} />}{saving ? "Saving…" : editing ? "Save changes" : "Create enquiry"}</button></footer>
         </form>
       </section>

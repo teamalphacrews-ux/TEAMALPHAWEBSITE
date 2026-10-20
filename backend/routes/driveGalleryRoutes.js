@@ -16,6 +16,10 @@ const CloudinaryStorage = CloudinaryStorageModule.CloudinaryStorage || Cloudinar
 const User = require('../models/User');
 const Lead = require('../models/Lead');
 
+// Public portfolio media is published separately. A gallery password does not
+// authorize access to private studio collections or service-account files.
+router.use(auth, requireAdmin);
+
 // Configure Cloudinary
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -241,6 +245,10 @@ router.get('/files/:eventId', auth, async (req, res) => {
 router.get('/proxy/:fileId', async (req, res) => {
     try {
         const { fileId } = req.params;
+        res.set('Cache-Control', 'private, no-store');
+        res.set('Referrer-Policy', 'no-referrer');
+        res.set('X-Content-Type-Options', 'nosniff');
+        if (!/^[a-zA-Z0-9_-]{1,200}$/.test(fileId)) return res.status(400).send('Invalid Drive file');
         const drive = GoogleDriveService.getDriveClient();
         if (!drive) return res.status(500).send('Drive client error');
 
@@ -252,16 +260,19 @@ router.get('/proxy/:fileId', async (req, res) => {
         });
 
         const mimeType = metadata.data.mimeType;
-        const fileSize = parseInt(metadata.data.size);
+        const fileSize = Number(metadata.data.size);
         const fileName = metadata.data.name;
+        const disposition = req.query.download === 'true' || !/^(image|video)\//.test(mimeType) ? 'attachment' : 'inline';
+        res.set('Content-Disposition', `${disposition}; filename*=UTF-8''${encodeURIComponent(fileName || 'studio-media')}`);
         const isHEIC =
             mimeType === 'image/heic' ||
             fileName?.toLowerCase().endsWith('.heic') ||
             fileName?.toLowerCase().endsWith('.heif');
 
-        // CASE 1: REDIRECT TO THUMBNAIL (For HEIC/Reliable Previews)
-        // We use a redirect for thumbnails because it's significantly more reliable on varied network setups
-        if ((req.query.thumbnail === 'true' || isHEIC) && metadata.data.thumbnailLink) {
+        // Thumbnail bytes keep the same authorization boundary. Do not expose
+        // a provider capability URL through a redirect.
+        if (req.query.thumbnail === 'true' && !metadata.data.thumbnailLink) return res.status(404).send('Thumbnail unavailable');
+        if (req.query.download !== 'true' && (req.query.thumbnail === 'true' || isHEIC) && metadata.data.thumbnailLink) {
             let highResThumbnail = metadata.data.thumbnailLink;
             if (highResThumbnail.includes('=s')) {
                 highResThumbnail = highResThumbnail.replace(/=s\d+/, '=s1000');
@@ -271,16 +282,27 @@ router.get('/proxy/:fileId', async (req, res) => {
                 highResThumbnail += '=s1000';
             }
 
-            console.log(`📡 Redirecting ${fileId} to high-res thumbnail: ${fileName}`);
-            return res.redirect(302, highResThumbnail);
+            const thumbnailUrl = new URL(highResThumbnail);
+            if (thumbnailUrl.protocol !== 'https:' || !thumbnailUrl.hostname.endsWith('.googleusercontent.com')) return res.status(502).send('Thumbnail unavailable');
+            const preview = await fetch(thumbnailUrl, { redirect: 'error', signal: AbortSignal.timeout(15000) });
+            if (!preview.ok || !preview.body || !preview.headers.get('content-type')?.startsWith('image/')) return res.status(502).send('Thumbnail unavailable');
+            res.type(preview.headers.get('content-type'));
+            const stream = require('node:stream').Readable.fromWeb(preview.body);
+            stream.on('error', () => res.destroy());
+            res.on('close', () => stream.destroy());
+            return stream.pipe(res);
         }
 
         // CASE 2: PROXY RAW FILE (For Video Streaming/Downloads)
         const range = req.headers.range;
         if (range) {
-            const parts = range.replace(/bytes=/, "").split("-");
-            const start = parseInt(parts[0], 10);
-            const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+            const parts = /^bytes=(\d+)-(\d*)$/.exec(range);
+            const start = parts ? Number(parts[1]) : NaN;
+            const end = parts?.[2] ? Number(parts[2]) : fileSize - 1;
+            if (!Number.isSafeInteger(fileSize) || !Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start || end >= fileSize) {
+                res.set('Content-Range', `bytes */${Number.isSafeInteger(fileSize) ? fileSize : '*'}`);
+                return res.status(416).send('Invalid byte range');
+            }
             const chunksize = (end - start) + 1;
 
             const response = await drive.files.get(
@@ -296,8 +318,10 @@ router.get('/proxy/:fileId', async (req, res) => {
                 'Accept-Ranges': 'bytes',
                 'Content-Length': chunksize,
                 'Content-Type': mimeType,
-                'Content-Disposition': `inline; filename="${fileName}"`
+                'Cache-Control': 'private, no-store'
             });
+            response.data.on('error', () => res.destroy());
+            res.on('close', () => response.data.destroy());
             return response.data.pipe(res);
         } else {
             const response = await drive.files.get(
@@ -306,16 +330,18 @@ router.get('/proxy/:fileId', async (req, res) => {
             );
 
             res.writeHead(200, {
-                'Content-Length': fileSize,
+                ...(Number.isSafeInteger(fileSize) && fileSize >= 0 ? { 'Content-Length': fileSize } : {}),
                 'Content-Type': mimeType,
-                'Content-Disposition': `inline; filename="${fileName}"`,
-                'Cache-Control': 'public, max-age=86400'
+                'Cache-Control': 'private, no-store'
             });
+            response.data.on('error', () => res.destroy());
+            res.on('close', () => response.data.destroy());
             return response.data.pipe(res);
         }
     } catch (error) {
         console.error('Proxy error:', error.message);
-        res.status(500).send('Error streaming file');
+        if (res.headersSent) return res.destroy();
+        res.status(502).send('Error streaming file');
     }
 });
 
