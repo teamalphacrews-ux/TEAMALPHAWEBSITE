@@ -13,6 +13,11 @@ const readStoredSession = () => {
     const token = cleanToken(rawToken);
     if (token && rawToken !== token) localStorage.setItem('token', token);
     const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (user && user.role !== 'admin') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      return { token: null, user: null };
+    }
     return token && user && typeof user === 'object' ? { token, user } : { token: null, user: null };
   } catch { return { token: null, user: null }; }
 };
@@ -22,11 +27,11 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const login = useCallback((user, userToken) => {
     const token = cleanToken(userToken);
-    if (!token || !user) return;
+    if (!token || user?.role !== 'admin') return;
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     setSession({ token, user });
-    navigate(user.role === 'admin' ? '/admin' : '/portal');
+    navigate('/admin');
   }, [navigate]);
   const logout = useCallback(() => {
     Object.keys(localStorage).forEach(key => { if (key.startsWith('gallery_unlocked_')) localStorage.removeItem(key); });
