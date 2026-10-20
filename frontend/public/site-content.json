@@ -1,0 +1,143 @@
+{
+  "site": {
+    "name": "Team Alpha",
+    "tagline": "The Wedding Artist",
+    "city": "Bengaluru",
+    "phone": "+919110603953",
+    "email": "Teamalphacrews@gmail.com",
+    "instagram": "https://instagram.com/teamalpha_crew",
+    "whatsapp": "https://wa.me/919110603953",
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Team+Alpha+Photography+Bengaluru"
+  },
+  "categories": [
+    {
+      "id": "wedding",
+      "label": "Wedding Stories"
+    },
+    {
+      "id": "pre-wedding",
+      "label": "Pre-Wedding"
+    },
+    {
+      "id": "engagement",
+      "label": "Engagements"
+    },
+    {
+      "id": "intimate",
+      "label": "Intimate Weddings"
+    },
+    {
+      "id": "destination",
+      "label": "Destination Weddings"
+    },
+    {
+      "id": "films",
+      "label": "Wedding Films"
+    }
+  ],
+  "stories": [
+    {
+      "id": "wedding-editorial",
+      "slug": "wedding-editorial",
+      "title": "The wedding edit",
+      "category": "wedding",
+      "featured": true,
+      "cover": "/assets/editorial/wedding-1280.webp",
+      "intro": "A selection from our wedding photography. Fleeting gestures, quiet anticipation and the people who make the day yours.",
+      "images": [
+        {
+          "src": "/assets/editorial/wedding-1280.webp",
+          "srcSet": "/assets/editorial/wedding-640.webp 640w, /assets/editorial/wedding-1280.webp 1280w",
+          "alt": "A wedding portrait from the Team Alpha collection",
+          "width": 1280,
+          "height": 1919,
+          "approved": true
+        },
+        {
+          "src": "/assets/editorial/studio-wedding-1280.webp",
+          "srcSet": "/assets/editorial/studio-wedding-640.webp 640w, /assets/editorial/studio-wedding-1280.webp 1280w",
+          "alt": "An intimate wedding moment photographed by Team Alpha",
+          "width": 1280,
+          "height": 1919,
+          "approved": true
+        },
+        {
+          "src": "/assets/editorial/haldi-1280.webp",
+          "srcSet": "/assets/editorial/haldi-640.webp 640w, /assets/editorial/haldi-1280.webp 1280w",
+          "alt": "Colour and celebration in the Team Alpha wedding collection",
+          "width": 1280,
+          "height": 1919,
+          "approved": true
+        }
+      ],
+      "published": true
+    },
+    {
+      "id": "pre-wedding-editorial",
+      "slug": "before-the-beginning",
+      "title": "Before the beginning",
+      "category": "pre-wedding",
+      "featured": true,
+      "cover": "/assets/editorial/pre_wedding-1280.webp",
+      "intro": "Time to be yourselves. An editorial collection of pre-wedding portraits, made with a little space for spontaneity.",
+      "images": [
+        {
+          "src": "/assets/editorial/pre_wedding-1280.webp",
+          "srcSet": "/assets/editorial/pre_wedding-640.webp 640w, /assets/editorial/pre_wedding-1280.webp 1280w",
+          "alt": "A pre-wedding portrait from the Team Alpha collection",
+          "width": 1280,
+          "height": 1920,
+          "approved": true
+        },
+        {
+          "src": "/assets/editorial/studio-pre-wedding-1280.webp",
+          "srcSet": "/assets/editorial/studio-pre-wedding-640.webp 640w, /assets/editorial/studio-pre-wedding-1280.webp 1100w",
+          "alt": "A couple portrait photographed by Team Alpha",
+          "width": 1100,
+          "height": 1650,
+          "approved": true
+        }
+      ],
+      "published": true
+    },
+    {
+      "id": "engagement-editorial",
+      "slug": "a-promise-in-frame",
+      "title": "A promise in frame",
+      "category": "engagement",
+      "featured": true,
+      "cover": "/assets/editorial/engagement-1280.webp",
+      "intro": "The start of something beautifully personal. A selection of engagement imagery from the Team Alpha archive.",
+      "images": [
+        {
+          "src": "/assets/editorial/engagement-1280.webp",
+          "srcSet": "/assets/editorial/engagement-640.webp 640w, /assets/editorial/engagement-1280.webp 1280w",
+          "alt": "An engagement photograph from the Team Alpha collection",
+          "width": 1280,
+          "height": 853,
+          "approved": true
+        }
+      ],
+      "published": true
+    }
+  ],
+  "films": [],
+  "sections": {
+    "intro": true,
+    "portfolio": true,
+    "films": true,
+    "experience": true,
+    "reviews": true,
+    "collections": true,
+    "enquiry": true
+  },
+  "sectionOrder": [
+    "intro",
+    "portfolio",
+    "films",
+    "experience",
+    "reviews",
+    "collections",
+    "enquiry"
+  ]
+}

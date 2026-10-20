@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import '../../studio.css';
+import '../../studio-mobile.css';
 import { useAuth } from '../../../context/AuthContext';
 import useStudioDialog from '../studio/useStudioDialog';
 
