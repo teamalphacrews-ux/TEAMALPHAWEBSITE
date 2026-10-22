@@ -1,3 +1,5 @@
+import { TEAM_ALPHA_LOGO } from "./branding.js";
+
 export const invoiceDate = (value) =>
   value
     ? new Date(value).toLocaleDateString("en-IN", {
@@ -53,7 +55,7 @@ export async function downloadInvoice(i) {
     y += 3;
   };
   if (i.design?.showLogo !== false) {
-    const response = await fetch(studio.logoUrl || "/team-alpha-logo.png");
+    const response = await fetch(studio.logoUrl || TEAM_ALPHA_LOGO);
     if (!response.ok) throw new Error("Logo could not be loaded");
     const bitmap = await createImageBitmap(await response.blob());
     const canvas = document.createElement("canvas");

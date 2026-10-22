@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { TEAM_ALPHA_LOGO } from "../../utils/branding";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   Plus,
@@ -1465,7 +1466,7 @@ export default function Quotations() {
               )}
             </section>
             <section className="qw-email-preview">
-              <img src="/team-alpha-logo.png" alt="Team Alpha" />
+              <img src={TEAM_ALPHA_LOGO} alt="Team Alpha" />
               <div>
                 Your quote is ready for review
                 <strong>Quote #{quoteNumber(current)}</strong>
@@ -1848,7 +1849,8 @@ export function QuoteReadDocument({ quote, settings = {} }) {
   return (
     <article className="qw-read-document">
       <div className="qw-document-brand">
-        {settings.studioName || "TEAM ALPHA"}
+        <img src={TEAM_ALPHA_LOGO} alt="" width="88" height="88" />
+        <span>{settings.studioName || "TEAM ALPHA"}</span>
       </div>
       <h2>Items</h2>
       <table>

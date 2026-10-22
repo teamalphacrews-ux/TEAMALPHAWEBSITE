@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TEAM_ALPHA_LOGO } from "../utils/branding";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { Printer, Download, X } from "lucide-react";
@@ -65,7 +66,7 @@ export function InvoiceDocument({ invoice, preview = false }) {
       >
         {design.showLogo !== false && (
           <img
-            src={i.studio?.logoUrl || "/team-alpha-logo.png"}
+            src={i.studio?.logoUrl || TEAM_ALPHA_LOGO}
             alt={i.studio?.name || "Team Alpha"}
           />
         )}
@@ -89,7 +90,7 @@ export function InvoiceDocument({ invoice, preview = false }) {
           <div className="invoice-document-brand">
             {design.showLogo !== false && (
               <img
-                src={i.studio?.logoUrl || "/team-alpha-logo.png"}
+                src={i.studio?.logoUrl || TEAM_ALPHA_LOGO}
                 alt={i.studio?.name || "Team Alpha"}
               />
             )}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TEAM_ALPHA_LOGO } from "../utils/branding";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -127,7 +128,7 @@ export default function SharedQuotation() {
               backgroundImage: `linear-gradient(#10291e35,#14261e35),url("${quote.design?.coverImage || "/assets/banner.jpg"}")`,
             }}
           >
-            <img src="/team-alpha-logo.png" alt="Team Alpha" />
+            <img src={TEAM_ALPHA_LOGO} alt="Team Alpha" />
             <strong>{quote.studio.name}</strong>
             <h1>Hi {quote.clientName.split(" ")[0]},</h1>
             <p>

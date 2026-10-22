@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const requireAdmin = require('../middleware/requireAdmin');
 const { sendEventNotification } = require('../services/ReminderService');
 const { syncToGoogle, pollGoogleCalendar } = require('../services/googleCalendarService');
+const { calendarConnection, createCalendarSyncHandler } = require('../utils/calendarConnection');
 
 const { eventFields,crewOverlap } = require('../utils/studioCalendar');
 const router = express.Router();
@@ -17,32 +18,14 @@ router.get('/sync-status', async (req, res) => {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        const isSynced = !!user.googleAccessToken;
-        res.json({ 
-            isSynced, 
-            email: isSynced ? user.googleEmail : user.email,
-            lastSyncAt: user.googleLastSyncAt,
-            syncError: user.googleSyncError
-        });
+        res.json(calendarConnection(user));
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
 // Manually trigger Google Calendar sync
-router.get('/sync-now', async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user || !user.googleAccessToken) {
-            return res.status(400).json({ message: "Google Calendar not connected" });
-        }
-        await pollGoogleCalendar(user, req.io);
-        res.json({ success: true, message: "Calendar synced" });
-    } catch (error) {
-        console.error("Manual sync error:", error);
-        res.status(500).json({ message: "Failed to sync calendar" });
-    }
-});
+router.get('/sync-now', createCalendarSyncHandler({ User, pollGoogleCalendar }));
 
 // Disconnect Google Calendar and delete synced events
 router.post('/disconnect-google', async (req, res) => {

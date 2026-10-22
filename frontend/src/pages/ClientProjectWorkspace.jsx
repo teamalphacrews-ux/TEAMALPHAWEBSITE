@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { TEAM_ALPHA_LOGO } from "../utils/branding";
 import axios from "axios";
 import {
   ArrowUpRight,
@@ -574,7 +575,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       <meta name="referrer" content="no-referrer" />
       <header className="cp-topbar">
         <div>
-          <img src="/team-alpha-logo.png" alt="Team Alpha" />
+          <img src={TEAM_ALPHA_LOGO} alt="Team Alpha" />
           <span>
             {quote.studio.name}
             <small>CLIENT EXPERIENCE</small>
@@ -741,7 +742,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       >
         <header className="cp-chat-heading">
           <span className="cp-chat-avatar">
-            <img src="/team-alpha-logo.png" alt="" />
+            <img src={TEAM_ALPHA_LOGO} alt="" />
           </span>
           <div>
             <h2 id="project-support-title">{quote.studio.name}</h2>

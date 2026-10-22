@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import { SiteContentProvider, useSiteContent } from "./content";
+import { TEAM_ALPHA_LOGO } from "../utils/branding";
 import "./luxury.css";
 
 const navigation = [
@@ -98,7 +99,7 @@ function PublicSeo() {
     const canonicalUrl = new URL(origin);
     canonicalUrl.pathname = canonicalPath;
     const pageUrl = canonicalUrl.href;
-    let imageUrl = new URL("/team-alpha-logo.png", origin).href;
+    let imageUrl = new URL(TEAM_ALPHA_LOGO, origin).href;
     if (storyCover) {
       try {
         const image = new URL(storyCover, origin);
@@ -257,7 +258,7 @@ export function PublicHeader() {
       </a>
       <header className={`lux-nav ${solid ? "is-solid" : "is-transparent"}`}>
         <Link className="lux-brand" to="/" aria-label="Team Alpha home">
-          <img src="/team-alpha-logo.png" alt="" width="43" height="43" />
+          <img src={TEAM_ALPHA_LOGO} alt="" width="64" height="64" />
           <span>
             TEAM ALPHA<small>THE WEDDING ARTIST</small>
           </span>
@@ -358,8 +359,8 @@ export function PublicFooter() {
     <footer className="lux-footer">
       <div className="lux-shell lux-footer-grid">
         <div>
-          <Link to="/" className="lux-footer-wordmark">
-            Team Alpha<span>The Wedding Artist</span>
+          <Link to="/" className="lux-footer-wordmark" aria-label="Team Alpha home">
+            <img src={TEAM_ALPHA_LOGO} alt="Team Alpha · The Wedding Artist" width="144" height="144" loading="lazy" />
           </Link>
           <p>
             Wedding photography & cinematography.

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { io } from "socket.io-client";
 import { useAuth } from "../../context/AuthContext";
-import new_logo from "../../assets/new_logo_original.png";
+import { TEAM_ALPHA_LOGO as new_logo } from "../../utils/branding";
 
 
 export default function ClientSidebar({ onClose }) {
@@ -92,7 +92,7 @@ export default function ClientSidebar({ onClose }) {
               objectFit: "contain"
             }}
           />
-          <div className="text-center mt-[-12px]">
+          <div className="text-center mt-2">
             <span className="block text-[13px] font-bold tracking-[0.3em] uppercase text-stone-800 transition-colors group-hover:text-luxury-gold">Team Alpha</span>
             <span className="block text-[7px] tracking-[0.2em] font-medium uppercase text-stone-400 mt-1">High-End Wedding Cinema</span>
           </div>

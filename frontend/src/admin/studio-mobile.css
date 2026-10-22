@@ -507,7 +507,7 @@
     width: 100%;
     max-height: 310px;
     border-right: 0;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--brand-stone);
     padding: 20px;
   }
   .studio-app.studio-app .qw-editor-scroll {
@@ -563,7 +563,7 @@
   .studio-app.studio-app .invoice-editor-settings {
     padding: 20px;
     border-right: 0;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--brand-stone);
   }
   .studio-app.studio-app .invoice-editor-content {
     width: calc(100% - 24px);
@@ -790,7 +790,7 @@
     flex-shrink: 0;
     padding: 16px;
     border-radius: 16px 16px 0 0;
-    border-bottom: 1px solid #e8ebef;
+    border-bottom: 1px solid var(--brand-stone);
     align-items: flex-start;
     gap: 8px;
   }
@@ -827,7 +827,7 @@
     width: 44px;
     height: 44px;
     padding: 10px;
-    color: #5f636b;
+    color: var(--brand-muted);
     border-radius: 10px;
   }
   .studio-app.studio-app .studio-team-dialog-body {
@@ -851,7 +851,7 @@
   .studio-app.studio-app .studio-team-dialog label {
     display: block;
     margin-left: 0;
-    color: #5f636b;
+    color: var(--brand-muted);
     font-size: 12px;
     font-weight: 500;
     line-height: 1.5;
@@ -875,8 +875,8 @@
     color: #707782;
   }
   .studio-app.studio-app .studio-team-dialog :is(input, select):focus {
-    border-color: #0071e3;
-    outline: 2px solid #0071e33d;
+    border-color: var(--brand-ink);
+    outline: 2px solid #96784b66;
     outline-offset: 1px;
   }
   .studio-app.studio-app .studio-team-dialog form > div:last-child {
@@ -892,7 +892,7 @@
     text-transform: none;
   }
   .studio-app.studio-app .studio-team-dialog button:focus-visible {
-    outline: 2px solid #0071e3;
+    outline: 2px solid var(--brand-ink);
     outline-offset: 3px;
   }
 }

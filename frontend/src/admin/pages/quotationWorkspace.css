@@ -57,9 +57,9 @@
   align-items: center;
   justify-content: center;
   padding: 11px 24px;
-  background: #20bb98;
+  background: var(--brand-ink);
   color: white;
-  border: 1px solid #20bb98;
+  border: 1px solid var(--brand-ink);
   border-radius: 1px;
   min-height: 40px;
   font-size: 12px;
@@ -87,7 +87,7 @@
 .qw-tabs {
   display: flex;
   gap: 28px;
-  border-bottom: 1px solid #e9eeeb;
+  border-bottom: 1px solid var(--brand-stone);
   margin-bottom: 24px;
   overflow: auto;
 }
@@ -101,7 +101,7 @@
 }
 .qw-tabs button.active {
   color: #222;
-  border-color: #20bb98;
+  border-color: var(--brand-ink);
 }
 .qw-list-table {
   overflow: auto;
@@ -120,7 +120,7 @@
 }
 .qw-list-table td {
   padding: 20px 12px;
-  border-top: 1px solid #e8ece9;
+  border-top: 1px solid var(--brand-stone);
 }
 .qw-list-table td button {
   color: #252a27;
@@ -170,7 +170,7 @@
   min-height: 80px;
   padding: 12px 25px;
   background: white;
-  border-bottom: 1px solid #e8ece9;
+  border-bottom: 1px solid var(--brand-stone);
 }
 .qw-doc-header > button,
 .qw-doc-header > div > button,
@@ -189,7 +189,7 @@
 }
 .qw-doc-header small {
   display: block;
-  color: #20a888;
+  color: var(--brand-ink);
   font-size: 11px;
 }
 .qw-save-state {
@@ -235,7 +235,7 @@
   flex-shrink: 0;
   padding: 32px 30px;
   overflow: auto;
-  border-right: 1px solid #e8ece9;
+  border-right: 1px solid var(--brand-stone);
 }
 .qw-settings h3 {
   margin: 0 0 25px;
@@ -352,7 +352,7 @@
   accent-color: #1eb692;
 }
 .qw-editor-scroll {
-  background: #f5f7f6;
+  background: var(--brand-paper);
   flex: 1;
   overflow: auto;
   padding: 56px max(32px, 5vw);
@@ -413,7 +413,7 @@
 }
 .qw-item {
   position: relative;
-  background: #f5f7f6;
+  background: var(--brand-paper);
   padding: 17px;
   margin: 12px 0;
   align-items: start;
@@ -494,13 +494,13 @@
 .qw-total-area dt button {
   border: 0;
   background: none;
-  color: #20a888;
+  color: var(--brand-ink);
   padding: 0;
 }
 .qw-total-area dt:last-of-type,
 .qw-total-area dd:last-of-type {
   padding-top: 18px;
-  border-top: 1px solid #e8ece9;
+  border-top: 1px solid var(--brand-stone);
   margin-top: 8px;
 }
 .qw-detail {
@@ -517,7 +517,7 @@
 }
 .qw-detail-summary span {
   display: block;
-  color: #919792;
+  color: var(--brand-muted);
   margin-bottom: 10px;
 }
 .qw-detail-summary strong {
@@ -545,7 +545,7 @@
 }
 .qw-read-paper {
   padding: 40px;
-  background: #f5f7f6;
+  background: var(--brand-paper);
   margin-bottom: 30px;
 }
 .qw-read-document {
@@ -559,6 +559,13 @@
   font-size: 12px;
   text-align: center;
   margin-bottom: 30px;
+}
+.qw-document-brand > img {
+  display: block;
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  margin: 0 auto 12px;
 }
 .qw-read-document table {
   width: 100%;
@@ -605,7 +612,7 @@
 }
 .qw-print {
   border: 0;
-  background: #f5f7f6;
+  background: var(--brand-paper);
   display: flex;
   gap: 8px;
   padding: 10px;
@@ -628,7 +635,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #20b492;
+  background: var(--brand-accent);
 }
 .qw-timeline small {
   display: block;
@@ -677,7 +684,7 @@
   height: 60px;
 }
 .qw-cover-grid button.active {
-  border-color: #20bb98;
+  border-color: var(--brand-ink);
 }
 .qw-cover-grid img {
   width: 100%;
@@ -717,7 +724,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-height: calc(100vh - 80px);
-  background: #f4f6f5;
+  background: var(--brand-paper);
 }
 .qw-send > section:first-child {
   background: white;
@@ -775,7 +782,7 @@
 }
 .qw-email-preview > div {
   text-align: center;
-  background: #f4f6f5;
+  background: var(--brand-paper);
   padding: 25px;
 }
 .qw-email-preview > div strong,
@@ -815,7 +822,7 @@
 .qw-link-input {
   width: 100%;
   padding: 15px;
-  background: #f4f6f5;
+  background: var(--brand-paper);
   border: 0;
   font-size: 11px;
   box-sizing: border-box;

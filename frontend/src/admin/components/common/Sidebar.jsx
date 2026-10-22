@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
+import { TEAM_ALPHA_LOGO } from "../../../utils/branding";
 import {
   LayoutDashboard,
   UsersRound,
@@ -14,7 +15,6 @@ import {
   Folder,
   Clapperboard,
   ArrowUpRight,
-  Aperture,
   Webhook,
   FileText,
   HardDrive,
@@ -131,7 +131,7 @@ export default function Sidebar({ onClose }) {
           aria-label="Team Alpha Studio OS home"
         >
           <span className="studio-brand-mark">
-            <Aperture size={23} strokeWidth={1.75} />
+            <img src={TEAM_ALPHA_LOGO} alt="" width="52" height="52" />
           </span>
           <span>
             <strong>Team Alpha</strong>
