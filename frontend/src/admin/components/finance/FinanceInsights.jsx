@@ -153,14 +153,14 @@ export function FinanceInsights({ entries, leads, loading }) {
                 >
                   <CartesianGrid
                     vertical={false}
-                    stroke="#edf0f4"
+                    stroke="var(--brand-stone)"
                     strokeDasharray="3 4"
                   />
                   <XAxis
                     dataKey="label"
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 11, fill: "#6e6e73" }}
+                    tick={{ fontSize: 11, fill: "var(--brand-muted)" }}
                     minTickGap={16}
                     dy={8}
                   />
@@ -168,19 +168,19 @@ export function FinanceInsights({ entries, leads, loading }) {
                     tickFormatter={compactMoney}
                     tickLine={false}
                     axisLine={false}
-                    tick={{ fontSize: 10, fill: "#8a8d94" }}
+                    tick={{ fontSize: 10, fill: "var(--brand-muted)" }}
                     width={58}
                   />
                   <Tooltip
                     content={<CashTooltip />}
-                    cursor={{ fill: "#f2f6fc" }}
+                    cursor={{ fill: "var(--brand-paper)" }}
                     isAnimationActive={!reducedMotion}
                     animationDuration={160}
                   />
                   <Bar
                     dataKey="income"
                     name="Income"
-                    fill="#0071e3"
+                    fill="var(--chart-income)"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={24}
                     isAnimationActive={!reducedMotion}
@@ -190,7 +190,9 @@ export function FinanceInsights({ entries, leads, loading }) {
                   <Bar
                     dataKey="expenses"
                     name="Expenses"
-                    fill="#7d8fa8"
+                    fill="var(--chart-expense)"
+                    stroke="var(--brand-accent)"
+                    strokeWidth={0.75}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={24}
                     isAnimationActive={!reducedMotion}

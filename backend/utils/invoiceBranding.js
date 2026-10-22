@@ -7,7 +7,7 @@ function invoiceIssuer(studio = {}, custom = {}) {
     phone: studio.phone || "",
     website: studio.website || "",
     taxId: studio.taxId || "",
-    logoUrl: studio.logoUrl || "/team-alpha-logo.png",
+    logoUrl: studio.logoUrl || "/assets/team-alpha-logo-20261021.png",
     paymentInstructions: studio.paymentInstructions || "",
     bankDetails: studio.bankDetails || "",
     upiId: studio.upiId || "",

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { TEAM_ALPHA_LOGO } from "../../utils/branding";
 import {
   Link,
   useNavigate,
@@ -45,7 +46,7 @@ const studioIssuer = (studio) => ({
   phone: studio.phone || "",
   website: studio.website || "",
   taxId: studio.taxId || "",
-  logoUrl: studio.logoUrl || "/team-alpha-logo.png",
+  logoUrl: studio.logoUrl || TEAM_ALPHA_LOGO,
   paymentInstructions: studio.paymentInstructions || "",
   bankDetails: studio.bankDetails || "",
   upiId: studio.upiId || "",
@@ -884,7 +885,7 @@ export default function InvoiceWorkspace() {
             <div className="invoice-business-identity">
               {draft.design.showLogo !== false && (
                 <img
-                  src={draft.issuer?.logoUrl || "/team-alpha-logo.png"}
+                  src={draft.issuer?.logoUrl || TEAM_ALPHA_LOGO}
                   alt={draft.issuer?.name || "Team Alpha"}
                 />
               )}
@@ -1568,7 +1569,7 @@ export default function InvoiceWorkspace() {
                 onChange={(v) =>
                   change("issuer", { ...draft.issuer, logoUrl: v })
                 }
-                placeholder="HTTPS image URL or /team-alpha-logo.png"
+                placeholder="HTTPS image URL, or leave blank for Team Alpha"
                 maxLength={2000}
               />
               <Field label="Upload business logo">
@@ -1961,7 +1962,7 @@ export default function InvoiceWorkspace() {
           </section>
           <section className="invoice-email-preview">
             <img
-              src={draft.issuer?.logoUrl || "/team-alpha-logo.png"}
+              src={draft.issuer?.logoUrl || TEAM_ALPHA_LOGO}
               alt={draft.issuer?.name || "Team Alpha"}
             />
             <div>

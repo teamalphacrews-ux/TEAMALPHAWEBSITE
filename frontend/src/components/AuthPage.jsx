@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { ArrowRight, Aperture, ShieldCheck, Eye, EyeOff, ArrowUpRight } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Eye, EyeOff, ArrowUpRight } from 'lucide-react';
+import { TEAM_ALPHA_LOGO } from '../utils/branding';
 import { useAuth } from '../context/AuthContext';
 import API_BASE_URL from '../utils/apiConfig';
 import '../admin/studio.css';
 import '../admin/studio-mobile.css';
 import './auth.css';
+import '../admin/studio-brand.css';
 
 export default function AuthPage() {
   const { user, token, login } = useAuth();
@@ -28,7 +30,7 @@ export default function AuthPage() {
   };
   return <div className="studio-app studio-auth">
     <section className="studio-auth-form-panel">
-      <Link to="/" className="studio-auth-brand"><Aperture size={30} strokeWidth={1.1} /><span><strong>TEAM ALPHA</strong><small>STUDIO OS</small></span></Link>
+      <Link to="/" className="studio-auth-brand"><img src={TEAM_ALPHA_LOGO} alt="" width="64" height="64" /><span><strong>TEAM ALPHA</strong><small>STUDIO OS</small></span></Link>
       <div className="studio-auth-form-content"><span className="studio-eyebrow">A HOME FOR YOUR CRAFT</span><h1>Welcome back.</h1><p>Your stories. Your people. Your studio, in sync.</p>
         {error && <div className="studio-error" role="alert">{error}</div>}
         <form onSubmit={submit}>

@@ -1,11 +1,11 @@
 .luxury-site {
-  --lux-ink: #141414;
-  --lux-paper: #f6f3ed;
-  --lux-champagne: #c4ae8a;
-  --lux-stone: #d8d3ca;
-  --lux-serif: "Playfair Display", "Iowan Old Style", Georgia, serif;
-  --lux-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  --lux-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --lux-ink: var(--brand-ink);
+  --lux-paper: var(--brand-paper);
+  --lux-champagne: var(--brand-champagne);
+  --lux-stone: var(--brand-stone);
+  --lux-serif: var(--brand-serif);
+  --lux-sans: var(--brand-sans);
+  --lux-ease: var(--brand-ease);
   background: var(--lux-paper);
   color: var(--lux-ink);
   font-family: var(--lux-sans);
@@ -160,10 +160,11 @@
   color: inherit;
 }
 .lux-brand img {
-  width: 43px;
-  height: 43px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
-  background: #faf9f6;
+  background: #fff;
+  border-radius: 4px;
 }
 .lux-brand > span {
   font-family: var(--lux-serif);
@@ -499,6 +500,7 @@
   letter-spacing: -0.035em;
   color: inherit;
 }
+.lux-footer-wordmark > img { display:block; width:144px; height:144px; object-fit:contain; background:#fff; border-radius:4px; }
 .lux-footer-wordmark > span {
   display: block;
   font: 400 7px/1.6 var(--lux-sans);
@@ -795,8 +797,8 @@
     gap: 10px;
   }
   .lux-brand img {
-    width: 34px;
-    height: 34px;
+    width: 48px;
+    height: 48px;
   }
   .lux-brand {
     gap: 8px;

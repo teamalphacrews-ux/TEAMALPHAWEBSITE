@@ -155,7 +155,7 @@ export default function UserManagement() {
       <div className="fixed inset-0 bg-[#fdfaf6] -z-20" />
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] bg-[#fdf2e9] rounded-full blur-[150px] opacity-80" />
-        <div className="absolute bottom-[-10%] right-[-20%] w-[60%] h-[60%] bg-blue-50/30 rounded-full blur-[150px] opacity-60" />
+        <div className="absolute bottom-[-10%] right-[-20%] w-[60%] h-[60%] bg-[#c4ae8a]/10 rounded-full blur-[150px] opacity-60" />
         <div className="absolute top-[20%] right-[10%] w-[40%] h-[40%] bg-white rounded-full blur-[120px] opacity-50" />
       </div>
 
@@ -164,8 +164,8 @@ export default function UserManagement() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
           <div className="space-y-1.5 translate-x-1">
             <div className="flex items-center gap-5 mb-2">
-              <div className="w-1.5 h-12 bg-[#e3ae97] rounded-full shadow-[0_0_25px_rgba(227,174,151,0.4)] animate-pulse" />
-              <h1 className="font-luxury text-4xl md:text-7xl text-[#1a1a1a] tracking-tight leading-none">
+              <div className="w-1.5 h-12 bg-[#c4ae8a] rounded-full shadow-[0_0_25px_rgba(227,174,151,0.4)] animate-pulse" />
+              <h1 className="font-luxury text-4xl md:text-7xl text-[#141414] tracking-tight leading-none">
                 Team &amp; access
               </h1>
             </div>
@@ -179,7 +179,7 @@ export default function UserManagement() {
           <div className="flex items-center gap-6 w-full md:w-auto">
             <button
               onClick={() => setShowCreateModal(true)}
-              className="group w-full md:w-auto px-6 md:px-10 py-3.5 md:py-4 bg-[#1a1a1a] text-white rounded-full text-[10px] md:text-[11px] font-black uppercase tracking-[0.4em] transition-all hover:bg-stone-800 hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] hover:translate-y-[-3px] active:translate-y-0 flex items-center justify-center gap-4 overflow-hidden shadow-xl"
+              className="group w-full md:w-auto px-6 md:px-10 py-3.5 md:py-4 bg-[#141414] text-white rounded-full text-[10px] md:text-[11px] font-black uppercase tracking-[0.4em] transition-all hover:bg-stone-800 hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] hover:translate-y-[-3px] active:translate-y-0 flex items-center justify-center gap-4 overflow-hidden shadow-xl"
             >
               <UserPlus
                 size={16}
@@ -250,7 +250,7 @@ export default function UserManagement() {
                   initial={{ opacity: 0, x: -15 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.04 }}
-                  className="relative flex flex-col md:grid md:grid-cols-12 items-start md:items-center px-6 md:px-16 py-8 transition-all hover:bg-stone-50/60 group border-l-[6px] border-transparent hover:border-l-[#e3ae9733] gap-6 md:gap-0"
+                  className="relative flex flex-col md:grid md:grid-cols-12 items-start md:items-center px-6 md:px-16 py-8 transition-all hover:bg-stone-50/60 group border-l-[6px] border-transparent hover:border-l-[#c4ae8a33] gap-6 md:gap-0"
                 >
                   {/* Identity */}
                   <div className="col-span-6 flex items-center gap-6 md:gap-8 w-full">
@@ -560,7 +560,7 @@ export default function UserManagement() {
               {/* Internal Header */}
               <div className="studio-team-dialog-header px-10 pt-10 pb-4 flex justify-between items-center bg-white z-10 rounded-t-[48px]">
                 <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 rounded-2xl bg-[#e3ae97] text-white flex items-center justify-center shadow-lg">
+                  <div className="w-14 h-14 rounded-2xl bg-[#c4ae8a] text-white flex items-center justify-center shadow-lg">
                     <Shield size={24} strokeWidth={1.5} />
                   </div>
                   <div>

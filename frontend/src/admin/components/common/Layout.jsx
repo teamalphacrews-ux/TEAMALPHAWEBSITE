@@ -5,6 +5,7 @@ import Topbar from './Topbar';
 import '../../studio.css';
 import '../../studio-motion.css';
 import '../../studio-mobile.css';
+import '../../studio-brand.css';
 import { useAuth } from '../../../context/AuthContext';
 import useStudioDialog from '../studio/useStudioDialog';
 

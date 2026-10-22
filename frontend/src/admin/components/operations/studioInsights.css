@@ -21,7 +21,7 @@
 }
 .studio-app .studio-insight-heading p {
   margin: 5px 0 0;
-  color: #6e6e73;
+  color: var(--brand-muted);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -30,14 +30,14 @@
   align-items: center;
   gap: 2px;
   padding: 3px;
-  border: 1px solid #e7ebf1;
+  border: 1px solid var(--brand-stone);
   border-radius: 8px;
-  background: #f7f8fa;
+  background: var(--brand-paper);
   flex-shrink: 0;
 }
 .studio-app .studio-insight-period button {
   background: transparent;
-  color: #6e6e73;
+  color: var(--brand-muted);
   border: 0;
   padding: 5px 8px;
   font-size: 11px;
@@ -52,8 +52,8 @@
 }
 .studio-app .studio-insight-period button[aria-pressed="true"] {
   background: #fff;
-  color: #0067ce;
-  box-shadow: 0 1px 5px #1d1d1f10;
+  color: var(--brand-accent);
+  box-shadow: 0 1px 5px #14141410;
 }
 .studio-app .studio-cash-summary {
   display: grid;
@@ -62,7 +62,7 @@
   gap: 18px;
 }
 .studio-app .studio-cash-summary > div + div {
-  border-left: 1px solid #edf0f4;
+  border-left: 1px solid #e8dfd1;
   padding-left: 18px;
 }
 .studio-app .studio-cash-summary span {
@@ -70,11 +70,11 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: #6e6e73;
+  color: var(--brand-muted);
   margin-bottom: 5px;
 }
 .studio-app .studio-cash-summary strong {
-  color: #1d1d1f;
+  color: var(--brand-ink);
   font-size: 20px;
   font-weight: 500;
   letter-spacing: -0.04em;
@@ -105,12 +105,12 @@
   justify-content: center;
   flex-direction: column;
   gap: 10px;
-  color: #8a8d94;
+  color: var(--brand-muted);
   text-align: center;
   font-size: 12px;
 }
 .studio-app .studio-chart-placeholder strong {
-  color: #6e6e73;
+  color: var(--brand-muted);
   font-size: 12px;
   font-weight: 500;
 }
@@ -129,7 +129,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  color: #6e6e73;
+  color: var(--brand-muted);
   font-size: 11px;
 }
 .studio-app .studio-chart-legend > span,
@@ -145,18 +145,18 @@
   width: 7px;
   height: 7px;
   border-radius: 2px;
-  background: #7d8fa8;
+  background: var(--brand-champagne);
   flex-shrink: 0;
 }
 .studio-app
   :is(.studio-chart-legend, .studio-chart-tooltip, .studio-collection-values)
   i.income {
-  background: #0071e3;
+  background: var(--brand-ink);
 }
 .studio-app .studio-insight-text-button {
   border: 0;
   background: transparent;
-  color: #0067ce;
+  color: var(--brand-accent);
   font-size: 11px;
   cursor: pointer;
   padding: 5px 0;
@@ -169,9 +169,9 @@
   min-width: 180px;
   padding: 14px 16px;
   background: #fffffffa;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--brand-stone);
   border-radius: 10px;
-  box-shadow: 0 6px 20px #1d1d1f10;
+  box-shadow: 0 6px 20px #14141410;
   font-size: 11px;
 }
 .studio-app .studio-chart-tooltip > strong {
@@ -184,27 +184,27 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #6e6e73;
+  color: var(--brand-muted);
   margin: 7px 0;
 }
 .studio-app .studio-chart-tooltip b {
   margin-left: auto;
   padding-left: 12px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--brand-ink);
   font-variant-numeric: tabular-nums;
 }
 .studio-app .studio-chart-tooltip small {
   display: flex;
-  border-top: 1px solid #edf0f4;
+  border-top: 1px solid #e8dfd1;
   padding-top: 10px;
   margin-top: 10px;
-  color: #6e6e73;
+  color: var(--brand-muted);
 }
 .studio-app .studio-chart-data {
   max-height: 220px;
   overflow: auto;
-  border: 1px solid #edf0f4;
+  border: 1px solid #e8dfd1;
   border-radius: 7px;
 }
 .studio-app .studio-chart-data .studio-table {
@@ -216,7 +216,7 @@
 }
 .studio-app .studio-chart-data .studio-table tbody th {
   background: #fff;
-  color: #424245;
+  color: var(--brand-muted);
   font-weight: 400;
 }
 .studio-app .studio-insight-ring {
@@ -236,10 +236,10 @@
   stroke-width: 9;
 }
 .studio-app .studio-ring-track {
-  stroke: #edf1f6;
+  stroke: var(--brand-stone);
 }
 .studio-app .studio-ring-fill {
-  stroke: #0071e3;
+  stroke: var(--brand-ink);
   stroke-linecap: round;
   transform: rotate(-90deg);
   transform-origin: 60px 60px;
@@ -263,7 +263,7 @@
 }
 .studio-app .studio-insight-ring span {
   font-size: 11px;
-  color: #6e6e73;
+  color: var(--brand-muted);
 }
 .studio-app .studio-collection-values {
   display: grid;
@@ -278,7 +278,7 @@
 }
 .studio-app .studio-collection-values dt {
   font-size: 12px;
-  color: #6e6e73;
+  color: var(--brand-muted);
 }
 .studio-app .studio-collection-values dd {
   margin: 0;
@@ -288,7 +288,7 @@
 }
 .studio-app .studio-insight-note {
   font-size: 11px;
-  color: #8a8d94;
+  color: var(--brand-muted);
   margin: 18px 0 0;
   line-height: 1.6;
 }
@@ -320,7 +320,7 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  color: #424245;
+  color: var(--brand-muted);
   font-size: 12px;
   margin-bottom: 8px;
 }
@@ -333,19 +333,19 @@
   margin-top: 5px;
   text-align: right;
   font-size: 10px;
-  color: #8a8d94;
+  color: var(--brand-muted);
 }
 .studio-app .studio-insight-track {
   height: 6px;
   border-radius: 4px;
-  background: #eef2f7;
+  background: var(--brand-paper);
   overflow: hidden;
 }
 .studio-app .studio-insight-track > i {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #6491c3;
+  background: var(--brand-champagne);
   transform-origin: left;
   transition:
     width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -354,7 +354,7 @@
 }
 .studio-app .studio-expense-row:hover .studio-insight-track > i,
 .studio-app .studio-expense-row:focus-visible .studio-insight-track > i {
-  background: #0071e3;
+  background: var(--brand-ink);
 }
 .studio-app .studio-insight-pipeline {
   display: grid;
@@ -369,21 +369,21 @@
   padding: 4px;
   margin: -4px;
   border-radius: 5px;
-  color: #6e6e73;
+  color: var(--brand-muted);
   font-size: 12px;
   transition:
     background-color 0.16s,
     color 0.16s;
 }
 .studio-app .studio-insight-stage strong {
-  color: #424245;
+  color: var(--brand-muted);
   text-align: right;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 .studio-app .studio-insight-stage small {
   font-size: 10px;
-  color: #8a8d94;
+  color: var(--brand-muted);
   text-align: right;
 }
 .studio-app .studio-insight-stage.booked i {
@@ -391,22 +391,22 @@
 }
 .studio-app .studio-insight-stage:hover,
 .studio-app .studio-insight-stage:focus-visible {
-  background: #f5f8fc;
-  color: #0067ce;
+  background: var(--brand-surface);
+  color: var(--brand-accent);
 }
 .studio-app .studio-insight-stage:hover i {
-  background: #0071e3;
+  background: var(--brand-ink);
 }
 .studio-app .studio-task-load {
   padding: 5px 0 14px;
   margin: 10px 0 0;
-  border-bottom: 1px solid #edf0f4;
+  border-bottom: 1px solid #e8dfd1;
 }
 .studio-app .studio-task-load > div:first-child {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: #8a8d94;
+  color: var(--brand-muted);
   margin-bottom: 9px;
 }
 .studio-app .studio-task-load .has-overdue {
@@ -426,14 +426,14 @@
   justify-content: flex-end;
   white-space: nowrap;
   padding: 7px 10px;
-  background: #f5f8fc;
+  background: var(--brand-surface);
   border-radius: 7px;
-  color: #6e6e73;
+  color: var(--brand-muted);
   font-size: 11px;
 }
 .studio-app .studio-calendar-load-value strong {
   font-size: 12px;
-  color: #424245;
+  color: var(--brand-muted);
   font-weight: 500;
 }
 .studio-app .studio-calendar-load-controls {
@@ -445,10 +445,10 @@
 .studio-app .studio-calendar-load-controls select {
   min-height: 32px;
   background: #fff;
-  border: 1px solid #dfe5ed;
+  border: 1px solid var(--brand-stone);
   border-radius: 6px;
   padding: 5px 8px;
-  color: #424245;
+  color: var(--brand-muted);
   font-size: 11px;
 }
 .studio-app .studio-calendar-load {
@@ -474,7 +474,7 @@
 }
 .studio-app .studio-calendar-load-bar {
   width: 100%;
-  background: #6491c3;
+  background: var(--brand-champagne);
   border-radius: 3px 3px 1px 1px;
   transform-origin: bottom;
   animation: studio-load-reveal 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -484,7 +484,7 @@
     scale 0.18s;
 }
 .studio-app .studio-calendar-load-bar.empty {
-  background: #e5eaf1;
+  background: var(--brand-stone);
 }
 .studio-app
   .studio-calendar-load
@@ -495,7 +495,7 @@
   .studio-calendar-load
   button:focus-visible
   .studio-calendar-load-bar {
-  background: #0071e3;
+  background: var(--brand-ink);
 }
 .studio-app .studio-calendar-load button small {
   position: absolute;
@@ -503,7 +503,7 @@
   left: 50%;
   translate: -50% 0;
   font-size: 10px;
-  color: #8a8d94;
+  color: var(--brand-muted);
 }
 .studio-app .studio-calendar-insight .studio-insight-note {
   margin-top: 5px;
