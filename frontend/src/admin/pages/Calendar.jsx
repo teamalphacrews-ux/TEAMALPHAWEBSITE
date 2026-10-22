@@ -18,6 +18,8 @@ import CalendarInsights from "../components/calendar/CalendarInsights";
 import { calendarMonthLoad } from "../components/operations/insightData";
 import { deriveCrewSchedule } from "../components/operations/crewSchedule";
 import { operationAPI } from "../components/operations/operationsUtils";
+import { useAuth } from "../../context/AuthContext";
+import { GOOGLE_PREVIEW_MESSAGE, googleCalendarHandoff, googleConnectionError } from "../components/calendar/googleConnection";
 import {
   WorkspaceHeader,
   WorkspaceMetrics,
@@ -48,6 +50,8 @@ const time = (value) =>
     minute: "2-digit",
   });
 export default function Calendar() {
+  const { user } = useAuth();
+  const isPreview = user?.isPreview === true;
   const [sessionParams]=useSearchParams();
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/calendar",
@@ -74,7 +78,10 @@ export default function Calendar() {
     [deleting, setDeleting] = useState(null),
     [busy, setBusy] = useState(false),
     [saveError, setSaveError] = useState(""),
-    [syncBusy, setSyncBusy] = useState(false);
+    [syncBusy, setSyncBusy] = useState(false),
+    [connectionError, setConnectionError] = useState("");
+  const callbackResult = sessionParams.get("sync");
+  const setupMessage = isPreview ? GOOGLE_PREVIEW_MESSAGE : sync.setupMessage || "";
   useEffect(() => {
     const socket = io(operationAPI, {
       auth: { token: localStorage.getItem("token") },
@@ -154,24 +161,33 @@ export default function Calendar() {
     }
   };
   const syncNow = async () => {
+    if (syncBusy) return;
     setSyncBusy(true);
+    setConnectionError("");
     try {
-      await workspaceRequest("get", "/api/calendar/sync-now");
+      const result = await workspaceRequest("get", "/api/calendar/sync-now");
+      if (result?.success !== true) throw new Error("Google Calendar did not finish synchronizing. Please try again.");
       reload();
       connection.reload();
       toast.success("Calendar synchronization completed");
     } catch (err) {
-      toast.error(recordError(err));
+      setConnectionError(googleConnectionError(err));
+      connection.reload();
     } finally {
       setSyncBusy(false);
     }
   };
   const connect = async () => {
+    if (isPreview || syncBusy) return;
+    setSyncBusy(true);
+    setConnectionError("");
     try {
       const result = await workspaceRequest("get", "/api/auth/google");
-      window.location.assign(result.url);
+      window.location.assign(googleCalendarHandoff(result, operationAPI, window.location.origin));
     } catch (err) {
-      toast.error(recordError(err));
+      setConnectionError(googleConnectionError(err));
+    } finally {
+      setSyncBusy(false);
     }
   };
   return (
@@ -184,20 +200,25 @@ export default function Calendar() {
         <button
           className="studio-button"
           onClick={sync.isSynced ? syncNow : connect}
-          disabled={syncBusy}
+          disabled={isPreview || syncBusy || connection.loading || sync.configured === false}
+          aria-describedby={setupMessage ? "google-calendar-setup" : undefined}
         >
           <RefreshCw size={14} />
           {syncBusy
-            ? "Syncing…"
+            ? sync.isSynced ? "Syncing…" : "Connecting…"
             : sync.isSynced
               ? "Sync Google"
               : "Connect Google"}
         </button>
+        {sync.isSynced && sync.syncError && <button className="studio-button" onClick={connect} disabled={isPreview || syncBusy}>Reconnect Google</button>}
         <button className="studio-button primary" onClick={openNew}>
           <Plus size={14} />
           Schedule event
         </button>
       </WorkspaceHeader>
+      {setupMessage && <aside id="google-calendar-setup" className="workspace-info" role="status">{setupMessage}</aside>}
+      <WorkspaceError error={connectionError || (callbackResult === "error" ? "Google authorization was not completed. Please connect again and approve the calendar permissions." : "")} />
+      {callbackResult === "success" && sync.isSynced && !sync.syncError && <p className="workspace-info" role="status">Google Calendar is connected. Your events will synchronize with the studio calendar.</p>}
       <WorkspaceMetrics
         loading={loading || (!!error && !data.length)}
         items={[
@@ -222,8 +243,12 @@ export default function Calendar() {
               ? "Checking…"
               : connection.error
                 ? "Unavailable"
+                : isPreview
+                  ? "Preview only"
+                : sync.configured === false
+                  ? "Setup required"
                 : sync.isSynced
-                  ? "Connected"
+                  ? sync.syncError ? "Needs attention" : "Connected"
                   : "Not connected",
             note: sync.isSynced
               ? sync.email

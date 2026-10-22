@@ -232,9 +232,8 @@ function createGoogleOAuthHandlers({
           access_type: "offline",
           prompt: "consent",
           scope: [
-            "https://www.googleapis.com/auth/calendar",
+            "https://www.googleapis.com/auth/calendar.events",
             "https://www.googleapis.com/auth/userinfo.email",
-            "https://www.googleapis.com/auth/userinfo.profile",
           ],
           state: flow.state,
           code_challenge_method: "S256",
@@ -280,6 +279,13 @@ function createGoogleOAuthHandlers({
         )
           throw fail();
         oauth.setCredentials(tokens);
+        const scopes = typeof tokens.scope === "string"
+          ? tokens.scope.split(/\s+/)
+          : (await oauth.getTokenInfo(tokens.access_token)).scopes;
+        if (!Array.isArray(scopes) || !scopes.some(scope => [
+          "https://www.googleapis.com/auth/calendar.events",
+          "https://www.googleapis.com/auth/calendar",
+        ].includes(scope))) throw fail();
         const email = getGoogleEmail
           ? await getGoogleEmail(oauth)
           : (
@@ -299,11 +305,18 @@ function createGoogleOAuthHandlers({
             : null,
           googleEmail: email,
         };
-        if (typeof tokens.refresh_token === "string" && tokens.refresh_token)
+        const hasRefreshToken = typeof tokens.refresh_token === "string" && Boolean(tokens.refresh_token);
+        if (hasRefreshToken)
           update.googleRefreshToken = tokens.refresh_token;
         // Recheck authority atomically after the provider round trip as well.
+        // A refresh token from another Google account must never be reused.
+        const accountFilter = { _id: flow.userId, role: "admin" };
+        if (!hasRefreshToken) {
+          accountFilter.googleEmail = email;
+          accountFilter.googleRefreshToken = { $type: "string", $ne: "" };
+        }
         const user = await User.findOneAndUpdate(
-          { _id: flow.userId, role: "admin" },
+          accountFilter,
           { $set: update },
           { new: true },
         );

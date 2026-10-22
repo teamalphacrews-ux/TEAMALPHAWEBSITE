@@ -29,6 +29,7 @@ function fixture() {
       {
         _id: adminId,
         role: "admin",
+        googleEmail: "studio-owner@example.test",
         googleRefreshToken: "existing-test-refresh",
       },
     ],
@@ -62,6 +63,8 @@ function fixture() {
     async findOneAndUpdate(query, update) {
       const user = users.get(String(query._id));
       if (user?.role !== query.role) return null;
+      if (query.googleEmail && user.googleEmail !== query.googleEmail) return null;
+      if (query.googleRefreshToken && (typeof user.googleRefreshToken !== "string" || !user.googleRefreshToken)) return null;
       mutations += 1;
       Object.assign(user, update.$set);
       return user;
@@ -128,6 +131,7 @@ function routes(f, extra = {}) {
       return {
         tokens: {
           access_token: "test-access",
+          scope: "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email",
           expiry_date: Date.now() + 3600000,
         },
       };
@@ -268,6 +272,10 @@ test("first-party begin sets a host-bound secure cookie and sends supported PKCE
   assert.equal(begin.cookies[0].options.domain, undefined);
   const consent = new URL(begin.location);
   assert.equal(consent.origin, "https://accounts.google.com");
+  assert.deepEqual(consent.searchParams.get("scope").split(" "), [
+    "https://www.googleapis.com/auth/calendar.events",
+    "https://www.googleapis.com/auth/userinfo.email",
+  ]);
   assert.equal(consent.searchParams.get("code_challenge_method"), "S256");
   assert.match(
     consent.searchParams.get("code_challenge"),
@@ -276,6 +284,57 @@ test("first-party begin sets a host-bound secure cookie and sends supported PKCE
   assert.match(consent.searchParams.get("state"), /^[a-f0-9]{64}$/);
   assert.equal(start.headers["Cache-Control"], "no-store");
   assert.equal(begin.headers["Referrer-Policy"], "no-referrer");
+});
+
+test("email-only Google consent cannot become a connected Calendar account", async () => {
+  const f = fixture();
+  const flow = await opened(f);
+  let connected = 0;
+  const { handlers } = routes(f, {
+    makeClient: () => ({
+      getToken: async () => ({ tokens: { access_token: "test-access", scope: "https://www.googleapis.com/auth/userinfo.email" } }),
+      setCredentials() {},
+    }),
+    onConnected: async () => { connected++; },
+  });
+  const result = response();
+  await handlers.callback({ query: { state: flow.state, code: "test-code" }, headers: { cookie: `__Host-ta_google_oauth=${flow.browser}` } }, result);
+  assert.equal(result.location, "https://studio.example.test/admin/calendar?sync=error");
+  assert.equal(f.mutations(), 0);
+  assert.equal(connected, 0);
+});
+
+test("missing token-response scopes are verified with Google token information before saving", async () => {
+  for (const scopes of [["https://www.googleapis.com/auth/calendar.events"], ["https://www.googleapis.com/auth/calendar"], ["https://www.googleapis.com/auth/calendar.readonly"]]) {
+    const f = fixture();
+    const flow = await opened(f);
+    let inspected = 0;
+    const { handlers } = routes(f, {
+      makeClient: () => ({
+        getToken: async () => ({ tokens: { access_token: "test-access" } }),
+        setCredentials() {},
+        getTokenInfo: async token => { assert.equal(token, "test-access"); inspected++; return { scopes }; },
+      }),
+    });
+    const result = response();
+    await handlers.callback({ query: { state: flow.state, code: "test-code" }, headers: { cookie: `__Host-ta_google_oauth=${flow.browser}` } }, result);
+    assert.equal(inspected, 1);
+    assert.equal(f.mutations(), scopes[0].endsWith("readonly") ? 0 : 1);
+    assert.equal(result.location.endsWith("sync=success"), !scopes[0].endsWith("readonly"));
+  }
+});
+
+test("callback never pairs a different Google account with an old refresh token", async () => {
+  for (const account of [{googleEmail:"another-account@example.test"}, {googleRefreshToken:""}]) {
+    const f=fixture();
+    Object.assign(f.users.get(adminId),account);
+    const flow=await opened(f);
+    const {handlers}=routes(f);
+    const result=response();
+    await handlers.callback({query:{state:flow.state,code:"test-code"},headers:{cookie:`__Host-ta_google_oauth=${flow.browser}`}},result);
+    assert.equal(result.location,"https://studio.example.test/admin/calendar?sync=error");
+    assert.equal(f.mutations(),0);
+  }
 });
 
 test("verified callback passes codeVerifier to the installed client and preserves an existing refresh token", async () => {
