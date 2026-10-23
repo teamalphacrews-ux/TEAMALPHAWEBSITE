@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
-import { TEAM_ALPHA_LOGO } from "../../../utils/branding";
+import { useStudioIdentity } from "../../../utils/studioIdentity";
 import StudioAppIcon from "./StudioAppIcon";
 import {
   LayoutDashboard,
@@ -21,6 +21,7 @@ import {
   HardDrive,
   UserRound,
   ChevronDown,
+  Mail,
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
@@ -31,6 +32,7 @@ const iconTones = {
   '/admin/crew': 'cyan', '/admin/post-production': 'violet', '/admin/data': 'slate',
   '/admin/chats': 'blue', '/admin/activity-log': 'rose', '/admin/integrations': 'violet',
   '/admin/settings': 'slate', '/admin/users': 'cyan',
+  '/admin/email': 'rose',
 };
 const primaryItems = [
   { name: "Overview", path: "/admin", icon: LayoutDashboard, exact: true },
@@ -68,6 +70,7 @@ const groups = [
       { name: "Client support", path: "/admin/chats", icon: MessageSquare },
       { name: "Activity", path: "/admin/activity-log", icon: Bell },
       { name: "Integrations", path: "/admin/integrations", icon: Webhook },
+      { name: "Email", path: "/admin/email", icon: Mail },
       { name: "Settings", path: "/admin/settings", icon: Settings2 },
       { name: "Team & access", path: "/admin/users", icon: UsersRound },
     ],
@@ -75,6 +78,7 @@ const groups = [
 ];
 
 export default function Sidebar({ onClose }) {
+  const identity = useStudioIdentity();
   const { user, token, logout } = useAuth();
   const { pathname } = useLocation();
   const [expanded, setExpanded] = useState({});
@@ -140,10 +144,10 @@ export default function Sidebar({ onClose }) {
           aria-label="Team Alpha Studio OS home"
         >
           <span className="studio-brand-mark">
-            <img src={TEAM_ALPHA_LOGO} alt="" width="52" height="52" />
+            <img src={identity.photo} alt="" width="52" height="52" />
           </span>
           <span>
-            <strong>Team Alpha</strong>
+            <strong>{identity.name}</strong>
             <small>Studio OS</small>
           </span>
         </Link>

@@ -1,4 +1,5 @@
 import { TEAM_ALPHA_LOGO } from "./branding.js";
+import { resolveStudioImage } from './settingsDefaults.js';
 
 export const invoiceDate = (value) =>
   value
@@ -29,6 +30,7 @@ export function invoiceRows(i) {
   return r;
 }
 export async function downloadInvoice(i) {
+  const { API_BASE_URL } = await import('./apiConfig.js');
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF();
   const studio = i.studio || {};
@@ -55,7 +57,7 @@ export async function downloadInvoice(i) {
     y += 3;
   };
   if (i.design?.showLogo !== false) {
-    const response = await fetch(studio.logoUrl || TEAM_ALPHA_LOGO);
+    const response = await fetch(resolveStudioImage(studio.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL));
     if (!response.ok) throw new Error("Logo could not be loaded");
     const bitmap = await createImageBitmap(await response.blob());
     const canvas = document.createElement("canvas");
@@ -169,8 +171,7 @@ export async function downloadInvoice(i) {
     line("Payment schedule", 12);
     for (const [index, payment] of (i.paymentSchedule || []).entries())
       line(
-        "Payment " +
-          (index + 1) +
+        (payment.label || "Payment " + (index + 1)) +
           ": INR " +
           (payment.amountPaise / 100).toFixed(2) +
           " due " +

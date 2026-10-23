@@ -7,6 +7,7 @@ const auth = require('../middleware/auth');
 const requireAdmin = require('../middleware/requireAdmin');
 
 router.use(auth, requireAdmin);
+router.use((req, res, next) => req.method === 'DELETE' ? require('../services/studioSecurity').requirePermission('deletion')(req, res, next) : next());
 
 // Middleware to extract sheet ID and Name from headers
 const getSheetContext = (req) => ({

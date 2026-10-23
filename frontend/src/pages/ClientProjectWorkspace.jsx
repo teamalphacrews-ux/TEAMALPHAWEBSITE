@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { API_BASE_URL } from "../utils/apiConfig";
+import { resolveStudioImage } from '../utils/settingsDefaults';
 import {
   clientMoney as money,
   clientDate as date,
@@ -138,10 +139,11 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
     const load = async () => {
       if (fetching) return;
       fetching = true;
-      const result = await Promise.allSettled([
-        axios.get(endpoint + "/project", { signal: controller.signal }),
-        axios.get(endpoint + "/messages", { signal: controller.signal }),
-      ]);
+      const [projectResult] = await Promise.allSettled([axios.get(endpoint + '/project', { signal: controller.signal })]);
+      const [messageResult] = projectResult.status === 'fulfilled' && projectResult.value.data.visibility?.allowChat !== false
+        ? await Promise.allSettled([axios.get(endpoint + '/messages', { signal: controller.signal })])
+        : [{ status: 'fulfilled', value: { data: { messages: [], nextCursor: null } } }];
+      const result = [projectResult, messageResult];
       if (active) {
         if (result[0].status === "fulfilled") {
           setProject(result[0].value.data);
@@ -299,12 +301,14 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
   const invoice = project?.invoice?.document,
     production = project?.production,
     deliveries = production?.deliveries || [];
-  const approved = project?.invoice?.state === "issued",
-    started = ["in_progress", "delivered"].includes(production?.state);
+  const visibility = project?.visibility || {}, chatEnabled = !!project && visibility.allowChat !== false;
+  const approved = project?.invoice?.state === 'issued' && !!invoice,
+    invoiceIssued = approved || project?.invoice?.state === 'hidden',
+    started = ["in_progress", "delivered", 'deliveries_only'].includes(production?.state);
   const completed = deliveries.filter((task) =>
     ["Ready", "Uploaded to Drive", "Delivered"].includes(task.stage),
   ).length;
-  const crew = [
+  const crew = project?.crew || [
     ...new Map(
       deliveries
         .filter((task) => task.crew)
@@ -372,7 +376,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
                 id={"project-payment-" + row.number}
                 nested
                 level={4}
-                title={"Payment " + row.number}
+                title={row.label || "Payment " + row.number}
                 subtitle={
                   date(row.dueDate) + " · " + money(row.amountPaise / 100)
                 }
@@ -451,7 +455,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       title="Post-production & delivery"
       subtitle={
         started
-          ? `${completed} of ${deliveries.length} deliverables ready`
+          ? visibility.showProgress === false ? 'Files published by your studio.' : `${completed} of ${deliveries.length} deliverables ready`
           : "Updates appear here when production starts."
       }
       icon={FolderOpen}
@@ -481,10 +485,11 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
             >
               {task.update && <p className="cp-public-update">{task.update}</p>}
               <div className="cp-delivery-meta">
+                {visibility.showProgress !== false &&
                 <span>
                   <Clock3 size={14} />
                   {date(task.dueDate)}
-                </span>
+                </span>}
                 {task.crew && (
                   <span>
                     <UsersRound size={14} />
@@ -511,7 +516,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
           <FolderOpen size={26} />
           <div>
             <h3>
-              {approved
+              {invoiceIssued
                 ? "We’ll keep you in the loop"
                 : "First, your studio will issue the invoice"}
             </h3>
@@ -537,7 +542,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
         ? "Your story, delivered"
         : started
           ? "Your story is taking shape"
-          : approved
+          : invoiceIssued
             ? "Ready for the next chapter"
             : "A beautiful beginning";
   const journey = [
@@ -564,7 +569,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       state: delivered ? "Delivered" : "Upcoming",
       done: delivered,
     },
-  ];
+  ].filter(step => visibility.showPayments !== false || step.label !== 'Invoice & payments');
   return (
     <div
       className="client-project"
@@ -575,7 +580,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       <meta name="referrer" content="no-referrer" />
       <header className="cp-topbar">
         <div>
-          <img src={TEAM_ALPHA_LOGO} alt="Team Alpha" />
+          <img src={resolveStudioImage(quote.studio.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt={quote.studio.name} />
           <span>
             {quote.studio.name}
             <small>CLIENT EXPERIENCE</small>
@@ -610,7 +615,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
             </div>
           </div>
         </section>
-        <section
+        {visibility.showProgress !== false && <section
           className="cp-journey-card"
           aria-labelledby="client-journey-title"
         >
@@ -642,7 +647,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
               </li>
             ))}
           </ol>
-        </section>
+        </section>}
         <div className="cp-workspace-heading">
           <span className="cp-eyebrow">YOUR PROJECT</span>
           <h2>A little closer to your story.</h2>
@@ -683,9 +688,9 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
             {children}
           </div>
         </ProjectSection>
-        {invoiceSummary}
-        {deliveryCards}
-        <ProjectSection
+        {visibility.showPayments !== false && invoiceSummary}
+        {(visibility.showProgress !== false || visibility.showDeliverables !== false) && deliveryCards}
+        {visibility.showCrew !== false && <ProjectSection
           id="project-crew"
           title="The people on your project"
           subtitle="Assigned work and its current stage."
@@ -731,9 +736,9 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
               updates.
             </p>
           )}
-        </ProjectSection>
+        </ProjectSection>}
       </main>
-      <aside
+      {chatEnabled && <><aside
         id="project-support"
         className="cp-chat-popup"
         ref={chatRef}
@@ -742,11 +747,11 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       >
         <header className="cp-chat-heading">
           <span className="cp-chat-avatar">
-            <img src={TEAM_ALPHA_LOGO} alt="" />
+            <img src={resolveStudioImage(quote.studio.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt="" />
           </span>
           <div>
             <h2 id="project-support-title">{quote.studio.name}</h2>
-            <p>A little help, whenever you need it.</p>
+            <p>{project?.supportHours || 'A little help, whenever you need it.'}</p>
           </div>
           <button
             type="button"
@@ -858,7 +863,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
         ) : (
           <MessageSquare size={24} aria-hidden="true" />
         )}
-      </button>
+      </button></>}
       <footer className="cp-footer">
         {quote.studio.name} ·{" "}
         {quote.studio.email && (

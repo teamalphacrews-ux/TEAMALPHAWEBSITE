@@ -60,6 +60,7 @@ function fixture({ users = [], environment = {}, overrides = {} } = {}) {
       state.comparisons.push({ value, hashed });
       return passwordHash(value) === hashed;
     },
+    issueSession: async (user, req, sign, secret) => sign({ user: { id: String(user._id), role: user.role } }, secret, { expiresIn: '30d' }),
     sign(payload, key, options) {
       state.signatures.push({ payload, key, options });
       return 'synthetic-signed-session';

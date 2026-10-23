@@ -17,14 +17,14 @@ function setup(current, extraEnv = {}) {
       lookups.push(userId);
       return {
         async select(projection) {
-          assert.equal(projection, "_id role");
+          assert.equal(projection, "_id role +sessionVersion");
           if (current instanceof Error) throw current;
           return current;
         },
       };
     },
   };
-  return { auth: createAuth({ User, env: { ...env, ...extraEnv } }), lookups };
+  return { auth: createAuth({ User, env: { ...env, ...extraEnv }, verifySession: async () => null }), lookups };
 }
 async function request(
   auth,

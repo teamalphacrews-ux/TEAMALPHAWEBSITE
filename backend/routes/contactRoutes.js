@@ -176,6 +176,7 @@ router.post(
     const project = await Project.create(values);
     const lead = await pipeline.ensureProject(project._id);
     project.leadId = lead._id;
+    if (project.status === 'Booked') await require('../services/productionTemplates').applyDefaultProduction(lead._id);
     res.status(201).json(project);
   }),
 );
@@ -207,6 +208,7 @@ router.patch(
       );
     const lead = await pipeline.ensureProject(project._id);
     project.leadId = lead._id;
+    if (project.status === 'Booked' && existing.status !== 'Booked') await require('../services/productionTemplates').applyDefaultProduction(lead._id);
     res.json(project);
   }),
 );

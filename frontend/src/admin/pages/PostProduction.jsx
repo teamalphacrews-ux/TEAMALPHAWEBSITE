@@ -31,6 +31,7 @@ import {
   operationError,
 } from "../components/operations/operationsUtils";
 import "./studioOperations.css";
+import ApplyProductionTemplate from '../components/settings/ApplyProductionTemplate';
 
 const getLeadId = (task) =>
   typeof task.lead === "object" ? task.lead?._id : task.lead;
@@ -307,9 +308,9 @@ export default function PostProduction() {
             A clear path from the last frame to the final delivery.
           </p>
         </div>
-        <button className="studio-button primary" onClick={() => openEditor()}>
+        <div className="studio-heading-actions"><ApplyProductionTemplate onApplied={fetchWorkspace} initialProject={projectFilter === 'all' || projectFilter === 'unassigned' ? '' : projectFilter} /><button className="studio-button primary" onClick={() => openEditor()}>
           <Plus size={16} /> Add task
-        </button>
+        </button></div>
       </div>
       <div className="studio-metric-grid ops-metrics">
         {[

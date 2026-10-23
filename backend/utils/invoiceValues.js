@@ -200,7 +200,7 @@ function invoiceValues(body, existing = {}) {
   const offsets = input.reminderOffsets || [-7, 0, 3, 7, 14];
   if (
     !Array.isArray(offsets) ||
-    offsets.some((x) => ![-7, 0, 3, 7, 14].includes(x))
+    offsets.length > 30 || offsets.some((x) => !Number.isInteger(x) || x < -7 || x > 365)
   )
     fail("Invalid reminder timing");
   result.reminderOffsets = [...new Set(offsets)];
@@ -250,7 +250,7 @@ function invoiceValues(body, existing = {}) {
         );
       sum += amountPaise;
       previous = paymentDate;
-      return { amountPaise, dueDate: paymentDate };
+      return { ...(p.label ? { label: text(p.label, 120) } : {}), amountPaise, dueDate: paymentDate };
     });
   }
   return result;

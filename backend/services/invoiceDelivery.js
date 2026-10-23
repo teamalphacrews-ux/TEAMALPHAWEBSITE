@@ -25,6 +25,8 @@ async function shareInvoice(invoice, { markSent = true } = {}) {
         new Error("Cancelled or unavailable invoices cannot be shared"),
         { status: 409 },
       );
+    if (current.clientLinkOptions?.showPayments === false) throw Object.assign(new Error('Client payment visibility is disabled for this invoice. Enable it in studio settings and regenerate the client link before sharing.'), { status: 409 });
+    if (!require('../utils/documentDefaults').linkIsActive(current)) throw Object.assign(new Error('This invoice link expired or was revoked. Regenerate it before sharing.'), { status: 409 });
     if (current.shareToken && current.shareTokenHash) {
       if (markSent) {
         const update = await Invoice.updateOne(
@@ -41,6 +43,7 @@ async function shareInvoice(invoice, { markSent = true } = {}) {
       return `${origin}/invoice/${current.shareToken}`;
     }
     const token = crypto.randomBytes(32).toString("hex");
+    const options = require('../utils/documentDefaults').clientLinkOptions({}, current.clientLinkOptions);
     const update = await Invoice.updateOne(
       {
         _id: current._id,
@@ -53,8 +56,11 @@ async function shareInvoice(invoice, { markSent = true } = {}) {
           shareToken: token,
           shareTokenHash: tokenHash(token),
           sharedAt: current.sharedAt || new Date(),
+          clientLinkOptions: options,
+          ...(options.linkExpiryDays ? { linkExpiresAt: new Date(Date.now() + options.linkExpiryDays * 86400000) } : {}),
           ...(markSent ? { documentStatus: "Sent" } : {}),
         },
+        $unset: { linkRevokedAt: 1 },
       },
     );
     if (update.matchedCount) return `${origin}/invoice/${token}`;
@@ -97,16 +103,17 @@ async function sendInvoiceEmail(invoice, options = {}) {
   if (key && (typeof key !== "string" || !/^[a-zA-Z0-9:_-]{8,120}$/.test(key)))
     throw Object.assign(new Error("Invalid delivery request"), { status: 400 });
   const studio = await StudioConfig.findOne({ key: "studio" });
+  const defaults = require('../utils/documentDefaults').communicationValues(studio, 'invoice', invoice);
   const url = await shareInvoice(invoice, { markSent: false });
   const subject = String(
     options.subject ||
-      `Invoice ${number(invoice)} from ${studio?.studioName || "Team Alpha"}`,
+      defaults.subject,
   )
     .trim()
     .slice(0, 200);
   const message = String(
     options.message ||
-      `Hi ${invoice.clientName},\n\nPlease review your invoice for INR ${invoice.total.toFixed(2)} due on ${new Date(invoice.dueDate || invoice.invoiceDate).toISOString().slice(0, 10)}.\n\nThank you,\n${studio?.studioName || "Team Alpha"}`,
+      defaults.message,
   ).slice(0, 12000);
   const delivery = {
     to: invoice.clientEmail,
@@ -245,6 +252,8 @@ async function runInvoiceDeliveryJobs() {
     );
     if (!claim.modifiedCount) continue;
     try {
+      if (invoice.scheduledDelivery.requestedBy) await require('./studioSecurity').assertPermission(String(invoice.scheduledDelivery.requestedBy), 'invoiceIssue');
+      else if (invoice.documentStatus !== 'Sent') throw Object.assign(new Error('This historical scheduled draft must be reviewed and issued by the studio before delivery.'), { status: 409 });
       await sendInvoiceEmail(invoice, {
         ...(invoice.scheduledDelivery.toObject?.() ||
           invoice.scheduledDelivery),
@@ -290,6 +299,7 @@ async function runInvoiceDeliveryJobs() {
     .select("+shareToken")
     .limit(200);
   for (const invoice of invoices) {
+    if (!require('../utils/documentDefaults').linkIsActive(invoice) || invoice.clientLinkOptions?.showPayments === false) continue;
     const payments = invoice.paymentScheduleEnabled
       ? invoice.paymentSchedule
       : [

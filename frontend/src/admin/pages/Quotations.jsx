@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../../utils/branding";
+import { quotationDefaults, addDocumentDays, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
+import { API_BASE_URL } from '../../utils/apiConfig';
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   Plus,
@@ -51,7 +53,7 @@ const defaultForm = (settings) => ({
   title: "Wedding photography & cinematography",
   documentNumber: "",
   issueDate: dateOnly(Date.now()),
-  validUntil: dateOnly(Date.now() + 30 * 86400000),
+  validUntil: dateOnly(Date.now() + (settings.quotationValidityDays ?? 14) * 86400000),
   status: "Draft",
   items: [blankItem()],
   discountType: "amount",
@@ -64,6 +66,7 @@ const defaultForm = (settings) => ({
   expiryEnabled: true,
   remindersEnabled: false,
   reminderDays: [3, 7, 14, 21, 30],
+  ...quotationDefaults(settings),
   design: {
     coverImage: settings.coverImage || covers[0],
     colorTheme: settings.colorTheme || "#202622",
@@ -391,8 +394,7 @@ export default function Quotations() {
       if (!q || generation !== generationRef.current) return;
       setCurrent(q);
       setEmail({
-        subject: `Quote #${quoteNumber(q)} from ${settings.studioName || "TEAM ALPHA"}`,
-        message: `Hi ${q.clientName},\n\nPlease take a moment to review your quote. Click the button below to get started.\n\nThanks,\n${settings.studioName || "TEAM ALPHA"}`,
+        ...documentCommunication(settings, 'quote', q),
         sendCopy: true,
         scheduledFor: "",
         idempotencyKey: crypto.randomUUID(),
@@ -428,6 +430,19 @@ export default function Quotations() {
       setBusy(false);
     }
   };
+  const manageClientLink = async regenerate => {
+    if (!current?._id || busy) return;
+    if (dirty) { setSaveError('Save and share the revised quote before managing its client link.'); return; }
+    setBusy(true);
+    try {
+      const result = await workspaceRequest(regenerate ? 'post' : 'delete', `/api/studio/quotations/${current._id}/share${regenerate ? '/regenerate' : ''}`, {});
+      if (result.quote) loadQuote(result.quote);
+      if (regenerate) { setShareUrl(`${window.location.origin}/quote/${result.token}`); setModal('link'); }
+      toast.success(regenerate ? 'New link created with current studio visibility settings. Previous copies no longer work.' : 'Client link revoked');
+      reload();
+    } catch (error) { setSaveError(recordError(error)); }
+    finally { setBusy(false); setActionMenu(false); }
+  };
   const actionItems = () => (
     <div className="qw-dropdown">
       {!current?.acceptedAt && current?.status !== "Accepted" && (
@@ -460,6 +475,10 @@ export default function Quotations() {
         Link to Project
       </button>
       <button onClick={() => act("duplicate")}>Duplicate</button>
+      {['Sent', 'Accepted'].includes(current?.status) && <>
+        <button onClick={() => manageClientLink(false)}>Revoke client link</button>
+        <button onClick={() => manageClientLink(true)}>Regenerate client link</button>
+      </>}
       {!current?.acceptedAt && current?.status !== "Accepted" && (
         <button
           onClick={() => {
@@ -534,7 +553,7 @@ export default function Quotations() {
       remindersEnabled: !!t.remindersEnabled,
       reminderDays: t.reminderDays || [3, 7, 14, 21, 30],
       design: t.design || formRef.current.design,
-      validUntil: dateOnly(clock + (t.validityDays || 30) * 86400000),
+      validUntil: addDocumentDays(quotationDefaults(settings, clock).issueDate, t.validityDays ?? settings.quotationValidityDays ?? 14),
     };
     setDraft(f);
   };
@@ -997,7 +1016,7 @@ export default function Quotations() {
                 />
                 {form.remindersEnabled && (
                   <div className="qw-check-list">
-                    {[3, 7, 14, 21, 30].map((day) => (
+                    {[...new Set([3, 7, 14, 21, 30, ...(form.reminderDays || [])])].sort((a, b) => a - b).map((day) => (
                       <label key={day}>
                         <input
                           type="checkbox"
@@ -1466,7 +1485,7 @@ export default function Quotations() {
               )}
             </section>
             <section className="qw-email-preview">
-              <img src={TEAM_ALPHA_LOGO} alt="Team Alpha" />
+              <img src={resolveStudioImage(current?.issuer?.logoUrl || settings.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt="Team Alpha" />
               <div>
                 Your quote is ready for review
                 <strong>Quote #{quoteNumber(current)}</strong>
@@ -1849,8 +1868,10 @@ export function QuoteReadDocument({ quote, settings = {} }) {
   return (
     <article className="qw-read-document">
       <div className="qw-document-brand">
-        <img src={TEAM_ALPHA_LOGO} alt="" width="88" height="88" />
-        <span>{settings.studioName || "TEAM ALPHA"}</span>
+        <img src={resolveStudioImage(quote.issuer?.logoUrl || settings.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt="" width="88" height="88" />
+        <span>{quote.issuer?.name || settings.legalName || settings.studioName || "TEAM ALPHA"}</span>
+        {quote.issuer?.address && <small>{quote.issuer.address}</small>}
+        {quote.issuer?.taxId && <small>GSTIN: {quote.issuer.taxId}</small>}
       </div>
       <h2>Items</h2>
       <table>

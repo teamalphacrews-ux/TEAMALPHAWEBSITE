@@ -1,4 +1,5 @@
 const test = require("node:test");
+test.beforeEach(require('./sessionFixture'));
 const assert = require("node:assert/strict");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
@@ -171,7 +172,7 @@ test("invoice allowlists linked records, safe design and reminder timings", () =
       }),
     { status: 400 },
   );
-  assert.throws(() => invoiceValues({ ...sample, reminderOffsets: [100] }), {
+  assert.throws(() => invoiceValues({ ...sample, reminderOffsets: [366] }), {
     status: 400,
   });
   assert.throws(() => invoiceValues({ ...sample, dueDate: "2026-02-30" }), {
@@ -253,6 +254,25 @@ test("public invoice tokens require sent noncancelled document and hashed lookup
   assert.equal(filter.documentStatus, "Sent");
   assert.equal(filter.status.$ne, "Cancelled");
   assert.notEqual(filter.shareTokenHash, token);
+});
+test('payment visibility and capability expiry are enforced before public invoice projection', async t => {
+  const token = 'd'.repeat(64);
+  let stored = { documentStatus: 'Sent', status: 'Pending', clientLinkOptions: { showPayments: false } };
+  t.mock.method(Invoice, 'findOne', async () => stored);
+  t.mock.method(StudioConfig, 'findOne', () => { throw Error('Private invoice must not be projected'); });
+  assert.equal((await dispatch(publicRoutes, 'GET', '/' + token)).status, 404);
+  stored = { ...stored, clientLinkOptions: { showPayments: true }, linkExpiresAt: new Date(0) };
+  assert.equal((await dispatch(publicRoutes, 'GET', '/' + token)).status, 404);
+  stored = { ...stored, linkExpiresAt: undefined, linkRevokedAt: new Date() };
+  assert.equal((await dispatch(publicRoutes, 'GET', '/' + token)).status, 404);
+});
+test('owner-only invoice issue permission protects approval, sharing, sending and regeneration routes', async t => {
+  const security = require('../services/studioSecurity');
+  t.mock.method(security, 'securityConfig', async () => ({ idleTimeoutMinutes: 60, absoluteSessionHours: 24, permissions: { discounts: 'all_admins', deletion: 'all_admins', exports: 'all_admins', invoiceIssue: 'owner_only' } }));
+  t.mock.method(Invoice, 'findById', () => { throw Error('No invoice access before permission check'); });
+  process.env.JWT_SECRET = 'invoice-permission-test';
+  const token = jwt.sign({ user: { id: adminUserId, role: 'admin' } }, process.env.JWT_SECRET);
+  for (const path of ['approve', 'share', 'send', 'share/regenerate']) assert.equal((await dispatch(adminRoutes, 'POST', '/507f1f77bcf86cd799439022/' + path, token)).status, 403);
 });
 test("concurrent sharing returns one stable capability and never reopens cancellation", async (t) => {
   const oldOrigin = process.env.FRONTEND_URL;

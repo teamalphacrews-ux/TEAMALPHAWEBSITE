@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Search, Menu, ArrowUpRight, CheckCheck, X } from 'lucide-react';
+import { Bell, Search, Menu, ArrowUpRight, CheckCheck, X, Sun, Moon } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 import AdminProfileModal from './AdminProfileModal';
+import { useStudioPreferences } from './StudioPreferences';
 
 const API = import.meta.env.VITE_API_URL || '';
 const destinations = [
@@ -15,11 +16,13 @@ const destinations = [
   ['Post production', '/admin/post-production', 'tasks editing delivery'], ['Calendar', '/admin/calendar', 'shoots events dates'],
   ['Finance', '/admin/finance', 'invoices expenses payments'],
   ['Integrations', '/admin/integrations', 'webhook enquiries connect automation'],
+  ['Email', '/admin/email', 'gmail inbox sent mail messages'],
   ['Client support', '/admin/chats', 'messages chat client project help'], ['Activity', '/admin/activity-log', 'notifications'], ['Team & access', '/admin/users', 'settings permissions users'],
 ];
 
 export default function Topbar({ onMenuClick }) {
   const { user, logout, updateUser } = useAuth();
+  const { preferences, update } = useStudioPreferences();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -81,6 +84,7 @@ export default function Topbar({ onMenuClick }) {
     <header className="studio-topbar" ref={panelRef}>
       <div className="studio-topbar-context"><button type="button" className="studio-menu-button studio-icon-button" aria-label="Open navigation" onClick={onMenuClick}><Menu size={21} /></button><span className="studio-topbar-workspace">Workspace</span><span className="studio-breadcrumb-separator" aria-hidden="true">/</span><strong>{active}</strong></div>
       <div className="studio-topbar-actions">
+        <button type="button" className="studio-icon-button studio-theme-toggle" onClick={() => update({ theme: preferences.theme === 'dark' ? 'light' : 'dark' })} aria-label={preferences.theme === 'dark' ? 'Switch to Daylight mode' : 'Switch to Dark mode'} title={preferences.theme === 'dark' ? 'Daylight mode' : 'Dark mode'}>{preferences.theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}</button>
         <div className="studio-global-search"><Search size={16} /><input ref={searchInputRef} aria-label="Search workspace pages" aria-controls="studio-page-results" placeholder="Search your workspace…" value={query} onFocus={() => { setSearchOpen(true); setShowNotifications(false); }} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && matches[0]) { navigate(matches[0][1]); setSearchOpen(false); setQuery(''); } }} /><kbd className="studio-search-shortcut" aria-hidden="true">{searchShortcut}</kbd>
           {searchOpen && <div id="studio-page-results" className="studio-search-results"><p className="studio-search-label">Pages</p>{matches.length ? matches.map(item => <Link to={item[1]} key={item[1]} onClick={() => { setSearchOpen(false); setQuery(''); }}>{item[0]}<ArrowUpRight size={14} /></Link>) : <p className="studio-muted">No matching workspace.</p>}</div>}
         </div>
