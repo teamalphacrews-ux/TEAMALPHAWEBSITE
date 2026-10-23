@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { TEAM_ALPHA_LOGO } from "../../../utils/branding";
+import StudioAppIcon from "./StudioAppIcon";
 import {
   LayoutDashboard,
   UsersRound,
@@ -23,6 +24,14 @@ import {
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
+const iconTones = {
+  '/admin': 'blue', '/admin/crm': 'cyan', '/admin/studio-projects': 'indigo',
+  '/admin/quotations': 'amber', '/admin/contacts': 'slate', '/admin/calendar': 'rose',
+  '/admin/finance': 'green', '/admin/quote-templates': 'amber', '/admin/projects': 'indigo',
+  '/admin/crew': 'cyan', '/admin/post-production': 'violet', '/admin/data': 'slate',
+  '/admin/chats': 'blue', '/admin/activity-log': 'rose', '/admin/integrations': 'violet',
+  '/admin/settings': 'slate', '/admin/users': 'cyan',
+};
 const primaryItems = [
   { name: "Overview", path: "/admin", icon: LayoutDashboard, exact: true },
   { name: "Enquiries", path: "/admin/crm", icon: MessageSquare },
@@ -109,7 +118,7 @@ export default function Sidebar({ onClose }) {
         "studio-nav-item" + (isActive ? " is-active" : "")
       }
     >
-      <item.icon size={18} strokeWidth={1.75} />
+      <StudioAppIcon icon={item.icon} tone={iconTones[item.path]} size={28} />
       <span>{item.name}</span>
       {item.path === "/admin/chats" && unreadCount > 0 && (
         <span

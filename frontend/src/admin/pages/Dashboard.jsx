@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Plus, ArrowUpRight, CalendarDays, MessageSquare, Folder, Clapperboard, MapPin, Check, RefreshCw, ArrowRight, CircleCheck } from 'lucide-react';
+import { Plus, ArrowUpRight, CalendarDays, MessageSquare, Folder, Clapperboard, MapPin, Check, RefreshCw, ArrowRight, CircleCheck, Clock3, FileText, Wallet, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PipelineInsight, TaskLoadInsight } from '../components/operations/StudioInsights';
+import StudioAppIcon from '../components/common/StudioAppIcon';
 
 const API = import.meta.env.VITE_API_URL || '';
 const dateFormat = (value, options) => {
@@ -53,49 +54,119 @@ export default function Dashboard() {
   const hour = Number(new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', hourCycle: 'h23' }).format(today));
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const metrics = [
-    { title: 'Open enquiries', value: summary.openEnquiries, icon: MessageSquare, note: 'Across your active pipeline', path: '/admin/crm' },
-    { title: 'Booked projects', value: summary.bookedProjects, icon: Folder, note: 'Accepted quotes and bookings', path: '/admin/studio-projects' },
-    { title: 'Upcoming shoots', value: summary.upcomingEvents, icon: CalendarDays, note: 'Scheduled on your calendar', path: '/admin/calendar' },
-    { title: 'Pending tasks', value: summary.pendingTasks, icon: Clapperboard, note: summary.overdueTasks ? summary.overdueTasks + ' need your attention' : 'Keep every delivery on track', path: '/admin/post-production' },
+    { title: 'Open enquiries', value: summary.openEnquiries, icon: MessageSquare, tone: 'blue', note: 'In your active pipeline', path: '/admin/crm' },
+    { title: 'Booked projects', value: summary.bookedProjects, icon: Folder, tone: 'indigo', note: 'Confirmed client projects', path: '/admin/studio-projects' },
+    { title: 'Upcoming events', value: summary.upcomingEvents, icon: CalendarDays, tone: 'rose', note: 'Shoots, meetings and more', path: '/admin/calendar' },
+    { title: 'Pending tasks', value: summary.pendingTasks, icon: Clapperboard, tone: 'amber', note: summary.overdueTasks ? summary.overdueTasks + ' overdue' : 'No overdue tasks', alert: summary.overdueTasks > 0, path: '/admin/post-production' },
   ];
   const pipeline = overview?.pipeline || [];
-  const total = pipeline.reduce((sum, item) => sum + item.count, 0);
-  const conversion = total > 0 ? Math.round((summary.bookedProjects || 0) / total * 100) : 0;
+  const total = pipeline.reduce((sum, item) => sum + Math.max(0, Number(item.count) || 0), 0);
+  const bookedEnquiries = Math.max(0, Number(pipeline.find(item => item.status === 'Converted')?.count) || 0);
+  const conversion = total > 0 ? Math.round(bookedEnquiries / total * 100) : null;
   const events = overview?.upcomingEvents || [];
   const tasks = overview?.actionQueue || [];
   const enquiries = overview?.recentEnquiries || [];
-  const emptyLabel = error ? 'Studio data is temporarily unavailable.' : overview ? 'Your studio is ready for its next story.' : 'Loading your studio…';
+  const emptyLabel = error ? 'Studio data is temporarily unavailable.' : 'Loading your studio…';
+  const quickActions = [
+    { title: 'Quotations', note: 'Prepare and manage proposals', icon: FileText, tone: 'amber', path: '/admin/quotations' },
+    { title: 'Finance', note: 'Invoices, payments and expenses', icon: Wallet, tone: 'green', path: '/admin/finance' },
+    { title: 'Production', note: 'Plan your next delivery', icon: Clapperboard, tone: 'violet', path: '/admin/projects' },
+  ];
 
-  return <div className="studio-overview">
-    <div className="studio-page-heading">
-      <div><span className="studio-eyebrow">YOUR STUDIO AT A GLANCE</span><h1>{greeting}, {user?.firstName || 'Team Alpha'}.</h1><p>Your studio at a glance.</p></div>
-      <div className="studio-heading-actions"><Link to="/admin/calendar" className="studio-button"><CalendarDays size={14} />{dateFormat(today, { day: 'numeric', month: 'short', year: 'numeric' })}</Link><Link to="/admin/crm?new=1" className="studio-button primary"><Plus size={14} />New enquiry</Link></div>
+  return (
+    <div className="studio-overview studio-overview-modern">
+      <div className="studio-page-heading studio-overview-header">
+        <div>
+          <div className="studio-overview-meta"><span className={'studio-command-status' + (error ? ' has-error' : !overview ? ' is-connecting' : '')} aria-live="polite"><span aria-hidden="true" />{error ? 'Connection interrupted' : overview ? 'Studio connected' : 'Connecting'}</span><span>{dateFormat(today, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
+          <h1>Overview</h1>
+          <p className="studio-overview-lede">{greeting}, {user?.firstName || 'Team Alpha'}. Here’s what’s happening in your studio.</p>
+        </div>
+        <div className="studio-heading-actions">
+          <Link to="/admin/calendar" className="studio-button"><CalendarDays size={16} />Open calendar</Link>
+          <Link to="/admin/crm?new=1" className="studio-button primary"><Plus size={16} />New enquiry</Link>
+        </div>
+      </div>
+
+      {error && <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={() => setRefreshKey(value => value + 1)}><RefreshCw size={14} />Retry</button></div>}
+
+      <div className="studio-metric-grid" aria-label="Studio summary" aria-busy={!overview && !error}>
+        {metrics.map(metric => (
+          <Link to={metric.path} className="studio-metric" key={metric.title}>
+            <div className="studio-metric-top"><span>{metric.title}</span><StudioAppIcon icon={metric.icon} tone={metric.tone} size={40} /></div>
+            <strong className="studio-metric-value">{metric.value ?? '—'}</strong>
+            <div className={'studio-metric-foot' + (metric.alert ? ' studio-metric-alert' : '')}><span>{overview ? metric.note : 'Awaiting studio data'}</span><ArrowUpRight size={14} /></div>
+          </Link>
+        ))}
+      </div>
+
+      <div className="studio-overview-grid studio-overview-main">
+        <section className="studio-card studio-schedule-card" aria-labelledby="overview-events-title">
+          <div className="studio-card-heading">
+            <div><h2 id="overview-events-title">Upcoming events</h2><p className="studio-card-subtitle">Your next shoots and meetings · IST</p></div>
+            <Link to="/admin/calendar">View calendar<ArrowUpRight size={14} /></Link>
+          </div>
+          {events.length ? (
+            <div className="studio-schedule-list">
+              {events.slice(0, 4).map(event => (
+                <Link to="/admin/calendar" className="studio-schedule-row" key={event._id}>
+                  <div className="studio-shoot-date"><small>{dateFormat(event.start, { month: 'short' })}</small><strong>{dateFormat(event.start, { day: 'numeric' })}</strong></div>
+                  <div className="studio-shoot-detail"><h3>{event.title}</h3><p><MapPin size={13} /><span>{event.location || 'Location to be confirmed'}</span></p></div>
+                  <div className="studio-schedule-time"><span><Clock3 size={13} />{event.allDay ? 'All day' : dateFormat(event.start, { hour: 'numeric', minute: '2-digit' })}</span><small>{event.type || 'Event'}</small></div>
+                  <ChevronRight size={16} aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          ) : <div className="studio-empty"><CalendarDays size={26} /><span>{overview && !error ? 'No upcoming events. Add your next shoot or meeting.' : emptyLabel}</span>{overview && !error && <Link to="/admin/calendar" className="studio-button small">Open calendar<ArrowRight size={14} /></Link>}</div>}
+        </section>
+
+        <section className="studio-card studio-action-card" aria-labelledby="overview-tasks-title">
+          <div className="studio-card-heading"><div><h2 id="overview-tasks-title">Action queue<span className="studio-inline-count">{summary.pendingTasks ?? '—'}</span></h2><p className="studio-card-subtitle">Your pending production tasks.</p></div><Link to="/admin/post-production">View all<ArrowUpRight size={14} /></Link></div>
+          {overview && <TaskLoadInsight pending={summary.pendingTasks || 0} overdue={summary.overdueTasks || 0} />}
+          <div className="studio-task-list">
+            {tasks.length ? tasks.slice(0, 4).map(task => {
+              const overdue = task.dueDate && new Date(task.dueDate) < today;
+              return (
+                <div className="studio-task-row" key={task._id}>
+                  <button className="studio-task-check" aria-label={'Complete task: ' + task.title} onClick={() => completeTask(task)} disabled={completing === task._id}>{completing === task._id ? <RefreshCw size={13} /> : <Check size={13} />}</button>
+                  <div><h3>{task.title}</h3><p>{task.lead?.name || 'Studio task'}</p></div>
+                  <span className={'studio-task-due' + (overdue ? ' overdue' : '')}>{overdue ? 'Overdue' : task.dueDate ? dateFormat(task.dueDate, { day: 'numeric', month: 'short' }) : 'No due date'}</span>
+                </div>
+              );
+            }) : <div className="studio-empty"><CircleCheck size={26} /><span>{overview && !error ? 'You’re all caught up. No pending tasks.' : emptyLabel}</span></div>}
+          </div>
+        </section>
+      </div>
+
+      <div className="studio-overview-grid studio-overview-secondary">
+        <section className="studio-card studio-pipeline-card" aria-labelledby="overview-pipeline-title">
+          <div className="studio-card-heading"><div><h2 id="overview-pipeline-title">Enquiry pipeline</h2><p className="studio-card-subtitle">Every enquiry, from first contact to booking.</p></div><Link to="/admin/crm">View all<ArrowUpRight size={14} /></Link></div>
+          <div className="studio-pipeline-count"><strong>{overview ? total : '—'}</strong><span>total enquiries</span></div>
+          <PipelineInsight pipeline={pipeline} loading={!overview} />
+          <div className="studio-pipeline-footer"><span><strong>{overview && conversion !== null ? conversion + '%' : '—'}</strong> enquiry to booking</span><Link to="/admin/studio-projects">Projects<ArrowRight size={14} /></Link></div>
+        </section>
+
+        <section className="studio-card studio-recent-card" aria-labelledby="overview-enquiries-title">
+          <div className="studio-card-heading"><div><h2 id="overview-enquiries-title">Recent enquiries</h2><p className="studio-card-subtitle">The latest conversations with your studio.</p></div><Link to="/admin/crm">View all<ArrowUpRight size={14} /></Link></div>
+          {enquiries.length ? (
+            <div className="studio-table-wrap"><table className="studio-table studio-overview-enquiry-table"><thead><tr><th scope="col">Client</th><th scope="col">Event</th><th scope="col">Stage</th><th scope="col" aria-label="View enquiry" /></tr></thead><tbody>
+              {enquiries.slice(0, 4).map(lead => (
+                <tr key={lead._id}>
+                  <td><Link to="/admin/crm" className="studio-client-cell"><span className="studio-client-initials" aria-hidden="true">{initials(lead.name)}</span><div><strong>{lead.name}</strong><small>Added {dateFormat(lead.createdAt, { day: 'numeric', month: 'short' })}</small></div></Link></td>
+                  <td><div className="studio-overview-event-cell"><span>{lead.eventType || 'To be discussed'}</span><small>{dateFormat(lead.eventDate, { day: 'numeric', month: 'short', year: 'numeric' })}</small></div></td>
+                  <td><span className={'studio-badge ' + statusClass(lead.status)}>{lead.status === 'Converted' ? 'Booked' : lead.status}</span></td>
+                  <td><Link to="/admin/crm" className="studio-icon-button" aria-label={'View ' + lead.name + ' enquiry'}><ArrowUpRight size={16} /></Link></td>
+                </tr>
+              ))}
+            </tbody></table></div>
+          ) : <div className="studio-empty"><MessageSquare size={26} /><span>{overview && !error ? 'Your next enquiry will appear here.' : emptyLabel}</span>{overview && !error && <Link to="/admin/crm?new=1" className="studio-button small"><Plus size={14} />New enquiry</Link>}</div>}
+        </section>
+      </div>
+
+      <nav className="studio-quick-actions" aria-label="Quick access">
+        {quickActions.map(action => <Link to={action.path} className="studio-quick-action" key={action.path}><StudioAppIcon icon={action.icon} tone={action.tone} size={40} /><span><strong>{action.title}</strong><small>{action.note}</small></span><ArrowUpRight size={16} aria-hidden="true" /></Link>)}
+      </nav>
+
+      <div className="studio-data-note"><span className={'studio-status-dot' + (error ? ' offline' : '')} />{error ? 'Connection interrupted' : overview ? 'Connected to your studio' : 'Connecting to your studio'}{overview && <span>Last updated {dateFormat(overview.generatedAt, { hour: 'numeric', minute: '2-digit' })} IST</span>}<button onClick={() => setRefreshKey(value => value + 1)} aria-label="Refresh studio overview"><RefreshCw size={14} /></button></div>
     </div>
-    {error && <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={() => setRefreshKey(value => value + 1)}><RefreshCw size={13} /> Retry</button></div>}
-    <div className="studio-metric-grid">{metrics.map(metric => <Link to={metric.path} className="studio-metric" key={metric.title}><div className="studio-metric-top"><span>{metric.title}</span><span className="studio-metric-icon"><metric.icon size={14} strokeWidth={1.5} /></span></div><strong className="studio-metric-value">{metric.value ?? '—'}</strong><div className="studio-metric-foot">{metric.title === 'Pending tasks' && summary.overdueTasks > 0 ? <span>{metric.note}</span> : metric.note}<ArrowUpRight size={11} /></div></Link>)}</div>
-
-    <div className="studio-overview-grid">
-      <section className="studio-card"><div className="studio-card-heading"><div><h2>Enquiry pipeline</h2><p className="studio-card-subtitle">Current enquiry stages and bookings.</p></div><Link to="/admin/crm">View enquiries <ArrowUpRight size={12} /></Link></div>
-        <div className="studio-pipeline-count"><strong>{overview ? total : '—'}</strong><span>total enquiries</span></div>
-        <PipelineInsight pipeline={pipeline} loading={!overview} />
-        <div className="studio-pipeline-footer"><span><strong>{overview ? conversion + '%' : '—'}</strong> enquiry to booking</span><Link to="/admin/studio-projects">View projects <ArrowRight size={12} /></Link></div>
-      </section>
-      <section className="studio-card"><div className="studio-card-heading"><h2>Needs your attention <span className="studio-inline-count">{summary.pendingTasks ?? '—'}</span></h2><Link to="/admin/post-production">All tasks <ArrowUpRight size={12} /></Link></div>
-        {overview && <TaskLoadInsight pending={summary.pendingTasks || 0} overdue={summary.overdueTasks || 0} />}
-        <div className="studio-task-list">{tasks.length ? tasks.slice(0, 4).map(task => {
-          const overdue = task.dueDate && new Date(task.dueDate) < today;
-          return <div className="studio-task-row" key={task._id}><button className="studio-task-check" aria-label={'Complete task: ' + task.title} onClick={() => completeTask(task)} disabled={completing === task._id}><Check size={11} /></button><div><h3>{task.title}</h3><p>{task.lead?.name || 'Studio task'}</p></div><span className={'studio-task-due' + (overdue ? ' overdue' : '')}>{overdue ? 'Overdue' : task.dueDate ? dateFormat(task.dueDate, { day: 'numeric', month: 'short' }) : 'No due date'}</span></div>;
-        }) : <div className="studio-empty"><CircleCheck size={24} />{overview && !error ? 'You’re all caught up. Beautiful work.' : emptyLabel}</div>}</div>
-      </section>
-    </div>
-
-    <section className="studio-card" style={{ marginBottom: 21 }}><div className="studio-card-heading"><div><h2>Upcoming events</h2><p className="studio-card-subtitle">Your next shoots and meetings.</p></div><Link to="/admin/calendar">Open calendar <ArrowUpRight size={12} /></Link></div>
-      {events.length ? <div className="studio-shoot-grid">{events.slice(0, 3).map(event => <Link to="/admin/calendar" className="studio-shoot-card" key={event._id}><div className="studio-shoot-date"><small>{dateFormat(event.start, { month: 'short' })}</small><strong>{dateFormat(event.start, { day: 'numeric' })}</strong></div><div className="studio-shoot-detail"><h3>{event.title}</h3><p><MapPin size={10} /><span>{event.location || 'Location to be confirmed'}</span></p><span className="studio-badge gold">{event.type || 'Shoot'}</span></div></Link>)}</div> : <p className="studio-empty">{overview && !error ? 'No upcoming shoots. Add the next one to your calendar.' : emptyLabel}</p>}
-    </section>
-
-    <section className="studio-card"><div className="studio-card-heading"><div><h2>Recent enquiries</h2><p className="studio-card-subtitle">The latest clients and project enquiries.</p></div><Link to="/admin/crm">View all <ArrowUpRight size={12} /></Link></div>
-      {enquiries.length ? <div className="studio-table-wrap"><table className="studio-table"><thead><tr><th>Client</th><th>Celebration</th><th>Event date</th><th>Stage</th><th aria-label="View enquiry" /></tr></thead><tbody>{enquiries.slice(0, 4).map(lead => <tr key={lead._id}><td><Link to="/admin/crm" className="studio-client-cell"><span className="studio-client-initials">{initials(lead.name)}</span><div><strong>{lead.name}</strong><small>Added {dateFormat(lead.createdAt, { day: 'numeric', month: 'short' })}</small></div></Link></td><td>{lead.eventType || 'To be discussed'}</td><td>{dateFormat(lead.eventDate, { day: 'numeric', month: 'short', year: 'numeric' })}</td><td><span className={'studio-badge ' + statusClass(lead.status)}>{lead.status === 'Converted' ? 'Booked' : lead.status}</span></td><td><Link to="/admin/crm" className="studio-icon-button" aria-label={'View ' + lead.name + ' enquiry'}><ArrowUpRight size={14} /></Link></td></tr>)}</tbody></table></div> : <p className="studio-empty">{overview && !error ? 'Your next enquiry will appear here.' : emptyLabel}</p>}
-    </section>
-    <div className="studio-data-note"><span className={'studio-status-dot' + (error ? ' offline' : '')} />{error ? 'Connection interrupted' : overview ? 'Connected to your studio' : 'Connecting to your studio'}{overview && <span>Last updated {dateFormat(overview.generatedAt, { hour: 'numeric', minute: '2-digit' })} IST</span>}<button onClick={() => setRefreshKey(value => value + 1)} aria-label="Refresh studio overview"><RefreshCw size={11} /></button></div>
-  </div>;
+  );
 }
