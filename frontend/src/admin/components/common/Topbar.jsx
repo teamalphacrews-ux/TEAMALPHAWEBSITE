@@ -29,7 +29,22 @@ export default function Topbar({ onMenuClick }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const panelRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const searchShortcut = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K';
   const active = destinations.find(item => item[1] !== '/admin' && (item[1] === location.pathname || location.pathname.startsWith(item[1] + '/')))?.[0] || (location.pathname.startsWith('/admin/invoices/') ? 'Invoice' : 'Overview');
+  useEffect(() => {
+    const searchShortcut = event => {
+      if (event.defaultPrevented || document.querySelector('[aria-modal="true"]')) return;
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k' && window.matchMedia('(min-width: 769px)').matches) {
+        event.preventDefault();
+        setSearchOpen(true);
+        setShowNotifications(false);
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', searchShortcut);
+    return () => window.removeEventListener('keydown', searchShortcut);
+  }, []);
   useEffect(() => {
     const controller = new AbortController();
     const fetchNotifications = async () => {
@@ -64,9 +79,9 @@ export default function Topbar({ onMenuClick }) {
   const matches = destinations.filter(item => (item[0] + ' ' + item[2]).toLowerCase().includes(query.toLowerCase()));
   return <>
     <header className="studio-topbar" ref={panelRef}>
-      <div className="studio-topbar-context"><button type="button" className="studio-menu-button studio-icon-button" aria-label="Open navigation" onClick={onMenuClick}><Menu size={21} /></button><strong>{active}</strong></div>
+      <div className="studio-topbar-context"><button type="button" className="studio-menu-button studio-icon-button" aria-label="Open navigation" onClick={onMenuClick}><Menu size={21} /></button><span className="studio-topbar-workspace">Workspace</span><span className="studio-breadcrumb-separator" aria-hidden="true">/</span><strong>{active}</strong></div>
       <div className="studio-topbar-actions">
-        <div className="studio-global-search"><Search size={16} /><input aria-label="Search workspace pages" aria-controls="studio-page-results" placeholder="Search pages" value={query} onFocus={() => { setSearchOpen(true); setShowNotifications(false); }} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && matches[0]) { navigate(matches[0][1]); setSearchOpen(false); setQuery(''); } }} />
+        <div className="studio-global-search"><Search size={16} /><input ref={searchInputRef} aria-label="Search workspace pages" aria-controls="studio-page-results" placeholder="Search your workspace…" value={query} onFocus={() => { setSearchOpen(true); setShowNotifications(false); }} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && matches[0]) { navigate(matches[0][1]); setSearchOpen(false); setQuery(''); } }} /><kbd className="studio-search-shortcut" aria-hidden="true">{searchShortcut}</kbd>
           {searchOpen && <div id="studio-page-results" className="studio-search-results"><p className="studio-search-label">Pages</p>{matches.length ? matches.map(item => <Link to={item[1]} key={item[1]} onClick={() => { setSearchOpen(false); setQuery(''); }}>{item[0]}<ArrowUpRight size={14} /></Link>) : <p className="studio-muted">No matching workspace.</p>}</div>}
         </div>
         <div className="studio-notification-wrap"><button type="button" className="studio-icon-button studio-notification-button" aria-label={'Notifications' + (unread ? ', ' + unread + ' unread' : '')} aria-expanded={showNotifications} onClick={() => { setShowNotifications(value => !value); setSearchOpen(false); }}><Bell size={18} />{unread > 0 && <i />}</button>
