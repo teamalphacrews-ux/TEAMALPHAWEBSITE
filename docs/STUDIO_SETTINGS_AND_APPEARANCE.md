@@ -4,7 +4,7 @@ This feature branch builds on the unmerged modern-interface PR #6. Publication r
 
 ## Overview and appearance
 
-The reference-inspired workspace uses a soft gray Daylight canvas, rounded white cards, pill navigation, thin icons, green/orange ambient feature cards and dotted numerical headings. Booking momentum and production metrics use existing studio records; no artificial growth or trends are presented. Dark mode covers the workspace shell, business modules, form controls and dialogs. Authored client document previews retain their saved colors and typography.
+The reference-inspired workspace uses a soft gray Daylight canvas, rounded white cards, pill navigation, thin icons, green/orange ambient feature cards and dotted numerical headings. Booking momentum and production metrics use existing studio records; no artificial growth or trends are presented. Neutral charcoal-gray Dark mode covers the workspace shell, business modules, form controls and dialogs. Authored client document previews retain their saved colors and typography.
 
 Customize offers eleven cards: open enquiries, booked projects, upcoming events, pending tasks, booking momentum, production pulse, upcoming schedule, action queue, enquiry pipeline, recent enquiries and quick access. Each can be hidden or restored; Reset to default restores all cards without changing the selected theme. An empty dashboard is supported. Keyboard focus, touch targets, responsive stacking and reduced-motion preferences are supported.
 
