@@ -43,6 +43,5 @@ export default function AuthPage() {
       </div>
       <footer className="studio-auth-footer"><span>© {new Date().getFullYear()} Team Alpha</span><Link to="/">Back to our website <ArrowUpRight size={12} /></Link></footer>
     </section>
-    <section className="studio-auth-image-panel" aria-label="Team Alpha wedding photography"><img src="/assets/studio-pre-wedding.webp" alt="A couple photographed by Team Alpha" /><div className="studio-auth-image-overlay" /><div className="studio-auth-image-caption"><span className="studio-eyebrow">THE ART OF RUNNING YOUR STUDIO</span><h2>More space<br />for <em>beautiful stories.</em></h2><p>From the first hello to the final frame.<br />Every detail, thoughtfully together.</p><span className="studio-auth-signature">TEAM ALPHA <span>THE WEDDING ARTIST</span></span></div><span className="studio-auth-image-label">PHOTOGRAPHY & CINEMATOGRAPHY</span></section>
   </div>;
 }

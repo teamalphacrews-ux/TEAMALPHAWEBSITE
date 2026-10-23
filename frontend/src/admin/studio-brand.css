@@ -157,8 +157,6 @@
 .studio-app.studio-auth .studio-auth-brand small { color: var(--studio-muted); }
 .studio-app.studio-auth .studio-auth-form-content h1 { font-size: clamp(32px, 4vw, 44px); letter-spacing: -.045em; }
 .studio-app.studio-auth :is(.studio-auth-form-content > p, .studio-auth-security, .studio-auth-footer) { color: var(--studio-muted); }
-.studio-app.studio-auth .studio-auth-image-caption h2 { color: #fff; font-family: var(--brand-serif) !important; font-weight: 400 !important; }
-.studio-app.studio-auth .studio-auth-image-caption h2 em { color: #677080; }
 
 /* A unified, original rounded app-icon treatment. Symbols remain accessible
    through their surrounding links and labels, rather than duplicate SVG text. */

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Plus, ArrowUpRight, CalendarDays, MessageSquare, Folder, Clapperboard, MapPin, Check, RefreshCw, ArrowRight, CircleCheck, Clock3, FileText, Wallet, ChevronRight } from 'lucide-react';
+import { Plus, ArrowUpRight, CalendarDays, MessageSquare, Folder, Clapperboard, MapPin, Check, RefreshCw, ArrowRight, CircleCheck, FileText, Wallet, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PipelineInsight, TaskLoadInsight } from '../components/operations/StudioInsights';
 import StudioAppIcon from '../components/common/StudioAppIcon';
@@ -111,7 +111,7 @@ export default function Dashboard() {
                 <Link to="/admin/calendar" className="studio-schedule-row" key={event._id}>
                   <div className="studio-shoot-date"><small>{dateFormat(event.start, { month: 'short' })}</small><strong>{dateFormat(event.start, { day: 'numeric' })}</strong></div>
                   <div className="studio-shoot-detail"><h3>{event.title}</h3><p><MapPin size={13} /><span>{event.location || 'Location to be confirmed'}</span></p></div>
-                  <div className="studio-schedule-time"><span><Clock3 size={13} />{event.allDay ? 'All day' : dateFormat(event.start, { hour: 'numeric', minute: '2-digit' })}</span><small>{event.type || 'Event'}</small></div>
+                  <div className="studio-schedule-time"><span>{dateFormat(event.start, { weekday: 'long' })}</span><small>{event.type || 'Event'}</small></div>
                   <ChevronRight size={16} aria-hidden="true" />
                 </Link>
               ))}
