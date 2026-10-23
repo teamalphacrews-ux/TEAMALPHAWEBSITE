@@ -1,10 +1,12 @@
 /* The same editorial identity as the public site, with working UI dimensions.
    CRM dialogs are portaled outside the workspace, so they share this scope. */
 :is(.studio-app, .studio-crm-overlay, .studio-crm-invoice-dialog) {
+  --studio-canvas: #fff;
+  --studio-surface: #fff;
   --studio-plum: var(--brand-ink);
   --studio-plum-soft: #383630;
   --studio-gold: var(--brand-accent);
-  --studio-ivory: var(--brand-paper);
+  --studio-ivory: var(--studio-canvas);
   --studio-border: var(--brand-stone);
   --studio-text: var(--brand-ink);
   --studio-muted: var(--brand-muted);
@@ -18,7 +20,7 @@
   -webkit-font-smoothing: antialiased;
 }
 .studio-app.studio-app {
-  background: var(--brand-paper);
+  background: var(--studio-canvas);
   font: 13px/1.65 var(--brand-sans);
 }
 :is(.studio-app.studio-app, .studio-crm-overlay.studio-crm-overlay, .studio-crm-invoice-dialog.studio-crm-invoice-dialog) :is(button, input, select, textarea) {
@@ -30,7 +32,7 @@
 }
 .studio-app.studio-app ::selection { background: #e0cfb3; color: var(--brand-ink); }
 .studio-app.studio-app :is(.studio-sidebar, .studio-topbar) {
-  background: var(--brand-paper);
+  background: var(--studio-surface);
   border-color: var(--brand-stone);
 }
 .studio-app.studio-app .studio-brand strong {
@@ -43,13 +45,13 @@
 .studio-app.studio-app .studio-brand-mark { border-color: var(--brand-stone); border-radius: 4px; }
 .studio-app.studio-app .studio-nav-item { border-radius: 3px; color: #474137; font-size: 12px; }
 .studio-app.studio-app .studio-nav-item svg { color: #85775f; stroke-width: 1.5; }
-.studio-app.studio-app :is(.studio-nav-item:hover, .studio-nav-group-toggle:hover, .studio-portfolio-link:hover) { background: #eee7db; color: var(--brand-ink); }
-.studio-app.studio-app .studio-nav-item.is-active { background: #e8dfd1; color: var(--brand-ink); font-weight: 500; }
+.studio-app.studio-app :is(.studio-nav-item:hover, .studio-nav-group-toggle:hover, .studio-portfolio-link:hover) { background: #f8f8f8; color: var(--brand-ink); }
+.studio-app.studio-app .studio-nav-item.is-active { background: #f3f3f3; color: var(--brand-ink); font-weight: 500; }
 .studio-app.studio-app .studio-nav-item.is-active svg { color: var(--brand-accent); }
 .studio-app.studio-app .studio-nav-group-toggle { color: var(--brand-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .13em; }
 .studio-app.studio-app :is(.studio-nav-primary, .studio-sidebar-profile) { border-color: var(--brand-stone); }
 .studio-app.studio-app .studio-topbar-context strong { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--brand-muted); }
-.studio-app.studio-app :is(.studio-global-search, .studio-search-results, .studio-notification-panel) { background: var(--brand-surface); border-color: var(--brand-stone); border-radius: 4px; }
+.studio-app.studio-app :is(.studio-global-search, .studio-search-results, .studio-notification-panel) { background: var(--studio-surface); border-color: var(--brand-stone); border-radius: 4px; }
 .studio-app.studio-app .studio-preview-label { background: #eee7db; color: var(--brand-muted); font-size: 9px; letter-spacing: .04em; }
 .studio-app.studio-app .studio-main :is(h1,h2):not(:where(.invoice-public *, .qw-read-document *, .pdf-page *)),
 .studio-app.studio-app .studio-modal :is(h1,h2),
@@ -67,8 +69,8 @@
 .studio-app.studio-app :is(.studio-eyebrow, .studio-field, .invoice-field > span, .qw-field > span) { color: var(--brand-muted); }
 .studio-app.studio-app .studio-eyebrow { display: block; font: 400 9px/1.7 var(--brand-sans); letter-spacing: .17em; text-transform: uppercase; }
 .studio-app.studio-app :is(.studio-page-heading p, .studio-muted, .reference-muted, .workspace-contact) { color: var(--brand-muted); }
-.studio-app.studio-app :is(.studio-card, .studio-metric, .reference-template-card, .studio-crm-project-card, .reference-detail-card) { border-color: var(--brand-stone); border-radius: 4px; background: var(--brand-surface); box-shadow: none; }
-.studio-app.studio-app :is(.studio-welcome-banner, .studio-ops .ops-progress-card) { background: var(--brand-surface); border-color: var(--brand-stone); border-radius: 4px; }
+.studio-app.studio-app :is(.studio-card, .studio-metric, .reference-template-card, .studio-crm-project-card, .reference-detail-card) { border-color: var(--brand-stone); border-radius: 4px; background: var(--studio-surface); box-shadow: none; }
+.studio-app.studio-app :is(.studio-welcome-banner, .studio-ops .ops-progress-card) { background: var(--studio-surface); border-color: var(--brand-stone); border-radius: 4px; }
 .studio-app.studio-app :is(.studio-avatar, .reference-avatar, .studio-crm-avatar, .support-avatar, .studio-ops .ops-avatar) { background: #ece3d5; color: var(--brand-accent); border-color: var(--brand-stone); }
 .studio-app.studio-app :is(.studio-metric-icon, .studio-ops .ops-metric-icon) { background: #eee7db; color: var(--brand-accent); border-radius: 3px; }
 .studio-app.studio-app :is(.studio-metric > strong, .studio-metric-value, .studio-cash-summary strong) { font-family: var(--brand-sans); font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: -.045em; }
@@ -90,7 +92,7 @@
   background: #383630 !important;
   border-color: #383630 !important;
 }
-:is(.studio-app.studio-app, .studio-crm-overlay.studio-crm-overlay) :is(.studio-button:not(.primary):not(.danger):not(.ops-danger-button), .qw-button) { background: var(--brand-surface); border-color: var(--brand-stone); color: var(--brand-ink); }
+:is(.studio-app.studio-app, .studio-crm-overlay.studio-crm-overlay) :is(.studio-button:not(.primary):not(.danger):not(.ops-danger-button), .qw-button) { background: var(--studio-surface); border-color: var(--brand-stone); color: var(--brand-ink); }
 :is(.studio-app.studio-app, .studio-crm-overlay.studio-crm-overlay) :is(.studio-icon-button, .reference-icon-button, .ops-icon-button) { border-radius: 3px; color: var(--brand-muted); }
 :is(.studio-app.studio-app, .studio-crm-overlay.studio-crm-overlay) :is(.studio-input, .studio-search, .reference-search, .qw-field input, .qw-field textarea, .qw-field select, .invoice-field input, .invoice-field textarea, .invoice-field select) { background: #fff; border-color: var(--brand-stone); border-radius: 3px; color: var(--brand-ink); }
 :is(.studio-app.studio-app, .studio-crm-overlay.studio-crm-overlay) :is(input,textarea,select):focus { border-color: var(--brand-focus); box-shadow: 0 0 0 3px #c4ae8a24; }
@@ -99,30 +101,30 @@
 .studio-app.studio-app :is(.studio-tabs .active, .reference-tabs button.active, .qw-tabs button.active) { color: var(--brand-accent); border-color: var(--brand-champagne); }
 .studio-app.studio-app .reference-tabs button.active:after { background: var(--brand-champagne); }
 .studio-app.studio-app :is(.reference-text-button, .reference-green-link, .reference-table td a.reference-green-link, .qw-text-button, .studio-crm-text-link, .support-context-links a, .studio-insight-text-button) { color: var(--brand-accent); }
-.studio-app.studio-app :is(.studio-table, .studio-crm-table, .reference-table, .qw-list-table) th { background: #eee8dd; border-color: var(--brand-stone); color: #655945; font: 500 10px/1.6 var(--brand-sans); letter-spacing: .09em; text-transform: uppercase; }
+.studio-app.studio-app :is(.studio-table, .studio-crm-table, .reference-table, .qw-list-table) th { background: var(--studio-surface); border-color: var(--brand-stone); color: #655945; font: 500 10px/1.6 var(--brand-sans); letter-spacing: .09em; text-transform: uppercase; }
 .studio-app.studio-app :is(.studio-table, .studio-crm-table, .reference-table, .qw-list-table) td { font-family: var(--brand-sans); color: #474137; border-color: #e7e0d5; }
-.studio-app.studio-app :is(.studio-table tr:hover, .studio-crm-clickable-row:hover, .reference-table tr:hover) { background: #f0eadf; }
+.studio-app.studio-app :is(.studio-table tr:hover, .studio-crm-clickable-row:hover, .reference-table tr:hover) { background: #f8f8f8; }
 .studio-app.studio-app :is(.studio-crm-stage-filters button.active, .support-thread-list > button.selected) { background: #e8dfd1; color: var(--brand-ink); border-color: var(--brand-champagne); }
 .studio-app.studio-app :is(.studio-crm-stage-filters button.active span, .support-thread-list b) { background: var(--brand-ink); color: #fff; }
 .studio-app.studio-app :is(.studio-badge, .studio-crm-badge, .reference-status, .qw-badge, .invoice-status) { border-radius: 3px; }
 .studio-app.studio-app :is(.studio-crm-badge.new, .studio-crm-badge.meeting) { color: #6c573c; background: #eee5d7; border-color: var(--brand-stone); }
-:is(.studio-app.studio-app, .studio-crm-overlay.studio-crm-overlay) :is(.studio-modal, .studio-team-dialog) { background: var(--brand-surface); border-color: var(--brand-stone); border-radius: 6px; box-shadow: 0 20px 80px #14141424; }
-.studio-crm-overlay.studio-crm-overlay { background: #14141466; }
+:is(.studio-app.studio-app, .studio-crm-overlay.studio-crm-overlay) :is(.studio-modal, .studio-team-dialog) { background: var(--studio-surface); border-color: var(--brand-stone); border-radius: 6px; box-shadow: 0 20px 80px #14141424; }
+:is(.studio-crm-overlay.studio-crm-overlay, .studio-app.studio-app.studio-modal-overlay) { background: #14141466; }
 .studio-app.studio-app :is(.studio-modal-header, .studio-modal-footer, .studio-team-dialog-header) { border-color: var(--brand-stone); }
-.studio-app.studio-app :is(.reference-dropdown, .qw-dropdown, .invoice-menu > div) { background: var(--brand-surface); border-color: var(--brand-stone); border-radius: 4px; }
-.studio-app.studio-app :is(.qw-editor-scroll, .invoice-editor-body) { background: #eee8dd; }
+.studio-app.studio-app :is(.reference-dropdown, .qw-dropdown, .invoice-menu > div) { background: var(--studio-surface); border-color: var(--brand-stone); border-radius: 4px; }
+.studio-app.studio-app :is(.qw-editor-scroll, .invoice-editor-body) { background: var(--studio-canvas); }
 .studio-app.studio-app :is(.qw-paper, .invoice-paper) { border-color: var(--brand-stone); }
 .studio-app.studio-app .qw-toggle input:checked + span { background: var(--brand-ink); }
-.studio-app.studio-app .workspace-info { background: #eee7db; border-color: var(--brand-stone); color: #655945; border-radius: 4px; }
+.studio-app.studio-app .workspace-info { background: var(--studio-surface); border-color: var(--brand-stone); color: #655945; border-radius: 4px; }
 .studio-app.studio-app :is(.workspace-progress > span, .studio-ops .ops-progress-track > span, .studio-calendar-load-bar) { background: var(--brand-champagne); }
 .studio-app.studio-app .studio-ring-fill { stroke: var(--brand-ink); }
 .studio-app.studio-app .studio-ring-track { stroke: #e8e0d3; }
 .studio-app.studio-app :is(.studio-insight-track > i, .studio-calendar-load-bar:not(.empty)) { box-shadow: inset 0 0 0 1px var(--brand-focus); }
-.studio-app.studio-app :is(.studio-insight-period, .studio-chart-tooltip, .studio-calendar-load-controls select) { border-color: var(--brand-stone); background: var(--brand-surface); border-radius: 4px; }
+.studio-app.studio-app :is(.studio-insight-period, .studio-chart-tooltip, .studio-calendar-load-controls select) { border-color: var(--brand-stone); background: var(--studio-surface); border-radius: 4px; }
 .studio-app.studio-app .studio-insight-period button[aria-pressed="true"] { color: var(--brand-ink); background: #e8dfd1; }
 .studio-app.studio-app .workspace-day-number.today { background: var(--brand-ink); color: #fff; }
 .studio-app.studio-app .support-message-list > article.studio { background: #e8dfd1; border-color: var(--brand-stone); }
-.studio-app.studio-app .support-conversation { background: var(--brand-surface); }
+.studio-app.studio-app .support-conversation { background: var(--studio-surface); }
 .studio-app.studio-app .studio-footer { display: flex; color: var(--brand-muted); border-color: var(--brand-stone); letter-spacing: .07em; }
 .studio-app.studio-auth .studio-auth-brand strong { color: var(--brand-ink); font-weight: 500; letter-spacing: .15em; }
 .studio-app.studio-auth .studio-auth-brand small { color: var(--brand-muted); }
@@ -139,13 +141,46 @@
 .studio-app.studio-app .studio-legacy-page :is(.text-stone-300, .text-stone-400, .text-stone-500, .text-warmgray) { color: var(--brand-muted); }
 .studio-app.studio-app .studio-legacy-page p.opacity-70 { opacity: 1; letter-spacing: .12em; }
 .studio-app.studio-app .studio-legacy-page label { color: var(--brand-muted); font-size: 10px; letter-spacing: .1em; }
-.studio-app.studio-app .studio-legacy-page div[class*="bg-white"][class*="border-stone-50"] { background: var(--brand-surface); border: 1px solid var(--brand-stone); border-radius: 4px; }
+.studio-app.studio-app .studio-legacy-page div[class*="bg-white"][class*="border-stone-50"] { background: var(--studio-surface); border: 1px solid var(--brand-stone); border-radius: 4px; }
 .studio-app.studio-app .studio-legacy-page .animate-pulse { animation: none; box-shadow: none; }
 .studio-app.studio-app .studio-button.ops-danger-button { color: #fff; background: #9c5b5b; border-color: #9c5b5b; }
 .studio-app.studio-app .studio-button.ops-danger-button:hover { background: #854949; border-color: #854949; }
 .studio-app.studio-app .studio-legacy-page button { font-family: var(--brand-sans); letter-spacing: .05em; border-radius: 3px; }
 .studio-app.studio-app .studio-legacy-page :is(input,select,textarea) { font-family: var(--brand-sans); color: var(--brand-ink); background: #fff; border-color: var(--brand-stone); border-radius: 4px; }
 .studio-app.studio-app .studio-team-dialog, .studio-app.studio-app .studio-team-dialog-header { border-radius: 6px !important; }
+
+/* Administrative surfaces stay white without changing public brand tokens or
+   the client-selected designs inside quotation and invoice documents. */
+:is(.studio-app.studio-app, .studio-crm-overlay.studio-crm-overlay, .studio-crm-invoice-dialog.studio-crm-invoice-dialog) :is(
+  .studio-workspace, .studio-main, .studio-footer,
+  .studio-modal-header, .studio-modal-footer, .studio-team-dialog-header,
+  .studio-crm-detail-body, .studio-crm-detail-card, .studio-crm-project-links,
+  .ops-table-footer, .ops-search, .ops-form-note, .ops-cover-empty,
+  .reference-note-editor textarea, .reference-project-note, .reference-template-item,
+  .qw-page, .qw-fullscreen, .qw-doc-header, .qw-settings, .qw-paper,
+  .qw-item, .qw-item-copy, .qw-read-paper, .qw-send, .qw-link-input,
+  .qw-template-choice,
+  .invoice-editor, .invoice-editor-toolbar, .invoice-editor-settings,
+  .invoice-editor-content, .invoice-edit-item, .invoice-item-copy,
+  .invoice-schedule-row, .invoice-share-url, .invoice-full-preview,
+  .invoice-send-overlay, .invoice-send-composer,
+  .support-workspace, .support-inbox, .support-message-list,
+  .workspace-weekday, .workspace-calendar-day.outside:not(.selected),
+  .studio-calendar-load-value, .studio-webhook-security,
+  .studio-copy-line, .studio-connection-steps pre,
+  .studio-auth-form-panel
+) {
+  background: var(--studio-surface);
+}
+.studio-app.studio-app .studio-webhook-json {
+  background: var(--studio-surface);
+  color: var(--brand-ink);
+  border: 1px solid var(--brand-stone);
+}
+.studio-app.studio-app .studio-legacy-page .bg-gray-50\/50 {
+  background: var(--studio-surface);
+}
+
 @media(max-width:768px) {
   .studio-app.studio-app :is(.studio-page-heading, .reference-heading, .studio-legacy-page) h1 { font-size: 31px !important; }
   .studio-app.studio-app :is(.studio-card-heading, .studio-insight-heading, .studio-crm-card-heading) h2 { font-size: 21px; }

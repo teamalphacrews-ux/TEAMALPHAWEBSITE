@@ -69,9 +69,10 @@ import { Toaster } from "react-hot-toast";
 
 function App() {
   const location = useLocation();
+  const isStudioPage = location.pathname === "/auth" || location.pathname === "/admin" || location.pathname.startsWith("/admin/");
 
   return (
-    <div className="font-sans text-[#1C1C1C] bg-[#F7F5F2] min-h-screen selection:bg-black selection:text-white">
+    <div className={`font-sans text-[#1C1C1C] ${isStudioPage ? "bg-white" : "bg-[#F7F5F2]"} min-h-screen selection:bg-black selection:text-white`}>
       <Toaster position="top-right" />
       <Suspense
         fallback={
