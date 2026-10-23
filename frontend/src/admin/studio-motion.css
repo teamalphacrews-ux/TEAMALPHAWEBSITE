@@ -1,0 +1,337 @@
+/* Restrained motion for Studio OS. Movement never changes layout geometry. */
+:is(.studio-app, .studio-crm-overlay) {
+  --studio-motion-fast: 160ms;
+  --studio-motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+:is(.studio-app, .studio-crm-overlay)
+  :is(
+    .studio-button,
+    .studio-icon-button,
+    .reference-button,
+    .reference-icon-button,
+    .ops-icon-button,
+    .qw-button,
+    .qw-primary,
+    .invoice-primary,
+    .studio-task-check,
+    .studio-profile-button,
+    .studio-nav-close,
+    .workspace-day-number
+  ) {
+  transition:
+    background-color var(--studio-motion-fast),
+    border-color var(--studio-motion-fast),
+    color var(--studio-motion-fast),
+    box-shadow 200ms,
+    translate 200ms var(--studio-motion-ease),
+    scale 180ms var(--studio-motion-ease);
+}
+:is(.studio-app, .studio-crm-overlay)
+  :is(
+    .studio-card,
+    .studio-metric,
+    .reference-template-card,
+    .studio-crm-project-card
+  ) {
+  transition:
+    border-color 200ms,
+    box-shadow 220ms;
+}
+:is(.studio-app, .studio-crm-overlay)
+  :is(
+    a.studio-metric,
+    .studio-shoot-card,
+    a.workspace-settings-link,
+    .studio-nav-item,
+    .studio-portfolio-link
+  ) {
+  transition:
+    background-color 180ms,
+    border-color 180ms,
+    color 180ms,
+    box-shadow 220ms,
+    translate 220ms var(--studio-motion-ease);
+}
+:is(.studio-app, .studio-crm-overlay)
+  :is(
+    .studio-nav-item,
+    .studio-button,
+    .studio-icon-button,
+    .studio-portfolio-link,
+    .reference-button,
+    .reference-icon-button,
+    .ops-icon-button,
+    .qw-button,
+    .qw-primary,
+    .invoice-primary
+  )
+  > svg:not(.animate-spin):not(.ops-spin):not(.studio-crm-spin) {
+  transition:
+    scale 200ms var(--studio-motion-ease),
+    color 180ms;
+  transform-origin: center;
+}
+:is(.studio-app, .studio-crm-overlay) .studio-nav-group-toggle > svg {
+  transition: transform 180ms var(--studio-motion-ease);
+}
+:is(.studio-app, .studio-crm-overlay)
+  :is(
+    .studio-tabs button,
+    .reference-tabs button,
+    .qw-tabs button,
+    .studio-crm-stage-filters button,
+    .reference-dropdown button,
+    .qw-dropdown button,
+    .invoice-menu > div > button
+  ) {
+  transition:
+    background-color 160ms,
+    color 160ms,
+    border-color 160ms;
+}
+:is(.studio-app, .studio-crm-overlay)
+  :is(.studio-input, .studio-search, .studio-global-search) {
+  transition:
+    border-color 180ms,
+    box-shadow 180ms;
+}
+:is(.studio-app, .studio-crm-overlay) .studio-page-heading {
+  animation: studio-heading-reveal 240ms ease-out;
+}
+:is(.studio-app, .studio-crm-overlay) .studio-metric {
+  animation: studio-heading-reveal 320ms ease-out;
+}
+:is(.studio-app, .studio-crm-overlay) .studio-metric:nth-child(2) {
+  animation-duration: 380ms;
+}
+:is(.studio-app, .studio-crm-overlay) .studio-metric:nth-child(3) {
+  animation-duration: 440ms;
+}
+:is(.studio-app, .studio-crm-overlay) .studio-metric:nth-child(4) {
+  animation-duration: 500ms;
+}
+:is(.studio-app, .studio-crm-overlay)
+  :is(
+    .studio-notification-panel,
+    .studio-search-results,
+    .reference-dropdown,
+    .qw-dropdown
+  ) {
+  animation: studio-panel-reveal 160ms ease-out;
+}
+:is(.studio-app, .studio-crm-overlay) .workspace-calendar-day {
+  transition:
+    background-color 180ms,
+    box-shadow 180ms;
+}
+:is(.studio-app, .studio-crm-overlay) .workspace-calendar-day.selected {
+  background: #e8dfd1;
+}
+:is(.studio-app, .studio-crm-overlay) .workspace-day-number.today {
+  background: var(--brand-ink);
+  color: #fff;
+}
+:is(.studio-app, .studio-crm-overlay) .workspace-calendar-event {
+  transition:
+    background-color 180ms,
+    color 180ms,
+    box-shadow 180ms,
+    translate 180ms var(--studio-motion-ease);
+  background: var(--brand-paper);
+  color: var(--brand-accent);
+}
+:is(.studio-app, .studio-crm-overlay) .workspace-calendar-event.type-wedding {
+  background: #eee5d7;
+  color: var(--brand-accent);
+}
+:is(.studio-app, .studio-crm-overlay) .workspace-calendar-event.type-meeting {
+  background: #edf5f2;
+  color: #47776a;
+}
+:is(.studio-app, .studio-crm-overlay) .workspace-agenda-event {
+  transition:
+    background-color 180ms,
+    border-color 180ms;
+}
+@media (hover: hover) and (pointer: fine) {
+  :is(.studio-app, .studio-crm-overlay)
+    :is(
+      .studio-button,
+      .studio-icon-button,
+      .reference-button,
+      .reference-icon-button,
+      .ops-icon-button,
+      .qw-button,
+      .qw-primary,
+      .invoice-primary,
+      .studio-profile-button,
+      .studio-nav-close
+    ):not(:disabled):not([aria-disabled="true"]):hover {
+    translate: 0 -1px;
+    box-shadow: 0 3px 10px #1d1d1f0b;
+  }
+  :is(.studio-app, .studio-crm-overlay)
+    :is(
+      .studio-nav-item,
+      .studio-button,
+      .studio-icon-button,
+      .studio-portfolio-link,
+      .reference-button,
+      .reference-icon-button,
+      .ops-icon-button,
+      .qw-button,
+      .qw-primary,
+      .invoice-primary
+    ):not(:disabled):not([aria-disabled="true"]):hover
+    > svg:not(.animate-spin):not(.ops-spin):not(.studio-crm-spin) {
+    scale: 1.08;
+  }
+  :is(.studio-app, .studio-crm-overlay) .studio-nav-item:hover {
+    translate: 2px 0;
+  }
+  :is(.studio-app, .studio-crm-overlay)
+    :is(a.studio-metric, .studio-shoot-card, a.workspace-settings-link):hover {
+    translate: 0 -3px;
+    border-color: #cbd9ea;
+    box-shadow: 0 6px 18px #264e7b0c;
+  }
+  :is(.studio-app, .studio-crm-overlay)
+    :is(
+      .studio-card,
+      .studio-metric:not(a),
+      .reference-template-card,
+      .studio-crm-project-card
+    ):hover {
+    border-color: #d7dfe9;
+    box-shadow: 0 3px 14px #14141406;
+  }
+  :is(.studio-app, .studio-crm-overlay)
+    .workspace-calendar-day:not(.selected):hover {
+    background: var(--brand-surface);
+    box-shadow: inset 0 0 0 1px #d4e4f8;
+  }
+  :is(.studio-app, .studio-crm-overlay)
+    .workspace-day-number:not(:disabled):hover {
+    scale: 1.08;
+    background: #e4effc;
+    color: var(--brand-accent);
+  }
+  :is(.studio-app, .studio-crm-overlay)
+    .workspace-calendar-event:not(:disabled):hover {
+    translate: 2px 0;
+    background: #dfebfa;
+    box-shadow: 0 2px 5px #264e7b10;
+  }
+  :is(.studio-app, .studio-crm-overlay)
+    .workspace-agenda-event:not(:disabled):hover {
+    background: var(--brand-surface);
+    border-color: var(--brand-stone);
+  }
+}
+:is(.studio-app, .studio-crm-overlay)
+  :is(
+    .studio-button,
+    .studio-icon-button,
+    .reference-button,
+    .reference-icon-button,
+    .ops-icon-button,
+    .qw-button,
+    .qw-primary,
+    .invoice-primary,
+    .workspace-day-number
+  ):not(:disabled):not([aria-disabled="true"]):active {
+  translate: 0 0;
+  scale: 0.98;
+}
+:is(.studio-app, .studio-crm-overlay)
+  :is(
+    .studio-button,
+    .studio-icon-button,
+    .reference-button,
+    .reference-icon-button,
+    .ops-icon-button,
+    .qw-button,
+    .qw-primary,
+    .invoice-primary,
+    .workspace-day-number
+  ):focus-visible {
+  box-shadow: 0 0 0 4px #14141414;
+}
+@keyframes studio-heading-reveal {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes studio-panel-reveal {
+  from {
+    opacity: 0;
+    translate: 0 -3px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.studio-app, .studio-crm-overlay) *,
+  :is(.studio-app, .studio-crm-overlay) *::before,
+  :is(.studio-app, .studio-crm-overlay) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  :is(.studio-app, .studio-crm-overlay)
+    :is(
+      .studio-page-heading,
+      .studio-metric,
+      .studio-notification-panel,
+      .studio-search-results,
+      .reference-dropdown,
+      .qw-dropdown
+    ) {
+    animation: none !important;
+  }
+  :is(.studio-app, .studio-crm-overlay)
+    :is(
+      .studio-button,
+      .studio-icon-button,
+      .reference-button,
+      .reference-icon-button,
+      .ops-icon-button,
+      .qw-button,
+      .qw-primary,
+      .invoice-primary,
+      .studio-profile-button,
+      .studio-nav-close,
+      .workspace-day-number,
+      a.studio-metric,
+      .studio-shoot-card,
+      a.workspace-settings-link,
+      .studio-nav-item,
+      .studio-portfolio-link,
+      .workspace-calendar-event
+    ) {
+    translate: none !important;
+    scale: none !important;
+  }
+  :is(.studio-app, .studio-crm-overlay)
+    :is(
+      .studio-nav-item,
+      .studio-button,
+      .studio-icon-button,
+      .studio-portfolio-link,
+      .reference-button,
+      .reference-icon-button,
+      .ops-icon-button,
+      .qw-button,
+      .qw-primary,
+      .invoice-primary
+    )
+    > svg {
+    scale: none !important;
+  }
+}

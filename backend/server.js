@@ -13,7 +13,7 @@ try {
 require('dotenv').config();
 
 const User = require('./models/User');
-const connectDB = require('./config/db');
+const { createRuntimeReadiness } = require('./utils/runtimeReadiness');
 const leadRoutes = require('./routes/leadroutes');
 const galleryRoutes = require('./routes/galleryRoutes');
 const financeRoutes = require('./routes/financeRoutes');
@@ -25,9 +25,17 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const { initCronJobs } = require('./services/ReminderService');
 const auth = require('./middleware/auth');
+const requireAdmin = require('./middleware/requireAdmin');
+const { parseProfileUpdate } = require('./utils/profileUpdate');
 const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
+const readiness = createRuntimeReadiness({
+    connect: () => mongoose.connect(process.env.MONGO_URI, { family: 4 }),
+    getConnectionState: () => mongoose.connection.readyState,
+    models: ['Lead', 'Quotation', 'Invoice', 'StudioContact', 'StudioProject',
+        'ContactDocument', 'ProjectMessage', 'QuoteDelivery'].map(name => require(`./models/${name}`))
+});
 app.use(compression()); // Compress all responses
 const server = require('http').createServer(app);
 const io = require('socket.io')(server, {
@@ -69,6 +77,10 @@ app.use(cors({
     credentials: true
 }));
 
+// Health remains reachable while the database/indexes initialize; other APIs fail closed.
+app.get('/api/health', readiness.health);
+app.use('/api', readiness.requireReady);
+
 // --- Socket.IO Middleware ---
 // Attach socket instance to req so routes can emit events
 app.use((req, res, next) => {
@@ -77,96 +89,12 @@ app.use((req, res, next) => {
 });
 
 
-io.on('connection', (socket) => {
-    // Silent connection
-
-    socket.on('join_chat', (roomId) => {
-        socket.join(roomId);
-        
-        // Track online status for delivery ticks
-        if (!onlineUsers.has(roomId)) {
-            onlineUsers.set(roomId, new Set());
-        }
-        onlineUsers.get(roomId).add(socket.id);
-        
-        // Broadcast that this user is online so pending messages can be marked delivered
-        io.emit('user_online', { userId: roomId });
-    });
-
-    socket.on('disconnect', () => {
-        // Remove from online tracking
-        for (let [userId, sockets] of onlineUsers.entries()) {
-            if (sockets.has(socket.id)) {
-                sockets.delete(socket.id);
-                if (sockets.size === 0) {
-                    onlineUsers.delete(userId);
-                    io.emit('user_offline', { userId });
-                }
-                break;
-            }
-        }
-    });
-
-    socket.on('typing_start', (data) => {
-        socket.to(data.roomId).emit('display_typing', data);
-    });
-
-    socket.on('typing_stop', (data) => {
-        socket.to(data.roomId).emit('hide_typing', data);
-    });
-
-    socket.on('message_delivered', async (data) => {
-        try {
-            const Message = require('./models/Message');
-            await Message.findByIdAndUpdate(data.messageId, { status: 'delivered' });
-            socket.to(data.senderId).emit('message_status_update', { messageId: data.messageId, status: 'delivered' });
-        } catch (err) { }
-    });
-
-    socket.on('mark_read', async (data) => {
-        try {
-            const { roomId, readerType } = data; // roomId is the userId, readerType is 'admin' or 'user'
-            const ChatRoom = require('./models/ChatRoom');
-            const Message = require('./models/Message');
-
-            // 1. Mark all messages as seen in DB
-            const adminIds = ['admin', 'hardcoded-admin-id']; // Simplified for socket logic
-            if (readerType === 'admin') {
-                await Message.updateMany({ sender: roomId, seen: false }, { $set: { seen: true, status: 'seen' } });
-                await ChatRoom.findOneAndUpdate({ userId: roomId }, { $set: { unreadCountAdmin: 0 } });
-            } else {
-                await Message.updateMany({ recipient: roomId, seen: false }, { $set: { seen: true, status: 'seen' } });
-                await ChatRoom.findOneAndUpdate({ userId: roomId }, { $set: { unreadCountUser: 0 } });
-            }
-
-            // 2. Fetch updated counts
-            const updatedRoom = await ChatRoom.findOne({ userId: roomId });
-
-            // 3. Emit room_updated to sync everyone
-            io.emit('room_updated', {
-                roomId,
-                unreadCountAdmin: updatedRoom?.unreadCountAdmin || 0,
-                unreadCountUser: updatedRoom?.unreadCountUser || 0
-            });
-
-            // Legacy sync for old components
-            socket.broadcast.to(roomId).emit('chat_seen', roomId);
-            socket.broadcast.to('admin').emit('chat_seen', roomId);
-
-        } catch (err) {
-            console.error('Error in mark_read socket:', err.message);
-        }
-    });
-
-    socket.on('chat_seen', (data) => {
-        const chatId = typeof data === 'string' ? data : data.chatId;
-        socket.broadcast.to(chatId).emit('chat_seen', data);
-        socket.broadcast.to('admin').emit('chat_seen', data);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
-    });
+const { registerStudioSockets } = require('./realtime/studioSocket');
+registerStudioSockets(io, {
+    User,
+    Message: require('./models/Message'),
+    ChatRoom: require('./models/ChatRoom'),
+    onlineUsers
 });
 
 app.set('io', io);
@@ -176,9 +104,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     etag: true
 }));
 
-connectDB().then(() => {
-    console.log("Database connection sequence complete.");
+readiness.initialize(() => {
+    console.log("Database connection and index initialization complete.");
     initCronJobs();
+    require('./services/quoteWorkflow').startQuoteWorker();
+    require('node-cron').schedule('* * * * *',()=>require('./services/invoiceDelivery').runInvoiceDeliveryJobs().catch(()=>console.error('Invoice delivery worker failed.')));
 
     // --- Google Calendar Polling ---
     const { pollGoogleCalendar } = require('./services/googleCalendarService');
@@ -197,8 +127,6 @@ connectDB().then(() => {
         }
     }, 60000); // Every 60 seconds
 
-}).catch(err => {
-    console.error("Delayed Cron initialization due to DB issue:", err.message);
 });
 
 const authRouter = express.Router();
@@ -223,45 +151,12 @@ authRouter.post('/register', async (req, res) => {
     }
 });
 
-authRouter.post('/login', async (req, res) => {
-    try {
-        const { email, password, role } = req.body;
-        if (
-            process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD &&
-            email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD
-        ) {
-            const payload = { user: { id: "hardcoded-admin-id", role: "admin" } };
-            const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' });
-            return res.json({
-                token,
-                user: { id: "hardcoded-admin-id", firstName: "System", lastName: "Admin", email, role: "admin" }
-            });
-        }
-
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ msg: "Invalid Credentials" });
-        if (role && user.role !== role) return res.status(400).json({ msg: "Invalid Role" });
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ msg: "Invalid Credentials" });
-
-        const payload = { user: { id: user.id, role: user.role } };
-        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '30d' }, (err, token) => {
-            if (err) throw err;
-            res.json({ token, user: { id: user.id, firstName: user.firstName, lastName: user.lastName, email, role: user.role } });
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ msg: "Login failed" });
-    }
-});
+const { createLoginHandler } = require('./utils/adminBootstrap');
+authRouter.post('/login', createLoginHandler({ User }));
 
 authRouter.get('/me', auth, async (req, res) => {
     try {
-        if (req.user.id === "hardcoded-admin-id") {
-            return res.json({ id: "hardcoded-admin-id", firstName: "System", role: "admin" });
-        }
-        const user = await User.findById(req.user.id).select('-password');
+        const user = await User.findById(req.user.id).select('firstName lastName email role galleryTag cloudLink cloudPassword leadId createdAt updatedAt');
         res.json(user);
     } catch (err) {
         console.error(err.message);
@@ -271,77 +166,32 @@ authRouter.get('/me', auth, async (req, res) => {
 
 authRouter.put('/profile', auth, async (req, res) => {
     try {
-        const { name, role } = req.body;
-
-        if (req.user.id === "hardcoded-admin-id") {
-            // For the system admin in .env, we return the data so the UI updates for the session
-            // even though it isn't stored in a specific DB collection.
-            const nameParts = (name || "System Admin").trim().split(/\s+/);
-            return res.json({
-                id: "hardcoded-admin-id",
-                firstName: nameParts[0],
-                lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : '',
-                role: role || "admin",
-                msg: "System Admin updated for session"
-            });
-        }
-
-        let updateData = {};
-
-        if (name) {
-            const nameParts = name.trim().split(/\s+/);
-            updateData.firstName = nameParts[0];
-            updateData.lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-        }
-
-        if (role) {
-            updateData.role = role;
-        }
-
+        const updateData = parseProfileUpdate(req.body, req.user.role);
         const user = await User.findByIdAndUpdate(
             req.user.id,
             { $set: updateData },
-            { new: true }
-        ).select('-password');
-
+            { new: true, runValidators: true }
+        ).select('firstName lastName email role galleryTag cloudLink cloudPassword leadId createdAt updatedAt');
         if (!user) return res.status(404).json({ msg: "User not found" });
-
         res.json(user);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        if (err.status) return res.status(err.status).json({ msg: err.message });
+        console.error('Profile update failed:', err.message);
+        res.status(500).json({ msg: 'Unable to update profile' });
     }
 });
 
 // Google OAuth Routes
-const { google } = require('googleapis');
-
-authRouter.get('/google', auth, (req, res) => {
-    try {
-        const oauth2Client = new google.auth.OAuth2(
-            process.env.GOOGLE_CLIENT_ID,
-            process.env.GOOGLE_CLIENT_SECRET,
-            process.env.GOOGLE_REDIRECT_URI
-        );
-
-        const scopes = [
-            'https://www.googleapis.com/auth/calendar',
-            'https://www.googleapis.com/auth/userinfo.email',
-            'https://www.googleapis.com/auth/userinfo.profile'
-        ];
-        const url = oauth2Client.generateAuthUrl({
-            access_type: 'offline',
-            prompt: 'consent',
-            scope: scopes,
-            state: req.user.id
-        });
-
-        res.json({ url });
-    } catch (error) {
-        console.error('Google OAuth URL generation error:', error);
-        res.status(500).json({ msg: "Failed to generate Google OAuth URL" });
-    }
-});
+const { createGoogleOAuthHandlers } = require('./utils/oauthState');
+const googleOAuth = createGoogleOAuthHandlers({ User, onConnected: async (user, req) => {
+    const { setupGoogleWebhook, pollGoogleCalendar } = require('./services/googleCalendarService');
+    await setupGoogleWebhook(user);
+    pollGoogleCalendar(user, req.app.get('io'), true).catch(() => {
+        console.error('Initial Google calendar synchronization failed.');
+    });
+} });
+authRouter.get('/google', auth, requireAdmin, googleOAuth.start);
+authRouter.get('/google/begin', googleOAuth.begin);
 
 authRouter.post('/google/webhook', async (req, res) => {
     const resourceId = req.headers['x-goog-resource-id'];
@@ -368,52 +218,17 @@ authRouter.post('/google/webhook', async (req, res) => {
     }
 });
 
-authRouter.get('/google/callback', async (req, res) => {
-    const { code, state: userId } = req.query;
-    try {
-        const oauth2Client = new google.auth.OAuth2(
-            process.env.GOOGLE_CLIENT_ID,
-            process.env.GOOGLE_CLIENT_SECRET,
-            process.env.GOOGLE_REDIRECT_URI
-        );
-
-        const { tokens } = await oauth2Client.getToken(code);
-        oauth2Client.setCredentials(tokens);
-
-        // Fetch Google User Info (specifically email)
-        const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
-        const userInfo = await oauth2.userinfo.get();
-        const googleEmail = userInfo.data.email;
-
-        const user = await User.findByIdAndUpdate(userId, {
-            googleAccessToken: tokens.access_token,
-            googleRefreshToken: tokens.refresh_token,
-            googleTokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
-            googleEmail: googleEmail
-        }, { new: true });
-
-        // Register Webhook Channel
-        const { setupGoogleWebhook, pollGoogleCalendar } = require('./services/googleCalendarService');
-        await setupGoogleWebhook(user);
-
-        // TRIGGER INITIAL FULL SYNC IMMEDIATELY
-        // We run this in the background so the user can be redirected immediately
-        pollGoogleCalendar(user, req.app.get('io'), true).catch(err => {
-            console.error("Initial Sync Error:", err.message);
-        });
-
-        // Redirect back to frontend calendar page
-        const frontendUrl = process.env.FRONTEND_URL || 'https://team-alpha-d64k.onrender.com';
-        res.redirect(`${frontendUrl.replace(/\/$/, "")}/admin/calendar?sync=success`);
-    } catch (err) {
-        console.error('Callback error:', err.message);
-        const frontendUrl = process.env.FRONTEND_URL || 'https://team-alpha-d64k.onrender.com';
-        res.redirect(`${frontendUrl.replace(/\/$/, "")}/admin/calendar?sync=error`);
-    }
-});
+authRouter.get('/google/callback', googleOAuth.callback);
 
 app.use('/api/auth', authRouter);
+app.use('/api/quotes', require('./routes/publicQuoteRoutes'));
+app.use('/api/studio', require('./routes/documentCoverRoutes'));
+app.use('/api/studio', require('./routes/quoteWorkflowRoutes'));
+app.use('/api/studio', require('./routes/studioRoutes'));
+app.use('/api/public-invoices', require('./routes/publicInvoiceRoutes'));
+app.use('/api/webhooks', require('./routes/webhookRoutes'));
 app.use('/api/chats', chatRoutes);
+app.use('/api/project-support', require('./routes/projectSupportRoutes'));
 app.use('/api/leads', leadRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/finance', financeRoutes);
@@ -427,6 +242,7 @@ app.use('/api/google-sheets', require('./routes/googleSheetRoutes'));
 app.use('/api/media', require('./routes/media'));
 app.use('/api/drive-gallery', require('./routes/driveGalleryRoutes'));
 app.use('/api/admin-users', require('./routes/adminUserRoutes'));
+app.use('/api', require('./routes/contactRoutes'));
 
 // --- Standalone API Configuration ---
 // Root route for initial verification
@@ -435,16 +251,6 @@ app.get('/', (req, res) => {
         message: "🚀 Team Alpha API is running successfully!",
         version: "1.0.0",
         documentation: "/api/health"
-    });
-});
-
-// Health check route for Render/monitoring
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'Online',
-        environment: process.env.NODE_ENV || 'production',
-        database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
-        timestamp: new Date().toISOString()
     });
 });
 

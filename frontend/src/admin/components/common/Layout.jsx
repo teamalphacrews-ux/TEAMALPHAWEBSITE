@@ -1,129 +1,41 @@
-import { useState, useEffect, useRef, Suspense, useMemo } from "react";
-import { Outlet } from "react-router-dom";
-import Sidebar from "./Sidebar";
-import Topbar from "./Topbar";
-import { Menu, X } from "lucide-react";
-import Breadcrumbs from "../../../components/common/Breadcrumbs";
-import PageTransition from "../../../components/common/PageTransition";
-
+import { useState, useEffect, Suspense } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import Sidebar from './Sidebar';
+import Topbar from './Topbar';
+import '../../studio.css';
+import '../../studio-motion.css';
+import '../../studio-mobile.css';
+import '../../studio-brand.css';
+import { useAuth } from '../../../context/AuthContext';
+import useStudioDialog from '../studio/useStudioDialog';
 
 export default function Layout() {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isFocusMode, setIsFocusMode] = useState(false);
-    
-    // Header Scroll Visibility Logic (Matches Topbar)
-    const [isVisible, setIsVisible] = useState(true);
-    const lastScrollY = useRef(0);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const location = useLocation();
+  const { user } = useAuth();
+  useEffect(() => {
+    const previous = document.title;
+    document.title = 'Team Alpha — Studio OS';
+    return () => { document.title = previous; };
+  }, []);
+  const drawerRef = useStudioDialog(() => setIsSidebarOpen(false), { enabled: isSidebarOpen });
 
-    useEffect(() => {
-        let ticking = false;
-        const handleScroll = () => {
-            if (!ticking) {
-                window.requestAnimationFrame(() => {
-                    const currentScrollY = window.scrollY;
-                    
-                    if (currentScrollY < 10) {
-                        setIsVisible(true);
-                    } else if (currentScrollY > lastScrollY.current) {
-                        setIsVisible(false);
-                    } else if (currentScrollY < lastScrollY.current - 5) {
-                        setIsVisible(true);
-                    }
-                    
-                    lastScrollY.current = currentScrollY;
-                    ticking = false;
-                });
-                ticking = true;
-            }
-        };
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    const backgroundStyle = useMemo(() => ({
-        background: `
-            radial-gradient(circle at top left, #CFE8D5 0%, transparent 40%),
-            radial-gradient(circle at top right, #F6E6B4 0%, transparent 40%),
-            radial-gradient(circle at bottom left, #D9CDEB 0%, transparent 40%),
-            #FFFFFF
-        `,
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed'
-    }), []);
-
-    return (
-        <div 
-            className="flex min-h-screen font-sans selection:bg-mutedbrown/20 relative"
-            style={backgroundStyle}
-        >
-            <style>
-                {`
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(-10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .floating-card-animation {
-                    animation: fadeIn 0.4s ease forwards;
-                }
-                `}
-            </style>
-
-            {/* Desktop Sidebar Container (Floating) */}
-            {!isFocusMode && (
-                <div className="hidden lg:block fixed left-0 top-0 h-screen z-50 p-5 pointer-events-none">
-                    <div className="h-full pointer-events-auto floating-card-animation">
-                        <Sidebar />
-                    </div>
-                </div>
-            )}
-
-            {/* Mobile Sidebar Overlay */}
-            {isSidebarOpen && !isFocusMode && (
-                <div
-                    className="lg:hidden fixed inset-0 bg-charcoal/40 backdrop-blur-sm z-[90] animate-in fade-in duration-300"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
-
-            {/* Mobile Sidebar Content */}
-            {!isFocusMode && (
-                <div className={`
-                    lg:hidden fixed left-0 top-0 h-screen z-[100] transition-transform duration-500 ease-in-out
-                    ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-                `}>
-                    <div className="h-full floating-card-animation">
-                        <Sidebar onClose={() => setIsSidebarOpen(false)} />
-                    </div>
-                </div>
-            )}
-
-            {/* Main Content Area */}
-            <div className={`flex-1 transition-all duration-500 flex flex-col min-w-0 ${!isFocusMode ? "lg:ml-[280px]" : "ml-0"}`}>
-                <div className={`sticky top-0 z-40 transition-all duration-500 pt-4 md:pt-8 px-4 md:px-10 pb-4 flex flex-col-reverse md:flex-row md:items-center justify-between gap-4 ${isFocusMode || !isVisible ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"}`}>
-                    <div className={`floating-card-animation transition-all duration-700 flex justify-center md:justify-start w-full md:w-auto ${isVisible ? "opacity-100 translate-y-[6px]" : "opacity-0 -translate-y-10 pointer-events-none"}`}>
-                        {!isFocusMode && <Breadcrumbs />}
-                    </div>
-                    <div className="floating-card-animation w-full md:w-auto flex justify-center md:justify-end">
-                        <Topbar onMenuClick={() => setIsSidebarOpen(true)} isVisibleProp={isVisible} />
-                    </div>
-                </div>
-
-                <main className={`w-full mx-auto transition-all duration-500 ${isFocusMode ? "p-0 max-w-none h-screen flex flex-col justify-center" : "px-4 pt-24 md:px-10 lg:px-12 max-w-[1600px] animate-in fade-in slide-in-from-top-4 duration-1000"}`}>
-                    <PageTransition>
-                        <Suspense fallback={<div className="flex h-64 w-full items-center justify-center text-xl opacity-50">Loading Dashboard...</div>}>
-                            <Outlet context={{ setIsFocusMode }} />
-                        </Suspense>
-                    </PageTransition>
-                </main>
-
-                {!isFocusMode && (
-                    <footer className="mt-auto p-8 border-t border-[#e6e3df] text-center">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-warmgray font-bold">
-                            Team Alpha Photography © 2026 • Luxury Studio Management
-                        </p>
-                    </footer>
-                )}
-            </div>
-        </div>
-    );
+  return <div className={'studio-app' + (isFocusMode ? ' studio-focus-mode' : '')}>
+    <a className="studio-skip-link" href="#studio-main">Skip to content</a>
+    {!isFocusMode && <>
+      {isSidebarOpen && <button className="studio-sidebar-scrim" aria-label="Close navigation" onClick={() => setIsSidebarOpen(false)} />}
+      <div className={'studio-sidebar-container' + (isSidebarOpen ? ' is-open' : '')} ref={drawerRef} role={isSidebarOpen ? "dialog" : undefined} aria-modal={isSidebarOpen || undefined} aria-label={isSidebarOpen ? "Studio navigation drawer" : undefined} tabIndex={-1}><Sidebar onClose={() => setIsSidebarOpen(false)} /></div>
+    </>}
+    <div className="studio-workspace">
+      {!isFocusMode && <Topbar onMenuClick={() => setIsSidebarOpen(true)} />}
+      <div className="studio-preview-label" hidden={!user?.isPreview}>DESIGN PREVIEW · SAMPLE DATA · Changes in this local preview are temporary.</div>
+        <main id="studio-main" className={"studio-main" + (["/admin/users", "/admin/activity-log"].includes(location.pathname) ? " studio-legacy-page" : "")} tabIndex={-1}>
+        <Suspense fallback={<div className="studio-loading" role="status"><span className="studio-loader" /> Opening your workspace…</div>}>
+          <Outlet context={{ setIsFocusMode }} />
+        </Suspense>
+      </main>
+      {!isFocusMode && <footer className="studio-footer"><span>TEAM ALPHA <span className="studio-footer-dot">·</span> STUDIO OS</span><span>Made for the stories you create.</span></footer>}
+    </div>
+  </div>;
 }

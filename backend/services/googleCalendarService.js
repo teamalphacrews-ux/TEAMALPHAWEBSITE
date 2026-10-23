@@ -152,9 +152,10 @@ async function syncToGoogle(event, action, userId) {
  * @param {Boolean} isFullSync - If true, fetches a much larger timeframe (e.g. for initial connection)
  */
 async function pollGoogleCalendar(user, io, isFullSync = false) {
-    if (!user || syncingUsers.has(user._id.toString())) {
+    if (!user) return { success: false };
+    if (syncingUsers.has(user._id.toString())) {
         console.log(`⏳ Sync already in progress for ${user.googleEmail || user.email}. Skipping redundant request.`);
-        return;
+        return { success: false, inProgress: true };
     }
 
     try {
@@ -294,13 +295,14 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
         });
 
         if (hasChanges && io) {
-            io.emit('calendar_update', { 
+            io.to('admin').emit('calendar_update', {
                 action: 'SYNC', 
                 email: user.googleEmail || user.email,
                 lastSyncAt: new Date()
             });
         }
         console.log(`✅ Sync Completed for ${user.googleEmail || user.email}.`);
+        return { success: true };
 
     } catch (error) {
         let errorMessage = error.message;
@@ -315,12 +317,13 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
         await User.findByIdAndUpdate(user._id, { googleSyncError: errorMessage });
         
         if (io) {
-            io.emit('calendar_update', { 
+            io.to('admin').emit('calendar_update', {
                 action: 'SYNC_ERROR', 
                 email: user.googleEmail || user.email,
                 error: errorMessage 
             });
         }
+        return { success: false };
     } finally {
         syncingUsers.delete(user._id.toString());
     }

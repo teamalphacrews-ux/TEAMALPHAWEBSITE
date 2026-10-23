@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
+import { TEAM_ALPHA_LOGO } from '../../utils/branding';
 
 const LoadingScreen = ({ isLoading, total = 0, current = 0 }) => {
   const [showSuccess, setShowSuccess] = useState(false);
@@ -64,7 +65,7 @@ const LoadingScreen = ({ isLoading, total = 0, current = 0 }) => {
               {showSuccess ? (
                 <CheckCircle2 size={48} strokeWidth={1.5} />
               ) : (
-                <Camera size={48} className="text-slate-400" strokeWidth={1.5} />
+                <img src={TEAM_ALPHA_LOGO} alt="Team Alpha" width="64" height="64" className="h-16 w-16 object-contain" />
               )}
             </motion.div>
           </div>

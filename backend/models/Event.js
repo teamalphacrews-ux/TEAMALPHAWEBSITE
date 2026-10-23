@@ -4,6 +4,8 @@ const eventSchema = new mongoose.Schema({
     title: { type: String, required: true },
     start: { type: Date, required: true },
     end: { type: Date, required: true },
+    contactId: {type:mongoose.Schema.Types.ObjectId,ref:'StudioContact',default:null},
+    studioProjectId: {type:mongoose.Schema.Types.ObjectId,ref:'StudioProject',default:null},
     lead: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },
     location: String,
     teamMembers: [String],

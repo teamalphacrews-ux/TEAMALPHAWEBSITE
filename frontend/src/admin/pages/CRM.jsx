@@ -1,505 +1,118 @@
-import { useState, useEffect } from "react";
-import { useSearchParams, useOutletContext } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
-import { Plus, Search, Filter, MoreHorizontal, FileText, CheckSquare, Users, ArrowUpDown } from "lucide-react";
-import LeadDetails from "../components/crm/LeadDetails";
-import LeadForm from "../components/crm/LeadForm";
-import InvoiceForm from "../components/crm/InvoiceForm";
-import TaskPlanning from "../components/crm/task-planning/TaskPlanning";
-import PhotographerList from "../components/crm/PhotographerList";
-import { Trash2, UserPlus } from "lucide-react";
+import { Plus, Search, ArrowUpRight, Trash2, Archive, FileText, Users, RefreshCw, CalendarDays, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
-import API_BASE_URL from '../../utils/apiConfig';
+import { invoiceForLead, invoiceDestination } from "../components/operations/invoiceNavigation";
+import StudioLeadForm from "../components/studio/StudioLeadForm";
+import StudioLeadDetails from "../components/studio/StudioLeadDetails";
+import { studioApi, studioAuth, LEAD_STATUSES, money, displayDate, initials, statusClass, matchesLead, mergeLead } from "../components/studio/leadUtils";
+import "../studio-crm.css";
+
+function ProjectCell({ lead }) {
+  const id = lead.studioProjectId?._id || lead.studioProjectId;
+  const name = lead.projectName || lead.eventType || "To be confirmed";
+  return <><strong>{id ? <Link className="studio-crm-text-link" to={`/admin/studio-projects/${id}`} onClick={event => event.stopPropagation()}>{name}</Link> : name}</strong><small>{lead.projectName && lead.eventType ? `${lead.eventType} · ` : ""}{displayDate(lead.eventDate, "Date to be confirmed")}</small></>;
+}
+function QuoteState({ lead }) {
+  const id = lead.quotationId?._id || lead.quotationId;
+  return id ? <small><Link className="studio-crm-text-link" to={`/admin/quotations?quote=${encodeURIComponent(id)}`} title={lead.quotationNumber || "Open quotation"} onClick={event => event.stopPropagation()}>Quote {(lead.quotationStatus || "Draft").toLowerCase()}</Link></small> : null;
+}
+
+export function EnquiriesView({ leads = [], loading = false, error = "", query = "", onQuery = () => {}, status = "All", onStatus = () => {}, sort = "newest", onSort = () => {}, onSelect = () => {}, onCreate = () => {}, onDelete = () => {}, onRefresh = () => {}, navigation = null }) {
+  const open = leads.filter((lead) => !["Converted", "Archived"].includes(lead.status));
+  const converted = leads.filter((lead) => lead.status === "Converted");
+  const attention = open.filter((lead) => lead.status === "New" || (lead.followUpDate && new Date(lead.followUpDate) < new Date()));
+  const filtered = leads.filter((lead) => (status === "All" || lead.status === status) && (matchesLead(lead, query) || [lead.projectName, lead.quotationNumber].some(value => String(value || "").toLowerCase().includes(query.toLowerCase())))).sort((a, b) => {
+    if (sort === "name") return (a.name || "").localeCompare(b.name || "");
+    if (sort === "event") return (a.eventDate ? new Date(a.eventDate).getTime() : Infinity) - (b.eventDate ? new Date(b.eventDate).getTime() : Infinity);
+    if (sort === "value") return (Number(b.totalAmount) || 0) - (Number(a.totalAmount) || 0);
+    if (sort === "oldest") return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+  return <>
+    <div className="studio-page-heading"><div><span className="studio-eyebrow">CLIENT RELATIONSHIPS</span><h1>Enquiries</h1><p className="studio-muted">Track clients, project details and quotation progress.</p></div><button className="studio-button primary" onClick={onCreate}><Plus size={17} />New enquiry</button></div>
+    {navigation}
+    <div className="studio-metric-grid studio-crm-metrics">
+      <div className="studio-metric"><span>Open enquiries</span><strong>{loading ? "—" : open.length}</strong><small>Conversations in progress</small></div>
+      <div className="studio-metric"><span>Needs attention</span><strong>{loading ? "—" : attention.length}</strong><small>New enquiries & overdue follow-ups</small></div>
+      <div className="studio-metric"><span>Booked projects</span><strong>{loading ? "—" : converted.length}</strong><small>Accepted quotes and confirmed bookings</small></div>
+      <div className="studio-metric"><span>Pipeline value</span><strong>{loading ? "—" : money(open.reduce((sum, lead) => sum + (Number(lead.totalAmount) || 0), 0))}</strong><small>Across your open enquiries</small></div>
+    </div>
+    <section className="studio-card studio-crm-table-card" aria-label="Enquiry pipeline">
+      <div className="studio-crm-card-heading"><div><h2>Enquiry pipeline</h2><p className="studio-muted">Projects and quotations stay linked to their enquiry.</p></div><Link className="studio-crm-text-link" to="/admin/studio-projects">View projects <ArrowUpRight size={15} /></Link></div>
+      <div className="studio-toolbar studio-crm-toolbar"><label className="studio-search"><Search size={17} /><input aria-label="Search enquiries" value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Search names, email or location…" /></label><div className="studio-crm-toolbar-actions"><label className="studio-crm-select-wrap"><select aria-label="Sort enquiries" className="studio-input" value={sort} onChange={(event) => onSort(event.target.value)}><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="event">Event date</option><option value="name">Client name</option><option value="value">Project value</option></select><ChevronDown size={14} /></label><button className="studio-icon-button" aria-label="Refresh enquiries" title="Refresh enquiries" onClick={onRefresh}><RefreshCw size={16} /></button></div></div>
+      <div className="studio-crm-stage-filters" aria-label="Filter by enquiry stage">{["All", ...LEAD_STATUSES].map((stage) => <button key={stage} onClick={() => onStatus(stage)} className={status === stage ? "active" : ""}>{stage === "All" ? "All enquiries" : stage}<span>{stage === "All" ? leads.length : leads.filter((lead) => lead.status === stage).length}</span></button>)}</div>
+      {error ? <div className="studio-error studio-crm-load-error" role="alert"><p>{error}</p><button className="studio-button small" onClick={onRefresh}>Try again</button></div> : <div className="studio-crm-table-scroll"><table className="studio-table studio-crm-table"><thead><tr><th>Client</th><th>Project & date</th><th>Stage</th><th>Project value</th><th>Next follow-up</th><th><span className="studio-crm-sr-only">Actions</span></th></tr></thead><tbody>
+        {loading ? <tr><td colSpan="6"><div className="studio-empty"><RefreshCw size={25} className="studio-crm-spin" /><h3>Loading your enquiries…</h3><p>Bringing the latest conversations into view.</p></div></td></tr> : filtered.length ? filtered.map((lead) => <tr key={lead._id} onClick={() => onSelect(lead)} tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter" && event.target === event.currentTarget) onSelect(lead); }} className="studio-crm-clickable-row"><td><div className="studio-crm-client"><span className="studio-crm-avatar">{initials(lead.name)}</span><div><strong>{lead.name}</strong><small>{lead.email}</small></div></div></td><td><ProjectCell lead={lead} /></td><td><span className={`studio-badge studio-crm-badge ${statusClass(lead.status)}`}>{lead.status || "New"}</span><QuoteState lead={lead} /></td><td><strong>{money(lead.totalAmount)}</strong><small>{lead.paymentStatus || "Unpaid"}</small></td><td><span className={`studio-crm-followup-cell ${lead.followUpDate && new Date(lead.followUpDate) < new Date() ? "overdue" : ""}`}>{lead.followUpDate && <CalendarDays size={13} />}{displayDate(lead.followUpDate, "—")}</span></td><td><div className="studio-crm-row-actions"><button className="studio-icon-button" aria-label={`Open ${lead.name}`} onClick={(event) => { event.stopPropagation(); onSelect(lead); }}><ArrowUpRight size={18} /></button>{!(lead.studioProjectId && lead.status === "Archived") && <button className="studio-icon-button studio-crm-delete" aria-label={`${lead.studioProjectId ? "Archive" : "Delete"} ${lead.name}`} onClick={(event) => { event.stopPropagation(); onDelete(lead); }}>{lead.studioProjectId ? <Archive size={15} /> : <Trash2 size={15} />}</button>}</div></td></tr>) : <tr><td colSpan="6"><div className="studio-empty"><Users size={28} /><h3>{leads.length ? "No enquiries match your search" : "No enquiries yet"}</h3><p>{leads.length ? "Try another name or enquiry stage." : "Add your first enquiry and keep every detail in one place."}</p>{!leads.length && <button className="studio-button primary" onClick={onCreate}><Plus size={16} />Add an enquiry</button>}</div></td></tr>}
+      </tbody></table></div>}
+      {!loading && !error && <div className="studio-crm-table-footer"><span>Showing {filtered.length} of {leads.length} enquiries</span></div>}
+    </section>
+  </>;
+}
 
 export default function CRM() {
-  const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState("leads");
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [chosenTab, setActiveTab] = useState("leads");
+  const activeTab = searchParams.get("new") === "1" || chosenTab !== "invoices" ? "leads" : "invoices";
   const [leads, setLeads] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [invoiceError, setInvoiceError] = useState("");
   const [selectedLead, setSelectedLead] = useState(null);
-  const [showLeadForm, setShowLeadForm] = useState(false);
-  const [showInvoiceForm, setShowInvoiceForm] = useState(false);
-  const [editingInvoice, setEditingInvoice] = useState(null);
+  const [leadFormOpen, setShowLeadForm] = useState(false);
+  const showLeadForm = leadFormOpen || searchParams.get("new") === "1";
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [previousUrlSearch, setPreviousUrlSearch] = useState(searchParams.get("search") || "");
+  const urlSearch = searchParams.get("search") || "";
+  if (previousUrlSearch !== urlSearch) { setPreviousUrlSearch(urlSearch); setSearchQuery(urlSearch); }
+  const [filterStatus, setFilterStatus] = useState(() => LEAD_STATUSES.includes(searchParams.get("stage")) ? searchParams.get("stage") : "All");
   const [sortBy, setSortBy] = useState("newest");
-  const { setIsFocusMode } = useOutletContext();
-  const [user, setUser] = useState(null);
+  const fetchLeads = () => axios.get(`${studioApi}/api/leads`, studioAuth())
+    .then(({ data }) => { setLeads(Array.isArray(data) ? data : []); setError(""); })
+    .catch(() => setError("We couldn’t load your enquiries. Please check your connection and try again."))
+    .finally(() => setLoading(false));
+  const fetchInvoices = () => axios.get(`${studioApi}/api/invoices`, studioAuth())
+    .then(({ data }) => { setInvoices(Array.isArray(data) ? data : []); setInvoiceError(""); })
+    .catch(() => setInvoiceError("We couldn’t load your invoices. Please try again."));
+  useEffect(() => { fetchLeads(); fetchInvoices(); }, []);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+  const updateLead = (next) => {
+    setLeads((previous) => previous.map((lead) => lead._id === next._id ? mergeLead(lead, next) : lead));
+    setSelectedLead((previous) => previous?._id === next._id ? mergeLead(previous, next) : previous);
+  };
+  const createLead = (lead) => setLeads((previous) => [lead, ...previous]);
+  const closeLeadForm = () => { setShowLeadForm(false); if (searchParams.has("new")) { const next = new URLSearchParams(searchParams); next.delete("new"); setSearchParams(next, { replace: true }); } };
+  const deleteLead = async (lead) => {
+    if (lead.studioProjectId) {
+      if (!window.confirm(`Archive the enquiry for ${lead.name}? The linked project and documents will be retained.`)) return;
       try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse user from localStorage", e);
-      }
+        const { data } = await axios.patch(`${studioApi}/api/leads/${lead._id}`, { status:"Archived" }, studioAuth());
+        updateLead(data); toast.success("Enquiry archived");
+      } catch { toast.error("Couldn’t archive the enquiry"); }
+      return;
     }
-  }, []);
-
-  // Focus mode toggle to hide topbar when modals/panels are active
-  useEffect(() => {
-    const isAnyModalOpen = showLeadForm || showInvoiceForm || !!selectedLead;
-    if (setIsFocusMode) {
-      setIsFocusMode(isAnyModalOpen);
-    }
-    
-    if (isAnyModalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-
-    return () => {
-      if (setIsFocusMode) setIsFocusMode(false);
-      document.body.style.overflow = 'auto';
-    };
-  }, [showLeadForm, showInvoiceForm, selectedLead, setIsFocusMode]);
-
-  /* State for pre-filling invoice */
-  const [invoiceDefaults, setInvoiceDefaults] = useState({ clientName: "" });
-
-
-  const handleGenerateInvoice = (lead) => {
-    // FIX: Show existing invoice if it already exists for this client name
-    const existing = invoices.find(inv => inv.clientName === lead.name);
-    if (existing) {
-        setEditingInvoice(existing);
-        setInvoiceDefaults({ clientName: lead.name });
-    } else {
-        setEditingInvoice(null);
-        setInvoiceDefaults({ clientName: lead.name });
-    }
-    setShowInvoiceForm(true);
+    if (!window.confirm(`Permanently delete the enquiry for ${lead.name}? This cannot be undone.`)) return;
+    try { await axios.delete(`${studioApi}/api/leads/${lead._id}`, studioAuth()); setLeads((previous) => previous.filter((item) => item._id !== lead._id)); toast.success("Enquiry deleted"); }
+    catch { toast.error("Couldn’t delete the enquiry"); }
+  };
+  const openInvoice = lead => navigate(invoiceDestination(invoices, lead));
+  const deleteInvoice = async (invoice) => {
+    if (!window.confirm(`Permanently delete the invoice for ${invoice.clientName}?`)) return;
+    try { await axios.delete(`${studioApi}/api/invoices/${invoice._id}`, studioAuth()); setInvoices((previous) => previous.filter((item) => item._id !== invoice._id)); toast.success("Invoice deleted"); }
+    catch { toast.error("Couldn’t delete the invoice"); }
   };
 
-  useEffect(() => {
-    fetchLeads();
-    fetchInvoices();
-  }, []);
+  const navigation = <div className="studio-tabs studio-crm-main-tabs">{[{ id: "leads", title: "Enquiries", icon: <Users size={15} /> }, { id: "invoices", title: "Invoices", icon: <FileText size={15} /> }].map(({ id, title, icon }) => <button key={id} className={activeTab === id ? "active" : ""} onClick={() => setActiveTab(id)}>{icon}{title}</button>)}</div>;
 
-
-  useEffect(() => {
-    const query = searchParams.get("search");
-    if (query) setSearchQuery(query);
-  }, [searchParams]);
-
-  const fetchLeads = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/leads`, {
-        headers: { "x-auth-token": token }
-      });
-      setLeads(response.data);
-      setLoading(false);
-    } catch (err) {
-      console.error("Failed to fetch leads", err);
-      setLoading(false);
-    }
-  };
-
-  const fetchInvoices = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/invoices`, {
-        headers: { "x-auth-token": token }
-      });
-      setInvoices(response.data);
-    } catch (err) {
-      console.error("Failed to fetch invoices", err);
-    }
-  };
-
-  const deleteInvoice = async (id, e) => {
-    e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this invoice?")) {
-      try {
-        const token = localStorage.getItem("token");
-        await axios.delete(`${import.meta.env.VITE_API_URL || ""}/api/invoices/${id}`, {
-          headers: { "x-auth-token": token }
-        });
-        setInvoices(invoices.filter(inv => inv._id !== id));
-        toast.success("Invoice deleted successfully");
-      } catch (err) {
-        console.error("Failed to delete invoice", err);
-        toast.error("Failed to delete invoice");
-      }
-    }
-  };
-
-
-  const deleteLead = async (id, e) => {
-    e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this lead?")) {
-      try {
-        const token = localStorage.getItem("token");
-        await axios.delete(`${import.meta.env.VITE_API_URL || ""}/api/leads/${id}`, {
-          headers: { "x-auth-token": token }
-        });
-        setLeads(leads.filter(lead => lead._id !== id));
-        toast.success("Lead archived/deleted successfully");
-      } catch (err) {
-        console.error("Failed to delete lead", err);
-        toast.error("Failed to delete lead");
-      }
-    }
-  };
-
-  const handleLeadAdded = (newLead) => {
-    setLeads([newLead, ...leads]);
-    setShowLeadForm(false);
-  };
-
-  // FIX: STATE SYNC ISSUE
-  const handleLeadUpdated = (updatedLead) => {
-    setLeads(prev => prev.map(l => l._id === updatedLead._id ? updatedLead : l));
-    if (selectedLead && selectedLead._id === updatedLead._id) {
-        setSelectedLead(updatedLead);
-    }
-  };
-
-  const filteredLeads = leads
-    .filter(lead => {
-      const nameMatch = (lead.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-      const emailMatch = (lead.email || "").toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter = filterStatus === "All" || lead.status === filterStatus;
-      return (nameMatch || emailMatch) && matchesFilter;
-    })
-    .sort((a, b) => {
-      if (sortBy === "name-asc") return (a.name || "").localeCompare(b.name || "");
-      if (sortBy === "name-desc") return (b.name || "").localeCompare(a.name || "");
-      if (sortBy === "newest") return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-      if (sortBy === "oldest") return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
-      if (sortBy === "status") return (a.status || "").localeCompare(b.status || "");
-      return 0;
-    });
-
-  return (
-    <div className="space-y-6 md:space-y-10 w-full animate-in fade-in duration-1500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 animate-in slide-in-from-top-8 duration-1000 fill-mode-forwards">
-        <div>
-          <h1 className="font-serif text-3xl md:text-4xl text-charcoal animate-gentle-fade">Team Alpha Photography</h1>
-          <p className="text-sm text-warmgray mt-1 uppercase tracking-widest font-bold text-[10px]">The Wedding Artist</p>
-        </div>
-        <button
-          onClick={() => {
-            if (activeTab === 'invoices') {
-                setEditingInvoice(null);
-                setInvoiceDefaults({ clientName: "" });
-                setShowInvoiceForm(true);
-            }
-            else if (activeTab === 'team' || activeTab === 'tasks') setShowLeadForm(false);
-            else setShowLeadForm(true);
-          }}
-          className={`w-full md:w-auto flex items-center justify-center gap-2 bg-charcoal text-white px-8 py-4 rounded-full text-[11px] font-bold uppercase tracking-widest hover:bg-mutedbrown hover:-translate-y-1 transition-all duration-500 shadow-xl hover:shadow-2xl active:scale-95 ${activeTab === 'team' || activeTab === 'tasks' ? 'hidden' : ''}`}
-        >
-          <Plus size={16} />
-          {activeTab === 'invoices' ? 'New Invoice' : 'Add New Lead'}
-        </button>
-
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-4 md:gap-10 border-b border-[#e6e3df] overflow-x-auto no-scrollbar">
-        {[
-          { id: 'leads', name: 'Leads', icon: Users },
-          { id: 'invoices', name: 'Invoices', icon: FileText },
-          { id: 'tasks', name: 'Tasks & Planning', icon: CheckSquare },
-          { id: 'team', name: 'Photographers', icon: UserPlus },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 pb-4 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all relative whitespace-nowrap ${activeTab === tab.id ? 'text-charcoal' : 'text-warmgray hover:text-charcoal'
-              }`}
-          >
-            <tab.icon size={14} />
-            {tab.name}
-            {activeTab === tab.id && (
-              <div className="absolute bottom-0 left-0 w-full h-[2px] bg-charcoal"></div>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Content based on Tab */}
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-        {activeTab === 'leads' && (
-          <div className="bg-white rounded-3xl border border-[#e6e3df]/40 shadow-sm overflow-hidden">
-            <div className="p-4 md:p-6 border-b border-[#f0f0f0] flex flex-col md:flex-row items-center justify-between gap-4 bg-ivory/10">
-              <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                <div className="relative flex-1 md:w-72">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-warmgray" size={16} />
-                  <input
-                    type="text"
-                    placeholder="Search leads..."
-                    className="w-full pl-12 pr-4 py-3 bg-white border border-[#e6e3df] rounded-2xl text-xs focus:outline-none focus:ring-1 focus:ring-mutedbrown shadow-sm"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <div className="relative">
-                  <select
-                    className="appearance-none flex items-center justify-center gap-2 px-8 py-3 bg-white border border-[#e6e3df] rounded-2xl text-[10px] font-bold uppercase tracking-widest text-warmgray hover:text-charcoal transition-all shadow-sm focus:outline-none pr-10"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                  >
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="name-asc">Name (A-Z)</option>
-                    <option value="name-desc">Name (Z-A)</option>
-                    <option value="status">By Status</option>
-                  </select>
-                  <ArrowUpDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-warmgray" />
-                </div>
-                <div className="relative">
-                  <select
-                    className="appearance-none flex items-center justify-center gap-2 px-8 py-3 bg-white border border-[#e6e3df] rounded-2xl text-[10px] font-bold uppercase tracking-widest text-warmgray hover:text-charcoal transition-all shadow-sm focus:outline-none pr-10"
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                  >
-                    <option value="All">All Status</option>
-                    <option value="New">New</option>
-                    <option value="Follow-up">Follow-up</option>
-                    <option value="Meeting">Meeting</option>
-                    <option value="Negotiation">Negotiation</option>
-                    <option value="Converted">Converted</option>
-                  </select>
-                  <Filter size={12} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-warmgray" />
-                </div>
-              </div>
-              <div className="hidden md:block text-[10px] uppercase tracking-widest font-bold text-warmgray bg-ivory/50 px-4 py-2 rounded-full">
-                {leads.length} Active Leads
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-ivory text-[10px] uppercase tracking-widest text-warmgray">
-                    <th className="px-8 py-6 font-bold">Client Profile</th>
-                    <th className="px-8 py-6 font-bold hidden md:table-cell">Status</th>
-                    <th className="px-8 py-6 font-bold hidden lg:table-cell">Inquiry Date</th>
-                    <th className="px-8 py-6 font-bold text-right">Details</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-ivory text-sm">
-                  {filteredLeads.length > 0 ? filteredLeads.map((lead, idx) => (
-                    <tr
-                      key={lead._id}
-                      className="hover:bg-white hover:shadow-[0_10px_30px_rgba(0,0,0,0.03)] hover:-translate-y-0.5 transition-all duration-500 cursor-pointer group bg-transparent border-transparent animate-in fade-in slide-in-from-bottom-4"
-                      style={{ animationDelay: `${idx * 50}ms`, animationFillMode: 'backwards' }}
-                      onClick={() => setSelectedLead(lead)}
-                    >
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-ivory text-mutedbrown rounded-2xl flex items-center justify-center font-serif text-xl border border-transparent group-hover:bg-charcoal group-hover:text-white transition-all shadow-sm">
-                            {(lead.name || "?")[0]}
-                          </div>
-                          <div>
-                            <div className="font-bold text-charcoal text-base">{lead.name}</div>
-                            <div className="text-[11px] text-warmgray mt-0.5">{lead.email}</div>
-                            <div className="md:hidden mt-2">
-                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${lead.status === 'New' ? 'bg-blue-50 text-blue-600' :
-                                lead.status === 'Follow-up' ? 'bg-amber-50 text-amber-600' :
-                                  lead.status === 'Meeting' ? 'bg-purple-50 text-purple-600' :
-                                    lead.status === 'Negotiation' ? 'bg-orange-50 text-orange-600' :
-                                      lead.status === 'Converted' ? 'bg-green-50 text-green-600' :
-                                        'bg-gray-100 text-gray-600'
-                                }`}>
-                                {lead.status}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 hidden md:table-cell">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${lead.status === 'New' ? 'bg-blue-50 text-blue-600' :
-                          lead.status === 'Follow-up' ? 'bg-amber-50 text-amber-600' :
-                            lead.status === 'Meeting' ? 'bg-purple-50 text-purple-600' :
-                              lead.status === 'Negotiation' ? 'bg-orange-50 text-orange-600' :
-                                lead.status === 'Converted' ? 'bg-green-50 text-green-600' :
-                                  'bg-gray-100 text-gray-600'
-                          }`}>
-                          {lead.status}
-                        </span>
-                      </td>
-                      <td className="px-8 py-6 hidden lg:table-cell text-xs text-warmgray font-medium italic">
-                        {new Date(lead.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        <div className="mt-1">
-                          <span className={`text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ${lead.paymentStatus === 'Paid' ? 'border-green-200 text-green-700 bg-green-50' :
-                            lead.paymentStatus === 'Deposit Paid' ? 'border-amber-200 text-amber-700 bg-amber-50' :
-                              'border-red-200 text-red-600 bg-red-50'
-                            }`}>
-                            {lead.paymentStatus || 'Unpaid'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={(e) => deleteLead(lead._id, e)}
-                            className="text-warmgray hover:text-red-500 p-3 rounded-full hover:bg-red-50 transition-all shadow-sm hover:shadow-md"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); }}
-                            className="text-warmgray hover:text-charcoal p-3 rounded-full hover:bg-white transition-all shadow-sm hover:shadow-md"
-                          >
-                            <MoreHorizontal size={20} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )) : (
-                    <tr>
-                      <td colSpan="4" className="px-8 py-32 text-center">
-                        <div className="flex flex-col items-center gap-4 opacity-70 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                          <Users size={56} strokeWidth={1} className="text-warmgray animate-float" />
-                          <p className="font-serif italic text-xl text-warmgray mb-2 animate-gentle-fade">Searching for the next premium inquiry...</p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )
-        }
-
-        {
-          activeTab === 'invoices' && (
-            <div className="bg-white rounded-3xl border border-[#e6e3df]/40 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="p-6 border-b border-ivory/50 flex justify-between items-center bg-ivory/10">
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-charcoal">Registry of Generated Invoices</h3>
-                    <div className="text-[10px] font-bold text-warmgray uppercase tracking-widest">{invoices.length} Invoices Found</div>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="border-b border-ivory text-[10px] uppercase tracking-widest text-warmgray">
-                                <th className="px-8 py-6 font-bold">Client / Date</th>
-                                <th className="px-8 py-6 font-bold">Status</th>
-                                <th className="px-8 py-6 font-bold">Total Amount</th>
-                                <th className="px-8 py-6 font-bold text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-ivory text-sm">
-                            {invoices.length > 0 ? invoices.map((inv, idx) => (
-                                <tr key={inv._id} className="hover:bg-ivory/5 transition-colors group">
-                                    <td className="px-8 py-6">
-                                        <div className="font-bold text-charcoal">{inv.clientName}</div>
-                                        <div className="text-[10px] text-warmgray mt-1">{new Date(inv.invoiceDate).toLocaleDateString()}</div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${
-                                            inv.status === 'Paid' ? 'bg-green-50 text-green-600' :
-                                            inv.status === 'Cancelled' ? 'bg-red-50 text-red-600' :
-                                            'bg-amber-50 text-amber-600'
-                                        }`}>
-                                            {inv.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-8 py-6 font-serif text-charcoal">
-                                        ₹{inv.total?.toLocaleString('en-IN')}
-                                    </td>
-                                    <td className="px-8 py-6 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <button 
-                                                onClick={() => { setEditingInvoice(inv); setShowInvoiceForm(true); }}
-                                                className="p-2 hover:bg-ivory rounded-lg text-warmgray hover:text-charcoal transition-colors"
-                                            >
-                                                <FileText size={16} />
-                                            </button>
-                                            <button 
-                                                onClick={(e) => deleteInvoice(inv._id, e)}
-                                                className="p-2 hover:bg-red-50 rounded-lg text-warmgray hover:text-red-500 transition-colors"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )) : (
-                                <tr>
-                                    <td colSpan="4" className="px-8 py-20 text-center text-warmgray italic">No invoices found. Generate one from a lead!</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-          )
-        }
-
-
-        {
-          activeTab === 'tasks' && (
-            <TaskPlanning user={user} />
-          )
-        }
-
-        {
-          activeTab === 'team' && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <PhotographerList />
-            </div>
-          )
-        }
-      </div >
-
-      {/* Forms & Modals */}
-      {
-        showLeadForm && (
-          <LeadForm
-            onClose={() => setShowLeadForm(false)}
-            onLeadAdded={handleLeadUpdated}
-          />
-        )
-      }
-
-      {
-        showInvoiceForm && (
-          <div 
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 w-screen h-screen"
-            style={{ 
-                background: 'rgba(0, 0, 0, 0.3)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)'
-            }}
-          >
-            <InvoiceForm
-              onClose={() => {
-                setShowInvoiceForm(false);
-                setInvoiceDefaults({ clientName: "" });
-                setEditingInvoice(null);
-                fetchInvoices();
-              }}
-              initialData={editingInvoice}
-              initialClientName={invoiceDefaults.clientName}
-            />
-          </div>
-        )
-
-      }
-
-      {/* Side Panel for Lead Details */}
-      {
-        selectedLead && (
-          <LeadDetails
-            user={user}
-            lead={selectedLead}
-            existingInvoice={invoices.find(inv => inv.clientName === selectedLead.name)}
-            onClose={() => setSelectedLead(null)}
-            onUpdate={handleLeadUpdated}
-            onGenerateInvoice={() => handleGenerateInvoice(selectedLead)}
-          />
-        )
-      }
-    </div >
-  );
+  return <div className="studio-crm">
+    {activeTab === "invoices" && <div className="studio-page-heading"><div><span className="studio-eyebrow">CLIENT RELATIONSHIPS</span><h1>A clear view of every commitment.</h1><p className="studio-muted">Your studio, connected and considered.</p></div><button className="studio-button primary" onClick={() => navigate("/admin/invoices/new")}><Plus size={17} />New invoice</button></div>}
+    {activeTab !== "leads" && navigation}
+    {activeTab === "leads" && <EnquiriesView leads={leads} loading={loading} error={error} query={searchQuery} onQuery={setSearchQuery} status={filterStatus} onStatus={setFilterStatus} sort={sortBy} onSort={setSortBy} onSelect={setSelectedLead} onCreate={() => setShowLeadForm(true)} onDelete={deleteLead} onRefresh={() => { setLoading(true); setError(""); fetchLeads(); }} navigation={navigation} />}
+    {activeTab === "invoices" && <section className="studio-card studio-crm-table-card"><div className="studio-crm-card-heading"><div><h2>Invoices</h2><p className="studio-muted">{invoices.length} client {invoices.length === 1 ? "invoice" : "invoices"}</p></div><button className="studio-icon-button" aria-label="Refresh invoices" onClick={fetchInvoices}><RefreshCw size={16} /></button></div>{invoiceError ? <div className="studio-error studio-crm-load-error" role="alert">{invoiceError}<button className="studio-button small" onClick={fetchInvoices}>Try again</button></div> : <div className="studio-crm-table-scroll"><table className="studio-table studio-crm-table"><thead><tr><th>Client</th><th>Invoice date</th><th>Status</th><th>Invoice total</th><th>Actions</th></tr></thead><tbody>{invoices.length ? invoices.map((invoice) => <tr key={invoice._id}><td><strong>{invoice.clientName}</strong></td><td>{displayDate(invoice.invoiceDate)}</td><td><span className={`studio-badge studio-crm-badge ${statusClass(invoice.status)}`}>{invoice.status}</span></td><td><strong>{money(invoice.total)}</strong></td><td><div className="studio-crm-row-actions"><button className="studio-button small" onClick={() => navigate("/admin/invoices/" + invoice._id)}><FileText size={14} />View invoice</button><button className="studio-icon-button" aria-label={`Delete invoice for ${invoice.clientName}`} onClick={() => deleteInvoice(invoice)}><Trash2 size={15} /></button></div></td></tr>) : <tr><td colSpan="5"><div className="studio-empty"><FileText size={28} /><h3>No invoices yet</h3><p>Create an invoice from an enquiry or add one above.</p></div></td></tr>}</tbody></table></div>}</section>}
+    {showLeadForm && <StudioLeadForm onClose={closeLeadForm} onSaved={createLead} />}
+    {selectedLead && <StudioLeadDetails lead={selectedLead} onClose={() => setSelectedLead(null)} onUpdate={updateLead} onGenerateInvoice={openInvoice} existingInvoice={invoiceForLead(invoices, selectedLead)} />}
+  </div>;
 }

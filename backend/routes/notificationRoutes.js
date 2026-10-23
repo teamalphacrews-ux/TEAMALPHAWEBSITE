@@ -1,10 +1,13 @@
 const express = require('express');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
 
 const router = express.Router();
 
-router.get('/', auth, async (req, res) => {
+router.use(auth, requireAdmin);
+
+router.get('/', async (req, res) => {
     try {
         const notifications = await Notification.find().sort({ createdAt: -1 }).limit(20);
         res.json(notifications);
@@ -13,7 +16,7 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-router.patch('/:id/read', auth, async (req, res) => {
+router.patch('/:id/read', async (req, res) => {
     try {
         const notif = await Notification.findByIdAndUpdate(req.params.id, { isRead: true }, { new: true });
         res.json(notif);
@@ -22,7 +25,7 @@ router.patch('/:id/read', auth, async (req, res) => {
     }
 });
 
-router.post('/mark-all-read', auth, async (req, res) => {
+router.post('/mark-all-read', async (req, res) => {
     try {
         await Notification.updateMany({ isRead: false }, { isRead: true });
         res.json({ success: true });
@@ -31,7 +34,7 @@ router.post('/mark-all-read', auth, async (req, res) => {
     }
 });
 
-router.delete('/clear-all', auth, async (req, res) => {
+router.delete('/clear-all', async (req, res) => {
     try {
         await Notification.deleteMany({});
         res.json({ success: true });
@@ -40,7 +43,7 @@ router.delete('/clear-all', auth, async (req, res) => {
     }
 });
 
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         await Notification.findByIdAndDelete(req.params.id);
         res.json({ success: true });

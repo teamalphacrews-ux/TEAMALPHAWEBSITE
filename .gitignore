@@ -1,6 +1,9 @@
-# Everything is being tracked.
-node_modules
-backend/.env
-frontend/.env
+node_modules/
 .env
+.env.*
+!.env.example
 *.env
+dist/
+.vite/
+*.log
+.DS_Store

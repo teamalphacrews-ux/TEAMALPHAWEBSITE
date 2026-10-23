@@ -8,7 +8,11 @@
     "start": "node server.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test test/*.test.mjs",
+    "lint:studio": "eslint src/App.jsx src/context/AuthContext.jsx src/utils/apiConfig.js src/components/AuthPage.jsx src/admin/components/common/Layout.jsx src/admin/components/common/Sidebar.jsx src/admin/components/common/Topbar.jsx src/admin/components/common/AdminProfileModal.jsx src/admin/pages/Dashboard.jsx src/admin/pages/Integrations.jsx src/admin/pages/CRM.jsx src/admin/pages/Projects.jsx src/admin/pages/Crew.jsx src/admin/pages/PostProduction.jsx src/admin/pages/SmartGallery.jsx src/admin/components/studio src/admin/components/operations src/admin/components/gallery src/admin/components/crm/InvoiceForm.jsx src/admin/pages/Finance.jsx src/admin/pages/Calendar.jsx src/admin/pages/Quotations.jsx src/admin/pages/Clients.jsx src/admin/pages/DataManagement.jsx src/admin/pages/Settings.jsx src/admin/components/calendar/EventForm.jsx src/pages/SharedQuotation.jsx src/admin/pages/Contacts.jsx src/admin/pages/ContactDetail.jsx src/admin/pages/StudioProjectDetail.jsx src/admin/pages/StudioProjects.jsx src/admin/pages/QuoteTemplates.jsx src/admin/pages/InvoiceWorkspace.jsx src/pages/PublicInvoice.jsx src/admin/components/contacts src/admin/components/finance/FinanceInsights.jsx src/admin/components/calendar/CalendarInsights.jsx src/pages/ClientProjectWorkspace.jsx src/admin/pages/ProjectSupport.jsx src/utils/clientProjectData.js src/admin/pages/DriveGalleryDetail.jsx && npm run lint:public && npm run lint:mobile",
+    "lint:public": "eslint src/public src/components/Hero.jsx src/components/Navbar.jsx src/components/About.jsx src/components/Services.jsx src/components/Gallery.jsx src/components/Testimonials.jsx src/components/Contact.jsx src/components/Footer.jsx src/components/GetQuote.jsx server.js vite.config.js",
+    "lint:mobile": "eslint src/admin/pages/UserManagement.jsx"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.20",
