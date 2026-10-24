@@ -101,6 +101,8 @@ async function editMetadata(q, values, message) {
         shareTokenHash: 1,
         sharedAt: 1,
         expiredNotifiedAt: 1,
+        linkRevokedAt: 1,
+        linkExpiresAt: 1,
       },
       $push: { timeline: { kind: "revised", message, at: new Date() } },
     },
@@ -143,6 +145,21 @@ router.get(
     );
   }),
 );
+router.delete('/quotations/:id/share', wrap(async (req, res) => {
+  const q = await getQuote(req.params.id);
+  const quote = await Quotation.findByIdAndUpdate(q._id, { $unset: { shareToken: 1, shareTokenHash: 1 }, $set: { linkRevokedAt: new Date() } }, { new: true });
+  await QuoteDelivery.updateMany({ quotation: q._id, status: 'queued' }, { $set: { status: 'cancelled', error: 'Client link revoked by the studio.' } });
+  res.json({ quote: workflow.safeQuote(quote), message: 'Client link revoked. Existing copies can no longer open this project.' });
+}));
+router.post('/quotations/:id/share/regenerate', wrap(async (req, res) => {
+  const q = await getQuote(req.params.id);
+  if (!['Sent', 'Accepted'].includes(q.status)) throw fail('Share an open quotation before regenerating its client link.', 409);
+  const token = require('crypto').randomBytes(32).toString('hex');
+  const options = require('../utils/documentDefaults').clientLinkOptions(await StudioConfig.findOne({ key: 'studio' }) || {});
+  const quote = await Quotation.findOneAndUpdate({ _id: q._id, revision: q.revision, status: q.status }, { $set: { shareToken: token, shareTokenHash: require('../utils/quoteLifecycle').tokenHash(token), clientLinkOptions: options, sharedAt: new Date(), ...(options.linkExpiryDays ? { linkExpiresAt: new Date(Date.now() + options.linkExpiryDays * 86400000) } : {}) }, $unset: { linkRevokedAt: 1, ...(options.linkExpiryDays ? {} : { linkExpiresAt: 1 }) } }, { new: true });
+  if (!quote) throw fail('Quotation changed. Refresh before regenerating its link.', 409);
+  res.json({ token, quote: workflow.safeQuote(quote) });
+}));
 router.post(
   "/quotations/:id/email",
   wrap(async (req, res) => {
@@ -210,11 +227,15 @@ router.post(
   wrap(async (req, res) => {
     const q = await getQuote(req.params.id);
     const id = new mongoose.Types.ObjectId();
+    const studio = await StudioConfig.findOne({ key: 'studio' }) || {};
+    if (q.discountPaise > 0) await require('../services/studioSecurity').assertPermission(req.user.id, 'discounts');
+    const documentNumber = await require('../services/documentNumbering').nextDocumentNumber('quotation', studio, require('../utils/documentDefaults').quoteDefaults(studio).issueDate, Quotation);
     const values = validate.quotation(
       valuesFromQuote(q, {
         status: "Draft",
-        documentNumber: `TA-Q-${String(id).slice(-8).toUpperCase()}`,
-        issueDate: new Date().toISOString().slice(0, 10),
+        documentNumber,
+        issueDate: require('../utils/documentDefaults').quoteDefaults(studio).issueDate,
+        validUntil: require('../utils/documentDefaults').quoteDefaults(studio).validUntil,
       }),
     );
     res
@@ -223,6 +244,8 @@ router.post(
         await Quotation.create({
           _id: id,
           ...values,
+          issuer: q.issuer || require('../utils/invoiceBranding').invoiceIssuer(studio),
+          clientLinkOptions: require('../utils/documentDefaults').clientLinkOptions(studio),
           revision: 1,
           history: [
             {
@@ -282,6 +305,7 @@ router.post(
 );
 router.post(
   "/quotations/:id/archive",
+  require('../services/studioSecurity').requirePermission('deletion'),
   wrap(async (req, res) => {
     const q = await getQuote(req.params.id);
     const updated = await Quotation.findOneAndUpdate(

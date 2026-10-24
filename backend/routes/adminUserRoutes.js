@@ -6,6 +6,8 @@ const AdminSettings = require('../models/AdminSettings');
 const auth = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const { encrypt, decrypt } = require('../utils/vaultCrypto');
+const { assertOwner, isOwner } = require('../services/studioSecurity');
+const requireOwner = async (req, res, next) => { try { await assertOwner(req.user.id); next(); } catch (e) { res.status(e.status || 503).json({ msg: e.status ? e.message : 'Account permission checks are unavailable.' }); } };
 
 // @route   GET api/admin-users
 // @desc    Get all users (Client/Admin) with decrypted passwords
@@ -14,10 +16,11 @@ router.get('/', auth, async (req, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Access denied' });
     try {
         const users = await User.find().sort({ createdAt: -1 });
+        const owner = await isOwner(req.user.id);
         
         const decryptedUsers = users.map(u => {
             let decryptedPass = '';
-            if (u.vaultPassword && u.iv) {
+            if (owner && u.vaultPassword && u.iv) {
                 try {
                     decryptedPass = decrypt(u.vaultPassword, u.iv);
                 } catch (e) {
@@ -26,10 +29,10 @@ router.get('/', auth, async (req, res) => {
                 }
             }
             // Create a plain object and add the password
-            const userObj = u.toObject();
-            delete userObj.password;
-            delete userObj.vaultPassword;
-            delete userObj.iv;
+            const raw = u.toObject();
+            const publicFields = ['_id', 'firstName', 'lastName', 'email', 'role', 'galleryTag', 'cloudLink', 'leadId', 'createdAt', 'updatedAt'];
+            const userObj = Object.fromEntries(publicFields.filter(key => raw[key] !== undefined).map(key => [key, raw[key]]));
+            if (owner) userObj.cloudPassword = raw.cloudPassword || '';
             userObj.plainPassword = decryptedPass;
             return userObj;
         });
@@ -44,12 +47,13 @@ router.get('/', auth, async (req, res) => {
 // @route   POST api/admin-users/create
 // @desc    Create new user from scratch or CRM lead
 // @access  Private (Admin only)
-router.post('/create', auth, async (req, res) => {
+router.post('/create', auth, requireOwner, async (req, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Access denied' });
     
     const { firstName, lastName, email, password, role, leadId, cloudLink, cloudPassword } = req.body;
 
     try {
+        if (!['admin', 'client', undefined].includes(role) || typeof password !== 'string' || password.length < 8 || password.length > 256 || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ msg: 'Use a valid email, role and password of at least 8 characters.' });
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ msg: 'User already exists with this email' });
 
@@ -85,7 +89,7 @@ router.post('/create', auth, async (req, res) => {
 // @route   PUT api/admin-users/:id
 // @desc    Update user details and credentials
 // @access  Private (Admin only)
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, requireOwner, async (req, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Access denied' });
     
     const { firstName, lastName, email, role, password, cloudLink, cloudPassword } = req.body;
@@ -93,6 +97,11 @@ router.put('/:id', auth, async (req, res) => {
     try {
         let user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ msg: 'User not found' });
+        const ownerAccount = await isOwner(user._id);
+        const credentialsChanged = (password && password !== '••••••••') || (role && role !== user.role);
+        if (ownerAccount && role && role !== 'admin') return res.status(400).json({ msg: 'The studio owner must remain an administrator.' });
+        if (role && !['admin', 'client'].includes(role)) return res.status(400).json({ msg: 'Invalid account role.' });
+        if (ownerAccount) user.studioOwner = true;
 
         if (firstName) user.firstName = firstName;
         if (lastName) user.lastName = lastName;
@@ -112,6 +121,7 @@ router.put('/:id', auth, async (req, res) => {
         }
 
         await user.save();
+        if (credentialsChanged) await require('../models/AdminSession').updateMany({ user: user._id }, { $set: { revokedAt: new Date() } });
         res.json({ msg: 'User updated successfully' });
     } catch (err) {
         if (err.code === 'VAULT_CONFIGURATION') return res.status(503).json({ msg: err.message });
@@ -122,7 +132,7 @@ router.put('/:id', auth, async (req, res) => {
 // @route   POST api/admin-users/update-master
 // @desc    Change the master password
 // @access  Private (Admin only)
-router.post('/update-master', auth, async (req, res) => {
+router.post('/update-master', auth, requireOwner, async (req, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Access denied' });
     
     const { currentPassword, newPassword } = req.body;
@@ -147,9 +157,11 @@ router.post('/update-master', auth, async (req, res) => {
 // @route   DELETE api/admin-users/:id
 // @desc    Delete a user
 // @access  Private (Admin only)
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, requireOwner, async (req, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ msg: 'Access denied' });
     try {
+        if (await isOwner(req.params.id)) return res.status(400).json({ msg: 'The studio owner account cannot be deleted.' });
+        await require('../models/AdminSession').updateMany({ user: req.params.id }, { $set: { revokedAt: new Date() } });
         await User.findByIdAndDelete(req.params.id);
         res.json({ msg: 'User removed' });
     } catch (err) {

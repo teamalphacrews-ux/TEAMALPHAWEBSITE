@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../../utils/branding";
+import { quotationDefaults, addDocumentDays, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
+import { API_BASE_URL } from '../../utils/apiConfig';
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   Plus,
@@ -24,6 +26,8 @@ import {
   recordDate,
 } from "../components/operations/workspaceData";
 import "./quotationWorkspace.css";
+import "./documentWorkspaceRefinements.css";
+import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 const covers = [
   "/assets/banner.jpg",
   "/assets/services/wedding.jpg",
@@ -51,7 +55,7 @@ const defaultForm = (settings) => ({
   title: "Wedding photography & cinematography",
   documentNumber: "",
   issueDate: dateOnly(Date.now()),
-  validUntil: dateOnly(Date.now() + 30 * 86400000),
+  validUntil: dateOnly(Date.now() + (settings.quotationValidityDays ?? 14) * 86400000),
   status: "Draft",
   items: [blankItem()],
   discountType: "amount",
@@ -64,6 +68,7 @@ const defaultForm = (settings) => ({
   expiryEnabled: true,
   remindersEnabled: false,
   reminderDays: [3, 7, 14, 21, 30],
+  ...quotationDefaults(settings),
   design: {
     coverImage: settings.coverImage || covers[0],
     colorTheme: settings.colorTheme || "#202622",
@@ -107,14 +112,15 @@ function Toggle({ label, checked, onChange, help }) {
   return (
     <div className="qw-setting">
       <strong>{label}</strong>
-      <label className="qw-toggle">
+      <label className="qw-toggle studio-switch-control">
         <input
           type="checkbox"
+          role="switch"
           aria-label={label}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span />
+        <span className="studio-switch-track" aria-hidden="true" />
         {checked ? "On" : "Off"}
       </label>
       {help && <p>{help}</p>}
@@ -391,8 +397,7 @@ export default function Quotations() {
       if (!q || generation !== generationRef.current) return;
       setCurrent(q);
       setEmail({
-        subject: `Quote #${quoteNumber(q)} from ${settings.studioName || "TEAM ALPHA"}`,
-        message: `Hi ${q.clientName},\n\nPlease take a moment to review your quote. Click the button below to get started.\n\nThanks,\n${settings.studioName || "TEAM ALPHA"}`,
+        ...documentCommunication(settings, 'quote', q),
         sendCopy: true,
         scheduledFor: "",
         idempotencyKey: crypto.randomUUID(),
@@ -419,7 +424,7 @@ export default function Quotations() {
       if (schedule) toast.success("Quote scheduled");
       else if (response.delivery?.status === "sent")
         toast.success("Quote email sent");
-      else toast("Delivery is pending. Check Email History before resending.");
+      else toast("Delivery is pending. Check Email history before resending.");
       setMode("list");
       reload();
     } catch (e) {
@@ -428,8 +433,21 @@ export default function Quotations() {
       setBusy(false);
     }
   };
+  const manageClientLink = async regenerate => {
+    if (!current?._id || busy) return;
+    if (dirty) { setSaveError('Save and share the revised quote before managing its client link.'); return; }
+    setBusy(true);
+    try {
+      const result = await workspaceRequest(regenerate ? 'post' : 'delete', `/api/studio/quotations/${current._id}/share${regenerate ? '/regenerate' : ''}`, {});
+      if (result.quote) loadQuote(result.quote);
+      if (regenerate) { setShareUrl(`${window.location.origin}/quote/${result.token}`); setModal('link'); }
+      toast.success(regenerate ? 'New link created with current studio visibility settings. Previous copies no longer work.' : 'Client link revoked');
+      reload();
+    } catch (error) { setSaveError(recordError(error)); }
+    finally { setBusy(false); setActionMenu(false); }
+  };
   const actionItems = () => (
-    <div className="qw-dropdown">
+    <>
       {!current?.acceptedAt && current?.status !== "Accepted" && (
         <button
           onClick={() => {
@@ -438,7 +456,7 @@ export default function Quotations() {
             setActionMenu(false);
           }}
         >
-          Edit Quote Number
+          Edit quote number
         </button>
       )}
       <button
@@ -448,7 +466,7 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Create Template
+        Save as template
       </button>
       <button
         onClick={() => {
@@ -457,9 +475,13 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Link to Project
+        Link to project
       </button>
       <button onClick={() => act("duplicate")}>Duplicate</button>
+      {['Sent', 'Accepted'].includes(current?.status) && <>
+        <button onClick={() => manageClientLink(false)}>Revoke client link</button>
+        <button onClick={() => manageClientLink(true)}>Regenerate client link</button>
+      </>}
       {!current?.acceptedAt && current?.status !== "Accepted" && (
         <button
           onClick={() => {
@@ -467,7 +489,7 @@ export default function Quotations() {
             setActionMenu(false);
           }}
         >
-          Cancel Quote
+          Cancel quote
         </button>
       )}
       <button
@@ -492,7 +514,7 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Cancel Scheduled Sending
+        Cancel scheduled sending
       </button>
       <button
         onClick={async () => {
@@ -510,9 +532,9 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Email History
+        Email history
       </button>
-    </div>
+    </>
   );
   const applyTemplate = (t) => {
     lastSavedVersion.current = -1;
@@ -534,7 +556,7 @@ export default function Quotations() {
       remindersEnabled: !!t.remindersEnabled,
       reminderDays: t.reminderDays || [3, 7, 14, 21, 30],
       design: t.design || formRef.current.design,
-      validUntil: dateOnly(clock + (t.validityDays || 30) * 86400000),
+      validUntil: addDocumentDays(quotationDefaults(settings, clock).issueDate, t.validityDays ?? settings.quotationValidityDays ?? 14),
     };
     setDraft(f);
   };
@@ -757,7 +779,7 @@ export default function Quotations() {
                 {!templates.length && (
                   <p>
                     No templates saved yet. Prepare a blank quote, then use
-                    Create Template.
+                    Save as template.
                   </p>
                 )}
               </>
@@ -883,16 +905,13 @@ export default function Quotations() {
             </span>
             <span className="qw-save-state">{busy ? "Saving…" : savedAt}</span>
             <div className="qw-header-actions">
-              <div className="qw-menu">
-                <button onClick={() => setActionMenu(!actionMenu)}>
-                  Actions <ChevronDown size={12} />
-                </button>
-                {actionMenu && actionItems()}
-              </div>
+              <WorkspaceActionMenu label="Actions" className="qw-menu" menuClassName="qw-dropdown" open={actionMenu} onOpenChange={setActionMenu} disabled={busy}>
+                {actionItems()}
+              </WorkspaceActionMenu>
               {mode === "editor" ? (
                 <>
                   <button onClick={() => setDesignOpen(!designOpen)}>
-                    Edit Design
+                    Edit design
                   </button>
                   <button onClick={preview}>Preview</button>
                   <button
@@ -906,7 +925,7 @@ export default function Quotations() {
                     disabled={busy}
                     onClick={prepareSend}
                   >
-                    Send Quote
+                    Send quote
                   </button>
                 </>
               ) : (
@@ -919,16 +938,16 @@ export default function Quotations() {
                         setMode("editor");
                       }}
                     >
-                      Edit Quote
+                      Edit quote
                     </button>
                   )}
-                  <button onClick={preview}>View Quote</button>
+                  <button onClick={preview}>View quote</button>
                   {current?.invoiceId ? (
                     <Link
                       className="qw-primary"
                       to={`/admin/invoices/${current.invoiceId}`}
                     >
-                      View Invoice
+                      View invoice
                     </Link>
                   ) : (
                     <button className="qw-primary" onClick={() => act("share")}>
@@ -997,7 +1016,7 @@ export default function Quotations() {
                 />
                 {form.remindersEnabled && (
                   <div className="qw-check-list">
-                    {[3, 7, 14, 21, 30].map((day) => (
+                    {[...new Set([3, 7, 14, 21, 30, ...(form.reminderDays || [])])].sort((a, b) => a - b).map((day) => (
                       <label key={day}>
                         <input
                           type="checkbox"
@@ -1323,7 +1342,7 @@ export default function Quotations() {
           {designOpen && (
             <aside className="qw-design">
               <header>
-                <h2>Edit Design</h2>
+                <h2>Edit design</h2>
                 <button
                   aria-label="Close design"
                   onClick={() => setDesignOpen(false)}
@@ -1403,7 +1422,7 @@ export default function Quotations() {
         <div className="qw-fullscreen">
           <header className="qw-doc-header">
             <button onClick={() => setMode("editor")}>
-              <X size={16} /> Send Quote
+              <X size={16} /> Send quote
             </button>
           </header>
           <div className="qw-send">
@@ -1466,7 +1485,7 @@ export default function Quotations() {
               )}
             </section>
             <section className="qw-email-preview">
-              <img src={TEAM_ALPHA_LOGO} alt="Team Alpha" />
+              <img src={resolveStudioImage(current?.issuer?.logoUrl || settings.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt="Team Alpha" />
               <div>
                 Your quote is ready for review
                 <strong>Quote #{quoteNumber(current)}</strong>
@@ -1488,14 +1507,14 @@ export default function Quotations() {
               discount: "Add discount",
               tax: "Add tax",
               template: "Create template",
-              number: "Edit Quote Number",
-              project: "Link to Project",
+              number: "Edit quote number",
+              project: "Link to project",
               photo: "Add photo",
               link: "Get Quote Link",
               manual: "Send via link",
               schedule: "Schedule Quote",
-              history: "Email History",
-              cancel: "Cancel Quote",
+              history: "Email history",
+              cancel: "Cancel quote",
               archive: "Delete Quote",
               leave: "Unsaved changes",
             }[modal]
@@ -1849,8 +1868,10 @@ export function QuoteReadDocument({ quote, settings = {} }) {
   return (
     <article className="qw-read-document">
       <div className="qw-document-brand">
-        <img src={TEAM_ALPHA_LOGO} alt="" width="88" height="88" />
-        <span>{settings.studioName || "TEAM ALPHA"}</span>
+        <img src={resolveStudioImage(quote.issuer?.logoUrl || settings.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt="" width="88" height="88" />
+        <span>{quote.issuer?.name || settings.legalName || settings.studioName || "TEAM ALPHA"}</span>
+        {quote.issuer?.address && <small>{quote.issuer.address}</small>}
+        {quote.issuer?.taxId && <small>GSTIN: {quote.issuer.taxId}</small>}
       </div>
       <h2>Items</h2>
       <table>

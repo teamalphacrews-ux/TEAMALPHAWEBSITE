@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { Printer, Download, X } from "lucide-react";
 import { API_BASE_URL } from "../utils/apiConfig";
+import { resolveStudioImage } from '../utils/settingsDefaults';
 import "../admin/pages/invoiceWorkspace.css";
 const money = (value) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
@@ -66,7 +67,7 @@ export function InvoiceDocument({ invoice, preview = false }) {
       >
         {design.showLogo !== false && (
           <img
-            src={i.studio?.logoUrl || TEAM_ALPHA_LOGO}
+            src={resolveStudioImage(i.studio?.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)}
             alt={i.studio?.name || "Team Alpha"}
           />
         )}
@@ -90,7 +91,7 @@ export function InvoiceDocument({ invoice, preview = false }) {
           <div className="invoice-document-brand">
             {design.showLogo !== false && (
               <img
-                src={i.studio?.logoUrl || TEAM_ALPHA_LOGO}
+                src={resolveStudioImage(i.studio?.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)}
                 alt={i.studio?.name || "Team Alpha"}
               />
             )}
@@ -259,7 +260,7 @@ export function InvoiceDocument({ invoice, preview = false }) {
                   {payments.map((p, index) => (
                     <tr key={index}>
                       <td>
-                        {index + 1} of {payments.length}
+                        {p.label || `${index + 1} of ${payments.length}`}
                       </td>
                       <td>{money(p.amountPaise / 100)}</td>
                       <td>{date(p.dueDate)}</td>

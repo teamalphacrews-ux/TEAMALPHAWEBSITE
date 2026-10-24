@@ -31,6 +31,7 @@ import {
   operationError,
 } from "../components/operations/operationsUtils";
 import "./studioOperations.css";
+import ApplyProductionTemplate from '../components/settings/ApplyProductionTemplate';
 
 const getLeadId = (task) =>
   typeof task.lead === "object" ? task.lead?._id : task.lead;
@@ -47,6 +48,7 @@ export default function PostProduction() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [projectError, setProjectError] = useState("");
+  const [crewError, setCrewError] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [projectFilter, setProjectFilter] = useState(
@@ -81,8 +83,10 @@ export default function PostProduction() {
       if (
         taskResult.status === "fulfilled" &&
         Array.isArray(taskResult.value.data)
-      )
+      ) {
         setTasks(taskResult.value.data);
+        setLoadError("");
+      }
       else
         setLoadError(
           operationError(
@@ -93,13 +97,18 @@ export default function PostProduction() {
       if (
         leadResult.status === "fulfilled" &&
         Array.isArray(leadResult.value.data)
-      )
+      ) {
         setLeads(leadResult.value.data);
+        setProjectError("");
+      }
       else
         setProjectError(
           "Projects are unavailable. You can still manage tasks without a project.",
         );
-      if (crewResult.status === "fulfilled") setCrew(crewResult.value.data);
+      if (crewResult.status === "fulfilled" && Array.isArray(crewResult.value.data)) {
+        setCrew(crewResult.value.data);
+        setCrewError("");
+      } else setCrewError("The crew roster is unavailable. Existing assignments are preserved; retry before changing the assigned person.");
       setLoading(false);
     });
   }, []);
@@ -220,6 +229,7 @@ export default function PostProduction() {
           body,
           operationAuth(),
         );
+        if (!response.data?._id) throw new Error("The saved task was not returned.");
         setTasks((current) =>
           current.map((task) =>
             task._id === editing._id
@@ -235,6 +245,7 @@ export default function PostProduction() {
           { ...body, status: "pending" },
           operationAuth(),
         );
+        if (!response.data?._id) throw new Error("The saved task was not returned.");
         setTasks((current) => [
           {
             ...response.data,
@@ -254,6 +265,7 @@ export default function PostProduction() {
     }
   };
   const toggleTask = async (task) => {
+    if (busyId) return;
     setBusyId(task._id);
     try {
       const response = await axios.patch(
@@ -278,6 +290,7 @@ export default function PostProduction() {
     }
   };
   const deleteTask = async () => {
+    if (saving) return;
     setSaving(true);
     setFormError("");
     try {
@@ -307,9 +320,9 @@ export default function PostProduction() {
             A clear path from the last frame to the final delivery.
           </p>
         </div>
-        <button className="studio-button primary" onClick={() => openEditor()}>
+        <div className="studio-heading-actions"><ApplyProductionTemplate onApplied={fetchWorkspace} initialProject={projectFilter === 'all' || projectFilter === 'unassigned' ? '' : projectFilter} /><button className="studio-button primary" onClick={() => openEditor()}>
           <Plus size={16} /> Add task
-        </button>
+        </button></div>
       </div>
       <div className="studio-metric-grid ops-metrics">
         {[
@@ -816,11 +829,13 @@ export default function PostProduction() {
               <select
                 className="studio-input"
                 value={form.assignee}
+                disabled={!!crewError}
                 onChange={(event) =>
                   setForm({ ...form, assignee: event.target.value })
                 }
               >
                 <option value="">Not assigned</option>
+                {form.assignee && !crew.some(person => person._id === form.assignee) && <option value={form.assignee}>{editing?.assignee?.name || "Current assigned crew member"}</option>}
                 {crew.map((person) => (
                   <option key={person._id} value={person._id}>
                     {person.name} · {person.specialty}
@@ -828,6 +843,7 @@ export default function PostProduction() {
                 ))}
               </select>
             </label>
+            {crewError && <OperationsError onRetry={fetchWorkspace}>{crewError}</OperationsError>}
             <label className="ops-client-visibility">
               <input
                 type="checkbox"
@@ -902,7 +918,7 @@ export default function PostProduction() {
       {deleting && (
         <OperationsModal
           title="Delete this task?"
-          description="This will permanently remove the task from your workspace."
+          description="This removes the task from the active production workspace and its client update. Owners can restore eligible records in Settings → Backups & recovery."
           onClose={() => setDeleting(null)}
           busy={saving}
           footer={

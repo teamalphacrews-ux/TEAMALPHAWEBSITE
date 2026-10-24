@@ -1,729 +1,83 @@
-import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
-import {
-  Plus,
-  Search,
-  Shield,
-  Eye,
-  EyeOff,
-  UserPlus,
-  Trash2,
-  Edit3,
-  X,
-  Check,
-  Loader2,
-} from "lucide-react";
-import { motion as Motion, AnimatePresence } from "framer-motion";
-import toast from "react-hot-toast";
-import useStudioDialog from "../components/studio/useStudioDialog";
+import { useCallback, useEffect, useState } from 'react';
+import axios from 'axios';
+import { Edit3, Eye, EyeOff, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
+import API from '../../utils/apiConfig';
+import { WorkspaceDialog, WorkspaceEmpty, WorkspaceError, WorkspaceHeader, WorkspaceSearch } from '../components/operations/WorkspaceUI';
+import './studioSettings.css';
 
-const API_URL = import.meta.env.VITE_API_URL || "";
+const blankMember = () => ({ firstName: '', lastName: '', email: '', password: '' });
+const errorMessage = (error, fallback) => error?.response?.data?.msg || error?.response?.data?.error || fallback;
 
 export default function UserManagement() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // Create User Modal
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    role: "admin",
-  });
-
-  // Edit User Modal
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [visiblePasswords, setVisiblePasswords] = useState({}); // { userId: boolean }
-  const createDialogRef = useStudioDialog(() => setShowCreateModal(false), {
-    enabled: showCreateModal,
-    canClose: !isCreating,
-  });
-  const editDialogRef = useStudioDialog(() => setShowEditModal(false), {
-    enabled: showEditModal,
-    canClose: !isUpdating,
-  });
-
-  const togglePassword = (id) => {
-    setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const token = localStorage.getItem("token");
-  const authHeader = { headers: { "x-auth-token": token } };
-
-  const fetchUsers = useCallback(
-    () =>
-      axios
-        .get(API_URL + "/api/admin-users", {
-          headers: { "x-auth-token": localStorage.getItem("token") },
-        })
-        .then(({ data }) =>
-          setUsers(data.filter((user) => user.role === "admin")),
-        )
-        .catch(() => toast.error("Failed to fetch users"))
-        .finally(() => setLoading(false)),
-    [],
-  );
+  const { user: signedIn } = useAuth();
+  const preview = signedIn?.isPreview === true;
+  const [users, setUsers] = useState([]), [access, setAccess] = useState(null), [loading, setLoading] = useState(true), [error, setError] = useState(''), [accessError, setAccessError] = useState('');
+  const [search, setSearch] = useState(''), [dialog, setDialog] = useState(null), [form, setForm] = useState(blankMember), [busy, setBusy] = useState(false), [formError, setFormError] = useState(''), [visiblePasswords, setVisiblePasswords] = useState({});
+  const owner = access?.owner === true;
+  const request = useCallback((method, path, data, signal) => axios({ method, url: API + path, data, signal, headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } }), []);
+  const load = useCallback(signal => request('get', '/api/admin-users', undefined, signal)
+    .then(result => {
+      if (!Array.isArray(result.data)) throw new Error('Unexpected team response');
+      setUsers(result.data.filter(member => member.role === 'admin')); setError('');
+    }).catch(failure => { if (!axios.isCancel(failure)) setError(errorMessage(failure, 'The studio team could not be loaded. Please retry.')); })
+    .finally(() => { if (!signal?.aborted) setLoading(false); }), [request]);
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    setIsCreating(true);
-    try {
-      await axios.post(
-        `${API_URL}/api/admin-users/create`,
-        {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          password: formData.password,
-          role: "admin",
-        },
-        authHeader,
-      );
-      toast.success("User account created successfully");
-      setShowCreateModal(false);
-      setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        password: "",
-        role: "admin",
-      });
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.response?.data?.msg || "Creation failed");
-    } finally {
-      setIsCreating(false);
-    }
+    const controller = new AbortController();
+    load(controller.signal);
+    if (!preview) request('get', '/api/studio/security/access', undefined, controller.signal)
+      .then(result => { if (typeof result.data?.owner !== 'boolean') throw new Error(); setAccess(result.data); setAccessError(''); })
+      .catch(failure => { if (!axios.isCancel(failure)) setAccessError('Account permissions could not be checked. Team changes are unavailable until this connection is restored.'); });
+    return () => controller.abort();
+  }, [load, preview, request]);
+  const open = (type, member) => {
+    setForm(member ? { firstName: member.firstName || '', lastName: member.lastName || '', email: member.email || '', password: '' } : blankMember());
+    setDialog({ type, member }); setFormError('');
   };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+  const save = async event => {
+    event.preventDefault(); if (busy || !owner || preview) return;
+    setBusy(true); setFormError('');
     try {
-      await axios.delete(`${API_URL}/api/admin-users/${id}`, authHeader);
-      toast.success("User removed");
-      fetchUsers();
-    } catch {
-      toast.error("Failed to delete user");
-    }
+      const payload = { firstName: form.firstName.trim(), lastName: form.lastName.trim(), email: form.email.trim(), role: 'admin', ...(form.password ? { password: form.password } : {}) };
+      await request(dialog.type === 'create' ? 'post' : 'put', dialog.type === 'create' ? '/api/admin-users/create' : '/api/admin-users/' + dialog.member._id, payload);
+      toast.success(dialog.type === 'create' ? 'Team member added' : 'Team member updated');
+      setDialog(null); setForm(blankMember()); setVisiblePasswords({}); await load();
+    } catch (failure) { setFormError(errorMessage(failure, 'The team member could not be saved.')); }
+    finally { setBusy(false); }
   };
-
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    setIsUpdating(true);
-    try {
-      await axios.put(
-        `${API_URL}/api/admin-users/${editingUser._id}`,
-        {
-          firstName: editingUser.firstName,
-          lastName: editingUser.lastName,
-          email: editingUser.email,
-          password: editingUser.password,
-          role: "admin",
-        },
-        authHeader,
-      );
-      toast.success("User updated successfully");
-      setShowEditModal(false);
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.response?.data?.msg || "Update failed");
-    } finally {
-      setIsUpdating(false);
-    }
+  const remove = async () => {
+    if (busy || !owner || preview) return;
+    setBusy(true); setFormError('');
+    try { await request('delete', '/api/admin-users/' + dialog.member._id); setDialog(null); setVisiblePasswords({}); toast.success('Team access removed'); await load(); }
+    catch (failure) { setFormError(errorMessage(failure, 'Team access could not be removed.')); }
+    finally { setBusy(false); }
   };
-
-  const filteredUsers = users.filter(
-    (u) =>
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      `${u.firstName} ${u.lastName}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()),
-  );
-
-  return (
-    <div className="min-h-screen -m-4 md:-m-10 p-6 md:p-12 bg-transparent relative font-sans selection:bg-rose-100 selection:text-rose-900 overflow-visible">
-      {/* Immersive Background Layer */}
-      <div className="fixed inset-0 bg-[#fdfaf6] -z-20" />
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] bg-[#fdf2e9] rounded-full blur-[150px] opacity-80" />
-        <div className="absolute bottom-[-10%] right-[-20%] w-[60%] h-[60%] bg-[#c4ae8a]/10 rounded-full blur-[150px] opacity-60" />
-        <div className="absolute top-[20%] right-[10%] w-[40%] h-[40%] bg-white rounded-full blur-[120px] opacity-50" />
-      </div>
-
-      {/* 1. Page Header - Symmetrical Layout */}
-      <div className="relative z-10 max-w-7xl mx-auto mb-10 md:mb-16 px-4 md:px-8 pt-6 md:pt-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
-          <div className="space-y-1.5 translate-x-1">
-            <div className="flex items-center gap-5 mb-2">
-              <div className="w-1.5 h-12 bg-[#c4ae8a] rounded-full shadow-[0_0_25px_rgba(227,174,151,0.4)] animate-pulse" />
-              <h1 className="font-luxury text-4xl md:text-7xl text-[#141414] tracking-tight leading-none">
-                Team &amp; access
-              </h1>
-            </div>
-            <p className="text-[10px] md:text-[11px] text-stone-400 font-black uppercase tracking-[0.3em] md:tracking-[0.5em] pl-[1.8rem] opacity-70">
-              Real-Time User Access{" "}
-              <span className="text-stone-300 mx-1">/</span>{" "}
-              <span className="text-stone-900">Secure Logs</span>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-6 w-full md:w-auto">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="group w-full md:w-auto px-6 md:px-10 py-3.5 md:py-4 bg-[#141414] text-white rounded-full text-[10px] md:text-[11px] font-black uppercase tracking-[0.4em] transition-all hover:bg-stone-800 hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] hover:translate-y-[-3px] active:translate-y-0 flex items-center justify-center gap-4 overflow-hidden shadow-xl"
-            >
-              <UserPlus
-                size={16}
-                className="group-hover:rotate-12 transition-transform duration-300"
-                strokeWidth={1.5}
-              />
-              <span className="relative">
-                Add team member
-                <span className="absolute bottom-[-3px] left-0 w-full h-[0.5px] bg-white/40 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Unified Master Card - Symmetrical Design */}
-      <div className="relative z-10 max-w-7xl mx-auto bg-white rounded-[32px] md:rounded-[56px] shadow-[0_50px_150px_rgba(0,0,0,0.08)] border border-stone-50 overflow-hidden mb-12 md:mb-32 mx-4 md:mx-auto">
-        {/* Card Header (Symmetric) */}
-        <div className="px-6 md:px-16 py-8 md:py-12 border-b border-stone-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 bg-white/60 backdrop-blur-xl">
-          <div className="flex items-center gap-4 md:gap-6">
-            <h3 className="font-luxury text-2xl md:text-4xl text-stone-900">
-              Studio team
-            </h3>
-            <div className="px-3 md:px-5 py-1.5 md:py-2 bg-stone-100 text-stone-500 text-[8px] md:text-[10px] font-black uppercase tracking-widest rounded-full border border-stone-200/50">
-              {filteredUsers.length} entries
-            </div>
-          </div>
-
-          {/* Inline Integrated Search */}
-          <div className="relative group w-full md:w-96 md:scale-110 md:translate-x-[-1rem]">
-            <Search
-              className="absolute left-6 top-1/2 -translate-y-1/2 text-stone-300 size-4.5"
-              strokeWidth={1}
-            />
-            <input
-              type="text"
-              placeholder="Search team members…"
-              aria-label="Search team members"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-stone-50/50 border border-transparent focus:border-stone-200 focus:bg-white px-14 py-4 rounded-full text-[14px] transition-all outline-none text-stone-700 placeholder:text-stone-600 placeholder:text-[13px] font-medium"
-            />
-          </div>
-        </div>
-
-        {/* User Content Registry */}
-        <div className="overflow-hidden">
-          {loading ? (
-            <div className="py-32 text-center flex flex-col items-center gap-5">
-              <Loader2
-                className="animate-spin text-stone-200"
-                size={40}
-                strokeWidth={1}
-              />
-              <p className="text-[11px] uppercase tracking-[0.4em] text-stone-300 font-black">
-                Syncing Vault...
-              </p>
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="py-32 text-center text-stone-300 text-[11px] uppercase font-black tracking-widest">
-              No matching records found
-            </div>
-          ) : (
-            <div className="divide-y divide-stone-50/80">
-              {filteredUsers.map((user, index) => (
-                <Motion.div
-                  key={user._id}
-                  initial={{ opacity: 0, x: -15 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.04 }}
-                  className="relative flex flex-col md:grid md:grid-cols-12 items-start md:items-center px-6 md:px-16 py-8 transition-all hover:bg-stone-50/60 group border-l-[6px] border-transparent hover:border-l-[#c4ae8a33] gap-6 md:gap-0"
-                >
-                  {/* Identity */}
-                  <div className="col-span-6 flex items-center gap-6 md:gap-8 w-full">
-                    <div className="w-12 h-12 md:w-13 md:h-13 flex-shrink-0 rounded-2xl md:rounded-3xl bg-stone-100 border border-stone-200/50 flex items-center justify-center font-serif text-[16px] md:text-[18px] text-stone-800 font-bold shadow-sm group-hover:shadow-md transition-all group-hover:scale-105">
-                      {user.firstName?.[0] || user.email?.[0] || "?"}
-                      {user.lastName?.[0] || ""}
-                    </div>
-                    <div className="space-y-1 min-w-0">
-                      <p className="text-[15px] md:text-[16px] font-black text-stone-800 tracking-tight leading-none group-hover:text-black transition-colors truncate">
-                        {user.firstName} {user.lastName}
-                      </p>
-                      <p className="text-[12px] md:text-[13px] text-stone-600 font-medium tracking-tight truncate max-w-[200px] md:max-w-[240px]">
-                        {user.email}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Role */}
-                  <div className="col-span-2 flex md:block items-center gap-3">
-                    <span className="md:hidden text-[8px] font-bold uppercase tracking-widest text-stone-300">
-                      Role:
-                    </span>
-                    <span
-                      className={`inline-flex items-center px-4 md:px-5 py-1.5 md:py-2 rounded-full text-[8.5px] font-black uppercase tracking-[0.25em] border shadow-sm ${
-                        user.role === "admin"
-                          ? "bg-stone-900 border-stone-800 text-white"
-                          : "bg-white border-stone-100 text-stone-400"
-                      }`}
-                    >
-                      {user.role}
-                    </span>
-                  </div>
-
-                  {/* Vault Entry */}
-                  <div className="col-span-2 flex md:block items-center gap-3 w-full md:w-auto">
-                    <span className="md:hidden text-[8px] font-bold uppercase tracking-widest text-stone-300">
-                      Vault:
-                    </span>
-                    <div className="flex items-center gap-3 group/pass flex-1 md:flex-initial">
-                      <div className="bg-stone-50/80 px-4 md:px-5 py-2 rounded-2xl text-[12px] font-mono font-medium text-stone-500 border border-transparent min-w-[100px] md:min-w-[120px] flex justify-center tracking-widest relative overflow-hidden group-hover/pass:bg-white group-hover/pass:border-stone-100 transition-all shadow-sm">
-                        {visiblePasswords[user._id]
-                          ? user.plainPassword || "UNSET"
-                          : "••••••••"}
-                      </div>
-                      <button
-                        onClick={() => togglePassword(user._id)}
-                        className="p-2 text-stone-300 hover:text-stone-800 transition-all opacity-100 md:opacity-40 md:group-hover:opacity-100 md:scale-110"
-                        title="Display Code"
-                        aria-label={`${visiblePasswords[user._id] ? "Hide" : "Show"} password for ${user.firstName || user.email}`}
-                        aria-pressed={Boolean(visiblePasswords[user._id])}
-                      >
-                        {visiblePasswords[user._id] ? (
-                          <EyeOff size={16} strokeWidth={1} />
-                        ) : (
-                          <Eye size={16} strokeWidth={1} />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Registry Actions */}
-                  <div className="col-span-1 flex items-center justify-start md:justify-end gap-3 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 md:translate-x-2 md:group-hover:translate-x-0 w-full md:w-auto border-t md:border-t-0 pt-4 md:pt-0 border-stone-50">
-                    <button
-                      onClick={() => {
-                        setEditingUser({
-                          ...user,
-                          password: user.plainPassword,
-                        });
-                        setShowEditModal(true);
-                      }}
-                      aria-label={`Edit team member ${user.firstName || user.email}`}
-                      className="flex-1 md:flex-none p-3.5 bg-white text-stone-600 hover:text-stone-900 border border-stone-100/50 hover:border-stone-200 rounded-[18px] shadow-sm md:shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 md:gap-0"
-                    >
-                      <Edit3 size={17} strokeWidth={1} />
-                      <span className="md:hidden text-[10px] font-black uppercase tracking-widest">
-                        Edit
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(user._id)}
-                      aria-label={`Remove team member ${user.firstName || user.email}`}
-                      className="flex-1 md:flex-none p-3.5 bg-white text-stone-600 hover:text-red-500 border border-stone-100/50 hover:border-red-100 rounded-[18px] shadow-sm md:shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 md:gap-0"
-                    >
-                      <Trash2 size={17} strokeWidth={1} />
-                      <span className="md:hidden text-[10px] font-black uppercase tracking-widest">
-                        Remove
-                      </span>
-                    </button>
-                  </div>
-                </Motion.div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 3. Create User Modal - Balanced Boutique Design */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <div className="studio-team-dialog-overlay fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <Motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                if (!isCreating) setShowCreateModal(false);
-              }}
-              className="absolute inset-0 bg-stone-900/10 backdrop-blur-[4px]"
-              aria-hidden="true"
-            />
-            <Motion.div
-              ref={createDialogRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="studio-create-team-title"
-              tabIndex={-1}
-              initial={{ scale: 0.98, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.98, opacity: 0, y: 15 }}
-              transition={{ type: "spring", damping: 28, stiffness: 280 }}
-              className="studio-team-dialog relative bg-white w-full max-w-xl rounded-[48px] shadow-[0_50px_120px_rgba(0,0,0,0.12)] border border-stone-50 flex flex-col max-h-[85vh]"
-            >
-              {/* Internal Header */}
-              <div className="studio-team-dialog-header px-6 md:px-10 pt-8 md:pt-10 pb-4 flex justify-between items-center bg-white z-10 rounded-t-[48px]">
-                <div className="flex items-center gap-4 md:gap-5">
-                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-stone-900 text-white flex items-center justify-center shadow-lg">
-                    <Plus size={24} strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <h2
-                      id="studio-create-team-title"
-                      className="font-luxury text-2xl md:text-3xl text-stone-900 tracking-tight leading-none"
-                    >
-                      Add team member
-                    </h2>
-                    <p className="text-[7.5px] md:text-[8.5px] font-black uppercase tracking-[2px] md:tracking-[3px] text-stone-300 mt-1.5">
-                      Studio team access
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  aria-label="Close add team member"
-                  disabled={isCreating}
-                  onClick={() => setShowCreateModal(false)}
-                  className="p-3 rounded-full hover:bg-stone-50 transition-colors text-stone-300 hover:text-stone-900"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Scrollable Form Body */}
-              <div className="studio-team-dialog-body flex-1 overflow-y-auto custom-scrollbar px-10 pb-6">
-                <form onSubmit={handleCreate} className="space-y-6 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2.5">
-                      <label
-                        htmlFor="team-create-first-name"
-                        className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5"
-                      >
-                        First name
-                      </label>
-                      <input
-                        id="team-create-first-name"
-                        autoComplete="given-name"
-                        data-autofocus
-                        type="text"
-                        required
-                        value={formData.firstName}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            firstName: e.target.value,
-                          })
-                        }
-                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium"
-                      />
-                    </div>
-                    <div className="space-y-2.5">
-                      <label
-                        htmlFor="team-create-last-name"
-                        className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5"
-                      >
-                        Last name
-                      </label>
-                      <input
-                        id="team-create-last-name"
-                        autoComplete="family-name"
-                        type="text"
-                        required
-                        value={formData.lastName}
-                        onChange={(e) =>
-                          setFormData({ ...formData, lastName: e.target.value })
-                        }
-                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <label
-                      htmlFor="team-create-email"
-                      className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5"
-                    >
-                      Email address
-                    </label>
-                    <input
-                      id="team-create-email"
-                      autoComplete="off"
-                      type="email"
-                      required
-                      placeholder="example@studio.com"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                      className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[24px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium placeholder:text-stone-200"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2.5">
-                      <label
-                        htmlFor="team-create-role"
-                        className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5"
-                      >
-                        Permissions
-                      </label>
-                      <select
-                        id="team-create-role"
-                        value={formData.role}
-                        onChange={(e) =>
-                          setFormData({ ...formData, role: e.target.value })
-                        }
-                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 appearance-none cursor-pointer text-[11px] font-black uppercase tracking-widest"
-                      >
-                        <option value="admin">System Admin</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2.5">
-                      <label
-                        htmlFor="team-create-password"
-                        className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5"
-                      >
-                        Password
-                      </label>
-                      <input
-                        id="team-create-password"
-                        autoComplete="new-password"
-                        type="password"
-                        required
-                        placeholder="Generate..."
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({ ...formData, password: e.target.value })
-                        }
-                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium placeholder:text-stone-200"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-4">
-                    <button
-                      disabled={isCreating}
-                      className="w-full py-5 bg-stone-900 text-white rounded-[28px] text-[12px] font-black uppercase tracking-[4px] hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-4 group"
-                    >
-                      {isCreating ? "Synchronizing..." : "Create account"}
-                      <Check
-                        size={18}
-                        className="opacity-40 group-hover:opacity-100 transition-all"
-                      />
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </Motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* 4. Edit User Modal - Balanced Boutique Design */}
-      <AnimatePresence>
-        {showEditModal && editingUser && (
-          <div className="studio-team-dialog-overlay fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <Motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                if (!isUpdating) setShowEditModal(false);
-              }}
-              className="absolute inset-0 bg-stone-900/10 backdrop-blur-[4px]"
-              aria-hidden="true"
-            />
-            <Motion.div
-              ref={editDialogRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="studio-edit-team-title"
-              tabIndex={-1}
-              initial={{ scale: 0.98, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.98, opacity: 0, y: 15 }}
-              transition={{ type: "spring", damping: 28, stiffness: 280 }}
-              className="studio-team-dialog relative bg-white w-full max-w-xl rounded-[48px] shadow-[0_50px_120px_rgba(0,0,0,0.12)] border border-stone-50 flex flex-col max-h-[85vh]"
-            >
-              {/* Internal Header */}
-              <div className="studio-team-dialog-header px-10 pt-10 pb-4 flex justify-between items-center bg-white z-10 rounded-t-[48px]">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 rounded-2xl bg-[#c4ae8a] text-white flex items-center justify-center shadow-lg">
-                    <Shield size={24} strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <h2
-                      id="studio-edit-team-title"
-                      className="font-luxury text-3xl text-stone-900 tracking-tight leading-none"
-                    >
-                      Edit team member
-                    </h2>
-                    <p className="text-[8.5px] font-black uppercase tracking-[3px] text-stone-300 mt-1.5">
-                      Studio team access
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  aria-label="Close edit team member"
-                  disabled={isUpdating}
-                  onClick={() => setShowEditModal(false)}
-                  className="p-3 rounded-full hover:bg-stone-50 transition-colors text-stone-300 hover:text-stone-900"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Scrollable Form Body */}
-              <div className="studio-team-dialog-body flex-1 overflow-y-auto custom-scrollbar px-10 pb-6">
-                <form onSubmit={handleUpdate} className="space-y-6 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2.5">
-                      <label
-                        htmlFor="team-edit-first-name"
-                        className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5"
-                      >
-                        First name
-                      </label>
-                      <input
-                        id="team-edit-first-name"
-                        autoComplete="given-name"
-                        data-autofocus
-                        type="text"
-                        required
-                        value={editingUser.firstName}
-                        onChange={(e) =>
-                          setEditingUser({
-                            ...editingUser,
-                            firstName: e.target.value,
-                          })
-                        }
-                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium"
-                      />
-                    </div>
-                    <div className="space-y-2.5">
-                      <label
-                        htmlFor="team-edit-last-name"
-                        className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5"
-                      >
-                        Last name
-                      </label>
-                      <input
-                        id="team-edit-last-name"
-                        autoComplete="family-name"
-                        type="text"
-                        required
-                        value={editingUser.lastName}
-                        onChange={(e) =>
-                          setEditingUser({
-                            ...editingUser,
-                            lastName: e.target.value,
-                          })
-                        }
-                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <label
-                      htmlFor="team-edit-email"
-                      className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5"
-                    >
-                      Email address
-                    </label>
-                    <input
-                      id="team-edit-email"
-                      autoComplete="off"
-                      type="email"
-                      required
-                      value={editingUser.email}
-                      onChange={(e) =>
-                        setEditingUser({
-                          ...editingUser,
-                          email: e.target.value,
-                        })
-                      }
-                      className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[24px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2.5">
-                      <label
-                        htmlFor="team-edit-role"
-                        className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5"
-                      >
-                        Permissions
-                      </label>
-                      <select
-                        id="team-edit-role"
-                        value={editingUser.role}
-                        onChange={(e) =>
-                          setEditingUser({
-                            ...editingUser,
-                            role: e.target.value,
-                          })
-                        }
-                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 appearance-none cursor-pointer text-[11px] font-black uppercase tracking-widest"
-                      >
-                        <option value="admin">Admin</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2.5">
-                      <label
-                        htmlFor="team-edit-password"
-                        className="text-[8px] font-black uppercase tracking-[2px] text-stone-300 ml-5"
-                      >
-                        Password
-                      </label>
-                      <input
-                        id="team-edit-password"
-                        autoComplete="new-password"
-                        type="password"
-                        placeholder="Leave blank to keep"
-                        value={editingUser.password || ""}
-                        onChange={(e) =>
-                          setEditingUser({
-                            ...editingUser,
-                            password: e.target.value,
-                          })
-                        }
-                        className="w-full px-6 py-4 bg-stone-50/50 border border-stone-100/50 rounded-[20px] outline-none focus:bg-white focus:border-stone-200 transition-all text-[14px] font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-4">
-                    <button
-                      disabled={isUpdating}
-                      className="w-full py-5 bg-stone-900 text-white rounded-[28px] text-[12px] font-black uppercase tracking-[4px] hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-4 group"
-                    >
-                      {isUpdating ? "Updating Vault..." : "Save changes"}
-                      <Check
-                        size={18}
-                        className="opacity-40 group-hover:opacity-100 transition-all"
-                      />
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </Motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
+  const filtered = users.filter(member => [member.firstName, member.lastName, member.email].join(' ').toLowerCase().includes(search.trim().toLowerCase()));
+  return <div className="studio-team-page">
+    <WorkspaceHeader title="Team & access" description="The people who keep your studio moving.">
+      <button type="button" className="studio-button primary" onClick={() => open('create')} disabled={!owner || preview}><UserPlus size={16} />Add team member</button>
+    </WorkspaceHeader>
+    <WorkspaceError error={error} retry={() => load()} /><WorkspaceError error={accessError} />
+    {preview ? <p className="workspace-info">You’re viewing a sample team. Account changes are available in your connected Studio OS.</p> : access && !owner ? <p className="workspace-info"><ShieldCheck size={16} />Only the studio owner can add or change team access.</p> : null}
+    <section className="studio-card studio-team-directory">
+      <div className="studio-card-heading"><div><h2>Studio team <span className="studio-inline-count">{users.length}</span></h2><p className="studio-card-subtitle">Administrator accounts with access to the studio workspace.</p></div><WorkspaceSearch value={search} onChange={setSearch} placeholder="Search team members…" /></div>
+      {loading ? <WorkspaceEmpty loading /> : filtered.length ? <div className="studio-team-list">{filtered.map(member => {
+        const name = [member.firstName, member.lastName].filter(Boolean).join(' ') || member.email;
+        const self = String(member._id) === String(signedIn?._id || signedIn?.id);
+        return <article className="studio-team-member" key={member._id}>
+          <span className="studio-team-avatar" aria-hidden="true">{(member.firstName?.[0] || member.email?.[0] || '?').toUpperCase()}{member.lastName?.[0]?.toUpperCase()}</span>
+          <div className="studio-team-identity"><h3>{name}{self && <span>You</span>}</h3><p>{member.email}</p></div>
+          <span className="studio-badge">Administrator</span>
+          {owner && member.plainPassword && member.plainPassword !== 'Error' && <div className="studio-team-password"><span className="studio-team-password-value">{visiblePasswords[member._id] ? member.plainPassword : '••••••••'}</span><button type="button" className="studio-icon-button" aria-label={(visiblePasswords[member._id] ? 'Hide' : 'Show') + ' saved password for ' + name} aria-pressed={Boolean(visiblePasswords[member._id])} onClick={() => setVisiblePasswords(previous => ({ ...previous, [member._id]: !previous[member._id] }))}>{visiblePasswords[member._id] ? <EyeOff size={16} /> : <Eye size={16} />}</button></div>}
+          {owner && <div className="studio-team-actions"><button type="button" className="studio-icon-button" disabled={preview} aria-label={'Edit ' + name} onClick={() => open('edit', member)}><Edit3 size={16} /></button><button type="button" className="studio-icon-button" disabled={preview || self} aria-label={'Remove access for ' + name} title={self ? 'You cannot remove your own access here' : 'Remove team access'} onClick={() => open('delete', member)}><Trash2 size={16} /></button></div>}
+        </article>;
+      })}</div> : <WorkspaceEmpty title={search ? 'No matching team members' : 'Your team starts here'} description={search ? 'Try a different name or email address.' : 'Add an administrator when you’re ready to share the workspace.'} />}
+    </section>
+    {dialog && dialog.type !== 'delete' && <WorkspaceDialog title={dialog.type === 'create' ? 'Add team member' : 'Edit team member'} onClose={() => !busy && setDialog(null)} onSubmit={save} busy={busy} error={formError} submitLabel={dialog.type === 'create' ? 'Add team member' : 'Save changes'}>
+      <div className="studio-form-grid">{[['First name', 'firstName'], ['Last name', 'lastName'], ['Email address', 'email'], [dialog.type === 'create' ? 'Sign-in password' : 'New password (optional)', 'password']].map(([label, key]) => <label key={key} className="studio-field">{label}<input className="studio-input" type={key === 'email' ? 'email' : key === 'password' ? 'password' : 'text'} required={key !== 'lastName' && (key !== 'password' || dialog.type === 'create')} minLength={key === 'password' ? 8 : undefined} maxLength={key === 'password' ? 256 : key === 'email' ? 254 : 120} autoComplete={key === 'password' ? 'new-password' : key === 'email' ? 'email' : key === 'firstName' ? 'given-name' : 'family-name'} value={form[key]} placeholder={key === 'password' && dialog.type === 'edit' ? 'Leave blank to keep the current password' : undefined} onChange={event => setForm(previous => ({ ...previous, [key]: event.target.value }))} /></label>)}</div>
+      <p className="studio-muted">This account can use the internal studio workspace. {dialog.type === 'edit' ? 'Changing a password signs that member out on their devices.' : 'Share sign-in details privately with your team member.'}</p>
+    </WorkspaceDialog>}
+    {dialog?.type === 'delete' && <WorkspaceDialog title="Remove team access?" busy={busy} error={formError} onClose={() => !busy && setDialog(null)} footer={<><button type="button" className="studio-button" disabled={busy} onClick={() => setDialog(null)}>Keep member</button><button type="button" className="studio-button danger" disabled={busy} onClick={remove}>{busy ? 'Removing…' : 'Remove access'}</button></>}><p>{dialog.member.firstName || dialog.member.email} will be signed out and will no longer be able to access Studio OS. Existing studio business records are kept.</p></WorkspaceDialog>}
+  </div>;
 }

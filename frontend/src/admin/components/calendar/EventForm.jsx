@@ -3,6 +3,7 @@ import { WorkspaceDialog, WorkspaceField } from "../operations/WorkspaceUI";
 function localInput(value) {
   if (!value) return "";
   const d = new Date(value);
+  if (!Number.isFinite(d.getTime())) return "";
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 16);
@@ -30,7 +31,7 @@ export default function EventForm({
   const change = (name, value) => setForm((c) => ({ ...c, [name]: value }));
   const submit = (event) => {
     event.preventDefault();
-    if (new Date(form.end) <= new Date(form.start)) return;
+    if (busy || !Number.isFinite(Date.parse(form.start)) || !Number.isFinite(Date.parse(form.end)) || new Date(form.end) <= new Date(form.start)) return;
     onSave({
       ...form,
       start: new Date(form.start).toISOString(),
@@ -39,7 +40,7 @@ export default function EventForm({
   };
   return (
     <WorkspaceDialog
-      title={initialData?._id ? "Edit studio event" : "Schedule a new story"}
+      title={initialData?._id ? "Edit studio event" : "Schedule event"}
       onClose={onClose}
       onSubmit={submit}
       busy={busy}

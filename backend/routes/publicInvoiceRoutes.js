@@ -58,7 +58,7 @@ router.get("/:token", async (req, res) => {
       documentStatus: "Sent",
       status: { $ne: "Cancelled" },
     });
-    if (!invoice)
+    if (!invoice || invoice.clientLinkOptions?.showPayments === false || !require('../utils/documentDefaults').linkIsActive(invoice))
       return res.status(404).json({
         error: "This invoice link is unavailable. Please contact the studio.",
       });

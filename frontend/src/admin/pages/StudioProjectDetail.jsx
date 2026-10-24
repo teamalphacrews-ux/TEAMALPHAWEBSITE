@@ -34,6 +34,7 @@ import {
   ContactConversations,
 } from "../components/contacts/ContactRelatedTables";
 import "./referenceContacts.css";
+import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 export default function StudioProjectDetail() {
   const { id } = useParams(),
     navigate = useNavigate();
@@ -169,9 +170,7 @@ export default function StudioProjectDetail() {
           ))}
         </select>
         <div className="reference-heading-spacer" />
-        <details className="reference-more">
-          <summary>More</summary>
-          <div className="reference-dropdown">
+        <WorkspaceActionMenu label="More">
             <button onClick={() => setEditing(true)}>Edit project</button>
             <button
               onClick={() => {
@@ -185,8 +184,7 @@ export default function StudioProjectDetail() {
             >
               Archive project
             </button>
-          </div>
-        </details>
+        </WorkspaceActionMenu>
         <ContactCreateMenu
           contact={contact}
           projectId={id}

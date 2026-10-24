@@ -7,6 +7,7 @@ const ProjectMessage = require("../models/ProjectMessage");
 const { tokenHash } = require("../utils/quoteLifecycle");
 const { publicInvoice } = require("../routes/publicInvoiceRoutes");
 const { deliveryUrl } = require("../utils/productionTask");
+const { clientLinkOptions, linkIsActive } = require('../utils/documentDefaults');
 const fail = (status, message) => {
   throw Object.assign(new Error(message), { status });
 };
@@ -17,11 +18,11 @@ async function acceptedQuote(token) {
     shareTokenHash: tokenHash(token),
     status: "Accepted",
   });
-  if (!quote)
+  if (!quote || !linkIsActive(quote))
     fail(404, "This project link is unavailable. Please contact the studio.");
   return quote;
 }
-function publicTask(task) {
+function publicTask(task, visibility = clientLinkOptions()) {
   let url = "";
   if (
     [
@@ -41,12 +42,9 @@ function publicTask(task) {
     id: task._id,
     title: task.clientTitle || task.deliveryType || "Project delivery",
     type: task.deliveryType || "Other",
-    stage: task.productionStage || "Not started",
-    update: task.clientUpdate || "",
-    dueDate: task.dueDate || null,
-    updatedAt: task.updatedAt,
-    url,
-    crew: task.assignee?.name
+    ...(visibility.showProgress ? { stage: task.productionStage || "Not started", update: task.clientUpdate || "", dueDate: task.dueDate || null, updatedAt: task.updatedAt } : {}),
+    url: visibility.showDeliverables ? url : '',
+    crew: visibility.showCrew && task.assignee?.name
       ? {
           name: task.assignee.name,
           role: task.assignee.specialty || "Studio team",
@@ -55,6 +53,7 @@ function publicTask(task) {
   };
 }
 async function projectView(quote) {
+  const visibility = clientLinkOptions({}, quote.clientLinkOptions);
   const invoice = quote.invoiceId
     ? await Invoice.findOne({
         _id: quote.invoiceId,
@@ -63,7 +62,8 @@ async function projectView(quote) {
     : null;
   const approved =
     invoice?.documentStatus === "Sent" && invoice.status !== "Cancelled";
-  const invoiceView = !invoice
+  const studio = approved ? await StudioConfig.findOne({ key: 'studio' }) || {} : {};
+  const invoiceView = !visibility.showPayments ? { state: 'hidden' } : !invoice
     ? { state: "preparing" }
     : invoice.documentStatus === "Cancelled" || invoice.status === "Cancelled"
       ? { state: "cancelled", number: invoice.documentNumber }
@@ -72,7 +72,7 @@ async function projectView(quote) {
             state: "issued",
             document: publicInvoice(
               invoice,
-              await StudioConfig.findOne({ key: "studio" }),
+              studio,
             ),
           }
         : {
@@ -102,9 +102,10 @@ async function projectView(quote) {
             task.clientVisible === true &&
             String(task.lead?._id || task.lead) === String(lead._id),
         )
-        .map(publicTask);
+        .map(task => publicTask(task, visibility));
   }
-  const started = deliveries.some((task) => task.stage !== "Not started");
+  const crew = [...new Map(deliveries.filter(task => task.crew).map(task => [task.crew.name + task.crew.role, task.crew])).values()];
+  const started = deliveries.some((task) => task.stage && task.stage !== "Not started");
   const order = [
     "Photos",
     "Album",
@@ -114,9 +115,12 @@ async function projectView(quote) {
   ];
   deliveries.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
   return {
+    visibility,
+    supportHours: studio.communication?.supportHours || '',
+    crew: visibility.showCrew && (started || deliveries.some(task => task.url)) ? crew : [],
     invoice: invoiceView,
     production: {
-      state: !approved
+      state: !visibility.showProgress ? (visibility.showDeliverables ? 'deliveries_only' : 'hidden') : !approved
         ? "awaiting_invoice"
         : !started
           ? "not_started"
@@ -125,9 +129,12 @@ async function projectView(quote) {
               )
             ? "delivered"
             : "in_progress",
-      deliveries: started ? deliveries : [],
+      deliveries: !visibility.showProgress ? (visibility.showDeliverables ? deliveries.filter(task => task.url) : []) : started ? deliveries : [],
     },
   };
+}
+async function assertClientChat(quote) {
+  if (!clientLinkOptions({}, quote.clientLinkOptions).allowChat) fail(403, 'Chat support is not enabled for this project link. Please contact the studio directly.');
 }
 function messageValues(body) {
   if (
@@ -167,6 +174,7 @@ async function messages(quoteId, before) {
   };
 }
 async function saveMessage(quote, author, body) {
+  if (author === 'client') await assertClientChat(quote);
   const values = messageValues(body);
   const key = { quotation: quote._id, author, requestId: values.requestId };
   const existing = await ProjectMessage.findOne(key);
@@ -209,4 +217,5 @@ module.exports = {
   publicMessage,
   messages,
   saveMessage,
+  assertClientChat,
 };

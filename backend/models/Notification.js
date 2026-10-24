@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const NotificationSchema = new mongoose.Schema({
     title: { type: String, required: true },
+    eventKey: { type: String, unique: true, sparse: true, select: false },
     description: { type: String },
     type: { type: String, enum: ['Lead', 'Event', 'Task', 'Finance', 'System', 'Gallery', 'Chat', 'Invoice', 'Message'], default: 'System' },
     isRead: { type: Boolean, default: false },

@@ -117,9 +117,11 @@ export default function StudioProjects() {
       ) : (
         <WorkspaceEmpty
           loading={loading}
-          title={query ? "No matching projects" : "No projects here yet"}
-          description="Create a project and keep its quotes, invoices, sessions, and notes together."
-        />
+          title={query ? "No matching projects" : filter !== "All Projects" ? `No ${filter.toLowerCase()} projects` : "No projects here yet"}
+          description={filter !== "All Projects" ? `Projects marked as ${filter.toLowerCase()} will appear here.` : "Create a project and keep its quotes, invoices, sessions, and notes together."}
+        >
+          {(query || filter !== "All Projects") && <button type="button" className="studio-button" onClick={() => { setQuery(""); setFilter("All Projects"); }}>View all projects</button>}
+        </WorkspaceEmpty>
       )}
       {creating && (
         <ProjectForm

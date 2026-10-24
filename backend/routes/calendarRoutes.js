@@ -161,25 +161,28 @@ router.patch('/:id', async (req, res) => {
 // Delete event
 router.delete('/:id', async (req, res) => {
     try {
+        await require('../services/studioSecurity').assertPermission(req.user.id, 'deletion');
         const event = await Event.findById(req.params.id);
         if (!event) return res.status(404).json({message:'Event not found'});
         if (event.isReadOnly) return res.status(403).json({message:'This Google-managed event is read only'});
+        const removed = await require('../services/studioRecovery').recoverableDelete({ Model: Event, filter: { _id: event._id }, actorId: req.user.id });
+        if (!removed) return res.status(409).json({ message: 'This event changed before deletion.' });
+        let syncWarning = '';
         if (event.googleEventId) {
             try {
                 await syncToGoogle(event, 'DELETE', req.user.id);
             } catch (syncError) {
                 console.error("Failed to delete event from Google:", syncError.message);
-                // We still proceed with local deletion
+                syncWarning = 'The studio event was removed, but Google Calendar could not be updated. Reconnect and check the Google event.';
             }
         }
-        await Event.findByIdAndDelete(req.params.id);
 
         // Trigger Socket.IO broadcast for instant UI update across all clients
         req.io.to('admin').emit('calendar_update', { action: 'DELETE', eventId: req.params.id });
 
-        res.json({ message: 'Event deleted' });
+        res.json({ message: 'Event moved to recovery.', ...(syncWarning ? { warning: syncWarning } : {}) });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(error.status || 500).json({ message: error.status ? error.message : 'The calendar event could not be removed.' });
     }
 });
 

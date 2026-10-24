@@ -31,6 +31,14 @@ router.get(
   ),
 );
 router.post(
+  '/apply-template',
+  wrap(async (req, res) => {
+    if (!/^[a-f\d]{24}$/i.test(req.body?.leadId || '') || typeof req.body?.templateId !== 'string')
+      throw Object.assign(new Error('Choose a project and a production template.'), { status: 400 });
+    res.json(await require('../services/productionTemplates').applyProductionTemplate(req.body.leadId, req.body.templateId));
+  }),
+);
+router.post(
   "/",
   wrap(async (req, res) => {
     const values = taskValues(req.body);
@@ -62,7 +70,7 @@ router.patch(
 router.delete(
   "/:id",
   wrap(async (req, res) => {
-    const task = await Task.findByIdAndDelete(req.params.id);
+    const task = await require('../services/studioRecovery').recoverableDelete({ Model: Task, filter: { _id: req.params.id }, actorId: req.user.id });
     if (task?.lead)
       await Lead.updateOne({ _id: task.lead }, { $pull: { tasks: task._id } });
     res.json({ message: "Task deleted." });

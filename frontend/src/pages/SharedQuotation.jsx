@@ -5,6 +5,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { CheckCircle2, Download, Printer } from "lucide-react";
 import { API_BASE_URL } from "../utils/apiConfig";
+import { resolveStudioImage } from '../utils/settingsDefaults';
 import { workspaceRequest } from "../admin/components/operations/workspaceData";
 import "./sharedQuotation.css";
 import ClientProjectWorkspace from "./ClientProjectWorkspace";
@@ -128,7 +129,7 @@ export default function SharedQuotation() {
               backgroundImage: `linear-gradient(#10291e35,#14261e35),url("${quote.design?.coverImage || "/assets/banner.jpg"}")`,
             }}
           >
-            <img src={TEAM_ALPHA_LOGO} alt="Team Alpha" />
+            <img src={resolveStudioImage(quote.studio.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt={quote.studio.name} />
             <strong>{quote.studio.name}</strong>
             <h1>Hi {quote.clientName.split(" ")[0]},</h1>
             <p>
@@ -185,6 +186,8 @@ export default function SharedQuotation() {
               <div className="sq-meta">
                 <div>
                   FROM<strong>{quote.studio.name}</strong>
+                  {quote.studio.address && <small>{quote.studio.address}</small>}
+                  {quote.studio.taxId && <small>GSTIN: {quote.studio.taxId}</small>}
                 </div>
                 <div>
                   TO<strong>{quote.clientName}</strong>

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../../utils/branding";
+import { invoiceDefaults, defaultPaymentSchedule, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
+import { API_BASE_URL } from '../../utils/apiConfig';
 import {
   Link,
   useNavigate,
@@ -27,6 +29,8 @@ import { OperationsModal } from "../components/operations/OperationsUI";
 import { InvoiceDocument } from "../../pages/PublicInvoice";
 import { downloadInvoice } from "../../utils/invoiceDocument";
 import "./invoiceWorkspace.css";
+import "./documentWorkspaceRefinements.css";
+import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 import "./studioOperations.css";
 const addressOf = (c) =>
   [
@@ -40,12 +44,12 @@ const addressOf = (c) =>
     .filter(Boolean)
     .join(", ");
 const studioIssuer = (studio) => ({
-  name: studio.studioName || "Team Alpha",
+  name: studio.legalName || studio.studioName || "Team Alpha",
   address: studio.address || "",
   email: studio.email || "",
   phone: studio.phone || "",
   website: studio.website || "",
-  taxId: studio.taxId || "",
+  taxId: studio.gstin || studio.taxId || "",
   logoUrl: studio.logoUrl || TEAM_ALPHA_LOGO,
   paymentInstructions: studio.paymentInstructions || "",
   bankDetails: studio.bankDetails || "",
@@ -152,6 +156,7 @@ function normalize(i) {
         ? Math.max(0, Number(i.extraCharges || 0) - Number(i.taxAmount))
         : i.extraCharges || 0,
     paymentSchedule: (i.paymentSchedule || []).map((p) => ({
+      label: p.label || '',
       amountPaise: p.amountPaise,
       dueDate: day(p.dueDate),
     })),
@@ -183,13 +188,15 @@ function Toggle({ label, checked, onChange, description }) {
   return (
     <div className="invoice-option">
       <strong>{label}</strong>
-      <label className="invoice-toggle">
+      <label className="invoice-toggle studio-switch-control">
         <input
           type="checkbox"
+          role="switch"
+          aria-label={label}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span />
+        <span className="studio-switch-track" aria-hidden="true" />
         {checked ? "On" : "Off"}
       </label>
       {description && <small>{description}</small>}
@@ -258,6 +265,7 @@ export default function InvoiceWorkspace() {
             await workspaceRequest("get", `/api/invoices/${id}`),
           );
         else {
+          invoice = { ...invoice, ...invoiceDefaults(studio), _useDefaultPaymentSchedule: true };
           const contact = contacts.find((c) => c._id === search.get("contact"));
           invoice.terms = studio.quotationTerms || "";
           invoice.design = {
@@ -363,7 +371,7 @@ export default function InvoiceWorkspace() {
     version.current++;
     dirty.current = true;
     setSaveState("Unsaved changes");
-    setDraft((d) => ({ ...d, [key]: value }));
+    setDraft((d) => ({ ...d, [key]: value, ...(key === 'paymentSchedule' ? { _useDefaultPaymentSchedule: false } : {}) }));
   };
   const subtotal = draft.items.reduce(
     (s, i) => s + Number(i.quantity || 0) * Number(i.unitPricePaise || 0),
@@ -384,9 +392,9 @@ export default function InvoiceWorkspace() {
   const accumulated = draft.paymentSchedule
     .slice(0, -1)
     .reduce((sum, p) => sum + Number(p.amountPaise || 0), 0);
-  const schedule = draft.paymentSchedule.map((p, index, arr) =>
+  const schedule = draft._useDefaultPaymentSchedule && draft.paymentScheduleEnabled ? defaultPaymentSchedule(context.studio, totalPaise, draft.invoiceDate, draft.dueDate) : draft.paymentSchedule.map((p, index, arr) =>
     index === arr.length - 1
-      ? { amountPaise: totalPaise - accumulated, dueDate: draft.dueDate }
+      ? { ...p, amountPaise: totalPaise - accumulated, dueDate: draft.dueDate }
       : p,
   );
   const current = {
@@ -421,6 +429,8 @@ export default function InvoiceWorkspace() {
           documentNumber: result.documentNumber,
           deliveries: result.deliveries,
           scheduledDelivery: result.scheduledDelivery,
+          paymentSchedule: (result.paymentSchedule || []).map(p => ({ ...p, dueDate: day(p.dueDate) })),
+          _useDefaultPaymentSchedule: false,
         }));
       }
       if (!id) navigate(`/admin/invoices/${result._id}`, { replace: true });
@@ -495,8 +505,7 @@ export default function InvoiceWorkspace() {
     const invoice = await save();
     if (!invoice) return;
     setCompose({
-      subject: `Invoice ${invoice.documentNumber} from ${draft.issuer?.name || "TEAM ALPHA"}`,
-      message: `Hi ${draft.clientName.split(" ")[0]},\n\nHere's your invoice for ${money(totalPaise / 100)} that's due by ${new Date(draft.dueDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Please review the invoice for details and payment options.\n\nThanks,\n${draft.issuer?.name || "TEAM ALPHA"}`,
+      ...documentCommunication(context.studio, 'invoice', invoice),
       sendCopy: true,
       scheduledAt: "",
       requestId: crypto.randomUUID(),
@@ -520,6 +529,8 @@ export default function InvoiceWorkspace() {
         ...d,
         documentStatus: "Sent",
         deliveries: updated.deliveries,
+        sharedAt: updated.sharedAt,
+        linkRevokedAt: updated.linkRevokedAt,
       }));
       setModal("link");
       setNotice(r.message);
@@ -549,7 +560,7 @@ export default function InvoiceWorkspace() {
         "get",
         `/api/invoices/${savedId.current}`,
       );
-      setDraft((d) => ({ ...d, deliveries: updated.deliveries }));
+      setDraft((d) => ({ ...d, deliveries: updated.deliveries, sharedAt: updated.sharedAt, linkRevokedAt: updated.linkRevokedAt }));
       if (!compose.scheduledAt)
         setDraft((d) => ({ ...d, documentStatus: "Sent" }));
       else
@@ -587,7 +598,15 @@ export default function InvoiceWorkspace() {
       if (name === "revoke") {
         await workspaceRequest("delete", `/api/invoices/${invoice._id}/share`);
         setLink("");
+        setDraft(previous => ({ ...previous, linkRevokedAt: new Date().toISOString() }));
         setNotice("Invoice link revoked.");
+      }
+      if (name === 'regenerate') {
+        const result = await workspaceRequest('post', `/api/invoices/${invoice._id}/share/regenerate`, {});
+        setLink(result.url);
+        setDraft(previous => ({ ...previous, sharedAt: new Date().toISOString(), linkRevokedAt: undefined }));
+        setModal('link');
+        setNotice('A new link is ready with current studio visibility settings. The previous invoice link no longer works.');
       }
     } catch (e) {
       setError(recordError(e));
@@ -674,15 +693,8 @@ export default function InvoiceWorkspace() {
         </span>
         <small role="status">{saveState}</small>
         <div className="invoice-toolbar-actions">
-          <div className="invoice-menu">
-            <button
-              aria-expanded={actions}
-              onClick={() => setActions(!actions)}
-            >
-              Actions ▾
-            </button>
-            {actions && (
-              <div>
+          <WorkspaceActionMenu label="Actions" className="invoice-menu" menuClassName="invoice-action-dropdown" open={actions} onOpenChange={setActions} disabled={busy}>
+            <>
                 <button onClick={() => action("duplicate")}>Duplicate</button>
                 <button
                   onClick={() => {
@@ -696,12 +708,13 @@ export default function InvoiceWorkspace() {
                 >
                   Download PDF
                 </button>
-                <button onClick={() => action("history")}>
+                <button onClick={() => action("history")} disabled={!id}>
                   Delivery history
                 </button>
-                <button onClick={() => action("revoke")}>
+                <button onClick={() => action("revoke")} disabled={!id || !draft.sharedAt || Boolean(draft.linkRevokedAt)}>
                   Revoke share link
                 </button>
+                <button onClick={() => action('regenerate')} disabled={draft.documentStatus !== 'Sent'}>Regenerate share link</button>
                 <button onClick={() => action("cancel")} disabled={!id}>
                   Cancel invoice
                 </button>
@@ -718,9 +731,8 @@ export default function InvoiceWorkspace() {
                 >
                   Delete invoice
                 </button>
-              </div>
-            )}
-          </div>
+            </>
+          </WorkspaceActionMenu>
           <button
             disabled={busy || draft.documentStatus === "Cancelled"}
             onClick={async () => {
@@ -735,7 +747,7 @@ export default function InvoiceWorkspace() {
               Approve & issue
             </button>
           )}
-          <button onClick={() => setModal("design")}>Edit Design</button>
+          <button onClick={() => setModal("design")}>Edit design</button>
           <button onClick={() => setModal("preview")}>Preview</button>
           <button onClick={save} disabled={busy}>
             Save
@@ -745,7 +757,7 @@ export default function InvoiceWorkspace() {
             onClick={openSend}
             disabled={busy}
           >
-            Send Invoice
+            Send invoice
           </button>
         </div>
       </header>
@@ -831,13 +843,7 @@ export default function InvoiceWorkspace() {
           />
           {draft.paymentReminders && (
             <div className="invoice-checkboxes">
-              {[
-                [-7, "7 days before"],
-                [0, "On due date"],
-                [3, "3 days after"],
-                [7, "7 days after"],
-                [14, "14 days after"],
-              ].map(([n, label]) => (
+              {[...new Set([-7, 0, 3, 7, 14, ...draft.reminderOffsets])].sort((a, b) => a - b).map(n => [n, n === 0 ? 'On due date' : `${Math.abs(n)} days ${n < 0 ? 'before' : 'after'}`]).map(([n, label]) => (
                 <label key={n}>
                   <input
                     type="checkbox"
@@ -885,7 +891,7 @@ export default function InvoiceWorkspace() {
             <div className="invoice-business-identity">
               {draft.design.showLogo !== false && (
                 <img
-                  src={draft.issuer?.logoUrl || TEAM_ALPHA_LOGO}
+                  src={resolveStudioImage(draft.issuer?.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)}
                   alt={draft.issuer?.name || "Team Alpha"}
                 />
               )}
@@ -1172,7 +1178,7 @@ export default function InvoiceWorkspace() {
                 {schedule.map((p, index) => (
                   <div className="invoice-schedule-row" key={index}>
                     <span>
-                      {index + 1} of {schedule.length}
+                      {p.label || `${index + 1} of ${schedule.length}`}
                     </span>
                     {index === schedule.length - 1 ? (
                       <div>
@@ -1865,7 +1871,7 @@ export default function InvoiceWorkspace() {
         <div className="invoice-send-overlay">
           <section className="invoice-send-composer">
             <button className="invoice-send-close" onClick={() => setModal("")}>
-              <X size={20} /> Send Invoice
+              <X size={20} /> Send invoice
             </button>
             <p>
               To: <strong>{draft.clientName}</strong>
@@ -1962,7 +1968,7 @@ export default function InvoiceWorkspace() {
           </section>
           <section className="invoice-email-preview">
             <img
-              src={draft.issuer?.logoUrl || TEAM_ALPHA_LOGO}
+              src={resolveStudioImage(draft.issuer?.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)}
               alt={draft.issuer?.name || "Team Alpha"}
             />
             <div>
