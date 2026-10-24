@@ -1,5 +1,16 @@
 const express = require('express');
 const router = express.Router();
+const requireAdmin = (req, res, next) => req.user?.role === 'admin' ? next() : res.status(403).json({ error: 'Admin access required' });
+const requireParticipant = async (req, res, next) => {
+    try {
+        const message = await Message.findById(req.params.messageId || req.params.id);
+        if (!message) return res.status(404).json({ error: 'Message not found' });
+        if (req.user.role !== 'admin' && ![String(message.sender), String(message.recipient)].includes(String(req.user.id))) return res.status(403).json({ error: 'Not a participant' });
+        req.targetMessage = message;
+        next();
+    } catch (_) { res.status(400).json({ error: 'Invalid message identifier' }); }
+};
+
 const auth = require('../middleware/auth');
 const Message = require('../models/Message');
 const User = require('../models/User');
@@ -160,7 +171,7 @@ async function getAdminIds(adminId) {
 }
 
 // API 1: GET /api/chats/admin/conversations
-router.get('/admin/conversations', auth, async (req, res) => {
+router.get('/admin/conversations', auth, requireAdmin, async (req, res) => {
     try {
         const adminIds = await getAdminIds(req.user.id);
         const messages = await Message.find({
@@ -207,7 +218,7 @@ router.get('/admin/conversations', auth, async (req, res) => {
 
 // @route   GET api/chats/search-users
 // @desc    Global search for all clients (for starting new chats)
-router.get('/search-users', auth, async (req, res) => {
+router.get('/search-users', auth, requireAdmin, async (req, res) => {
     const { query } = req.query;
     if (!query || query.length < 2) return res.json([]);
     try {
@@ -230,7 +241,7 @@ router.get('/search-users', auth, async (req, res) => {
 
 // API 3: GET /api/chats/unread-summary
 // API 3: GET /api/chats/unread-summary
-router.get('/unread-summary', auth, async (req, res) => {
+router.get('/unread-summary', auth, requireAdmin, async (req, res) => {
     try {
         const ChatRoom = require('../models/ChatRoom');
         const roomsWithUnread = await ChatRoom.countDocuments({ unreadCountAdmin: { $gt: 0 } });
@@ -238,7 +249,7 @@ router.get('/unread-summary', auth, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-router.put('/mark-as-seen', auth, async (req, res) => {
+router.put('/mark-as-seen', auth, requireAdmin, async (req, res) => {
     const { chatId } = req.body;
     try {
         const adminIds = await getAdminIds(req.user.id);
@@ -299,7 +310,7 @@ router.get('/unread', auth, async (req, res) => {
 });
 
 // Admin-side: Fetch detailed thread with a user
-router.get('/admin/:userId', auth, async (req, res) => {
+router.get('/admin/:userId', auth, requireAdmin, async (req, res) => {
     const { userId } = req.params;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 40;
@@ -328,7 +339,7 @@ router.get('/admin/:userId', auth, async (req, res) => {
 
 // @route   POST api/chats/clear/:userId (Admin)
 // @desc    Clear chat history for admin only
-router.post('/clear/:userId', auth, async (req, res) => {
+router.post('/clear/:userId', auth, requireAdmin, async (req, res) => {
     const { userId } = req.params;
     try {
         const adminIds = await getAdminIds(req.user.id);
@@ -438,7 +449,7 @@ router.post('/clear/admin', auth, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-router.post('/react/:messageId', auth, async (req, res) => {
+router.post('/react/:messageId', auth, requireParticipant, async (req, res) => {
     const { emoji } = req.body;
     try {
         const message = await Message.findById(req.params.messageId);
@@ -453,11 +464,12 @@ router.post('/react/:messageId', auth, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-router.delete('/:id/:mode', auth, async (req, res) => {
+router.delete('/:id/:mode', auth, requireParticipant, async (req, res) => {
     try {
         const message = await Message.findById(req.params.id);
         if (!message) return res.status(404).json({ msg: 'Message not found' });
         if (req.params.mode === 'everyone') {
+            if (String(message.sender) !== String(req.user.id)) return res.status(403).json({ error: 'Only the sender can delete for everyone' });
             message.text = 'This transmission redacted';
             message.isDeletedEveryone = true;
             message.attachments = [];
