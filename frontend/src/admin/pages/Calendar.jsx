@@ -112,6 +112,10 @@ export default function Calendar() {
     end.setDate(end.getDate() + 1);
     return new Date(event.start) < end && new Date(event.end) > start;
   };
+  const selectedDay = new Date(selected + "T00:00:00");
+  const selectedEvents = visible
+    .filter((event) => inDay(event, selectedDay))
+    .sort((a, b) => new Date(a.start) - new Date(b.start));
   const monthEvents = calendarMonthLoad(visible, month).events;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -119,6 +123,11 @@ export default function Calendar() {
     return () => clearInterval(timer);
   }, []);
   const schedule = deriveCrewSchedule(crew, events, now);
+  const changeMonth = (offset) => {
+    const next = new Date(month.getFullYear(), month.getMonth() + offset, 1);
+    setMonth(next);
+    setSelected(keyDate(next));
+  };
   const openNew = () => {
     const start = new Date(selected + "T10:00:00");
     const end = new Date(selected + "T18:00:00");
@@ -263,30 +272,28 @@ export default function Calendar() {
       <section className="studio-card workspace-calendar">
         <div className="workspace-calendar-heading">
           <div className="workspace-calendar-nav">
-            <button
-              className="studio-icon-button"
-              aria-label="Previous month"
-              onClick={() =>
-                setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))
-              }
-            >
-              <ChevronLeft size={17} />
-            </button>
-            <h2>
-              {month.toLocaleDateString("en-IN", {
-                month: "long",
-                year: "numeric",
-              })}
-            </h2>
-            <button
-              className="studio-icon-button"
-              aria-label="Next month"
-              onClick={() =>
-                setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))
-              }
-            >
-              <ChevronRight size={17} />
-            </button>
+            <div className="workspace-calendar-paging">
+              <button
+                className="studio-icon-button"
+                aria-label="Previous month"
+                onClick={() => changeMonth(-1)}
+              >
+                <ChevronLeft size={17} />
+              </button>
+              <h2>
+                {month.toLocaleDateString("en-IN", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </h2>
+              <button
+                className="studio-icon-button"
+                aria-label="Next month"
+                onClick={() => changeMonth(1)}
+              >
+                <ChevronRight size={17} />
+              </button>
+            </div>
             <button
               className="studio-button small"
               onClick={() => {
@@ -335,72 +342,93 @@ export default function Calendar() {
         {loading ? (
           <WorkspaceEmpty loading />
         ) : view === "month" ? (
-          <div className="workspace-calendar-scroll">
-            <div
-              className="workspace-calendar-grid"
-              role="group"
-              aria-label="Studio month calendar"
-            >
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-                <div
-                  className="workspace-weekday"
-                  key={day}
-                >
-                  {day}
-                </div>
-              ))}
-              {days.map((day) => (
-                <div
-                  role="group"
-                  aria-label={recordDate(day)}
-                  className={
-                    "workspace-calendar-day" +
-                    (day.getMonth() !== month.getMonth() ? " outside" : "") +
-                    (keyDate(day) === selected ? " selected" : "")
-                  }
-                  key={keyDate(day)}
-                >
-                  <button
-                    className={
-                      "workspace-day-number" +
-                      (keyDate(day) === keyDate(new Date()) ? " today" : "")
-                    }
-                    aria-label={"Select " + recordDate(day)}
-                    aria-pressed={keyDate(day) === selected}
-                    onClick={() => setSelected(keyDate(day))}
+          <>
+            <div className="workspace-calendar-scroll">
+              <div
+                className="workspace-calendar-grid"
+                role="group"
+                aria-label="Studio month calendar"
+              >
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+                  <div
+                    className="workspace-weekday"
+                    key={day}
                   >
-                    {day.getDate()}
-                  </button>
-                  {visible
-                    .filter((event) => inDay(event, day))
-                    .slice(0, 3)
-                    .map((event) => (
+                    {day}
+                  </div>
+                ))}
+                {days.map((day) => {
+                  const dayEvents = visible.filter(event => inDay(event, day));
+                  return (
+                    <div
+                      role="group"
+                      aria-label={recordDate(day)}
+                      className={
+                        "workspace-calendar-day" +
+                        (day.getMonth() !== month.getMonth() ? " outside" : "") +
+                        (keyDate(day) === selected ? " selected" : "")
+                      }
+                      key={keyDate(day)}
+                    >
                       <button
                         className={
-                          "workspace-calendar-event type-" +
-                          event.type.toLowerCase().replace(/[^a-z]/g, "")
+                          "workspace-day-number" +
+                          (keyDate(day) === keyDate(new Date()) ? " today" : "")
                         }
-                        key={event._id}
-                        onClick={() => setDetail(event)}
+                        aria-label={"Select " + recordDate(day) + (dayEvents.length ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}` : '')}
+                        aria-pressed={keyDate(day) === selected}
+                        onClick={() => setSelected(keyDate(day))}
                       >
-                        {event.title}
+                        <span>{day.getDate()}</span>
+                        <span className="workspace-calendar-day-count" aria-hidden="true">
+                          {dayEvents.length > 0 && <i />}
+                          {dayEvents.length > 1 && <small>{dayEvents.length}</small>}
+                        </span>
                       </button>
-                    ))}
-                  {visible.filter((event) => inDay(event, day)).length > 3 && (
-                    <button
-                      className="workspace-more-events"
-                      onClick={() => {
-                        setSelected(keyDate(day));
-                        setView("agenda");
-                      }}
-                    >
-                      More events →
-                    </button>
-                  )}
-                </div>
-              ))}
+                      {dayEvents
+                        .slice(0, 3)
+                        .map((event) => (
+                          <button
+                            className={
+                              "workspace-calendar-event type-" +
+                              event.type.toLowerCase().replace(/[^a-z]/g, "")
+                            }
+                            key={event._id}
+                            onClick={() => setDetail(event)}
+                          >
+                            {event.title}
+                          </button>
+                        ))}
+                      {dayEvents.length > 3 && (
+                        <button
+                          className="workspace-more-events"
+                          onClick={() => {
+                            setSelected(keyDate(day));
+                            setView("agenda");
+                          }}
+                        >
+                          More events →
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+            <section className="workspace-mobile-day-events" aria-label={'Events for ' + recordDate(selectedDay)}>
+              <h3>{recordDate(selectedDay)}</h3>
+              <p>Tap a day to review its events.</p>
+              {selectedEvents.length ? selectedEvents.map(event => (
+                <button key={event._id} className="workspace-agenda-event" onClick={() => setDetail(event)}>
+                  <span>
+                    <strong>{event.title}</strong>
+                    <small>{time(event.start)} – {time(event.end)} · {event.location || 'Location to be confirmed'}</small>
+                  </span>
+                  <ChevronRight size={16} aria-hidden="true" />
+                </button>
+              )) : <p className="workspace-day-empty">No events scheduled for this day.</p>}
+            </section>
+          </>
         ) : monthEvents.length ? (
           <div className="workspace-agenda">
             {monthEvents

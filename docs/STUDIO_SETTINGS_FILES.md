@@ -1,6 +1,6 @@
 # Modified and added files
 
-Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a2004c6e759e3bde3`). Includes settings, Gmail, appearance, workspace refinement, visible switches and the Finance overview card. Generated build outputs, local environment files and sample preview fixtures are excluded.
+Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a2004c6e759e3bde3`). Includes settings, Gmail, appearance, workspace refinement, visible switches, the Finance overview card, responsive layout and the quotation register redesign. Generated build outputs, local environment files and sample preview fixtures are excluded.
 
 - `backend/.env.example`
 - `backend/controllers/photographerController.js`
@@ -82,6 +82,7 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `backend/utils/studioPreferences.js`
 - `backend/utils/studioRecords.js`
 - `backend/utils/studioSettings.js`
+- `docs/STUDIO_RESPONSIVE_AUDIT.md`
 - `docs/STUDIO_SETTINGS_AND_APPEARANCE.md`
 - `docs/STUDIO_SETTINGS_FILES.md`
 - `docs/STUDIO_UI_REFINEMENT_AUDIT.md`
@@ -131,12 +132,14 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `frontend/src/admin/pages/documentWorkspaceRefinements.css`
 - `frontend/src/admin/pages/integrations.css`
 - `frontend/src/admin/pages/projectSupport.css`
+- `frontend/src/admin/pages/quotationList.css`
 - `frontend/src/admin/pages/referenceContacts.css`
 - `frontend/src/admin/pages/studioOperations.css`
 - `frontend/src/admin/pages/studioSettings.css`
 - `frontend/src/admin/studio-appearance.css`
 - `frontend/src/admin/studio-brand.css`
 - `frontend/src/admin/studio-crm.css`
+- `frontend/src/admin/studio-responsive.css`
 - `frontend/src/admin/studio-settings-defaults.json`
 - `frontend/src/context/AuthContext.jsx`
 - `frontend/src/pages/ClientProjectWorkspace.jsx`

@@ -55,13 +55,15 @@ The invoice editor also retained an obsolete negative margin after focus-mode pa
 - 62 frontend tests passed.
 - 216 backend tests passed.
 - Studio, public and mobile ESLint passed, including the rewritten Activity page.
-- Production frontend build passed (3,458 modules).
+- Latest production frontend build passed (3,460 modules).
 - `git diff --check` passed.
 
 The latest Finance addition extends the existing backend invoice projection and appearance-preference schema/validation; it adds no endpoint or financial mutation. The backend tests also cover the feature branch's settings, Gmail, authorization, recovery, document and workflow behavior.
 
 ## Limits and local preview
 
-Local preview is available over Wi-Fi at `http://192.168.29.62:5173/admin` while the local processes run and the computer retains that address. Vite binds to the LAN interface and proxies API requests to the existing preview backend on loopback; no browser API URL points phone users at their own `localhost`.
+The subsequent six-viewport review (114 route snapshots), shared alignment fixes, tablet navigation, compact phone calendar and quotation register redesign are documented in `STUDIO_RESPONSIVE_AUDIT.md`.
+
+Local preview is available on this computer at `http://127.0.0.1:5173/admin`. The earlier Wi-Fi address `192.168.29.62` became unreachable during the final handoff; verify the current address before opening the preview on another device. Vite binds to the LAN interface and proxies API requests to the existing preview backend on loopback; no browser API URL points phone users at their own `localhost`.
 
 This is explicitly labeled sample data. The preview fixture does not implement real Gmail, SMTP, security/session or Atlas recovery connections. External account authorization, actual email delivery and database restoration were not exercised. No production records, connected Google events, contracts, invoices, payments or client messages were changed during browser review. Production verification requires a separately approved deployment and the configuration described in `STUDIO_SETTINGS_AND_APPEARANCE.md`.

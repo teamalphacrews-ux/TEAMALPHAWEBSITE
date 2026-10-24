@@ -10,6 +10,7 @@ import { useAuth } from '../../../context/AuthContext';
 import useStudioDialog from '../studio/useStudioDialog';
 import { StudioPreferencesProvider, useStudioPreferences } from './StudioPreferences';
 import '../../studio-appearance.css';
+import '../../studio-responsive.css';
 
 function StudioLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

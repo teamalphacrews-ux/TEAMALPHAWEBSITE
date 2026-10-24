@@ -15,6 +15,8 @@ import {
   MoveDown,
   ImagePlus,
   Printer,
+  Search,
+  ArrowUpRight,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { OperationsModal } from "../components/operations/OperationsUI";
@@ -27,6 +29,7 @@ import {
 } from "../components/operations/workspaceData";
 import "./quotationWorkspace.css";
 import "./documentWorkspaceRefinements.css";
+import "./quotationList.css";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 const covers = [
   "/assets/banner.jpg",
@@ -46,6 +49,7 @@ const blankItem = () => ({
 const dateOnly = (d) => new Date(d).toISOString().slice(0, 10);
 const quoteNumber = (q) =>
   q.documentNumber || q._id?.slice(-6).toUpperCase() || "New";
+const quoteFilters = ["All", "Draft", "Open", "Accepted", "Expired", "Declined", "Cancelled", "Archived"];
 const defaultForm = (settings) => ({
   clientName: "",
   email: "",
@@ -621,117 +625,46 @@ export default function Quotations() {
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
+  const startNewQuote = () => {
+    setDraft(defaultForm(settings));
+    setMode("wizard");
+  };
+  const openListQuote = quote => {
+    loadQuote(quote);
+    setMode(quote.status === "Draft" ? "editor" : "detail");
+  };
   return (
-    <div className="qw-page">
+    <div className={'qw-page' + (mode === 'list' ? ' qw-list-workspace' : '')}>
       {mode === "list" && (
         <>
           <header className="qw-list-header">
-            <h1>Quotes</h1>
-            <input
-              aria-label="Search quotes"
-              placeholder="Search quote or contact name"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <Link className="qw-text-button" to="/admin/quote-templates">
-              Templates
-            </Link>
-            <button
-              className="qw-primary"
-              onClick={() => {
-                setDraft(defaultForm(settings));
-                setMode("wizard");
-              }}
-            >
-              New Quote
-            </button>
-          </header>
-          <div className="qw-tabs">
-            {[
-              "All",
-              "Draft",
-              "Open",
-              "Accepted",
-              "Expired",
-              "Declined",
-              "Cancelled",
-              "Archived",
-            ].map((f) => (
-              <button
-                className={filter === f ? "active" : ""}
-                key={f}
-                onClick={() => setFilter(f)}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-          {error && (
-            <p role="alert">
-              {error} <button onClick={reload}>Retry</button>
-            </p>
-          )}
-          {loading ? (
-            <p>Loading quotations…</p>
-          ) : (
-            <div className="qw-list-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Quote</th>
-                    <th>Client</th>
-                    <th>Amount</th>
-                    <th>Expires</th>
-                    <th>Status</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {visible.map((q) => (
-                    <tr key={q._id}>
-                      <td>
-                        <button
-                          onClick={() => {
-                            loadQuote(q);
-                            setMode(q.status === "Draft" ? "editor" : "detail");
-                          }}
-                        >
-                          Quote #{quoteNumber(q)}
-                        </button>
-                        <small>{q.title}</small>
-                      </td>
-                      <td>{q.clientName}</td>
-                      <td>{rupees(q.totalPaise / 100)}</td>
-                      <td>
-                        {q.expiryEnabled === false
-                          ? "No expiry"
-                          : recordDate(q.validUntil)}
-                      </td>
-                      <td>
-                        <span className="qw-badge">{status(q)}</span>
-                      </td>
-                      <td>
-                        <button
-                          aria-label={"Open quote " + q.clientName}
-                          onClick={() => {
-                            loadQuote(q);
-                            setMode(q.status === "Draft" ? "editor" : "detail");
-                          }}
-                        >
-                          •••
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!visible.length && (
-                <p className="qw-empty">
-                  No quotations yet. Create a quote to get started.
-                </p>
-              )}
+            <div><h1>Quotations</h1><p>Create proposals and follow every client decision.</p></div>
+            <div className="qw-list-actions">
+              <Link className="studio-button" to="/admin/quote-templates"><Copy size={15} />Templates</Link>
+              <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>
             </div>
-          )}
+          </header>
+          <section className="qw-list-panel" aria-label="Quotation list">
+            <div className="qw-list-toolbar">
+              <label className="studio-search qw-list-search"><Search size={17} aria-hidden="true" /><input aria-label="Search quotes" placeholder="Search quote or client name" value={search} onChange={event => setSearch(event.target.value)} /></label>
+              <label className="qw-list-status-filter"><span>Status</span><select className="studio-input" aria-label="Quote status" value={filter} onChange={event => setFilter(event.target.value)}>{quoteFilters.map(value => <option key={value}>{value}</option>)}</select></label>
+              <span className="qw-list-count" role="status">{error ? 'Unavailable' : loading ? 'Loading…' : `${visible.length} of ${quotes.length} quotes`}</span>
+            </div>
+            <div className="qw-list-filters" role="group" aria-label="Filter quotations by status">{quoteFilters.map(value => <button type="button" key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value}</button>)}</div>
+            {error ? <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={reload}>Retry</button></div> : loading ? <div className="qw-list-empty" role="status"><span className="studio-loader" />Loading quotations…</div> : visible.length ? <>
+              <div className="qw-list-columns" aria-hidden="true"><span>Quote</span><div className="qw-quote-metadata"><span>Client</span><span>Amount</span><span>Expires</span><span>Status</span></div><span /></div>
+              <div className="qw-quote-records">{visible.map(quote => <article className="qw-quote-row" key={quote._id} aria-labelledby={'quote-list-' + quote._id}>
+                <div className="qw-quote-description"><h2 id={'quote-list-' + quote._id}><button className="qw-quote-title" onClick={() => openListQuote(quote)}>Quote #{quoteNumber(quote)}</button></h2><p>{quote.title}</p></div>
+                <dl className="qw-quote-metadata">
+                  <div><dt>Client</dt><dd>{quote.clientName || 'Client to be confirmed'}</dd></div>
+                  <div className="qw-quote-amount"><dt>Amount</dt><dd>{rupees(quote.totalPaise / 100)}</dd></div>
+                  <div><dt>Expires</dt><dd>{quote.expiryEnabled === false ? 'No expiry' : recordDate(quote.validUntil)}</dd></div>
+                  <div><dt>Status</dt><dd><span className="qw-badge" data-status={status(quote).toLowerCase()}>{status(quote)}</span></dd></div>
+                </dl>
+                <button className="studio-icon-button qw-quote-open" aria-label={'Open quote ' + quote.clientName} onClick={() => openListQuote(quote)}><ArrowUpRight size={18} /></button>
+              </article>)}</div>
+            </> : <div className="qw-list-empty" role="status"><h2>{search.trim() || filter !== 'All' ? 'No matching quotations' : 'Your next proposal starts here'}</h2><p>{search.trim() || filter !== 'All' ? 'Try another client name or choose a different status.' : 'Create a quotation to start a new client conversation.'}</p>{search.trim() || filter !== 'All' ? <button className="studio-button" onClick={() => { setSearch(''); setFilter('All'); }}>Reset filters</button> : <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>}</div>}
+          </section>
         </>
       )}
       {mode === "wizard" && (

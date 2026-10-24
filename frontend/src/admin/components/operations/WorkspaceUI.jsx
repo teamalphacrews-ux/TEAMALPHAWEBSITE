@@ -21,7 +21,7 @@ export function WorkspaceMetrics({ items, loading }) {
       {items.map((item) => (
         <div className="studio-metric" key={item.label}>
           <span className="workspace-metric-label">{item.label}</span>
-          <strong className="workspace-metric-value">
+          <strong className={'workspace-metric-value' + (typeof item.value === 'string' ? ' is-label' : '')}>
             {loading ? "—" : item.value}
           </strong>
           <small className="studio-muted">{item.note}</small>
