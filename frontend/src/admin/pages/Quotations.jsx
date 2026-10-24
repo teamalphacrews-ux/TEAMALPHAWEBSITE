@@ -112,14 +112,15 @@ function Toggle({ label, checked, onChange, help }) {
   return (
     <div className="qw-setting">
       <strong>{label}</strong>
-      <label className="qw-toggle">
+      <label className="qw-toggle studio-switch-control">
         <input
           type="checkbox"
+          role="switch"
           aria-label={label}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span />
+        <span className="studio-switch-track" aria-hidden="true" />
         {checked ? "On" : "Off"}
       </label>
       {help && <p>{help}</p>}

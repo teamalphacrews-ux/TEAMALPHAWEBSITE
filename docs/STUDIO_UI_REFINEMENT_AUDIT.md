@@ -34,20 +34,34 @@ The user's subsequent screenshot exposed a gap in the page-route review: project
 
 The reproduced Riya & Karthik dialog was reviewed at 1280px and 375px, including Overview, Tasks, Delivery and the nested Edit details form, in charcoal Dark and Daylight. Dark inputs no longer have white backgrounds; phone dialogs remain within the viewport. No form was submitted during this review.
 
-Booking momentum and Production pulse contain overlapping radial and masked conic light layers. A follow-up visibility check found the original animation was running but blended too softly into the base gradient. The light now sits explicitly above the base background and below the content, with a clearer six/seven-second flow, stronger color separation and a static center wash to keep text readable. Two browser observations confirmed that the visible layers moved between frames. Only transform animation is used; there are no video assets, new libraries, cursor listeners or animated blur filters. An IntersectionObserver and page-visibility listener pause the layers when offscreen or the tab is hidden. Offscreen animation pause was verified in the browser. Phones use two layers per card, and prefers-reduced-motion disables the animation completely. The overview figures remain real studio metrics.
+All three feature cards now use solid system-sans figures with tabular numerals; the dotted text mask has been removed. Booking momentum has flowing diagonal aurora ribbons; Production pulse has counter-rotating masked halos and a light wash. Finance pulse retains its fluid glow and travelling liquid wave. The decorative layers sit explicitly above the card background and below readable text and controls. Two browser observations confirmed changing transforms. Only transform animation is used; there are no video assets, new libraries, cursor listeners or animated blur filters. An IntersectionObserver and page-visibility listener pause the layers when the feature grid is offscreen or the tab is hidden. Phones use two light layers per card, and prefers-reduced-motion disables the animation completely. Desktop and phone reviews covered both appearances; the three cards stack without page overflow at 375px.
+
+## Finance overview card
+
+Finance pulse uses the existing authenticated finance endpoint, extended to project invoice status, currency, due dates and payment schedules. Today/overdue INR balances form Due amount; future and undated balances form Upcoming amount. Draft, cancelled, archived and paid invoices are excluded from outstanding collections. Advances are allocated to the earliest valid scheduled instalments. Invalid legacy schedules fall back to the invoice deadline. Net profit is received ledger income minus paid ledger expenses, supports a loss and never counts invoice deposits a second time. The card states its all-time cash basis and excluded foreign-currency invoice count. Errors display dashes and Retry. It refreshes every minute while the document is visible.
+
+Personalization includes the twelfth card. A versioned migration adds it once to existing nonempty layouts, preserving intentionally empty dashboards and later opt-outs. Hide, reload persistence and restore were checked in the sample preview. A browser geometry check caught a specificity conflict collapsing the Finance wave container; its motion-layer class now keeps the wave absolutely positioned at full card width. The visible wave and changing translation were verified after the fix.
+
+## Follow-up: empty states and switches
+
+The Booked and Completed Projects filters exposed a hard-coded white empty-state background. The shared relationship empty state now uses the selected surface, text and border tokens, with rounded edges. Filtered empty states name the selected stage and offer View all projects. Both themes and a 375px viewport were checked. The reported Riya & Karthik dialog was reopened in the current preview; facts, payment amounts, badges and inputs remained readable and the cards no longer intersected the header.
+
+Settings, Quotation and Invoice switches now share a 46 × 26px track, contrasting thumb, explicit On/Off text and at least a 44px-high input target. On uses a green track; Off uses gray. Dark mode adjusts both thumb and track instead of allowing a white thumb to disappear against a white checked track. Native keyboard behavior, switch semantics, disabled states and focus outlines remain available. A Settings switch was toggled with Space and restored without saving; checked quotation switches and unchecked invoice switches were inspected without altering documents. Phone Settings spacing was reviewed in Daylight.
+
+The invoice editor also retained an obsolete negative margin after focus-mode padding was removed. Its margin is now zero and focus-mode padding is consistent. Browser geometry confirmed a 0px left edge and no page overflow at 1280px, 820px and 375px. No invoice was saved or issued during this review.
 
 ## Automated validation
 
-- 57 frontend tests passed.
-- 215 backend tests passed.
+- 62 frontend tests passed.
+- 216 backend tests passed.
 - Studio, public and mobile ESLint passed, including the rewritten Activity page.
-- Production frontend build passed (3,455 modules).
+- Production frontend build passed (3,458 modules).
 - `git diff --check` passed.
 
-The current refinement changes only frontend code and documentation. The backend tests cover the existing feature branch's settings, Gmail, authorization, recovery, document and workflow behavior.
+The latest Finance addition extends the existing backend invoice projection and appearance-preference schema/validation; it adds no endpoint or financial mutation. The backend tests also cover the feature branch's settings, Gmail, authorization, recovery, document and workflow behavior.
 
 ## Limits and local preview
 
-Local preview is available over Wi-Fi at `http://192.168.29.248:5173/admin` while the local processes run. Vite binds to the LAN interface and proxies API requests to the existing preview backend on loopback; no browser API URL points phone users at their own `localhost`.
+Local preview is available over Wi-Fi at `http://192.168.29.62:5173/admin` while the local processes run and the computer retains that address. Vite binds to the LAN interface and proxies API requests to the existing preview backend on loopback; no browser API URL points phone users at their own `localhost`.
 
 This is explicitly labeled sample data. The preview fixture does not implement real Gmail, SMTP, security/session or Atlas recovery connections. External account authorization, actual email delivery and database restoration were not exercised. No production records, connected Google events, contracts, invoices, payments or client messages were changed during browser review. Production verification requires a separately approved deployment and the configuration described in `STUDIO_SETTINGS_AND_APPEARANCE.md`.

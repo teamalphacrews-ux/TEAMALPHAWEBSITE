@@ -8,6 +8,7 @@ import { PipelineInsight, TaskLoadInsight } from '../components/operations/Studi
 import StudioAppIcon from '../components/common/StudioAppIcon';
 import { useStudioPreferences } from '../components/common/StudioPreferences';
 import OverviewCustomizer from '../components/common/OverviewCustomizer';
+import OverviewFinanceCard from '../components/finance/OverviewFinanceCard';
 
 const API = import.meta.env.VITE_API_URL || '';
 const dateFormat = (value, options) => {
@@ -121,8 +122,25 @@ export default function Dashboard() {
       </div>
 
       <div className="overview-feature-grid" ref={featureGrid} data-motion-active={fluidActive}>
-        {visible('bookingMomentum') && <section className="overview-feature-card booking" data-overview-card="bookingMomentum">{remove('bookingMomentum', 'Booking momentum')}<div className="overview-fluid-glow" aria-hidden="true"><i /><i /><i /></div><div className="overview-feature-label"><Sparkles size={15} /><span>Booking momentum</span></div><strong className="overview-dot-number">{overview && conversion !== null ? conversion + '%' : '—'}</strong><p>{overview ? `${bookedEnquiries} of ${total} enquiries booked` : 'Awaiting studio data'}</p><div className="overview-tick-meter" role="img" aria-label={conversion !== null ? conversion + '% enquiry to booking conversion' : 'No conversion data'}><i style={{ width: (conversion || 0) + '%' }} /></div><Link to="/admin/crm">Explore your pipeline<ArrowUpRight size={15} /></Link></section>}
-        {visible('productionPulse') && <section className="overview-feature-card production" data-overview-card="productionPulse">{remove('productionPulse', 'Production pulse')}<div className="overview-fluid-glow" aria-hidden="true"><i /><i /><i /></div><div className="overview-feature-label"><Clapperboard size={15} /><span>Production pulse</span></div><strong className="overview-dot-number">{summary.pendingTasks ?? '—'}</strong><p>tasks in your delivery queue</p><div className="overview-production-detail"><span><i />{summary.overdueTasks ?? '—'} need attention</span><span>{summary.activeCrew ?? '—'} active crew</span></div><Link to="/admin/post-production">Open production<ArrowUpRight size={15} /></Link></section>}
+        {visible('bookingMomentum') && <section className="overview-feature-card booking" data-overview-card="bookingMomentum">
+          {remove('bookingMomentum', 'Booking momentum')}
+          <div className="overview-card-motion overview-booking-aurora" aria-hidden="true"><i /><i /><i /></div>
+          <div className="overview-feature-label"><Sparkles size={15} /><span>Booking momentum</span></div>
+          <strong className="overview-feature-number">{overview && conversion !== null ? conversion + '%' : '—'}</strong>
+          <p>{overview ? `${bookedEnquiries} of ${total} enquiries booked` : 'Awaiting studio data'}</p>
+          <div className="overview-tick-meter" role="img" aria-label={conversion !== null ? conversion + '% enquiry to booking conversion' : 'No conversion data'}><i style={{ width: (conversion || 0) + '%' }} /></div>
+          <Link to="/admin/crm">Explore your pipeline<ArrowUpRight size={15} /></Link>
+        </section>}
+        {visible('productionPulse') && <section className="overview-feature-card production" data-overview-card="productionPulse">
+          {remove('productionPulse', 'Production pulse')}
+          <div className="overview-card-motion overview-production-orbit" aria-hidden="true"><i /><i /><i /></div>
+          <div className="overview-feature-label"><Clapperboard size={15} /><span>Production pulse</span></div>
+          <strong className="overview-feature-number">{summary.pendingTasks ?? '—'}</strong>
+          <p>tasks in your delivery queue</p>
+          <div className="overview-production-detail"><span><i />{summary.overdueTasks ?? '—'} need attention</span><span>{summary.activeCrew ?? '—'} active crew</span></div>
+          <Link to="/admin/post-production">Open production<ArrowUpRight size={15} /></Link>
+        </section>}
+        {visible('financePulse') && <OverviewFinanceCard refreshKey={refreshKey} remove={remove('financePulse', 'Finance pulse')} />}
       </div>
 
       <div className="studio-overview-grid studio-overview-main">

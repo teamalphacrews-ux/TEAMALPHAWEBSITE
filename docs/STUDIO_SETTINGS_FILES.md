@@ -1,6 +1,6 @@
 # Modified and added files
 
-Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a2004c6e759e3bde3`). Includes settings, Gmail, appearance and the subsequent workspace refinement. Generated build outputs, local environment files and sample preview fixtures are excluded.
+Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a2004c6e759e3bde3`). Includes settings, Gmail, appearance, workspace refinement, visible switches and the Finance overview card. Generated build outputs, local environment files and sample preview fixtures are excluded.
 
 - `backend/.env.example`
 - `backend/controllers/photographerController.js`
@@ -95,6 +95,9 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `frontend/src/admin/components/common/StudioPreferences.jsx`
 - `frontend/src/admin/components/common/Topbar.jsx`
 - `frontend/src/admin/components/contacts/ContactWorkflowUI.jsx`
+- `frontend/src/admin/components/contacts/contactPaymentTotals.js`
+- `frontend/src/admin/components/finance/OverviewFinanceCard.jsx`
+- `frontend/src/admin/components/finance/overviewFinanceData.js`
 - `frontend/src/admin/components/integrations/GmailConnectionCard.jsx`
 - `frontend/src/admin/components/integrations/gmailApi.js`
 - `frontend/src/admin/components/operations/OperationsUI.jsx`
@@ -105,6 +108,7 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `frontend/src/admin/components/settings/SecurityRecoveryPanel.jsx`
 - `frontend/src/admin/components/settings/SettingsEditor.jsx`
 - `frontend/src/admin/components/settings/securityRecovery.css`
+- `frontend/src/admin/components/studio/StudioLeadDetails.jsx`
 - `frontend/src/admin/pages/ActivityLog.jsx`
 - `frontend/src/admin/pages/CRM.jsx`
 - `frontend/src/admin/pages/Calendar.jsx`
@@ -122,6 +126,7 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `frontend/src/admin/pages/Quotations.jsx`
 - `frontend/src/admin/pages/Settings.jsx`
 - `frontend/src/admin/pages/StudioProjectDetail.jsx`
+- `frontend/src/admin/pages/StudioProjects.jsx`
 - `frontend/src/admin/pages/UserManagement.jsx`
 - `frontend/src/admin/pages/documentWorkspaceRefinements.css`
 - `frontend/src/admin/pages/integrations.css`
@@ -138,6 +143,8 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `frontend/src/pages/PublicInvoice.jsx`
 - `frontend/src/pages/SharedQuotation.jsx`
 - `frontend/src/utils/invoiceDocument.js`
+- `frontend/src/utils/overviewPreferences.js`
 - `frontend/src/utils/settingsDefaults.js`
 - `frontend/src/utils/studioIdentity.js`
+- `frontend/test/overview-finance.test.mjs`
 - `frontend/test/settings-defaults.test.mjs`

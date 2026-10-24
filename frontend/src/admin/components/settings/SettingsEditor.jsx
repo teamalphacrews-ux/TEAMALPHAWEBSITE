@@ -11,7 +11,7 @@ import { studioImageUrl, whatsappContactUrl } from '../../../utils/studioIdentit
 import { useAuth } from '../../../context/AuthContext';
 
 export function SettingsToggle({ label, description, value, onChange, disabled = false }) {
-  return <label className={'settings-toggle' + (disabled ? ' is-disabled' : '')}><span><strong>{label}</strong>{description && <small>{description}</small>}</span><input type="checkbox" checked={!!value} onChange={event => onChange(event.target.checked)} disabled={disabled} /><span className="settings-switch" aria-hidden="true" /></label>;
+  return <label className={'settings-toggle studio-switch-control' + (disabled ? ' is-disabled' : '')}><span><strong>{label}</strong>{description && <small>{description}</small>}</span><span className="studio-switch-state" aria-hidden="true">{value ? 'On' : 'Off'}</span><input type="checkbox" role="switch" checked={!!value} onChange={event => onChange(event.target.checked)} disabled={disabled} /><span className="settings-switch studio-switch-track" aria-hidden="true" /></label>;
 }
 const Help = ({ children }) => <p className="settings-help">{children}</p>;
 const newId = () => 'tpl-' + Array.from(crypto.getRandomValues(new Uint8Array(10)), n => n.toString(16).padStart(2, '0')).join('');

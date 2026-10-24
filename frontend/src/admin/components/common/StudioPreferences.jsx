@@ -3,22 +3,9 @@ import axios from 'axios';
 import { useAuth } from '../../../context/AuthContext';
 import API from '../../../utils/apiConfig';
 
-// eslint-disable-next-line react-refresh/only-export-components -- Card definitions are shared with the editor.
-export const OVERVIEW_CARDS = [
-  { id: 'openEnquiries', label: 'Open enquiries', group: 'At a glance' },
-  { id: 'bookedProjects', label: 'Booked projects', group: 'At a glance' },
-  { id: 'upcomingEvents', label: 'Upcoming events', group: 'At a glance' },
-  { id: 'pendingTasks', label: 'Pending tasks', group: 'At a glance' },
-  { id: 'bookingMomentum', label: 'Booking momentum', group: 'Featured cards' },
-  { id: 'productionPulse', label: 'Production pulse', group: 'Featured cards' },
-  { id: 'upcomingSchedule', label: 'Upcoming schedule', group: 'Workspace cards' },
-  { id: 'actionQueue', label: 'Action queue', group: 'Workspace cards' },
-  { id: 'enquiryPipeline', label: 'Enquiry pipeline', group: 'Workspace cards' },
-  { id: 'recentEnquiries', label: 'Recent enquiries', group: 'Workspace cards' },
-  { id: 'quickActions', label: 'Quick access', group: 'Workspace cards' },
-];
-const defaultPreferences = () => ({ theme: 'light', visibleCards: OVERVIEW_CARDS.map(card => card.id) });
-const normalize = value => ({ theme: value?.theme === 'dark' ? 'dark' : 'light', visibleCards: Array.isArray(value?.visibleCards) ? [...new Set(value.visibleCards.filter(id => OVERVIEW_CARDS.some(card => card.id === id)))] : defaultPreferences().visibleCards });
+import { OVERVIEW_CARDS, defaultOverviewPreferences as defaultPreferences, normalizeOverviewPreferences as normalize } from '../../../utils/overviewPreferences';
+export { OVERVIEW_CARDS };
+
 const Context = createContext(null);
 export function StudioPreferencesProvider({ children }) {
   const { user, token } = useAuth();
@@ -56,7 +43,7 @@ export function StudioPreferencesProvider({ children }) {
     const next = normalize({ ...current.current, ...patch }); current.current = next; setPreferences(next);
     try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* Server persistence remains available. */ }
     if (user?.isPreview) { setSyncState('preview'); return; }
-    pending.current = { ...pending.current, ...patch };
+    pending.current = { ...pending.current, ...patch, layoutVersion: 2, visibleCards: next.visibleCards };
     clearTimeout(timer.current);
     timer.current = setTimeout(async () => { await flush(); if (pending.current && !sending.current) timer.current = setTimeout(flush, 500); }, 350);
   }, [flush, key, user?.isPreview]);

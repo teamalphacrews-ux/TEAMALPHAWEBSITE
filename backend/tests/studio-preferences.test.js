@@ -2,11 +2,18 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { parsePreferences, defaults, CARD_IDS } = require('../utils/studioPreferences');
 test.beforeEach(require('./sessionFixture'));
+test('Finance can be personalized and older saved layouts retain their migration version', () => {
+  assert.deepEqual(parsePreferences({ layoutVersion: 2, visibleCards: ['financePulse'] }), { visibleCards: ['financePulse'], layoutVersion: 2 });
+  assert.throws(() => parsePreferences({ layoutVersion: 99 }), error => error.status === 400);
+  const User = require('../models/User');
+  assert.equal(new User({ studioPreferences: { visibleCards: ['bookingMomentum'] } }).studioPreferences.layoutVersion, 1);
+  assert.equal(defaults().layoutVersion, 2);
+});
 test('overview preferences allow an intentionally empty overview and reject unknown cards, duplicates and privilege fields', () => {
   assert.deepEqual(parsePreferences({ visibleCards: [] }), { visibleCards: [] });
-  assert.equal(defaults().visibleCards.length, 11);
+  assert.equal(defaults().visibleCards.length, 12);
   for (const body of [null, [], { theme: 'midnight' }, { visibleCards: ['private-client-record'] }, { visibleCards: [CARD_IDS[0], CARD_IDS[0]] }, { role: 'admin' }, { userId: 'another-account' }, { visibleCards: '__proto__' }]) assert.throws(() => parsePreferences(body), error => error.status === 400);
-  const original = defaults(); original.visibleCards.pop(); assert.equal(defaults().visibleCards.length, 11);
+  const original = defaults(); original.visibleCards.pop(); assert.equal(defaults().visibleCards.length, 12);
 });
 test('appearance updates are scoped to the signed-in saved account and do not change studio-wide settings', async t => {
   const jwt = require('jsonwebtoken'), User = require('../models/User');

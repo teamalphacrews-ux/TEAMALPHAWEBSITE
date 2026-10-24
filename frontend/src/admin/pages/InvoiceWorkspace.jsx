@@ -188,13 +188,15 @@ function Toggle({ label, checked, onChange, description }) {
   return (
     <div className="invoice-option">
       <strong>{label}</strong>
-      <label className="invoice-toggle">
+      <label className="invoice-toggle studio-switch-control">
         <input
           type="checkbox"
+          role="switch"
+          aria-label={label}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span />
+        <span className="studio-switch-track" aria-hidden="true" />
         {checked ? "On" : "Off"}
       </label>
       {description && <small>{description}</small>}

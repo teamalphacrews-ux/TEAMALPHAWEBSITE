@@ -32,6 +32,8 @@ html[data-studio-appearance=dark] :is(.studio-app.studio-app,.studio-crm-overlay
 .studio-app.studio-app.studio-personal-workspace .studio-theme-toggle{width:39px;height:39px;border:1px solid var(--studio-border);border-radius:50%;background:var(--studio-surface);color:var(--studio-text)}
 .studio-app.studio-app.studio-personal-workspace .studio-preview-label{background:var(--appearance-subtle);border:0;color:var(--studio-muted)}
 .studio-app.studio-app.studio-personal-workspace .studio-main{padding-top:25px}
+.studio-app.studio-app.studio-personal-workspace.studio-focus-mode .studio-main{padding:0}
+.studio-app.studio-app.studio-focus-mode .invoice-editor{margin:0;width:100%;min-width:0;border-radius:0}
 .studio-app.studio-app.studio-personal-workspace :is(.studio-card,.studio-metric,.reference-detail-card,.reference-template-card,.studio-crm-project-card){border-color:transparent;background:var(--studio-surface);border-radius:24px;box-shadow:var(--appearance-shadow)}
 .studio-app.studio-app.studio-personal-workspace :is(.studio-button,.reference-button){border-radius:999px}
 .studio-app.studio-app.studio-personal-workspace .studio-button.primary{background:#272e23!important;border-color:#272e23!important}
@@ -47,14 +49,13 @@ html[data-studio-appearance=dark] :is(.studio-app.studio-app,.studio-crm-overlay
 .studio-app.studio-app .overview-stat .studio-metric-value{font:500 38px/1.25 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.09em;color:var(--studio-text);margin:7px 0 0;display:block}
 .studio-app.studio-app .overview-stat .studio-metric-foot{font-size:10px;margin-top:7px;color:var(--studio-muted)}
 .studio-app.studio-app .overview-stat .studio-metric-foot>svg{display:none}
-.overview-feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:22px}
+.overview-feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:20px;margin-bottom:22px}
 .overview-feature-card{--feature-ink:#25341d;position:relative;isolation:isolate;overflow:hidden;min-height:257px;border-radius:27px;padding:25px 28px 20px;display:flex;align-items:center;flex-direction:column;color:var(--feature-ink);transition:translate .4s var(--studio-motion-ease),box-shadow .4s}
 .overview-feature-card.booking{background:radial-gradient(ellipse at 9% 3%,#ffe6b9 0%,transparent 63%),radial-gradient(ellipse at 95% 5%,#dcec96 0%,transparent 69%),linear-gradient(180deg,#c8ed7b 21%,#98cb61 61%,#4f8b38 100%)}
 .overview-feature-card.production{--feature-ink:#513522;background:radial-gradient(ellipse at 5% 1%,#c4d6dc 0%,transparent 64%),radial-gradient(ellipse at 91% 94%,#f8b9b1 0%,transparent 74%),radial-gradient(ellipse at 48% 67%,#ffbc6d 0%,transparent 66%),#e2d5db}
 .overview-feature-card:before{content:'';position:absolute;inset:0;border:1px solid #ffffff55;border-radius:inherit;pointer-events:none;z-index:-1}
 .overview-feature-label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:500;opacity:.9}
-.overview-dot-number{font:500 68px/1.15 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.085em;display:block;margin:18px 0 4px;color:var(--feature-ink)}
-@supports (background-clip:text){.overview-dot-number{background-image:radial-gradient(circle,var(--feature-ink) 1px,transparent 1.2px);background-size:3.8px 3.8px;background-clip:text;-webkit-background-clip:text;color:transparent}}
+.overview-feature-number{font-family:inherit;font-size:68px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15;letter-spacing:-.055em;display:block;margin:18px 0 4px;color:var(--feature-ink)}
 .overview-feature-card>p{font-size:11px;line-height:1.7;margin:0;color:var(--feature-ink);opacity:.88}
 .overview-tick-meter{height:20px;width:72%;max-width:250px;margin:14px 0 12px;position:relative;background:repeating-linear-gradient(90deg,#ffffff44 0 1px,transparent 1px 8px);mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent);border-radius:3px}
 .overview-tick-meter>i{display:block;height:100%;background:repeating-linear-gradient(90deg,#f6ffe7 0 2px,transparent 2px 8px);transition:width .6s var(--studio-motion-ease)}
@@ -106,7 +107,7 @@ html[data-studio-appearance=dark] .studio-app.studio-app .overview-stat .studio-
 @media(hover:hover) and (pointer:fine){.overview-hide-card{opacity:0}.overview-stat:hover>.overview-hide-card,.overview-feature-card:hover>.overview-hide-card,.overview-workspace-card:hover>.overview-hide-card,.overview-quick-wrapper:hover>.overview-hide-card,.overview-hide-card:focus-visible{opacity:.8}.overview-feature-card:hover{translate:0 -3px;box-shadow:0 15px 35px #3c4c2d12}}
 @media(max-width:1200px){.studio-app.studio-app .overview-stat-strip{grid-template-columns:repeat(4,minmax(0,1fr))}.studio-app.studio-app .overview-feature-grid{gap:16px}.overview-feature-card{min-height:240px;padding-inline:20px}}
 @media(max-width:960px){.studio-app.studio-app.studio-personal-workspace .studio-sidebar-container{width:min(300px,calc(100vw - 35px))}.studio-app.studio-app.studio-personal-workspace .studio-sidebar{height:100%;border-right:1px solid var(--studio-border)}.studio-app.studio-app.studio-personal-workspace .studio-workspace{margin-left:0}}
-@media(max-width:768px){.studio-app.studio-app.studio-personal-workspace .studio-main{padding:24px 16px 32px}.studio-app.studio-app .overview-stat-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 16px;margin-bottom:18px}.studio-app.studio-app .overview-stat .studio-metric-value{font-size:34px}.overview-feature-grid{grid-template-columns:minmax(0,1fr);gap:15px}.overview-feature-card{min-height:230px;padding:25px}.overview-dot-number{font-size:68px}.studio-app.studio-app .studio-overview-atmosphere .studio-overview-grid{margin-bottom:16px;gap:16px}.overview-customizer-options{grid-template-columns:minmax(0,1fr);gap:16px}.overview-customizer-options label{min-height:44px}.overview-hide-card{width:32px;height:32px;min-height:32px}.overview-workspace-card .studio-card-heading{padding-right:30px}.studio-app.studio-app.studio-personal-workspace .studio-overview-header h1{font-size:32px!important}.overview-empty{padding:30px 18px!important}.overview-empty>div{flex-wrap:wrap;justify-content:center}}
+@media(max-width:768px){.studio-app.studio-app.studio-personal-workspace .studio-main{padding:24px 16px 32px}.studio-app.studio-app .overview-stat-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 16px;margin-bottom:18px}.studio-app.studio-app .overview-stat .studio-metric-value{font-size:34px}.overview-feature-grid{grid-template-columns:minmax(0,1fr);gap:15px}.overview-feature-card{min-height:230px;padding:25px}.overview-feature-number{font-size:68px}.studio-app.studio-app .studio-overview-atmosphere .studio-overview-grid{margin-bottom:16px;gap:16px}.overview-customizer-options{grid-template-columns:minmax(0,1fr);gap:16px}.overview-customizer-options label{min-height:44px}.overview-hide-card{width:32px;height:32px;min-height:32px}.overview-workspace-card .studio-card-heading{padding-right:30px}.studio-app.studio-app.studio-personal-workspace .studio-overview-header h1{font-size:32px!important}.overview-empty{padding:30px 18px!important}.overview-empty>div{flex-wrap:wrap;justify-content:center}}
 @media(prefers-reduced-motion:reduce){.overview-feature-card,.overview-tick-meter>i,.overview-hide-card,.studio-personal-workspace .studio-nav-item{transition:none!important;translate:none!important}}
 
 /* Shared working controls keep the same hierarchy in every module. */
@@ -132,6 +133,7 @@ html[data-studio-appearance=dark] .studio-app.studio-app .studio-error{backgroun
 .studio-toast{background:#fff!important;color:#22281f!important;border:1px solid #e1e5df;border-radius:16px!important;box-shadow:0 8px 32px #10101012!important;font:13px/1.6 -apple-system,BlinkMacSystemFont,Inter,sans-serif!important;max-width:min(420px,calc(100vw - 32px))!important}
 html[data-studio-appearance=dark] .studio-toast{background:#202124!important;color:#f2f2f4!important;border-color:#3c3d41;box-shadow:0 8px 32px #0004!important}
 html[data-studio-appearance=dark] :is(.studio-app.studio-app,.studio-crm-overlay.studio-crm-overlay) :is(.studio-tabs button.active,.reference-tabs button.active,.qw-tabs button.active){color:var(--studio-text);border-color:var(--studio-border)}
+.studio-app.studio-app.studio-personal-workspace .reference-tabs button.active:after{background:var(--studio-text)}
 .studio-app.studio-app.studio-personal-workspace :is(.reference-avatar,.ops-avatar){background:var(--appearance-subtle);color:var(--studio-text)}
 .studio-app.studio-app.studio-personal-workspace .studio-crm-avatar{background:var(--appearance-subtle);color:var(--studio-text)}
 .studio-app.studio-app.studio-personal-workspace :is(.studio-empty p,.reference-template-card p){color:var(--studio-muted)}
@@ -175,17 +177,68 @@ html[data-studio-appearance=dark] .studio-crm-overlay.studio-crm-overlay .studio
   .studio-crm-overlay.studio-crm-overlay .studio-crm-facts{gap:20px}
 }
 
-/* Soft moving light stays within the feature cards and never intercepts input. */
-.overview-feature-card>:not(.overview-fluid-glow):not(.overview-hide-card){position:relative;z-index:1}
+/* Distinct, transform-only motion sits behind the solid, readable figures. */
+.overview-feature-card>:not(.overview-fluid-glow):not(.overview-card-motion):not(.overview-hide-card){position:relative;z-index:1}
+.overview-feature-card>.overview-card-motion{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;pointer-events:none;contain:strict}
+.overview-booking-aurora i{position:absolute;width:150%;height:85%;left:-25%;top:10%;border-radius:50%;background:linear-gradient(180deg,transparent 12%,#f2ffd033 30%,#e9ffbdcc 49%,#b6f77c88 57%,transparent 78%);-webkit-mask-image:radial-gradient(ellipse,#000 18%,#000a 45%,transparent 71%);mask-image:radial-gradient(ellipse,#000 18%,#000a 45%,transparent 71%);transform:translate3d(-10%,10%,0) rotate(-24deg);animation:overview-booking-ribbon 8s ease-in-out infinite alternate;animation-play-state:paused;will-change:auto}
+.overview-booking-aurora i:nth-child(2){top:36%;left:-40%;height:95%;background:linear-gradient(180deg,transparent 10%,#55b59522 30%,#46b99c77 50%,#b8f89b66 61%,transparent 82%);animation-direction:alternate-reverse;animation-duration:11s;animation-delay:-5s;transform:translate3d(8%,-10%,0) rotate(20deg)}
+.overview-booking-aurora i:nth-child(3){width:85%;height:85%;left:52%;top:-22%;background:radial-gradient(ellipse,#fffbd5aa,transparent 68%);animation:overview-booking-light 7s ease-in-out infinite alternate;animation-delay:-3s;animation-play-state:paused}
+.overview-production-orbit{background:radial-gradient(ellipse at 48% 45%,#fff7ee44,transparent 66%)}
+.overview-production-orbit i{position:absolute;left:calc(50% - 185px);top:calc(50% - 185px);width:370px;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 0deg,transparent 8%,#fff5d9dd 26%,#f18543a6 37%,transparent 57%,#9abbd699 75%,transparent 92%);-webkit-mask-image:radial-gradient(circle,transparent 46%,#0008 51%,#000 57%,#0003 66%,transparent 71%);mask-image:radial-gradient(circle,transparent 46%,#0008 51%,#000 57%,#0003 66%,transparent 71%);animation:overview-production-orbit 12s linear infinite;animation-play-state:paused;will-change:auto}
+.overview-production-orbit i:nth-child(2){left:calc(50% - 135px);top:calc(50% - 135px);width:270px;opacity:.8;animation-direction:reverse;animation-duration:16s;animation-delay:-6s}
+.overview-production-orbit i:nth-child(3){left:-35%;top:60%;width:160%;height:50%;aspect-ratio:auto;border-radius:50%;background:radial-gradient(ellipse,#ffc17b99,transparent 70%);-webkit-mask-image:none;mask-image:none;animation:overview-production-light 8s ease-in-out infinite alternate;animation-delay:-2s;animation-play-state:paused}
+.overview-feature-grid[data-motion-active=true] .overview-card-motion i{animation-play-state:running;will-change:transform}
+@keyframes overview-booking-ribbon{0%{transform:translate3d(-10%,10%,0) rotate(-24deg) scale(1)}50%{transform:translate3d(7%,-12%,0) rotate(-8deg) scale(1.1)}100%{transform:translate3d(-3%,5%,0) rotate(18deg) scale(1.04)}}
+@keyframes overview-booking-light{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-55%,35%,0) scale(1.2)}}
+@keyframes overview-production-orbit{to{transform:rotate(360deg)}}
+@keyframes overview-production-light{from{transform:translate3d(-10%,10%,0) rotate(-12deg)}to{transform:translate3d(15%,-40%,0) rotate(12deg)}}
+@media(prefers-reduced-motion:reduce){.overview-feature-grid .overview-card-motion i{animation:none!important;will-change:auto}}
+@media(max-width:768px){.overview-card-motion i:nth-child(3){display:none}}
+
+/* Finance retains its fluid glow and travelling liquid wave. */
 .overview-fluid-glow{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;pointer-events:none;contain:strict}
 .overview-fluid-glow::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 42%,#ffffdf99,transparent 72%)}
 .overview-fluid-glow i{--fluid-one:#fff494;--fluid-two:#63d77d;position:absolute;left:-18%;top:-65%;width:138%;aspect-ratio:1;border-radius:42% 58% 64% 36%;opacity:.95;background:conic-gradient(from 25deg,transparent 5%,var(--fluid-one) 24%,transparent 43%,var(--fluid-two) 68%,transparent 88%);-webkit-mask-image:radial-gradient(ellipse,#000 15%,#0009 42%,transparent 72%);mask-image:radial-gradient(ellipse,#000 15%,#0009 42%,transparent 72%);animation:overview-fluid-drift 7s ease-in-out infinite alternate;animation-play-state:paused;transform:translate3d(-15%,-10%,0) rotate(-25deg) scale(1);will-change:auto}
 .overview-fluid-glow i:nth-child(2){left:18%;top:-10%;width:84%;background:radial-gradient(ellipse at 50% 50%,var(--fluid-two) 8%,var(--fluid-one) 35%,transparent 68%);-webkit-mask-image:none;mask-image:none;animation-name:overview-fluid-tide;animation-duration:6s;animation-delay:-3s;opacity:.95}
 .overview-fluid-glow i:nth-child(3){left:-10%;top:-32%;width:80%;background:radial-gradient(ellipse,#fffce7cc,transparent 66%);animation-duration:11s;animation-direction:alternate-reverse;animation-delay:-7s;opacity:.75}
-.production .overview-fluid-glow i{--fluid-one:#ffae58;--fluid-two:#f386a4}
-.production .overview-fluid-glow i:nth-child(2){--fluid-one:#ffd78c;--fluid-two:#b7dfff}
 .overview-feature-grid[data-motion-active=true] .overview-fluid-glow i{animation-play-state:running;will-change:transform}
 @keyframes overview-fluid-drift{0%{transform:translate3d(-15%,-10%,0) rotate(-25deg) scale(1)}50%{transform:translate3d(12%,24%,0) rotate(30deg) scale(1.08)}100%{transform:translate3d(-4%,5%,0) rotate(90deg) scale(.96)}}
 @keyframes overview-fluid-tide{0%{transform:translate3d(22%,18%,0) rotate(30deg) scale(1.12)}50%{transform:translate3d(-30%,-45%,0) rotate(-20deg) scale(.9)}100%{transform:translate3d(-5%,-20%,0) rotate(-60deg) scale(1.2)}}
 @media(prefers-reduced-motion:reduce){.overview-feature-grid .overview-fluid-glow i{animation:none!important;will-change:auto}}
 @media(max-width:768px){.overview-fluid-glow i:nth-child(3){display:none}}
+
+/* A third, live Finance feature card with a continuous liquid wave. */
+.overview-feature-card.finance{--feature-ink:#25365b;background:radial-gradient(ellipse at 8% 2%,#e8f3ff,transparent 65%),linear-gradient(155deg,#c3dcfa,#c2c8f5 55%,#abc5ec)}
+.finance .overview-fluid-glow i{--fluid-one:#ccecff;--fluid-two:#9aa5f1}
+.finance .overview-fluid-glow i:nth-child(2){--fluid-one:#e4e6ff;--fluid-two:#8fc5ee}
+.overview-finance-profit-label{font-size:11px;line-height:1.4;margin-top:12px;opacity:.88}
+.overview-feature-card .overview-finance-profit{font-size:clamp(27px,2.6vw,39px);line-height:1.2;letter-spacing:-.06em;margin:5px 0 15px;max-width:100%;overflow-wrap:anywhere}
+.overview-finance-amounts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;text-align:center;margin:0 0 9px}
+.overview-finance-amounts dt{font-size:11px;line-height:1.4}
+.overview-finance-amounts dd{font-size:17px;font-weight:600;line-height:1.5;letter-spacing:-.035em;margin:4px 0 1px;overflow-wrap:anywhere}
+.overview-finance-amounts small{font-size:10px;opacity:.85}
+.overview-feature-card .overview-finance-note{font-size:10px;line-height:1.5;text-align:center;max-width:260px;margin:0 0 8px}
+.overview-finance-note button{display:inline-flex;align-items:center;gap:4px;min-height:32px;border:0;border-radius:999px;padding:4px 10px;background:#ffffff66;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}
+.overview-feature-card.finance>.overview-finance-waves{position:absolute;inset:38% 0 0;z-index:0;pointer-events:none;overflow:hidden;contain:strict}
+.overview-finance-waves svg{width:200%;height:100%;display:block;animation:overview-finance-wave 8s linear infinite;animation-play-state:paused;will-change:auto}
+.overview-finance-waves path:first-child{fill:#ffffff40}
+.overview-finance-waves path:last-child{fill:#6f8bcc24}
+.overview-feature-grid[data-motion-active=true] .overview-finance-waves svg{animation-play-state:running;will-change:transform}
+@keyframes overview-finance-wave{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(max-width:768px){.overview-feature-card .overview-finance-profit{font-size:38px}.overview-finance-amounts dd{font-size:20px}.overview-feature-card.finance{min-height:295px}}
+@media(prefers-reduced-motion:reduce){.overview-feature-grid .overview-finance-waves svg{animation:none!important;will-change:auto}}
+
+/* One visible switch treatment for settings and both document editors. */
+.studio-app.studio-app.studio-personal-workspace .studio-switch-control{--switch-off:#737780;--switch-edge:#737780;--switch-on:#2f6d47;--switch-thumb:#fff;--switch-active-thumb:#fff;position:relative;min-height:44px;gap:10px;color:var(--studio-text)}
+html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspace .studio-switch-control{--switch-off:#51545c;--switch-edge:#8b8e98;--switch-on:#81dba2;--switch-active-thumb:#173322}
+.studio-app.studio-app.studio-personal-workspace .studio-switch-control>.studio-switch-track{box-sizing:border-box;display:block;flex:0 0 46px;width:46px;height:26px;border:1px solid var(--switch-edge);border-radius:999px;background:var(--switch-off);position:relative;pointer-events:none;opacity:1;transition:background .2s,border-color .2s}
+.studio-app.studio-app.studio-personal-workspace .studio-switch-control>.studio-switch-track:after{content:'';box-sizing:border-box;position:absolute;left:2px;top:2px;width:20px;height:20px;border-radius:50%;background:var(--switch-thumb);box-shadow:0 1px 3px #0003;transform:translateX(0);transition:transform .2s,background .2s}
+.studio-app.studio-app.studio-personal-workspace .studio-switch-control>input:checked+.studio-switch-track{background:var(--switch-on);border-color:var(--switch-on)}
+.studio-app.studio-app.studio-personal-workspace .studio-switch-control>input:checked+.studio-switch-track:after{left:2px;background:var(--switch-active-thumb);transform:translateX(20px)}
+.studio-app.studio-app.studio-personal-workspace .studio-switch-control>input{position:absolute;left:0;top:50%;transform:translateY(-50%);width:46px;height:44px;margin:0;opacity:0;z-index:1;cursor:pointer}
+.studio-app.studio-app.studio-personal-workspace .settings-toggle.studio-switch-control>input{left:auto;right:0}
+.studio-app.studio-app.studio-personal-workspace .studio-switch-control>input:focus-visible+.studio-switch-track{outline:2px solid var(--studio-text);outline-offset:4px}
+.studio-app.studio-app.studio-personal-workspace .studio-switch-control>input:disabled{cursor:not-allowed}
+.studio-app.studio-app.studio-personal-workspace .studio-switch-control>input:disabled+.studio-switch-track{opacity:.65}
+.studio-app .studio-switch-state{font-size:12px;font-weight:600;min-width:23px;text-align:right;color:var(--studio-text)}
+@media(prefers-reduced-motion:reduce){.studio-app .studio-switch-track,.studio-app .studio-switch-track:after{transition:none!important}}

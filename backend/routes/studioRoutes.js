@@ -73,7 +73,7 @@ router.get(
         .select("name status totalAmount depositAmount paymentStatus eventDate")
         .lean(),
       Invoice.find()
-        .select("clientName invoiceDate total advancePaid status")
+        .select("clientName invoiceDate total advancePaid status documentStatus dueDate paymentScheduleEnabled paymentSchedule currency")
         .sort({ invoiceDate: -1 })
         .lean(),
       Finance.find().sort({ date: -1 }).lean(),
