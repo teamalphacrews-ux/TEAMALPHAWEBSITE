@@ -28,6 +28,14 @@ All nineteen pages loaded in the phone review without an application alert or pa
 
 Visible text contrast was spot-checked from computed foreground/background colors; failures found in tabs, badges, avatars and document metadata were corrected. This is not a formal accessibility certification, Lighthouse audit or physical-device test. Reduced-motion handling remains enabled.
 
+## Follow-up: project dialogs and fluid feature cards
+
+The user's subsequent screenshot exposed a gap in the page-route review: project/enquiry dialogs are portalled outside the main workspace, so several theme selectors did not reach their inputs, facts, badges or active tabs. Those shared selectors now include the portal root. Hard-coded purple detail text and pale borders were replaced with semantic tokens; inputs, amounts, avatars and metadata match the selected appearance. The dialog body has its own bounded scroll area with a stable scrollbar and scroll padding. Phone headers use compact, labeled edit/close controls instead of wrapping onto a second toolbar row.
+
+The reproduced Riya & Karthik dialog was reviewed at 1280px and 375px, including Overview, Tasks, Delivery and the nested Edit details form, in charcoal Dark and Daylight. Dark inputs no longer have white backgrounds; phone dialogs remain within the viewport. No form was submitted during this review.
+
+Booking momentum and Production pulse now contain slow, overlapping radial light layers. Only transform animation is used; there are no video assets, new libraries, cursor listeners or animated blur filters. An IntersectionObserver and page-visibility listener pause the layers when offscreen or the tab is hidden. Offscreen animation pause was verified in the browser. Phones use two layers per card, and prefers-reduced-motion disables the animation completely. The overview figures remain real studio metrics.
+
 ## Automated validation
 
 - 57 frontend tests passed.

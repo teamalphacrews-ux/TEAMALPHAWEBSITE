@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -21,6 +21,21 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const { preferences, toggleCard, resetCards } = useStudioPreferences();
   const [customizing, setCustomizing] = useState(false);
+  const featureGrid = useRef(null);
+  const [fluidActive, setFluidActive] = useState(false);
+  useEffect(() => {
+    const element = featureGrid.current;
+    if (!element) return;
+    let onScreen = false;
+    const updateMotion = () => setFluidActive(onScreen && !document.hidden);
+    const observer = new IntersectionObserver(entries => {
+      onScreen = entries[0].isIntersecting;
+      updateMotion();
+    }, { threshold: 0.05 });
+    observer.observe(element);
+    document.addEventListener('visibilitychange', updateMotion);
+    return () => { observer.disconnect(); document.removeEventListener('visibilitychange', updateMotion); };
+  }, []);
   const visible = id => preferences.visibleCards.includes(id);
   const remove = (id, label) => <button type="button" className="overview-hide-card" aria-label={'Hide ' + label + ' card'} title="Hide card" onClick={() => toggleCard(id)}><X size={13} /></button>;
   const [overview, setOverview] = useState(null);
@@ -105,9 +120,9 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="overview-feature-grid">
-        {visible('bookingMomentum') && <section className="overview-feature-card booking" data-overview-card="bookingMomentum">{remove('bookingMomentum', 'Booking momentum')}<div className="overview-feature-label"><Sparkles size={15} /><span>Booking momentum</span></div><strong className="overview-dot-number">{overview && conversion !== null ? conversion + '%' : '—'}</strong><p>{overview ? `${bookedEnquiries} of ${total} enquiries booked` : 'Awaiting studio data'}</p><div className="overview-tick-meter" role="img" aria-label={conversion !== null ? conversion + '% enquiry to booking conversion' : 'No conversion data'}><i style={{ width: (conversion || 0) + '%' }} /></div><Link to="/admin/crm">Explore your pipeline<ArrowUpRight size={15} /></Link></section>}
-        {visible('productionPulse') && <section className="overview-feature-card production" data-overview-card="productionPulse">{remove('productionPulse', 'Production pulse')}<div className="overview-feature-label"><Clapperboard size={15} /><span>Production pulse</span></div><strong className="overview-dot-number">{summary.pendingTasks ?? '—'}</strong><p>tasks in your delivery queue</p><div className="overview-production-detail"><span><i />{summary.overdueTasks ?? '—'} need attention</span><span>{summary.activeCrew ?? '—'} active crew</span></div><Link to="/admin/post-production">Open production<ArrowUpRight size={15} /></Link></section>}
+      <div className="overview-feature-grid" ref={featureGrid} data-motion-active={fluidActive}>
+        {visible('bookingMomentum') && <section className="overview-feature-card booking" data-overview-card="bookingMomentum">{remove('bookingMomentum', 'Booking momentum')}<div className="overview-fluid-glow" aria-hidden="true"><i /><i /><i /></div><div className="overview-feature-label"><Sparkles size={15} /><span>Booking momentum</span></div><strong className="overview-dot-number">{overview && conversion !== null ? conversion + '%' : '—'}</strong><p>{overview ? `${bookedEnquiries} of ${total} enquiries booked` : 'Awaiting studio data'}</p><div className="overview-tick-meter" role="img" aria-label={conversion !== null ? conversion + '% enquiry to booking conversion' : 'No conversion data'}><i style={{ width: (conversion || 0) + '%' }} /></div><Link to="/admin/crm">Explore your pipeline<ArrowUpRight size={15} /></Link></section>}
+        {visible('productionPulse') && <section className="overview-feature-card production" data-overview-card="productionPulse">{remove('productionPulse', 'Production pulse')}<div className="overview-fluid-glow" aria-hidden="true"><i /><i /><i /></div><div className="overview-feature-label"><Clapperboard size={15} /><span>Production pulse</span></div><strong className="overview-dot-number">{summary.pendingTasks ?? '—'}</strong><p>tasks in your delivery queue</p><div className="overview-production-detail"><span><i />{summary.overdueTasks ?? '—'} need attention</span><span>{summary.activeCrew ?? '—'} active crew</span></div><Link to="/admin/post-production">Open production<ArrowUpRight size={15} /></Link></section>}
       </div>
 
       <div className="studio-overview-grid studio-overview-main">
