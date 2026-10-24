@@ -84,3 +84,37 @@
 .studio-email-page button:focus-visible,.studio-email-page a:focus-visible{outline:2px solid var(--brand-focus);outline-offset:3px}
 @media(max-width:1100px){.studio-email-controls{align-items:stretch;flex-direction:column;gap:12px}.studio-email-search{max-width:none}.studio-email-detail-heading{flex-direction:column;gap:10px}.studio-email-columns{grid-template-columns:minmax(250px,.9fr) minmax(0,1fr)}}
 @media(max-width:760px){.studio-gmail-card{flex-wrap:wrap;gap:12px}.studio-gmail-card-actions{width:100%;justify-content:space-between}.studio-email-toolbar,.studio-email-controls{padding:16px}.studio-email-controls nav{justify-content:space-between}.studio-email-controls nav button{min-height:44px}.studio-email-search input{font-size:16px!important}.studio-email-columns{display:block;min-height:360px}.studio-email-detail{display:none;padding:20px}.studio-email-columns.has-selection .studio-email-list{display:none}.studio-email-columns.has-selection .studio-email-detail{display:block}.studio-email-list{border-right:0}.studio-email-back{display:inline-flex!important;margin-bottom:24px}.studio-email-row{padding:18px 16px}.studio-email-row-top time{font-size:9px}.studio-email-detail-heading h2{font-size:25px}.studio-email-pagination button{min-height:44px}.studio-email-footnote{padding:14px 16px}}
+
+/* Rounded, neutral connection surfaces shared by Daylight and Dark mode. */
+.studio-integrations :is(.studio-webhook-icon,.studio-connection-steps li>span){background:var(--appearance-subtle,var(--studio-canvas));color:var(--studio-text);border-color:var(--studio-border);border-radius:16px}
+.studio-integrations .studio-webhook-icon{width:47px;height:47px}
+.studio-integrations .studio-connection-steps li>span{width:30px;height:30px;border-radius:50%;font-size:10px}
+.studio-integrations .studio-webhook-intro{padding:24px}
+.studio-integrations .studio-webhook-intro>div{min-width:0}
+.studio-integrations :is(.studio-webhook-intro p,.studio-connection-steps p,.studio-webhook-required,.studio-webhook-security p,.studio-integration-outro p){color:var(--studio-muted);font-size:12px}
+.studio-integrations :is(.studio-connection-steps pre,.studio-copy-line){background:var(--appearance-subtle,var(--studio-canvas));border-color:var(--studio-border);border-radius:14px;color:var(--studio-text)}
+.studio-integrations .studio-connection-steps code{color:var(--studio-text);font-size:11px}
+.studio-integrations .studio-connection-steps pre{font-size:11px}
+.studio-integrations .studio-webhook-json{background:var(--appearance-subtle,var(--studio-canvas));color:var(--studio-text);border-radius:16px;font-size:11px}
+.studio-integrations .studio-webhook-security{background:var(--studio-surface);border-color:var(--studio-border)}
+.studio-integrations .studio-webhook-security>svg{color:var(--studio-text)}
+.studio-integrations .studio-integration-outro h2{font-family:inherit;font-size:18px;font-weight:500;letter-spacing:-.03em}
+.studio-gmail-card{flex-wrap:wrap}
+.studio-gmail-card small{font-size:11px;line-height:1.7}
+.studio-gmail-card p{font-size:12px;line-height:1.7}
+.studio-email-controls nav button{border-radius:999px;cursor:pointer}
+.studio-email-search{border-radius:999px;min-height:44px}
+.studio-email-search:focus-within{outline:2px solid var(--brand-focus);outline-offset:2px}
+.studio-email-search input{color:var(--studio-text);font-size:13px}
+.studio-email-workspace .studio-email-row{cursor:pointer;transition:background .2s}
+.studio-email-row-top{width:100%}
+.studio-email-row-top strong{font-size:12px}
+.studio-email-subject{font-size:13px;line-height:1.5}
+.studio-email-row .studio-email-snippet{font-size:12px}
+.studio-email-detail-heading h2{font-family:inherit;font-size:22px!important;letter-spacing:-.04em}
+.studio-email-empty h2{font-family:inherit;font-size:22px!important;font-weight:500}
+.studio-email-welcome h2{font-family:inherit;font-size:25px!important;font-weight:500;letter-spacing:-.04em}
+.studio-email-welcome>svg{color:var(--studio-text)}
+.studio-email-workspace .studio-email-pagination{font-size:11px;flex-wrap:wrap}
+@media(max-width:760px){.studio-gmail-card>div:nth-child(2){min-width:180px}.studio-gmail-card>.studio-button{margin-left:0;width:100%;justify-content:center}.studio-email-controls nav{flex-wrap:wrap}.studio-email-controls nav button{flex:1;justify-content:center;padding:9px}.studio-email-account strong{font-size:12px}.studio-email-search{gap:6px;padding-left:11px}.studio-email-search>.studio-button{flex-shrink:0}.studio-integrations .studio-webhook-intro>.studio-badge{margin-left:0}.studio-email-pagination .studio-button{padding:8px 12px}.studio-email-detail dl>div{gap:9px}.studio-email-detail-heading>a{width:100%;justify-content:center}}
+@media(prefers-reduced-motion:reduce){.studio-email-workspace .studio-email-row{transition:none}}

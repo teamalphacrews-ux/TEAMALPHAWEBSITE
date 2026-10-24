@@ -11,3 +11,15 @@
 .security-confirmation { border-color: #b8c6dc !important; }
 .security-confirmation .studio-field { margin: 18px 0; }
 @media(max-width:680px) { .security-session-list > div { align-items: flex-start; flex-direction: column; } .security-actions { width: 100%; } }
+
+.security-preview{padding:32px!important}
+.security-preview>svg{color:var(--studio-muted);margin-bottom:18px}
+.security-preview h2{font-size:19px!important}
+.security-preview p{font-size:12px;line-height:1.8;max-width:560px}
+.security-preview .studio-badge{margin-top:15px}
+.security-recovery-panel .studio-muted{font-size:12px;line-height:1.8;overflow-wrap:anywhere}
+.security-recovery-panel .security-confirmation{border-color:var(--studio-border)!important}
+.security-session-list>div{min-width:0}
+.security-session-list small{line-height:1.7}
+.security-recovery-panel .studio-button{min-height:40px}
+@media(max-width:680px){.security-actions>.studio-button{flex:1;justify-content:center;min-height:44px}.security-session-list>div>.studio-button{min-height:44px}.security-recovery-panel .studio-input{font-size:16px}}

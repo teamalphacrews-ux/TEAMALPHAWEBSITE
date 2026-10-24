@@ -147,13 +147,15 @@ export default function Calendar() {
   };
   const remove = async (event) => {
     event.preventDefault();
+    if (busy) return;
     setBusy(true);
     try {
-      await workspaceRequest("delete", "/api/calendar/" + deleting._id);
+      const result = await workspaceRequest("delete", "/api/calendar/" + deleting._id);
       setDeleting(null);
       setDetail(null);
       reload();
-      toast.success("Event removed");
+      if (result.warning) toast(result.warning);
+      else toast.success("Event removed");
     } catch (err) {
       setSaveError(recordError(err));
     } finally {
@@ -303,6 +305,7 @@ export default function Calendar() {
                 key={mode}
                 className={view === mode ? "active" : ""}
                 onClick={() => setView(mode)}
+                aria-pressed={view === mode}
               >
                 {mode === "month" ? "Month" : "Agenda"}
               </button>
@@ -335,13 +338,12 @@ export default function Calendar() {
           <div className="workspace-calendar-scroll">
             <div
               className="workspace-calendar-grid"
-              role="grid"
+              role="group"
               aria-label="Studio month calendar"
             >
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
                 <div
                   className="workspace-weekday"
-                  role="columnheader"
                   key={day}
                 >
                   {day}
@@ -349,7 +351,8 @@ export default function Calendar() {
               ))}
               {days.map((day) => (
                 <div
-                  role="gridcell"
+                  role="group"
+                  aria-label={recordDate(day)}
                   className={
                     "workspace-calendar-day" +
                     (day.getMonth() !== month.getMonth() ? " outside" : "") +
@@ -363,6 +366,7 @@ export default function Calendar() {
                       (keyDate(day) === keyDate(new Date()) ? " today" : "")
                     }
                     aria-label={"Select " + recordDate(day)}
+                    aria-pressed={keyDate(day) === selected}
                     onClick={() => setSelected(keyDate(day))}
                   >
                     {day.getDate()}
@@ -432,8 +436,8 @@ export default function Calendar() {
           </div>
         ) : (
           <WorkspaceEmpty
-            title="A little space in the diary"
-            description="Schedule the next shoot or consultation for this month."
+            title={query.trim() || crewFilter !== "all" ? "No matching events" : "A little space in the diary"}
+            description={query.trim() || crewFilter !== "all" ? "Try another search or choose All crew." : "Schedule the next shoot or consultation for this month."}
           />
         )}
       </section>

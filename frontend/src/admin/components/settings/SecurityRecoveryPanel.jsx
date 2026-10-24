@@ -8,12 +8,14 @@ const endpoint = API_BASE_URL + '/api/studio/security';
 const date = value => value ? new Date(value).toLocaleString('en-IN') : '—';
 const permissionLabels = { discounts: 'Apply discounts', deletion: 'Delete business records', exports: 'Export studio records', invoiceIssue: 'Issue invoices' };
 export default function SecurityRecoveryPanel({ mode = 'security', settings = {}, onChange, onSave, saving }) {
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
+  const preview = user?.isPreview === true;
   const [access, setAccess] = useState(null), [sessions, setSessions] = useState([]), [backups, setBackups] = useState([]), [trash, setTrash] = useState([]), [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState(''), [restore, setRestore] = useState(null), [confirmation, setConfirmation] = useState('');
   const request = useCallback(async (path, method = 'GET', body) => {
     const response = await fetch(endpoint + path, { method, headers: { Authorization: 'Bearer ' + token, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || result.msg || 'Unable to complete this action.');
+    if (path === '/access' && typeof result?.owner !== 'boolean') throw new Error('Account permissions could not be verified. Please try again.');
     return result;
   }, [token]);
   const load = async () => {
@@ -21,7 +23,7 @@ export default function SecurityRecoveryPanel({ mode = 'security', settings = {}
     if (mode === 'security') setSessions(await request('/sessions'));
     else if (result.owner) { const [history, recovery] = await Promise.all([request('/backups'), request('/recovery')]); setBackups(history.backups); setTrash(recovery); }
   };
-  useEffect(() => { let active = true; request('/access').then(async result => { if (!active) return; setError(''); setAccess(result); if (mode === 'security') { const rows = await request('/sessions'); if (active) setSessions(rows); } else if (result.owner) { const [history, recovery] = await Promise.all([request('/backups'), request('/recovery')]); if (active) { setBackups(history.backups); setTrash(recovery); } } }).catch(e => { if (active) setError(e.message); }); return () => { active = false; }; }, [mode, request]); // Each request is scoped to the signed-in administrator.
+  useEffect(() => { if (preview) return; let active = true; request('/access').then(async result => { if (!active) return; setError(''); setAccess(result); if (mode === 'security') { const rows = await request('/sessions'); if (active) setSessions(rows); } else if (result.owner) { const [history, recovery] = await Promise.all([request('/backups'), request('/recovery')]); if (active) { setBackups(history.backups); setTrash(recovery); } } }).catch(e => { if (active) setError(e.message); }); return () => { active = false; }; }, [mode, request, preview]); // Each request is scoped to the signed-in administrator.
   const run = async action => { if (busy) return; setBusy(true); setError(''); setNotice(''); try { await action(); } catch (e) { setError(e.message); } finally { setBusy(false); } };
   const security = settings.security || {}, backupSettings = settings.backups || {};
   const owner = access?.owner === true;
@@ -32,6 +34,8 @@ export default function SecurityRecoveryPanel({ mode = 'security', settings = {}
     if (!response.ok) { const result = await response.json(); throw new Error(result.error || 'Download failed.'); }
     const url = URL.createObjectURL(await response.blob()), link = document.createElement('a'); link.href = url; link.download = `teamalpha-records-${id}.json`; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  if (preview) return <section className="studio-card security-preview"><ShieldCheck size={24} /><h2>{mode === 'security' ? 'Security & access' : 'Backups & recovery'}</h2><p className="studio-muted">{mode === 'security' ? 'Session controls and owner permissions are available when you sign in to your connected Studio OS.' : 'Private backups and record recovery are available to the studio owner in the connected Studio OS.'}</p><span className="studio-badge">Sample preview</span></section>;
+  if (!access) return <section className="studio-card"><p className="studio-muted" role="status">{error ? 'Security controls are unavailable until account permissions can be verified.' : 'Checking account permissions…'}</p>{error && <div className="studio-error" role="alert">{error}<button type="button" className="studio-button small" disabled={busy} onClick={() => run(load)}>Retry</button></div>}</section>;
   return <div className="security-recovery-panel">
     {error && <div className="studio-error" role="alert">{error}</div>}
     {notice && <p className="studio-muted" role="status">{notice}</p>}

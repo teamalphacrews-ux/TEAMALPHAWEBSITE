@@ -12,7 +12,7 @@ export default function GmailConnectionCard() {
   useEffect(() => {
     if (isPreview) return;
     const controller = new AbortController();
-    gmailRequest('get', '/status', { signal: controller.signal }).then(setStatus).catch(err => {
+    gmailRequest('get', '/status', { signal: controller.signal }).then(result => { if (typeof result?.connected !== 'boolean' || typeof result.configured !== 'boolean') throw new Error(); setStatus(result); }).catch(err => {
       if (!controller.signal.aborted) setError(gmailError(err));
     });
     return () => controller.abort();

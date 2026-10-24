@@ -10,7 +10,7 @@ export function useWorkspaceData(paths) {
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
   const sequence = useRef(0);
-  const reload = useCallback(() => {
+  const fetchData = useCallback(() => {
     const id = ++sequence.current;
     return Promise.all(
       key.split("|").map((path) => workspaceRequest("get", path)),
@@ -34,13 +34,17 @@ export function useWorkspaceData(paths) {
         if (id === sequence.current) setLoading(false);
       });
   }, [key]);
+  const reload = useCallback(() => {
+    setLoading(true);
+    return fetchData();
+  }, [fetchData]);
   useEffect(() => {
     const guard = sequence;
-    reload();
+    fetchData();
     return () => {
       guard.current++;
     };
-  }, [reload]);
+  }, [fetchData]);
   return { data, loading, error, reload };
 }
 export const recordDate = (value) =>

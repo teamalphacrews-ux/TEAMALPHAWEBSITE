@@ -74,7 +74,7 @@ function App() {
 
   return (
     <div className={`font-sans text-[#1C1C1C] ${isStudioPage ? "bg-white" : "bg-[#F7F5F2]"} min-h-screen selection:bg-black selection:text-white`}>
-      <Toaster position="top-right" />
+      <Toaster position="top-right" toastOptions={{ className: isStudioPage ? "studio-toast" : undefined }} />
       <Suspense
         fallback={
           <div className="flex h-screen w-full items-center justify-center text-xl">

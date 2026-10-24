@@ -8,6 +8,7 @@ import { workspaceRequest, recordError } from '../operations/workspaceData';
 import StudioAppIcon from '../common/StudioAppIcon';
 import API from '../../../utils/apiConfig';
 import { studioImageUrl, whatsappContactUrl } from '../../../utils/studioIdentity';
+import { useAuth } from '../../../context/AuthContext';
 
 export function SettingsToggle({ label, description, value, onChange, disabled = false }) {
   return <label className={'settings-toggle' + (disabled ? ' is-disabled' : '')}><span><strong>{label}</strong>{description && <small>{description}</small>}</span><input type="checkbox" checked={!!value} onChange={event => onChange(event.target.checked)} disabled={disabled} /><span className="settings-switch" aria-hidden="true" /></label>;
@@ -37,19 +38,22 @@ function ProfilePhoto({ values, change }) {
   return <div className="settings-profile-photo"><img src={studioImageUrl(values.profilePhotoUrl || values.logoUrl)} alt="Studio profile" /><div><strong>Studio profile photo</strong><p>JPEG, PNG or WebP · up to 2 MB. Uploaded photos are public brand images.</p><div className="settings-inline-actions"><button type="button" className="studio-button small" disabled={busy} onClick={() => input.current?.click()}><Upload size={14} />{busy ? 'Uploading…' : 'Update photo'}</button>{values.profilePhotoUrl && <button type="button" className="studio-button small" onClick={() => change('profilePhotoUrl', '')}>Remove photo</button>}</div><label className="settings-check"><input type="checkbox" checked={useAsLogo} onChange={event => setUseAsLogo(event.target.checked)} />Use uploaded photo as the logo on new documents</label><input ref={input} type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} hidden /></div></div>;
 }
 function EmailStatus() {
+  const { user } = useAuth();
+  const preview = user?.isPreview === true;
   const [status, setStatus] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false);
   useEffect(() => {
+    if (preview) return;
     const controller = new AbortController();
     axios.get(API + '/api/studio/email/status', { signal: controller.signal, headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } }).then(result => setStatus(result.data)).catch(failure => { if (!axios.isCancel(failure)) setError('Email connection status is unavailable.'); });
     return () => controller.abort();
-  }, []);
+  }, [preview]);
   const test = async () => {
     setBusy(true); setError('');
-    try { const result = await workspaceRequest('post', '/api/studio/email/test', {}); toast.success(result.message); }
+    try { const result = await workspaceRequest('post', '/api/studio/email/test', {}); if (typeof result?.message !== 'string') throw new Error('The mail service did not confirm this test.'); toast.success(result.message); }
     catch (failure) { setError(recordError(failure)); }
     finally { setBusy(false); }
   };
-  return <><div className="settings-mail-status"><StudioAppIcon icon={Mail} tone="rose" size={38} /><div><strong>{status ? status.configured ? 'Email delivery configured' : 'Email delivery needs setup' : 'Checking email delivery…'}</strong><p>{status?.sender || 'Uses your studio’s secure mail service.'}</p></div><button type="button" className="studio-button small" disabled={!status?.configured || busy} onClick={test}>{busy ? 'Sending…' : 'Send test to my email'}</button></div><WorkspaceError error={error} /></>;
+  return <><div className="settings-mail-status"><StudioAppIcon icon={Mail} tone="rose" size={38} /><div><strong>{preview ? 'Email delivery preview' : status ? status.configured ? 'Email delivery configured' : 'Email delivery needs setup' : error ? 'Email delivery unavailable' : 'Checking email delivery…'}</strong><p>{preview ? 'Connect your studio mail service in the live workspace to send a test.' : status?.sender || 'Uses your studio’s secure mail service.'}</p></div><button type="button" className="studio-button small" disabled={preview || !status?.configured || busy} onClick={test}>{busy ? 'Sending…' : 'Send test to my email'}</button></div><WorkspaceError error={error} /></>;
 }
 export default function SettingsEditor({ tab, values, change, changeNested }) {
   const field = (label, name, options = {}, group) => <WorkspaceField key={(group || '') + name} label={label} name={name} value={group ? values[group]?.[name] : values[name]} onChange={(key, value) => { const next = options.type === 'number' ? Number(value) : value; if (group) changeNested(group, key, next); else change(key, next); }} {...options} />;
@@ -69,7 +73,7 @@ export default function SettingsEditor({ tab, values, change, changeNested }) {
   </>;
   if (tab === 'branding') return <>{fields([['Document logo URL', 'logoUrl', { help: 'Upload your studio photo or use a secure image URL.' }], ['Default cover image URL', 'coverImage', { help: 'A studio /assets/ image or an HTTPS URL.' }], ['Document accent colour', 'colorTheme', { type: 'color' }], ['Document typography', 'fontTheme', { options: [{ value: 'modern', label: 'Modern' }, { value: 'classic', label: 'Classic' }, { value: 'editorial', label: 'Editorial' }] }]])}<Help>Defaults apply to new documents. Existing quotations and invoices retain their saved design.</Help></>;
   if (tab === 'billing') return <>
-    <h3>Document references</h3>{fields([['Quotation prefix', 'quotationPrefix'], ['Invoice prefix', 'invoicePrefix'], ['Numbering style', 'numberingMode', { options: [{ value: 'reference', label: 'Unique reference' }, { value: 'sequence', label: 'Sequential number' }] }], ['Invoice due in (days)', 'invoiceDueDays', { type: 'number', min: 0, max: 730 }]], 'billingDefaults')}
+    <h3>Document references</h3>{fields([['Quotation prefix', 'quotationPrefix'], ['Invoice prefix', 'invoicePrefix'], ['Numbering style', 'numberingMode', { options: [{ value: 'reference', label: 'Unique reference' }, { value: 'sequence', label: 'Sequential number' }] }], ['Invoice due in (days)', 'invoiceDueDays', { type: 'number', min: billing.paymentScheduleEnabled ? 1 : 0, max: 730 }]], 'billingDefaults')}
     {toggle('billingDefaults', 'includeFinancialYear', 'Include financial year', 'Add the Indian financial year to new document references.')}<Help>References are generated on the server. Existing document numbers remain unchanged.</Help>
     <div className="settings-divider" /><h3>Amounts & payment methods</h3>{fields([['Default tax (%)', 'defaultTaxPercent', { type: 'number', min: 0, max: 100, step: '.01' }], ['Default discount type', 'defaultDiscountType', { options: [{ value: 'amount', label: 'Fixed amount (₹)' }, { value: 'percent', label: 'Percentage (%)' }] }], ['Default discount', 'defaultDiscountValue', { type: 'number', min: 0, max: billing.defaultDiscountType === 'percent' ? 100 : 100000000, step: '.01' }]], 'billingDefaults')}
     {fields([['Bank transfer details', 'bankDetails', { type: 'textarea', wide: true }], ['UPI ID', 'upiId'], ['Payment instructions', 'paymentInstructions', { type: 'textarea', wide: true }]])}

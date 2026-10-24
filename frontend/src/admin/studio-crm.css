@@ -25,7 +25,7 @@
 .studio-crm-stage-filters button:hover { background: var(--brand-paper); }
 .studio-crm-stage-filters button.active { color: var(--brand-ink); background: #f1edf2; font-weight: 600; }
 .studio-crm-stage-filters button.active span { background: var(--brand-ink); color: white; }
-.studio-crm-table-scroll { overflow: auto; }
+.studio-crm-table-scroll { overflow: auto; min-width:0; max-width:100%; contain:inline-size layout; }
 .studio-crm-table { min-width: 850px; width: 100%; border-collapse: collapse; }
 .studio-crm-table th { font-size: 10px; letter-spacing: .07em; color: var(--brand-muted); text-transform: uppercase; font-weight: 500; text-align: left; padding: 15px 22px; background: #fbfafb; white-space: nowrap; }
 .studio-crm-table th:first-child, .studio-crm-table td:first-child { padding-left: 26px; }

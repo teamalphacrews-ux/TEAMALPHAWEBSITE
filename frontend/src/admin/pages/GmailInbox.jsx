@@ -26,7 +26,7 @@ export default function GmailInbox() {
   const listSequence = useRef(0);
   const loadStatus = useCallback(() => {
     if (preview) return Promise.resolve();
-    return gmailRequest('get', '/status').then(setStatus)
+    return gmailRequest('get', '/status').then(result => { if (typeof result?.connected !== 'boolean' || typeof result.configured !== 'boolean') throw new Error(); setStatus(result); setError(''); })
       .catch(err => setError(gmailError(err))).finally(() => setStatusLoading(false));
   }, [preview]);
   useEffect(() => { loadStatus(); }, [loadStatus]);
@@ -35,7 +35,7 @@ export default function GmailInbox() {
   const mail = listResult.key === listKey ? listResult.data : null;
   const listError = listResult.key === listKey ? listResult.error : '';
   const loading = status?.connected && listResult.key !== listKey;
-  const detailKey = JSON.stringify([selected, status?.email, status?.connectedAt]);
+  const detailKey = JSON.stringify([selected, status?.email, status?.connectedAt, refresh]);
   const detail = detailResult.key === detailKey ? detailResult.data : null;
   const detailError = detailResult.key === detailKey ? detailResult.error : '';
   const detailLoading = Boolean(selected && detailResult.key !== detailKey);
@@ -100,7 +100,7 @@ export default function GmailInbox() {
         </div>
         <article className="studio-email-detail" aria-label="Selected email" aria-busy={detailLoading}>
           {selected && <button className="studio-email-back studio-button small" onClick={() => setSelected('')}><ChevronLeft size={14} />Back to email</button>}
-          {detailLoading ? <p className="studio-email-empty" role="status">Opening email…</p> : detailError ? <WorkspaceError error={detailError} /> : detail && selected ? <>
+          {detailLoading ? <p className="studio-email-empty" role="status">Opening email…</p> : detailError ? <WorkspaceError error={detailError} retry={() => setRefresh(value => value + 1)} /> : detail && selected ? <>
             <div className="studio-email-detail-heading"><h2>{detail.subject}</h2><a className="studio-button small" href={detail.gmailUrl} target="_blank" rel="noopener noreferrer">Open in Gmail<ArrowUpRight size={14} /></a></div>
             <dl><div><dt>From</dt><dd>{detail.from}</dd></div><div><dt>To</dt><dd>{detail.to}</dd></div>{detail.cc && <div><dt>Cc</dt><dd>{detail.cc}</dd></div>}<div><dt>Date</dt><dd>{detail.date || date(detail.receivedAt)}</dd></div></dl>
             <div className="studio-email-body">{detail.body || detail.snippet || 'This message has no plain text preview.'}</div>

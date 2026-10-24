@@ -29,6 +29,8 @@ import { OperationsModal } from "../components/operations/OperationsUI";
 import { InvoiceDocument } from "../../pages/PublicInvoice";
 import { downloadInvoice } from "../../utils/invoiceDocument";
 import "./invoiceWorkspace.css";
+import "./documentWorkspaceRefinements.css";
+import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 import "./studioOperations.css";
 const addressOf = (c) =>
   [
@@ -525,6 +527,8 @@ export default function InvoiceWorkspace() {
         ...d,
         documentStatus: "Sent",
         deliveries: updated.deliveries,
+        sharedAt: updated.sharedAt,
+        linkRevokedAt: updated.linkRevokedAt,
       }));
       setModal("link");
       setNotice(r.message);
@@ -554,7 +558,7 @@ export default function InvoiceWorkspace() {
         "get",
         `/api/invoices/${savedId.current}`,
       );
-      setDraft((d) => ({ ...d, deliveries: updated.deliveries }));
+      setDraft((d) => ({ ...d, deliveries: updated.deliveries, sharedAt: updated.sharedAt, linkRevokedAt: updated.linkRevokedAt }));
       if (!compose.scheduledAt)
         setDraft((d) => ({ ...d, documentStatus: "Sent" }));
       else
@@ -592,11 +596,13 @@ export default function InvoiceWorkspace() {
       if (name === "revoke") {
         await workspaceRequest("delete", `/api/invoices/${invoice._id}/share`);
         setLink("");
+        setDraft(previous => ({ ...previous, linkRevokedAt: new Date().toISOString() }));
         setNotice("Invoice link revoked.");
       }
       if (name === 'regenerate') {
         const result = await workspaceRequest('post', `/api/invoices/${invoice._id}/share/regenerate`, {});
         setLink(result.url);
+        setDraft(previous => ({ ...previous, sharedAt: new Date().toISOString(), linkRevokedAt: undefined }));
         setModal('link');
         setNotice('A new link is ready with current studio visibility settings. The previous invoice link no longer works.');
       }
@@ -685,15 +691,8 @@ export default function InvoiceWorkspace() {
         </span>
         <small role="status">{saveState}</small>
         <div className="invoice-toolbar-actions">
-          <div className="invoice-menu">
-            <button
-              aria-expanded={actions}
-              onClick={() => setActions(!actions)}
-            >
-              Actions ▾
-            </button>
-            {actions && (
-              <div>
+          <WorkspaceActionMenu label="Actions" className="invoice-menu" menuClassName="invoice-action-dropdown" open={actions} onOpenChange={setActions} disabled={busy}>
+            <>
                 <button onClick={() => action("duplicate")}>Duplicate</button>
                 <button
                   onClick={() => {
@@ -707,10 +706,10 @@ export default function InvoiceWorkspace() {
                 >
                   Download PDF
                 </button>
-                <button onClick={() => action("history")}>
+                <button onClick={() => action("history")} disabled={!id}>
                   Delivery history
                 </button>
-                <button onClick={() => action("revoke")}>
+                <button onClick={() => action("revoke")} disabled={!id || !draft.sharedAt || Boolean(draft.linkRevokedAt)}>
                   Revoke share link
                 </button>
                 <button onClick={() => action('regenerate')} disabled={draft.documentStatus !== 'Sent'}>Regenerate share link</button>
@@ -730,9 +729,8 @@ export default function InvoiceWorkspace() {
                 >
                   Delete invoice
                 </button>
-              </div>
-            )}
-          </div>
+            </>
+          </WorkspaceActionMenu>
           <button
             disabled={busy || draft.documentStatus === "Cancelled"}
             onClick={async () => {
@@ -747,7 +745,7 @@ export default function InvoiceWorkspace() {
               Approve & issue
             </button>
           )}
-          <button onClick={() => setModal("design")}>Edit Design</button>
+          <button onClick={() => setModal("design")}>Edit design</button>
           <button onClick={() => setModal("preview")}>Preview</button>
           <button onClick={save} disabled={busy}>
             Save
@@ -757,7 +755,7 @@ export default function InvoiceWorkspace() {
             onClick={openSend}
             disabled={busy}
           >
-            Send Invoice
+            Send invoice
           </button>
         </div>
       </header>
@@ -1871,7 +1869,7 @@ export default function InvoiceWorkspace() {
         <div className="invoice-send-overlay">
           <section className="invoice-send-composer">
             <button className="invoice-send-close" onClick={() => setModal("")}>
-              <X size={20} /> Send Invoice
+              <X size={20} /> Send invoice
             </button>
             <p>
               To: <strong>{draft.clientName}</strong>

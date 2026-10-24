@@ -45,6 +45,7 @@ export default function Finance() {
     [payment, setPayment] = useState(null),
     [busy, setBusy] = useState(false),
     [saveError, setSaveError] = useState(""),
+    [updatingInvoice, setUpdatingInvoice] = useState(""),
     [deleting, setDeleting] = useState(null);
   const bookings = leads.filter((lead) => lead.status === "Converted");
   const paidExpenses = entries.filter(
@@ -149,12 +150,16 @@ export default function Finance() {
     }
   };
   const invoiceStatus = async (row, status) => {
+    if (updatingInvoice || status === row.status) return;
+    setUpdatingInvoice(row._id);
     try {
       await workspaceRequest("put", "/api/invoices/" + row._id, { status });
       reload();
       toast.success("Invoice status updated");
     } catch (err) {
       toast.error(recordError(err));
+    } finally {
+      setUpdatingInvoice("");
     }
   };
   const expenseTotal = sum(paidExpenses, "amount");
@@ -171,7 +176,7 @@ export default function Finance() {
     ]
       .join(" ")
       .toLowerCase()
-      .includes(query.toLowerCase()),
+      .includes(query.trim().toLowerCase()),
   );
   return (
     <div>
@@ -237,6 +242,7 @@ export default function Finance() {
             ].map(([key, label]) => (
               <button
                 className={tab === key ? "active" : ""}
+                aria-pressed={tab === key}
                 key={key}
                 onClick={() => {
                   setTab(key);
@@ -257,8 +263,8 @@ export default function Finance() {
           {loading || !visible.length ? (
             <WorkspaceEmpty
               loading={loading}
-              title="A clear ledger starts here"
-              description="Your existing studio records will appear in this view."
+              title={query.trim() ? "No matching financial records" : "A clear ledger starts here"}
+              description={query.trim() ? "Try another client, category or status." : "Your existing studio records will appear in this view."}
             />
           ) : (
             <div className="studio-table-wrap">
@@ -322,7 +328,7 @@ export default function Finance() {
                           <select
                             className="studio-input workspace-invoice-status"
                             aria-label={"Invoice status for " + row.clientName}
-                            disabled={["Draft", "Cancelled"].includes(row.documentStatus)}
+                            disabled={Boolean(updatingInvoice) || ["Draft", "Cancelled"].includes(row.documentStatus)}
                             value={row.status}
                             onChange={(e) => invoiceStatus(row, e.target.value)}
                           >
@@ -439,7 +445,7 @@ export default function Finance() {
                     status: value === "income" ? "Received" : "Paid",
                   }))
                 }
-                options={["expense", "income"]}
+                options={[{ value: "expense", label: "Expense" }, { value: "income", label: "Income" }]}
               />
             )}
             <WorkspaceField

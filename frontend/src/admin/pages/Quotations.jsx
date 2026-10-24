@@ -26,6 +26,8 @@ import {
   recordDate,
 } from "../components/operations/workspaceData";
 import "./quotationWorkspace.css";
+import "./documentWorkspaceRefinements.css";
+import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 const covers = [
   "/assets/banner.jpg",
   "/assets/services/wedding.jpg",
@@ -421,7 +423,7 @@ export default function Quotations() {
       if (schedule) toast.success("Quote scheduled");
       else if (response.delivery?.status === "sent")
         toast.success("Quote email sent");
-      else toast("Delivery is pending. Check Email History before resending.");
+      else toast("Delivery is pending. Check Email history before resending.");
       setMode("list");
       reload();
     } catch (e) {
@@ -444,7 +446,7 @@ export default function Quotations() {
     finally { setBusy(false); setActionMenu(false); }
   };
   const actionItems = () => (
-    <div className="qw-dropdown">
+    <>
       {!current?.acceptedAt && current?.status !== "Accepted" && (
         <button
           onClick={() => {
@@ -453,7 +455,7 @@ export default function Quotations() {
             setActionMenu(false);
           }}
         >
-          Edit Quote Number
+          Edit quote number
         </button>
       )}
       <button
@@ -463,7 +465,7 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Create Template
+        Save as template
       </button>
       <button
         onClick={() => {
@@ -472,7 +474,7 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Link to Project
+        Link to project
       </button>
       <button onClick={() => act("duplicate")}>Duplicate</button>
       {['Sent', 'Accepted'].includes(current?.status) && <>
@@ -486,7 +488,7 @@ export default function Quotations() {
             setActionMenu(false);
           }}
         >
-          Cancel Quote
+          Cancel quote
         </button>
       )}
       <button
@@ -511,7 +513,7 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Cancel Scheduled Sending
+        Cancel scheduled sending
       </button>
       <button
         onClick={async () => {
@@ -529,9 +531,9 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Email History
+        Email history
       </button>
-    </div>
+    </>
   );
   const applyTemplate = (t) => {
     lastSavedVersion.current = -1;
@@ -776,7 +778,7 @@ export default function Quotations() {
                 {!templates.length && (
                   <p>
                     No templates saved yet. Prepare a blank quote, then use
-                    Create Template.
+                    Save as template.
                   </p>
                 )}
               </>
@@ -902,16 +904,13 @@ export default function Quotations() {
             </span>
             <span className="qw-save-state">{busy ? "Saving…" : savedAt}</span>
             <div className="qw-header-actions">
-              <div className="qw-menu">
-                <button onClick={() => setActionMenu(!actionMenu)}>
-                  Actions <ChevronDown size={12} />
-                </button>
-                {actionMenu && actionItems()}
-              </div>
+              <WorkspaceActionMenu label="Actions" className="qw-menu" menuClassName="qw-dropdown" open={actionMenu} onOpenChange={setActionMenu} disabled={busy}>
+                {actionItems()}
+              </WorkspaceActionMenu>
               {mode === "editor" ? (
                 <>
                   <button onClick={() => setDesignOpen(!designOpen)}>
-                    Edit Design
+                    Edit design
                   </button>
                   <button onClick={preview}>Preview</button>
                   <button
@@ -925,7 +924,7 @@ export default function Quotations() {
                     disabled={busy}
                     onClick={prepareSend}
                   >
-                    Send Quote
+                    Send quote
                   </button>
                 </>
               ) : (
@@ -938,16 +937,16 @@ export default function Quotations() {
                         setMode("editor");
                       }}
                     >
-                      Edit Quote
+                      Edit quote
                     </button>
                   )}
-                  <button onClick={preview}>View Quote</button>
+                  <button onClick={preview}>View quote</button>
                   {current?.invoiceId ? (
                     <Link
                       className="qw-primary"
                       to={`/admin/invoices/${current.invoiceId}`}
                     >
-                      View Invoice
+                      View invoice
                     </Link>
                   ) : (
                     <button className="qw-primary" onClick={() => act("share")}>
@@ -1342,7 +1341,7 @@ export default function Quotations() {
           {designOpen && (
             <aside className="qw-design">
               <header>
-                <h2>Edit Design</h2>
+                <h2>Edit design</h2>
                 <button
                   aria-label="Close design"
                   onClick={() => setDesignOpen(false)}
@@ -1422,7 +1421,7 @@ export default function Quotations() {
         <div className="qw-fullscreen">
           <header className="qw-doc-header">
             <button onClick={() => setMode("editor")}>
-              <X size={16} /> Send Quote
+              <X size={16} /> Send quote
             </button>
           </header>
           <div className="qw-send">
@@ -1507,14 +1506,14 @@ export default function Quotations() {
               discount: "Add discount",
               tax: "Add tax",
               template: "Create template",
-              number: "Edit Quote Number",
-              project: "Link to Project",
+              number: "Edit quote number",
+              project: "Link to project",
               photo: "Add photo",
               link: "Get Quote Link",
               manual: "Send via link",
               schedule: "Schedule Quote",
-              history: "Email History",
-              cancel: "Cancel Quote",
+              history: "Email history",
+              cancel: "Cancel quote",
               archive: "Delete Quote",
               leave: "Unsaved changes",
             }[modal]

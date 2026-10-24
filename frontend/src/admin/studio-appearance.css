@@ -1,4 +1,8 @@
 /* Personal Studio OS appearance. Client documents keep their authored design. */
+.studio-app.studio-personal-workspace{--brand-ink:var(--studio-text);--brand-muted:var(--studio-muted);--brand-stone:var(--studio-border);--brand-paper:var(--appearance-subtle);--brand-surface:var(--studio-surface);--brand-accent:var(--appearance-link)}
+.studio-app :is(.invoice-public,.qw-read-document,.pdf-page,.qw-email-preview,.invoice-email-preview){--brand-ink:#141414;--brand-paper:#f6f3ed;--brand-surface:#faf9f6;--brand-muted:#766b58;--brand-stone:#d8d3ca;--brand-accent:#80623b;--brand-champagne:#c4ae8a;--brand-focus:#96784b}
+html[data-studio-appearance=dark] :is(.studio-app,.studio-crm-overlay,.studio-crm-invoice-dialog){--brand-surface:#202124}
+html[data-studio-appearance=dark] :is(.invoice-public,.qw-read-document,.pdf-page,.qw-email-preview,.invoice-email-preview){--brand-surface:#faf9f6}
 html[data-studio-appearance=dark] :is(.studio-app,.studio-crm-overlay,.studio-crm-invoice-dialog){--brand-ink:#f2f2f4;--brand-paper:#2c2d31;--brand-white:#202124;--brand-muted:#b0b0b5;--brand-stone:#3c3d41;--brand-accent:#dedee2;--brand-champagne:#bcbcc1;--brand-focus:#dedee2}
 html[data-studio-appearance=dark] :is(.invoice-public,.qw-read-document,.pdf-page,.qw-email-preview,.invoice-email-preview){--brand-ink:#141414;--brand-paper:#f6f3ed;--brand-white:#faf9f6;--brand-muted:#766b58;--brand-stone:#d8d3ca;--brand-accent:#80623b;--brand-champagne:#c4ae8a;--brand-focus:#96784b;color-scheme:light}
 html[data-studio-appearance=dark] .studio-app.studio-app :is(.studio-metric>strong,.studio-metric-value){color:var(--studio-text)}
@@ -104,3 +108,37 @@ html[data-studio-appearance=dark] .studio-app.studio-app .overview-stat .studio-
 @media(max-width:960px){.studio-app.studio-app.studio-personal-workspace .studio-sidebar-container{width:min(300px,calc(100vw - 35px))}.studio-app.studio-app.studio-personal-workspace .studio-sidebar{height:100%;border-right:1px solid var(--studio-border)}.studio-app.studio-app.studio-personal-workspace .studio-workspace{margin-left:0}}
 @media(max-width:768px){.studio-app.studio-app.studio-personal-workspace .studio-main{padding:24px 16px 32px}.studio-app.studio-app .overview-stat-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 16px;margin-bottom:18px}.studio-app.studio-app .overview-stat .studio-metric-value{font-size:34px}.overview-feature-grid{grid-template-columns:minmax(0,1fr);gap:15px}.overview-feature-card{min-height:230px;padding:25px}.overview-dot-number{font-size:68px}.studio-app.studio-app .studio-overview-atmosphere .studio-overview-grid{margin-bottom:16px;gap:16px}.overview-customizer-options{grid-template-columns:minmax(0,1fr);gap:16px}.overview-customizer-options label{min-height:44px}.overview-hide-card{width:32px;height:32px;min-height:32px}.overview-workspace-card .studio-card-heading{padding-right:30px}.studio-app.studio-app.studio-personal-workspace .studio-overview-header h1{font-size:32px!important}.overview-empty{padding:30px 18px!important}.overview-empty>div{flex-wrap:wrap;justify-content:center}}
 @media(prefers-reduced-motion:reduce){.overview-feature-card,.overview-tick-meter>i,.overview-hide-card,.studio-personal-workspace .studio-nav-item{transition:none!important;translate:none!important}}
+
+/* Shared working controls keep the same hierarchy in every module. */
+.studio-app.studio-app.studio-personal-workspace :is(.workspace-metric-label,.workspace-info p,.workspace-summary,.workspace-calendar-timezone){font-size:12px}
+.studio-app.studio-app.studio-personal-workspace :is(.workspace-info,.workspace-revision-history,.workspace-quote-total){border-color:var(--studio-border)}
+.studio-app.studio-app.studio-personal-workspace .workspace-info{background:var(--studio-surface);border-radius:18px;color:var(--studio-muted)}
+.studio-app.studio-app.studio-personal-workspace .workspace-view-tabs{background:var(--studio-surface);border:1px solid var(--studio-border);border-radius:999px;padding:4px;gap:4px}
+.studio-app.studio-app.studio-personal-workspace .workspace-view-tabs button{min-height:34px;border:0;border-radius:999px;padding:7px 14px}
+.studio-app.studio-app.studio-personal-workspace .workspace-view-tabs button.active{background:var(--appearance-subtle);color:var(--studio-text)}
+.studio-app.studio-app.studio-personal-workspace .workspace-calendar-day.selected{background:var(--appearance-subtle)}
+.studio-app.studio-app.studio-personal-workspace .workspace-day-number{width:30px;height:30px;font-size:11px}
+.studio-app.studio-app.studio-personal-workspace .workspace-day-number.today{background:var(--studio-text);color:var(--studio-surface)}
+.studio-app.studio-app.studio-personal-workspace :is(.workspace-agenda-event,.workspace-date-tile){background:var(--studio-surface);color:var(--studio-text);border-color:var(--studio-border)}
+.studio-app.studio-app.studio-personal-workspace .workspace-agenda-event:hover{background:var(--appearance-subtle)}
+.studio-app.studio-app.studio-personal-workspace .workspace-date-tile{background:var(--appearance-subtle);border-radius:12px}
+.studio-app.studio-app.studio-personal-workspace .workspace-calendar-event{border-radius:7px;min-height:28px;font-size:11px}
+.studio-app.studio-app.studio-personal-workspace .workspace-more-events{min-height:28px;font-size:11px}
+html[data-studio-appearance=dark] .studio-app.studio-app .workspace-calendar-event{background:#39323e;color:#e6d6f0}
+html[data-studio-appearance=dark] .studio-app.studio-app .workspace-calendar-event.type-wedding{background:#39352a;color:#e8dbb6}
+html[data-studio-appearance=dark] .studio-app.studio-app .workspace-calendar-event.type-meeting{background:#2b3540;color:#c7dceb}
+.studio-app.studio-app.studio-personal-workspace .studio-error{background:#fff0f1;border-color:#efc8d0;color:#973c4a;border-radius:14px}
+html[data-studio-appearance=dark] .studio-app.studio-app .studio-error{background:#34272d;border-color:#68434c;color:#ffb4c3}
+.studio-toast{background:#fff!important;color:#22281f!important;border:1px solid #e1e5df;border-radius:16px!important;box-shadow:0 8px 32px #10101012!important;font:13px/1.6 -apple-system,BlinkMacSystemFont,Inter,sans-serif!important;max-width:min(420px,calc(100vw - 32px))!important}
+html[data-studio-appearance=dark] .studio-toast{background:#202124!important;color:#f2f2f4!important;border-color:#3c3d41;box-shadow:0 8px 32px #0004!important}
+html[data-studio-appearance=dark] .studio-app.studio-app :is(.studio-tabs button.active,.reference-tabs button.active,.qw-tabs button.active){color:var(--studio-text);border-color:var(--studio-border)}
+.studio-app.studio-app.studio-personal-workspace :is(.reference-avatar,.ops-avatar){background:var(--appearance-subtle);color:var(--studio-text)}
+.studio-app.studio-app.studio-personal-workspace .studio-crm-avatar{background:var(--appearance-subtle);color:var(--studio-text)}
+.studio-app.studio-app.studio-personal-workspace :is(.studio-empty p,.reference-template-card p){color:var(--studio-muted)}
+.studio-app.studio-app.studio-personal-workspace .invoice-editor :is(.invoice-section-kicker,.invoice-editor-toolbar>small){color:var(--studio-muted)}
+html:not([data-studio-appearance=dark]) .studio-app.studio-app.studio-personal-workspace :is(.studio-badge,.invoice-status){color:#515e4c}
+.studio-app.studio-app.studio-personal-workspace .reference-status.client{background:#edf4ea;color:#3d5e32}
+html[data-studio-appearance=dark] .studio-app.studio-app .reference-status.client{background:#273b2c;color:#c0dcb4}
+html[data-studio-appearance=dark] .studio-app.studio-app :is(.studio-badge,.studio-crm-badge,.reference-status,.qw-status){background:#2c2d31;color:#dedee2;border-color:#3c3d41}
+html[data-studio-appearance=dark] .studio-app.studio-app :is(.reference-status.inquiry,.studio-crm-badge.followup){background:#3b3421;color:#ead89d;border-color:#6a5a32}
+@media(max-width:768px){.studio-app.studio-app.studio-personal-workspace .workspace-view-tabs button{min-height:40px}.studio-app.studio-app.studio-personal-workspace .workspace-day-number{min-width:40px;min-height:40px}}

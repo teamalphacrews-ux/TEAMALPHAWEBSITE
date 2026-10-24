@@ -31,9 +31,10 @@ function withDefaults(saved) {
 }
 export default function Settings() {
   const { data, loading, error, reload } = useWorkspaceData(['/api/studio/settings']);
-  const [form, setForm] = useState(null), [busy, setBusy] = useState(false), [saveError, setSaveError] = useState(''), [tab, setTab] = useState('profile'), [access, setAccess] = useState(null);
+  const [form, setForm] = useState(null), [baseline, setBaseline] = useState(null), [busy, setBusy] = useState(false), [saveError, setSaveError] = useState(''), [tab, setTab] = useState('profile'), [access, setAccess] = useState(null);
   const saved = data[0];
   const values = form || (saved ? withDefaults(saved) : null);
+  const dirty = Boolean(form && JSON.stringify(form) !== JSON.stringify(baseline || (saved && withDefaults(saved))));
   const current = sections.find(section => section[0] === tab);
   const change = (key, value) => setForm(previous => ({ ...(previous || withDefaults(saved)), [key]: value }));
   const changeNested = (group, key, value) => setForm(previous => {
@@ -45,6 +46,12 @@ export default function Settings() {
     axios.get(API + '/api/studio/security/access', { signal: controller.signal, headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } }).then(result => setAccess(result.data)).catch(() => {});
     return () => controller.abort();
   }, []);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = event => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
   const saveSettings = async event => {
     event?.preventDefault();
     if (busy || !values) return;
@@ -53,7 +60,8 @@ export default function Settings() {
       const payload = { ...values, quotationValidityDays: Number(values.quotationValidityDays) };
       if (!access?.owner) { delete payload.security; delete payload.backups; }
       const result = await workspaceRequest('put', '/api/studio/settings', payload);
-      setForm(withDefaults(result));
+      const normalized = withDefaults(result);
+      setForm(normalized); setBaseline(normalized);
       window.dispatchEvent(new CustomEvent('studio-settings-updated', { detail: result }));
       toast.success('Studio settings saved'); return result;
     } catch (failure) { setSaveError(recordError(failure)); throw failure; }
@@ -68,7 +76,7 @@ export default function Settings() {
       <div className="settings-content">{['security', 'backups'].includes(tab) ? <SecurityRecoveryPanel mode={tab} settings={values} access={access} onChange={changeNested} onSave={saveSettings} saving={busy} /> : <form onSubmit={event => { saveSettings(event).catch(() => {}); }} className="studio-card settings-editor">
         <div className="settings-section-heading"><h2>{current[1]}</h2><p>{current[2]}.</p></div>
         <SettingsEditor tab={tab} values={values} change={change} changeNested={changeNested} />
-        {tab !== 'connections' && <div className="settings-editor-footer"><span>Save to apply these preferences.</span><button type="submit" className="studio-button primary" disabled={busy}><Save size={15} />{busy ? 'Saving…' : 'Save settings'}</button></div>}
+        {tab !== 'connections' && <div className="settings-editor-footer"><span role="status">{dirty && <i className="settings-unsaved-dot" aria-hidden="true" />}{dirty ? 'You have unsaved changes.' : 'Your preferences are up to date.'}</span><button type="submit" className="studio-button primary" disabled={busy || !dirty}><Save size={15} />{busy ? 'Saving…' : 'Save settings'}</button></div>}
       </form>}</div>
     </div>}
   </div>;

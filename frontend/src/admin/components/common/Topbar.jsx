@@ -31,8 +31,10 @@ export default function Topbar({ onMenuClick }) {
   const [notificationError, setNotificationError] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [markingRead, setMarkingRead] = useState(false);
   const panelRef = useRef(null);
   const searchInputRef = useRef(null);
+  const notificationButtonRef = useRef(null);
   const searchShortcut = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K';
   const active = destinations.find(item => item[1] !== '/admin' && (item[1] === location.pathname || location.pathname.startsWith(item[1] + '/')))?.[0] || (location.pathname.startsWith('/admin/invoices/') ? 'Invoice' : 'Overview');
   useEffect(() => {
@@ -67,16 +69,31 @@ export default function Topbar({ onMenuClick }) {
   }, [logout]);
   useEffect(() => {
     const close = event => { if (!panelRef.current?.contains(event.target)) { setSearchOpen(false); setShowNotifications(false); } };
-    const escape = event => { if (event.key === 'Escape') { setSearchOpen(false); setShowNotifications(false); } };
+    const escape = event => { if (event.key === 'Escape') {
+      if (document.activeElement?.closest('.studio-notification-panel')) notificationButtonRef.current?.focus();
+      else if (document.activeElement?.closest('.studio-search-results')) searchInputRef.current?.focus();
+      setSearchOpen(false); setShowNotifications(false);
+    } };
     document.addEventListener('pointerdown', close);
     document.addEventListener('keydown', escape);
     return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', escape); };
   }, []);
   const markAll = async () => {
+    if (markingRead) return;
+    setMarkingRead(true);
     try {
       await axios.post(API + '/api/notifications/mark-all-read', {}, { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
       setNotifications(current => current.map(item => ({ ...item, isRead: true })));
     } catch { toast.error('Could not mark notifications as read.'); }
+    finally { setMarkingRead(false); }
+  };
+  const closeNotifications = () => { setShowNotifications(false); notificationButtonRef.current?.focus(); };
+  const notificationLink = item => {
+    if (typeof item.link !== 'string' || !item.link.startsWith('/admin/') || item.link.length > 500) return '/admin/activity-log';
+    try {
+      const url = new URL(item.link, window.location.origin);
+      return url.origin === window.location.origin && /^\/admin\/(?:quotations|invoices|calendar|post-production|crm|studio-projects|chats)(?:\/[a-zA-Z0-9_-]+)?$/.test(url.pathname) ? url.pathname + url.search + url.hash : '/admin/activity-log';
+    } catch { return '/admin/activity-log'; }
   };
   const unread = notifications.filter(item => !item.isRead).length;
   const matches = destinations.filter(item => (item[0] + ' ' + item[2]).toLowerCase().includes(query.toLowerCase()));
@@ -85,11 +102,11 @@ export default function Topbar({ onMenuClick }) {
       <div className="studio-topbar-context"><button type="button" className="studio-menu-button studio-icon-button" aria-label="Open navigation" onClick={onMenuClick}><Menu size={21} /></button><span className="studio-topbar-workspace">Workspace</span><span className="studio-breadcrumb-separator" aria-hidden="true">/</span><strong>{active}</strong></div>
       <div className="studio-topbar-actions">
         <button type="button" className="studio-icon-button studio-theme-toggle" onClick={() => update({ theme: preferences.theme === 'dark' ? 'light' : 'dark' })} aria-label={preferences.theme === 'dark' ? 'Switch to Daylight mode' : 'Switch to Dark mode'} title={preferences.theme === 'dark' ? 'Daylight mode' : 'Dark mode'}>{preferences.theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}</button>
-        <div className="studio-global-search"><Search size={16} /><input ref={searchInputRef} aria-label="Search workspace pages" aria-controls="studio-page-results" placeholder="Search your workspace…" value={query} onFocus={() => { setSearchOpen(true); setShowNotifications(false); }} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && matches[0]) { navigate(matches[0][1]); setSearchOpen(false); setQuery(''); } }} /><kbd className="studio-search-shortcut" aria-hidden="true">{searchShortcut}</kbd>
-          {searchOpen && <div id="studio-page-results" className="studio-search-results"><p className="studio-search-label">Pages</p>{matches.length ? matches.map(item => <Link to={item[1]} key={item[1]} onClick={() => { setSearchOpen(false); setQuery(''); }}>{item[0]}<ArrowUpRight size={14} /></Link>) : <p className="studio-muted">No matching workspace.</p>}</div>}
+        <div className="studio-global-search"><Search size={16} /><input ref={searchInputRef} aria-label="Search workspace pages" aria-controls="studio-page-results" aria-expanded={searchOpen} placeholder="Search your workspace…" value={query} onFocus={() => { setSearchOpen(true); setShowNotifications(false); }} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'ArrowDown') { e.preventDefault(); setSearchOpen(true); panelRef.current?.querySelector('.studio-search-results a')?.focus(); } if (e.key === 'Enter' && matches[0]) { navigate(matches[0][1]); setSearchOpen(false); setQuery(''); } }} /><kbd className="studio-search-shortcut" aria-hidden="true">{searchShortcut}</kbd>
+          {searchOpen && <div id="studio-page-results" className="studio-search-results" onKeyDown={event => { if (!['ArrowDown','ArrowUp'].includes(event.key)) return; const links = [...event.currentTarget.querySelectorAll('a')]; const index = links.indexOf(document.activeElement); if (index < 0) return; event.preventDefault(); links[(index + (event.key === 'ArrowDown' ? 1 : links.length - 1)) % links.length]?.focus(); }}><p className="studio-search-label">Pages</p>{matches.length ? matches.map(item => <Link to={item[1]} key={item[1]} onClick={() => { setSearchOpen(false); setQuery(''); }}>{item[0]}<ArrowUpRight size={14} /></Link>) : <p className="studio-muted">No matching workspace.</p>}</div>}
         </div>
-        <div className="studio-notification-wrap"><button type="button" className="studio-icon-button studio-notification-button" aria-label={'Notifications' + (unread ? ', ' + unread + ' unread' : '')} aria-expanded={showNotifications} onClick={() => { setShowNotifications(value => !value); setSearchOpen(false); }}><Bell size={18} />{unread > 0 && <i />}</button>
-          {showNotifications && <section className="studio-notification-panel" aria-label="Notifications"><div className="studio-notification-heading"><h2>Notifications</h2><button type="button" className="studio-icon-button" aria-label="Close notifications" onClick={() => setShowNotifications(false)}><X size={16} /></button></div>{notificationError ? <p className="studio-empty">Activity is unavailable. Try again shortly.</p> : notifications.length ? <div className="studio-notification-list">{notifications.slice(0, 6).map(item => <Link key={item._id} to="/admin/activity-log" className={item.isRead ? '' : 'is-unread'} onClick={() => setShowNotifications(false)}><span className="studio-status-dot" /><div><strong>{item.title}</strong><p>{item.description}</p></div></Link>)}</div> : <p className="studio-empty">You’re all caught up.</p>}<div className="studio-notification-footer"><button type="button" onClick={markAll} disabled={!unread}><CheckCheck size={14} /> Mark all read</button><Link to="/admin/activity-log" onClick={() => setShowNotifications(false)}>View all <ArrowUpRight size={14} /></Link></div></section>}
+        <div className="studio-notification-wrap"><button type="button" className="studio-icon-button studio-notification-button" aria-label={'Notifications' + (unread ? ', ' + unread + ' unread' : '')} aria-expanded={showNotifications} aria-controls="studio-notifications" ref={notificationButtonRef} onClick={() => { setShowNotifications(value => !value); setSearchOpen(false); }}><Bell size={18} />{unread > 0 && <i />}</button>
+          {showNotifications && <section className="studio-notification-panel" id="studio-notifications" aria-label="Notifications"><div className="studio-notification-heading"><h2>Notifications</h2><button type="button" className="studio-icon-button" aria-label="Close notifications" onClick={closeNotifications}><X size={16} /></button></div>{notificationError ? <p className="studio-empty">Activity is unavailable. Try again shortly.</p> : notifications.length ? <div className="studio-notification-list">{notifications.slice(0, 6).map(item => <Link key={item._id} to={notificationLink(item)} className={item.isRead ? '' : 'is-unread'} onClick={() => setShowNotifications(false)}><span className="studio-status-dot" /><div><strong>{item.title}</strong><p>{item.description}</p></div></Link>)}</div> : <p className="studio-empty">You’re all caught up.</p>}<div className="studio-notification-footer"><button type="button" onClick={markAll} disabled={!unread || markingRead}><CheckCheck size={14} /> {markingRead ? 'Marking…' : 'Mark all read'}</button><Link to="/admin/activity-log" onClick={() => setShowNotifications(false)}>View all <ArrowUpRight size={14} /></Link></div></section>}
         </div>
         <span className="studio-topbar-divider" /><button type="button" className="studio-profile-button" onClick={() => setShowProfile(true)} aria-label="Edit your profile"><span className="studio-avatar">{user?.firstName?.[0] || 'A'}{user?.lastName?.[0] || ''}</span></button>
       </div>

@@ -1,6 +1,6 @@
-# Changed files
+# Modified and added files
 
-Changes relative to the modern-interface PR #6 base, commit `16ba996385b7aff680b4554a2004c6e759e3bde3`. Generated build output, local fixtures and private environment values are excluded.
+Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a2004c6e759e3bde3`). Includes settings, Gmail, appearance and the subsequent workspace refinement. Generated build outputs, local environment files and sample preview fixtures are excluded.
 
 - `backend/.env.example`
 - `backend/controllers/photographerController.js`
@@ -84,29 +84,54 @@ Changes relative to the modern-interface PR #6 base, commit `16ba996385b7aff680b
 - `backend/utils/studioSettings.js`
 - `docs/STUDIO_SETTINGS_AND_APPEARANCE.md`
 - `docs/STUDIO_SETTINGS_FILES.md`
+- `docs/STUDIO_UI_REFINEMENT_AUDIT.md`
 - `frontend/package.json`
 - `frontend/src/App.jsx`
+- `frontend/src/admin/components/calendar/EventForm.jsx`
+- `frontend/src/admin/components/common/AdminProfileModal.jsx`
 - `frontend/src/admin/components/common/Layout.jsx`
 - `frontend/src/admin/components/common/OverviewCustomizer.jsx`
 - `frontend/src/admin/components/common/Sidebar.jsx`
 - `frontend/src/admin/components/common/StudioPreferences.jsx`
 - `frontend/src/admin/components/common/Topbar.jsx`
+- `frontend/src/admin/components/contacts/ContactWorkflowUI.jsx`
 - `frontend/src/admin/components/integrations/GmailConnectionCard.jsx`
 - `frontend/src/admin/components/integrations/gmailApi.js`
+- `frontend/src/admin/components/operations/OperationsUI.jsx`
+- `frontend/src/admin/components/operations/WorkspaceActionMenu.jsx`
+- `frontend/src/admin/components/operations/WorkspaceUI.jsx`
+- `frontend/src/admin/components/operations/workspaceData.js`
 - `frontend/src/admin/components/settings/ApplyProductionTemplate.jsx`
 - `frontend/src/admin/components/settings/SecurityRecoveryPanel.jsx`
 - `frontend/src/admin/components/settings/SettingsEditor.jsx`
 - `frontend/src/admin/components/settings/securityRecovery.css`
+- `frontend/src/admin/pages/ActivityLog.jsx`
+- `frontend/src/admin/pages/CRM.jsx`
+- `frontend/src/admin/pages/Calendar.jsx`
+- `frontend/src/admin/pages/ContactDetail.jsx`
+- `frontend/src/admin/pages/Crew.jsx`
 - `frontend/src/admin/pages/Dashboard.jsx`
+- `frontend/src/admin/pages/DataManagement.jsx`
+- `frontend/src/admin/pages/Finance.jsx`
 - `frontend/src/admin/pages/GmailInbox.jsx`
 - `frontend/src/admin/pages/Integrations.jsx`
 - `frontend/src/admin/pages/InvoiceWorkspace.jsx`
 - `frontend/src/admin/pages/PostProduction.jsx`
+- `frontend/src/admin/pages/ProjectSupport.jsx`
+- `frontend/src/admin/pages/Projects.jsx`
 - `frontend/src/admin/pages/Quotations.jsx`
 - `frontend/src/admin/pages/Settings.jsx`
+- `frontend/src/admin/pages/StudioProjectDetail.jsx`
+- `frontend/src/admin/pages/UserManagement.jsx`
+- `frontend/src/admin/pages/documentWorkspaceRefinements.css`
 - `frontend/src/admin/pages/integrations.css`
+- `frontend/src/admin/pages/projectSupport.css`
+- `frontend/src/admin/pages/referenceContacts.css`
+- `frontend/src/admin/pages/studioOperations.css`
 - `frontend/src/admin/pages/studioSettings.css`
 - `frontend/src/admin/studio-appearance.css`
+- `frontend/src/admin/studio-brand.css`
+- `frontend/src/admin/studio-crm.css`
 - `frontend/src/admin/studio-settings-defaults.json`
 - `frontend/src/context/AuthContext.jsx`
 - `frontend/src/pages/ClientProjectWorkspace.jsx`

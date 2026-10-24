@@ -39,8 +39,8 @@ Google classifies Gmail read-only access as a restricted scope. The production c
 
 Automated coverage includes settings validation, numbering concurrency, quote/invoice inheritance, client-link privacy, production template reapplication, notifications, per-account appearance preferences, session/owner permissions, encrypted recovery, Gmail OAuth/token isolation, profile-image upload authorization and email-test recipient/cooldown isolation. No real email was sent by tests.
 
-Local validation on 24 October 2026: 215 backend tests and 57 frontend tests passed; the production frontend build passed (3,453 modules). Studio/public/mobile ESLint and `git diff --check` were checked. No Lighthouse score or real-device performance result is claimed for this authenticated workspace.
+Local validation on 24 October 2026: 215 backend tests and 57 frontend tests passed; the production frontend build passed (3,455 modules). Studio/public/mobile ESLint and `git diff --check` were checked. No Lighthouse score or real-device performance result is claimed for this authenticated workspace.
 
 Browser review uses the existing local sample preview. Overview card hide/restore/reset, persistence across reload, Daylight/Dark switching, responsive stacking, Finance, Calendar, Settings and dialogs have been reviewed there. The sample backend does not implement live Gmail or backup/security connections, so their actual production account/database flows require verification after a separately approved deployment and private configuration. No production credentials, user data or connected Calendar records were changed during this work.
 
-The detailed changed-file list is in `STUDIO_SETTINGS_FILES.md`.
+The subsequent whole-workspace refinement and nineteen-page responsive review are recorded in `STUDIO_UI_REFINEMENT_AUDIT.md`. The detailed changed-file list is in `STUDIO_SETTINGS_FILES.md`.
