@@ -242,3 +242,11 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
 .studio-app.studio-app.studio-personal-workspace .studio-switch-control>input:disabled+.studio-switch-track{opacity:.65}
 .studio-app .studio-switch-state{font-size:12px;font-weight:600;min-width:23px;text-align:right;color:var(--studio-text)}
 @media(prefers-reduced-motion:reduce){.studio-app .studio-switch-track,.studio-app .studio-switch-track:after{transition:none!important}}
+
+/* iPhone-style overview controls keep the existing native switch interaction. */
+.studio-app.studio-app.studio-personal-workspace .overview-card-toggle.studio-switch-control{--switch-off:#e5e5ea;--switch-on:#34c759;--switch-thumb:#fff;--switch-active-thumb:#fff;min-height:51px;gap:12px}
+html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspace .overview-card-toggle.studio-switch-control{--switch-off:#39393d;--switch-on:#30d158;--switch-active-thumb:#fff}
+.studio-app.studio-app.studio-personal-workspace .overview-card-toggle-label{flex:1;min-width:0;line-height:1.5;overflow-wrap:anywhere}
+.studio-app.studio-app.studio-personal-workspace .overview-card-toggle>.studio-switch-track{flex:0 0 51px;width:51px;height:31px;border:0;box-shadow:inset 0 0 0 1px #00000005}
+.studio-app.studio-app.studio-personal-workspace .overview-card-toggle>.studio-switch-track:after{left:2px;top:2px;width:27px;height:27px;box-shadow:0 2px 4px #0003,0 1px 1px #0000000a}
+.studio-app.studio-app.studio-personal-workspace .overview-card-toggle>input{left:auto;right:0;width:51px;height:44px}
