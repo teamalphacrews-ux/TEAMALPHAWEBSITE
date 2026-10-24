@@ -6,6 +6,12 @@ const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
+const requireAdmin = (req, res, next) => {
+    if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+    next();
+};
+
+router.use(requireAdmin);
 
 const calculateFinanceStats = async () => {
     const paidInvoices = await Invoice.find({ status: 'Paid' });
@@ -242,6 +248,11 @@ router.put('/expense/:id', auth, async (req, res) => {
 
 // Delete Expense
 router.delete('/expense/:id', auth, async (req, res) => {
+    return res.status(405).json({ error: 'Financial deletion disabled pending audited reversal workflow' });
+});
+
+/* Legacy deletion disabled
+router.delete('/expense/:id', auth, async (req, res) => {
     try {
         await Finance.findByIdAndDelete(req.params.id);
         res.json({ message: "Expense deleted" });
@@ -277,6 +288,7 @@ router.delete('/income/:incomeType/:id', auth, async (req, res) => {
     }
 });
 
+*/
 // Get Payment Plans (Pending Invoices)
 router.get('/pending-payments', auth, async (req, res) => {
     try {
