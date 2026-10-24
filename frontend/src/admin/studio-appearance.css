@@ -176,15 +176,16 @@ html[data-studio-appearance=dark] .studio-crm-overlay.studio-crm-overlay .studio
 }
 
 /* Soft moving light stays within the feature cards and never intercepts input. */
-.overview-fluid-glow{position:absolute;inset:0;z-index:-1;overflow:hidden;border-radius:inherit;pointer-events:none;contain:strict}
-.overview-fluid-glow i{position:absolute;width:92%;aspect-ratio:1;border-radius:50%;opacity:.72;background:radial-gradient(circle, var(--fluid-one,#f8ffd1) 0%,transparent 66%);animation:overview-fluid-drift 14s ease-in-out infinite alternate;animation-play-state:paused;transform:translate3d(-15%,-45%,0) scale(1);will-change:auto}
-.overview-fluid-glow i:nth-child(2){--fluid-one:#2e8d45;left:40%;top:30%;animation-name:overview-fluid-tide;animation-duration:18s;animation-delay:-7s;opacity:.65}
-.overview-fluid-glow i:nth-child(3){--fluid-one:#fff0ac;left:10%;top:20%;width:70%;animation-duration:20s;animation-direction:alternate-reverse;animation-delay:-11s;opacity:.45}
-.production .overview-fluid-glow i{--fluid-one:#ffb064}
-.production .overview-fluid-glow i:nth-child(2){--fluid-one:#f7a1ab}
-.production .overview-fluid-glow i:nth-child(3){--fluid-one:#e1f5ff}
+.overview-feature-card>:not(.overview-fluid-glow):not(.overview-hide-card){position:relative;z-index:1}
+.overview-fluid-glow{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;pointer-events:none;contain:strict}
+.overview-fluid-glow::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 42%,#ffffdf99,transparent 72%)}
+.overview-fluid-glow i{--fluid-one:#fff494;--fluid-two:#63d77d;position:absolute;left:-18%;top:-65%;width:138%;aspect-ratio:1;border-radius:42% 58% 64% 36%;opacity:.95;background:conic-gradient(from 25deg,transparent 5%,var(--fluid-one) 24%,transparent 43%,var(--fluid-two) 68%,transparent 88%);-webkit-mask-image:radial-gradient(ellipse,#000 15%,#0009 42%,transparent 72%);mask-image:radial-gradient(ellipse,#000 15%,#0009 42%,transparent 72%);animation:overview-fluid-drift 7s ease-in-out infinite alternate;animation-play-state:paused;transform:translate3d(-15%,-10%,0) rotate(-25deg) scale(1);will-change:auto}
+.overview-fluid-glow i:nth-child(2){left:18%;top:-10%;width:84%;background:radial-gradient(ellipse at 50% 50%,var(--fluid-two) 8%,var(--fluid-one) 35%,transparent 68%);-webkit-mask-image:none;mask-image:none;animation-name:overview-fluid-tide;animation-duration:6s;animation-delay:-3s;opacity:.95}
+.overview-fluid-glow i:nth-child(3){left:-10%;top:-32%;width:80%;background:radial-gradient(ellipse,#fffce7cc,transparent 66%);animation-duration:11s;animation-direction:alternate-reverse;animation-delay:-7s;opacity:.75}
+.production .overview-fluid-glow i{--fluid-one:#ffae58;--fluid-two:#f386a4}
+.production .overview-fluid-glow i:nth-child(2){--fluid-one:#ffd78c;--fluid-two:#b7dfff}
 .overview-feature-grid[data-motion-active=true] .overview-fluid-glow i{animation-play-state:running;will-change:transform}
-@keyframes overview-fluid-drift{0%{transform:translate3d(-15%,-45%,0) scale(1)}50%{transform:translate3d(35%,-8%,0) scale(1.12)}100%{transform:translate3d(-8%,25%,0) scale(.95)}}
-@keyframes overview-fluid-tide{0%{transform:translate3d(10%,20%,0) scale(1.1)}50%{transform:translate3d(-35%,-20%,0) scale(.92)}100%{transform:translate3d(-5%,-50%,0) scale(1.18)}}
+@keyframes overview-fluid-drift{0%{transform:translate3d(-15%,-10%,0) rotate(-25deg) scale(1)}50%{transform:translate3d(12%,24%,0) rotate(30deg) scale(1.08)}100%{transform:translate3d(-4%,5%,0) rotate(90deg) scale(.96)}}
+@keyframes overview-fluid-tide{0%{transform:translate3d(22%,18%,0) rotate(30deg) scale(1.12)}50%{transform:translate3d(-30%,-45%,0) rotate(-20deg) scale(.9)}100%{transform:translate3d(-5%,-20%,0) rotate(-60deg) scale(1.2)}}
 @media(prefers-reduced-motion:reduce){.overview-feature-grid .overview-fluid-glow i{animation:none!important;will-change:auto}}
 @media(max-width:768px){.overview-fluid-glow i:nth-child(3){display:none}}
