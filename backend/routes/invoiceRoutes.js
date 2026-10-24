@@ -4,6 +4,12 @@ const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
+const requireAdmin = (req, res, next) => {
+    if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+    next();
+};
+
+router.use(requireAdmin);
 
 router.get('/', auth, async (req, res) => {
     try {
@@ -69,6 +75,11 @@ router.put('/:id', auth, async (req, res) => {
 
 // Delete Invoice
 router.delete('/:id', auth, async (req, res) => {
+    return res.status(405).json({ error: 'Invoice deletion disabled to preserve financial history. Use cancellation instead.' });
+});
+
+/* Legacy destructive route disabled
+router.delete('/:id', auth, async (req, res) => {
     try {
         const deleted = await Invoice.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ message: "Invoice not found" });
@@ -78,4 +89,5 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
+*/
 module.exports = router;

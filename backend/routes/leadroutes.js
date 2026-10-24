@@ -8,6 +8,12 @@ const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
+const requireAdmin = (req, res, next) => {
+    if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+    next();
+};
+
+router.use(requireAdmin);
 
 router.get('/', auth, async (req, res) => {
     const leads = await Lead.find().populate('tasks');
@@ -118,6 +124,11 @@ router.post('/:id/remind/:photographerName', auth, async (req, res) => {
 
 // DELETE Lead
 router.delete('/:id', auth, async (req, res) => {
+    return res.status(405).json({ error: 'Lead deletion disabled pending archival workflow' });
+});
+
+/* Legacy deletion disabled
+router.delete('/:id', auth, async (req, res) => {
     try {
         await Lead.findByIdAndDelete(req.params.id);
         res.json({ message: "Lead deleted successfully" });
@@ -126,4 +137,5 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
+*/
 module.exports = router;

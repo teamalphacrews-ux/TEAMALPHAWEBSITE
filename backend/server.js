@@ -31,7 +31,15 @@ const app = express();
 app.use(compression()); // Compress all responses
 const server = require('http').createServer(app);
 const io = require('socket.io')(server, {
-    cors: { origin: "*", methods: ["GET", "POST", "PATCH"] }
+    cors: { origin: process.env.FRONTEND_URL || 'https://team-alpha-d64k.onrender.com', methods: ['GET', 'POST', 'PATCH'] }
+});
+io.use((socket, next) => {
+    try {
+        const token = socket.handshake.auth?.token || socket.handshake.headers['x-auth-token'];
+        if (!token) return next(new Error('Authentication required'));
+        socket.data.user = jwt.verify(token, process.env.JWT_SECRET).user;
+        next();
+    } catch (_) { next(new Error('Invalid authentication')); }
 });
 
 // Tracks online users for WhatsApp-style ticks
@@ -81,6 +89,7 @@ io.on('connection', (socket) => {
     // Silent connection
 
     socket.on('join_chat', (roomId) => {
+        if (roomId !== String(socket.data.user.id) && !(socket.data.user.role === 'admin' && roomId === 'admin')) return;
         socket.join(roomId);
         
         // Track online status for delivery ticks
@@ -108,6 +117,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('typing_start', (data) => {
+        if (data.roomId !== String(socket.data.user.id) && socket.data.user.role !== 'admin') return;
         socket.to(data.roomId).emit('display_typing', data);
     });
 
@@ -118,6 +128,8 @@ io.on('connection', (socket) => {
     socket.on('message_delivered', async (data) => {
         try {
             const Message = require('./models/Message');
+            const message = await Message.findById(data.messageId);
+            if (!message || (String(message.recipient) !== String(socket.data.user.id) && !(socket.data.user.role === 'admin' && message.recipient === 'admin'))) return;
             await Message.findByIdAndUpdate(data.messageId, { status: 'delivered' });
             socket.to(data.senderId).emit('message_status_update', { messageId: data.messageId, status: 'delivered' });
         } catch (err) { }
@@ -125,7 +137,8 @@ io.on('connection', (socket) => {
 
     socket.on('mark_read', async (data) => {
         try {
-            const { roomId, readerType } = data; // roomId is the userId, readerType is 'admin' or 'user'
+            const { roomId, readerType } = data;
+            if (readerType === 'admin' ? socket.data.user.role !== 'admin' : roomId !== String(socket.data.user.id)) return; // roomId is the userId, readerType is 'admin' or 'user'
             const ChatRoom = require('./models/ChatRoom');
             const Message = require('./models/Message');
 
@@ -160,6 +173,7 @@ io.on('connection', (socket) => {
 
     socket.on('chat_seen', (data) => {
         const chatId = typeof data === 'string' ? data : data.chatId;
+        if (chatId !== String(socket.data.user.id) && socket.data.user.role !== 'admin') return;
         socket.broadcast.to(chatId).emit('chat_seen', data);
         socket.broadcast.to('admin').emit('chat_seen', data);
     });
@@ -271,7 +285,7 @@ authRouter.get('/me', auth, async (req, res) => {
 
 authRouter.put('/profile', auth, async (req, res) => {
     try {
-        const { name, role } = req.body;
+        const { name } = req.body;
 
         if (req.user.id === "hardcoded-admin-id") {
             // For the system admin in .env, we return the data so the UI updates for the session
@@ -281,7 +295,7 @@ authRouter.put('/profile', auth, async (req, res) => {
                 id: "hardcoded-admin-id",
                 firstName: nameParts[0],
                 lastName: nameParts.length > 1 ? nameParts.slice(1).join(' ') : '',
-                role: role || "admin",
+                role: "admin",
                 msg: "System Admin updated for session"
             });
         }
@@ -294,9 +308,6 @@ authRouter.put('/profile', auth, async (req, res) => {
             updateData.lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
         }
 
-        if (role) {
-            updateData.role = role;
-        }
 
         const user = await User.findByIdAndUpdate(
             req.user.id,
