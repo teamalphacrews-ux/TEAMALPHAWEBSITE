@@ -250,3 +250,48 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
 .studio-app.studio-app.studio-personal-workspace .overview-card-toggle>.studio-switch-track{flex:0 0 51px;width:51px;height:31px;border:0;box-shadow:inset 0 0 0 1px #00000005}
 .studio-app.studio-app.studio-personal-workspace .overview-card-toggle>.studio-switch-track:after{left:2px;top:2px;width:27px;height:27px;box-shadow:0 2px 4px #0003,0 1px 1px #0000000a}
 .studio-app.studio-app.studio-personal-workspace .overview-card-toggle>input{left:auto;right:0;width:51px;height:44px}
+
+/* One ordered board keeps visual order and keyboard order in agreement. */
+.overview-card-board{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px;margin-bottom:24px;container:overview-board / inline-size}
+.overview-card-slot{min-width:0;grid-column:span 6}
+.overview-card-slot.is-stat{grid-column:span 3}
+.overview-card-slot.is-feature{grid-column:span 4}
+.overview-card-slot.is-wide{grid-column:1/-1}
+.overview-card-slot>:first-child{height:100%;box-sizing:border-box}
+.studio-app.studio-app .overview-card-board .overview-stat{border:1px solid var(--studio-border);border-radius:20px;background:var(--studio-surface)!important}
+.overview-card-board .overview-stat-content{padding:18px 20px}
+.overview-card-board .overview-stat .studio-metric-value{font-size:32px}
+.overview-card-board .overview-feature-card{min-height:200px;padding:20px 22px 17px}
+.overview-card-board .overview-feature-number{font-size:48px;margin:10px 0 3px}
+.overview-card-board .overview-tick-meter{height:12px;margin:10px 0}
+.overview-card-board .overview-production-detail{gap:14px;margin:10px 0;font-size:10px}
+.overview-card-board .overview-feature-card .overview-finance-profit{font-size:32px;margin:4px 0 9px}
+.overview-card-board .overview-finance-profit-label{margin-top:7px;font-size:10px}
+.overview-card-board .overview-finance-amounts{margin-bottom:6px}
+.overview-card-board .overview-finance-amounts dd{font-size:16px;margin-top:2px}
+.overview-finance-amounts dd a{display:inline-flex;align-items:center;gap:4px;border-radius:5px;color:inherit}
+.overview-finance-amounts dd a:hover{text-decoration:underline;text-underline-offset:3px}
+.overview-finance-amounts dd a>svg{flex-shrink:0}
+.overview-card-board .overview-feature-card .overview-finance-note{font-size:9px;margin-bottom:5px}
+.overview-card-board [data-motion-active=true] :is(.overview-card-motion i,.overview-fluid-glow i,.overview-finance-waves svg){animation-play-state:running;will-change:transform}
+.overview-card-board .overview-workspace-card{padding:22px}
+.overview-card-board .studio-schedule-row{gap:10px}
+.overview-card-board .studio-schedule-time{max-width:125px}
+.overview-card-board .studio-schedule-time small{white-space:normal;line-height:1.5}
+.overview-card-board .studio-task-row h3 a:hover{text-decoration:underline;text-underline-offset:3px}
+.studio-app.studio-app.studio-personal-workspace .overview-card-board :is(.studio-card-subtitle,.studio-schedule-time>span,.studio-schedule-time small,.studio-shoot-date small,.studio-task-row p){color:var(--studio-muted)}
+.studio-app.studio-app.studio-personal-workspace .overview-card-board .studio-shoot-date strong{color:var(--studio-text)}
+.overview-order-editor{border-top:1px solid var(--studio-border);padding-top:18px;margin-top:8px}
+.overview-order-editor>summary{cursor:pointer;font-size:13px;font-weight:600;min-height:44px;align-content:center}
+.overview-order-editor>p{font-size:12px;color:var(--studio-muted);line-height:1.7}
+.overview-order-editor>ol{padding:0;margin:14px 0;list-style:none}
+.overview-order-editor li{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--studio-border);padding:7px 0;font-size:12px;min-height:52px}
+.overview-order-editor li>span{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0}
+.overview-order-editor li small{font-variant-numeric:tabular-nums;color:var(--studio-muted);min-width:16px}
+.overview-order-editor li em{font-size:10px;color:var(--studio-muted);font-style:normal}
+.overview-order-editor li>div{display:flex;flex-shrink:0;gap:4px}
+.overview-order-editor li button{width:44px;height:44px;border:1px solid var(--studio-border);border-radius:50%}
+.overview-order-editor li button:disabled{opacity:.3;cursor:default}
+@container overview-board (max-width:900px){.overview-card-slot.is-stat,.overview-card-slot.is-feature{grid-column:span 6}.overview-card-slot.is-feature+.overview-card-slot.is-feature+.overview-card-slot.is-feature,.overview-card-slot.is-workspace{grid-column:1/-1}}
+@container overview-board (max-width:500px){.overview-card-slot.is-feature{grid-column:1/-1}.overview-card-board .overview-feature-card{min-height:190px}.overview-card-board .overview-workspace-card{padding:18px}.overview-card-board .studio-schedule-time{max-width:95px}.overview-card-board .overview-stat-content{padding:16px 13px}.overview-card-board .overview-stat .studio-metric-value{font-size:30px}}
+@media(prefers-reduced-motion:reduce){.overview-card-board :is(.overview-card-motion i,.overview-fluid-glow i,.overview-finance-waves svg){animation:none!important;will-change:auto}}

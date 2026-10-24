@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { calendarMonthLoad } from "../operations/insightData";
+import { calendarMonthLoad } from "./calendarData";
 import "../operations/studioInsights.css";
 
 export default function CalendarInsights({
@@ -8,13 +8,14 @@ export default function CalendarInsights({
   selected,
   onSelect,
   loading,
+  timezone,
 }) {
   const {
     days,
     events: monthEvents,
     activeDays,
     peak,
-  } = calendarMonthLoad(events, month);
+  } = calendarMonthLoad(events, month, timezone);
   const [hovered, setHovered] = useState(null);
   const selectedIndex = Math.max(
     0,

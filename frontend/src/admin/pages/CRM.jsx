@@ -8,6 +8,8 @@ import StudioLeadForm from "../components/studio/StudioLeadForm";
 import StudioLeadDetails from "../components/studio/StudioLeadDetails";
 import { studioApi, studioAuth, LEAD_STATUSES, money, displayDate, initials, statusClass, matchesLead, mergeLead } from "../components/studio/leadUtils";
 import "../studio-crm.css";
+import { safeStudioReturn } from '../../utils/studioNavigation';
+import { quotationStatus } from '../../utils/quotationStatus';
 
 function ProjectCell({ lead }) {
   const id = lead.studioProjectId?._id || lead.studioProjectId;
@@ -16,7 +18,9 @@ function ProjectCell({ lead }) {
 }
 function QuoteState({ lead }) {
   const id = lead.quotationId?._id || lead.quotationId;
-  return id ? <small><Link className="studio-crm-text-link" to={`/admin/quotations?quote=${encodeURIComponent(id)}`} title={lead.quotationNumber || "Open quotation"} onClick={event => event.stopPropagation()}>Quote {(lead.quotationStatus || "Draft").toLowerCase()}</Link></small> : null;
+  const quote = { ...(lead.quotationId && typeof lead.quotationId === 'object' ? lead.quotationId : {}), status: lead.quotationId?.status || lead.quotationStatus || 'Draft' };
+  const knownValidity = quote.expiryEnabled === false || quote.validUntil || quote.expiresAt || !['Draft', 'Sent', 'Open'].includes(quote.status);
+  return id ? <small><Link className="studio-crm-text-link" to={`/admin/quotations?quote=${encodeURIComponent(id)}`} title={lead.quotationNumber || "Open quotation"} onClick={event => event.stopPropagation()}>{knownValidity ? 'Quote ' + quotationStatus(quote).toLowerCase() : 'View quote'}</Link></small> : null;
 }
 
 export function EnquiriesView({ leads = [], loading = false, error = "", query = "", onQuery = () => {}, status = "All", onStatus = () => {}, sort = "newest", onSort = () => {}, onSelect = () => {}, onCreate = () => {}, onDelete = () => {}, onRefresh = () => {}, navigation = null }) {
@@ -55,13 +59,16 @@ export default function CRM() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [chosenTab, setActiveTab] = useState("leads");
-  const activeTab = searchParams.get("new") === "1" || chosenTab !== "invoices" ? "leads" : "invoices";
+  const activeTab = searchParams.get("new") === "1" || searchParams.has('lead') || chosenTab !== "invoices" ? "leads" : "invoices";
   const [leads, setLeads] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [invoiceError, setInvoiceError] = useState("");
   const [selectedLead, setSelectedLead] = useState(null);
+  const requestedLeadId = searchParams.get('lead');
+  const activeLead = requestedLeadId ? leads.find(lead => lead._id === requestedLeadId) || (selectedLead?._id === requestedLeadId ? selectedLead : null) : null;
+  const returnTo = searchParams.get('returnTo');
   const [leadFormOpen, setShowLeadForm] = useState(false);
   const showLeadForm = leadFormOpen || searchParams.get("new") === "1";
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
@@ -99,6 +106,20 @@ export default function CRM() {
     catch { toast.error("Couldn’t delete the enquiry"); }
   };
   const openInvoice = lead => navigate(invoiceDestination(invoices, lead));
+  const selectLead = lead => {
+    setSelectedLead(lead);
+    const next = new URLSearchParams(searchParams);
+    next.set('lead', lead._id);
+    setSearchParams(next);
+  };
+  const closeLead = () => {
+    setSelectedLead(null);
+    if (returnTo) { navigate(safeStudioReturn(returnTo)); return; }
+    const next = new URLSearchParams(searchParams);
+    next.delete('lead');
+    next.delete('returnTo');
+    setSearchParams(next, { replace: true });
+  };
   const deleteInvoice = async (invoice) => {
     if (!window.confirm(`Permanently delete the invoice for ${invoice.clientName}?`)) return;
     try { await axios.delete(`${studioApi}/api/invoices/${invoice._id}`, studioAuth()); setInvoices((previous) => previous.filter((item) => item._id !== invoice._id)); toast.success("Invoice deleted"); }
@@ -108,11 +129,12 @@ export default function CRM() {
   const navigation = <div className="studio-tabs studio-crm-main-tabs">{[{ id: "leads", title: "Enquiries", icon: <Users size={15} /> }, { id: "invoices", title: "Invoices", icon: <FileText size={15} /> }].map(({ id, title, icon }) => <button key={id} className={activeTab === id ? "active" : ""} onClick={() => setActiveTab(id)}>{icon}{title}</button>)}</div>;
 
   return <div className="studio-crm">
+    {requestedLeadId && !loading && !error && !activeLead && <div className="studio-error" role="status"><span>This enquiry is unavailable or has been removed.</span><Link className="studio-button small" to={safeStudioReturn(returnTo)}>Back to overview</Link></div>}
     {activeTab === "invoices" && <div className="studio-page-heading"><div><span className="studio-eyebrow">CLIENT RELATIONSHIPS</span><h1>A clear view of every commitment.</h1><p className="studio-muted">Your studio, connected and considered.</p></div><button className="studio-button primary" onClick={() => navigate("/admin/invoices/new")}><Plus size={17} />New invoice</button></div>}
     {activeTab !== "leads" && navigation}
-    {activeTab === "leads" && <EnquiriesView leads={leads} loading={loading} error={error} query={searchQuery} onQuery={setSearchQuery} status={filterStatus} onStatus={setFilterStatus} sort={sortBy} onSort={setSortBy} onSelect={setSelectedLead} onCreate={() => setShowLeadForm(true)} onDelete={deleteLead} onRefresh={() => { setLoading(true); setError(""); fetchLeads(); }} navigation={navigation} />}
+    {activeTab === "leads" && <EnquiriesView leads={leads} loading={loading} error={error} query={searchQuery} onQuery={setSearchQuery} status={filterStatus} onStatus={setFilterStatus} sort={sortBy} onSort={setSortBy} onSelect={selectLead} onCreate={() => setShowLeadForm(true)} onDelete={deleteLead} onRefresh={() => { setLoading(true); setError(""); fetchLeads(); }} navigation={navigation} />}
     {activeTab === "invoices" && <section className="studio-card studio-crm-table-card"><div className="studio-crm-card-heading"><div><h2>Invoices</h2><p className="studio-muted">{invoices.length} client {invoices.length === 1 ? "invoice" : "invoices"}</p></div><button className="studio-icon-button" aria-label="Refresh invoices" onClick={fetchInvoices}><RefreshCw size={16} /></button></div>{invoiceError ? <div className="studio-error studio-crm-load-error" role="alert">{invoiceError}<button className="studio-button small" onClick={fetchInvoices}>Try again</button></div> : <div className="studio-crm-table-scroll"><table className="studio-table studio-crm-table"><thead><tr><th>Client</th><th>Invoice date</th><th>Status</th><th>Invoice total</th><th>Actions</th></tr></thead><tbody>{invoices.length ? invoices.map((invoice) => <tr key={invoice._id}><td><strong>{invoice.clientName}</strong></td><td>{displayDate(invoice.invoiceDate)}</td><td><span className={`studio-badge studio-crm-badge ${statusClass(invoice.status)}`}>{invoice.status}</span></td><td><strong>{money(invoice.total)}</strong></td><td><div className="studio-crm-row-actions"><button className="studio-button small" onClick={() => navigate("/admin/invoices/" + invoice._id)}><FileText size={14} />View invoice</button><button className="studio-icon-button" aria-label={`Delete invoice for ${invoice.clientName}`} onClick={() => deleteInvoice(invoice)}><Trash2 size={15} /></button></div></td></tr>) : <tr><td colSpan="5"><div className="studio-empty"><FileText size={28} /><h3>No invoices yet</h3><p>Create an invoice from an enquiry or add one above.</p></div></td></tr>}</tbody></table></div>}</section>}
     {showLeadForm && <StudioLeadForm onClose={closeLeadForm} onSaved={createLead} />}
-    {selectedLead && <StudioLeadDetails lead={selectedLead} onClose={() => setSelectedLead(null)} onUpdate={updateLead} onGenerateInvoice={openInvoice} existingInvoice={invoiceForLead(invoices, selectedLead)} />}
+    {activeLead && <StudioLeadDetails lead={activeLead} onClose={closeLead} onUpdate={updateLead} onGenerateInvoice={openInvoice} existingInvoice={invoiceForLead(invoices, activeLead)} />}
   </div>;
 }

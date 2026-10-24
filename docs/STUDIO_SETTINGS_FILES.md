@@ -1,6 +1,6 @@
 # Modified and added files
 
-Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a2004c6e759e3bde3`). Includes settings, Gmail, appearance, workspace refinement, visible switches, the Finance overview card, responsive layout and the quotation register redesign. Generated build outputs, local environment files and sample preview fixtures are excluded.
+Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a2004c6e759e3bde3`). Includes settings, Gmail, appearance, workflow refinements, overview ordering/switches, Finance due payments, mobile records, shared quotation status and studio timezone behavior. Generated build outputs, local environment files and sample preview fixtures are excluded.
 
 - `backend/.env.example`
 - `backend/controllers/photographerController.js`
@@ -24,6 +24,7 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `backend/routes/adminUserRoutes.js`
 - `backend/routes/calendarRoutes.js`
 - `backend/routes/contactRoutes.js`
+- `backend/routes/dashboardRoutes.js`
 - `backend/routes/driveGalleryRoutes.js`
 - `backend/routes/financeRoutes.js`
 - `backend/routes/galleryRoutes.js`
@@ -58,6 +59,7 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `backend/tests/client-link-privacy.test.js`
 - `backend/tests/client-project.test.js`
 - `backend/tests/contact-records.test.js`
+- `backend/tests/dashboard-overdue.test.js`
 - `backend/tests/document-covers.test.js`
 - `backend/tests/document-defaults.test.js`
 - `backend/tests/drive-gallery-security.test.js`
@@ -79,6 +81,7 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `backend/utils/invoiceBranding.js`
 - `backend/utils/invoiceValues.js`
 - `backend/utils/quoteLifecycle.js`
+- `backend/utils/studioDay.js`
 - `backend/utils/studioPreferences.js`
 - `backend/utils/studioRecords.js`
 - `backend/utils/studioSettings.js`
@@ -88,22 +91,31 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `docs/STUDIO_UI_REFINEMENT_AUDIT.md`
 - `frontend/package.json`
 - `frontend/src/App.jsx`
+- `frontend/src/admin/components/calendar/CalendarInsights.jsx`
 - `frontend/src/admin/components/calendar/EventForm.jsx`
+- `frontend/src/admin/components/calendar/calendarData.js`
+- `frontend/src/admin/components/calendar/calendarRefinements.css`
 - `frontend/src/admin/components/common/AdminProfileModal.jsx`
 - `frontend/src/admin/components/common/Layout.jsx`
 - `frontend/src/admin/components/common/OverviewCustomizer.jsx`
 - `frontend/src/admin/components/common/Sidebar.jsx`
 - `frontend/src/admin/components/common/StudioPreferences.jsx`
 - `frontend/src/admin/components/common/Topbar.jsx`
+- `frontend/src/admin/components/contacts/CompactWorkspaceRecords.jsx`
+- `frontend/src/admin/components/contacts/ContactRelatedTables.jsx`
 - `frontend/src/admin/components/contacts/ContactWorkflowUI.jsx`
 - `frontend/src/admin/components/contacts/contactPaymentTotals.js`
+- `frontend/src/admin/components/finance/DuePayments.jsx`
 - `frontend/src/admin/components/finance/OverviewFinanceCard.jsx`
+- `frontend/src/admin/components/finance/duePayments.js`
+- `frontend/src/admin/components/finance/financeDue.css`
 - `frontend/src/admin/components/finance/overviewFinanceData.js`
 - `frontend/src/admin/components/integrations/GmailConnectionCard.jsx`
 - `frontend/src/admin/components/integrations/gmailApi.js`
 - `frontend/src/admin/components/operations/OperationsUI.jsx`
 - `frontend/src/admin/components/operations/WorkspaceActionMenu.jsx`
 - `frontend/src/admin/components/operations/WorkspaceUI.jsx`
+- `frontend/src/admin/components/operations/insightData.js`
 - `frontend/src/admin/components/operations/workspaceData.js`
 - `frontend/src/admin/components/settings/ApplyProductionTemplate.jsx`
 - `frontend/src/admin/components/settings/SecurityRecoveryPanel.jsx`
@@ -114,6 +126,7 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `frontend/src/admin/pages/CRM.jsx`
 - `frontend/src/admin/pages/Calendar.jsx`
 - `frontend/src/admin/pages/ContactDetail.jsx`
+- `frontend/src/admin/pages/Contacts.jsx`
 - `frontend/src/admin/pages/Crew.jsx`
 - `frontend/src/admin/pages/Dashboard.jsx`
 - `frontend/src/admin/pages/DataManagement.jsx`
@@ -145,9 +158,20 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `frontend/src/pages/ClientProjectWorkspace.jsx`
 - `frontend/src/pages/PublicInvoice.jsx`
 - `frontend/src/pages/SharedQuotation.jsx`
+- `frontend/src/utils/dashboardData.js`
 - `frontend/src/utils/invoiceDocument.js`
 - `frontend/src/utils/overviewPreferences.js`
+- `frontend/src/utils/quotationStatus.js`
 - `frontend/src/utils/settingsDefaults.js`
 - `frontend/src/utils/studioIdentity.js`
+- `frontend/src/utils/studioNavigation.js`
+- `frontend/src/utils/studioTime.js`
+- `frontend/test/dashboardData.test.mjs`
+- `frontend/test/finance-due-queue.test.mjs`
 - `frontend/test/overview-finance.test.mjs`
+- `frontend/test/overview-order.test.mjs`
+- `frontend/test/quotation-status.test.mjs`
 - `frontend/test/settings-defaults.test.mjs`
+- `frontend/test/studio-insights.test.mjs`
+- `frontend/test/studio-time-calendar.test.mjs`
+- `frontend/test/studioNavigation.test.mjs`

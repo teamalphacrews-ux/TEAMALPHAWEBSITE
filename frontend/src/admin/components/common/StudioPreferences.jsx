@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../../../context/AuthContext';
 import API from '../../../utils/apiConfig';
 
-import { OVERVIEW_CARDS, defaultOverviewPreferences as defaultPreferences, normalizeOverviewPreferences as normalize } from '../../../utils/overviewPreferences';
+import { OVERVIEW_CARDS, DEFAULT_CARD_ORDER, defaultOverviewPreferences as defaultPreferences, normalizeOverviewPreferences as normalize, moveOverviewCard } from '../../../utils/overviewPreferences';
 export { OVERVIEW_CARDS };
 
 const Context = createContext(null);
@@ -43,12 +43,13 @@ export function StudioPreferencesProvider({ children }) {
     const next = normalize({ ...current.current, ...patch }); current.current = next; setPreferences(next);
     try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* Server persistence remains available. */ }
     if (user?.isPreview) { setSyncState('preview'); return; }
-    pending.current = { ...pending.current, ...patch, layoutVersion: 2, visibleCards: next.visibleCards };
+    pending.current = { ...pending.current, ...patch, layoutVersion: 2, visibleCards: next.visibleCards, cardOrder: next.cardOrder };
     clearTimeout(timer.current);
     timer.current = setTimeout(async () => { await flush(); if (pending.current && !sending.current) timer.current = setTimeout(flush, 500); }, 350);
   }, [flush, key, user?.isPreview]);
   const toggleCard = id => update({ visibleCards: current.current.visibleCards.includes(id) ? current.current.visibleCards.filter(value => value !== id) : [...current.current.visibleCards, id] });
-  return <Context.Provider value={{ preferences, update, toggleCard, resetCards: () => update({ visibleCards: defaultPreferences().visibleCards }), syncState, retrySave: () => { pending.current ||= current.current; return flush(); } }}>{children}</Context.Provider>;
+  const moveCard = (id, direction) => update({ cardOrder: moveOverviewCard(current.current.cardOrder || DEFAULT_CARD_ORDER, id, direction) });
+  return <Context.Provider value={{ preferences: { ...preferences, cardOrder: preferences.cardOrder || DEFAULT_CARD_ORDER }, update, toggleCard, moveCard, resetCards: () => { const defaults = defaultPreferences(); update({ visibleCards: defaults.visibleCards, cardOrder: defaults.cardOrder }); }, syncState, retrySave: () => { pending.current ||= current.current; return flush(); } }}>{children}</Context.Provider>;
 }
 // eslint-disable-next-line react-refresh/only-export-components -- Shared preference provider and hook.
 export function useStudioPreferences() { const context = useContext(Context); if (!context) throw new Error('Studio preferences require their provider.'); return context; }

@@ -1,12 +1,19 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { recordDate, rupees } from "../operations/workspaceData";
 import { contactPaymentTotals } from "./contactPaymentTotals";
+import { quotationStatus } from "../../../utils/quotationStatus";
 export function ContactDocuments({
   quotations = [],
   invoices = [],
   documents = [],
   onDraft,
 }) {
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setClock(Date.now()), 60000);
+    return () => clearInterval(interval);
+  }, []);
   const rows = [
     ...quotations.map((item) => ({
       ...item,
@@ -14,6 +21,7 @@ export function ContactDocuments({
         (item.documentNumber ? `Quote #${item.documentNumber} · ` : "") +
         item.title,
       kind: "Quote",
+      status: quotationStatus(item, clock),
       amount: rupees(item.totalPaise / 100),
       url: "/admin/quotations?quote=" + item._id,
     })),

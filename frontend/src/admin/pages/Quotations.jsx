@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../../utils/branding";
 import { quotationDefaults, addDocumentDays, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
 import { API_BASE_URL } from '../../utils/apiConfig';
+import { quotationStatus } from '../../utils/quotationStatus';
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   Plus,
@@ -298,15 +299,7 @@ export default function Quotations() {
     setSavedAt("Unsaved changes");
   };
 
-  const status = (q) =>
-    ["Draft", "Sent"].includes(q.status) &&
-    q.expiryEnabled !== false &&
-    q.validUntil &&
-    clock >= Date.parse(dateOnly(q.validUntil) + "T18:30:00Z")
-      ? "Expired"
-      : q.status === "Sent"
-        ? "Open"
-        : q.status;
+  const status = (quote) => quotationStatus(quote, clock);
   const subtotal = (form.items || []).reduce(
     (s, i) => s + Number(i.quantity) * Number(i.unitPricePaise),
     0,

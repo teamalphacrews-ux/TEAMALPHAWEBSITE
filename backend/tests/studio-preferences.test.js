@@ -28,3 +28,9 @@ test('appearance updates are scoped to the signed-in saved account and do not ch
   assert.deepEqual(captured.update, { $set: { 'studioPreferences.theme': 'dark', 'studioPreferences.visibleCards': [] } });
   assert.deepEqual(result.body.preferences.visibleCards, []);
 });
+test('card order is an independent complete permutation and rejects incomplete or duplicate layouts', () => {
+  const order = [...defaults().cardOrder].reverse();
+  assert.deepEqual(parsePreferences({ cardOrder: order, visibleCards: [] }), { visibleCards: [], cardOrder: order });
+  for (const cardOrder of [[], ['actionQueue'], [...CARD_IDS.slice(0, -1), CARD_IDS[0]], [...CARD_IDS.slice(0, -1), 'unknown']]) assert.throws(() => parsePreferences({ cardOrder }), error => error.status === 400);
+  const original = defaults(); original.cardOrder.reverse(); assert.deepEqual(defaults().cardOrder.slice(0, 3), ['bookingMomentum', 'productionPulse', 'financePulse']);
+});

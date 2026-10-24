@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import { ProjectForm } from "../components/contacts/ContactWorkflowUI";
+import { CompactProjects } from "../components/contacts/CompactWorkspaceRecords";
 import {
   useWorkspaceData,
   recordDate,
@@ -58,6 +59,7 @@ export default function StudioProjects() {
           <button
             key={label}
             className={label === filter ? "active" : ""}
+            aria-pressed={label === filter}
             onClick={() => setFilter(label)}
           >
             {label}
@@ -66,7 +68,9 @@ export default function StudioProjects() {
       </div>
       <WorkspaceError error={error} retry={reload} />
       {visible.length ? (
-        <div className="reference-table-scroll">
+        <>
+        <CompactProjects projects={visible} />
+        <div className="reference-table-scroll reference-desktop-records">
           <table className="reference-table">
             <thead>
               <tr>
@@ -114,6 +118,7 @@ export default function StudioProjects() {
             </tbody>
           </table>
         </div>
+        </>
       ) : (
         <WorkspaceEmpty
           loading={loading}

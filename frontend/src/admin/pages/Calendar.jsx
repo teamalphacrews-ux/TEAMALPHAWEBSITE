@@ -15,10 +15,14 @@ import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import EventForm from "../components/calendar/EventForm";
 import CalendarInsights from "../components/calendar/CalendarInsights";
-import { calendarMonthLoad } from "../components/operations/insightData";
+import { calendarDateLabel, calendarMonthGrid, calendarMonthLoad, shiftCalendarMonth } from "../components/calendar/calendarData";
+import { safeStudioReturn } from '../../utils/studioNavigation';
 import { deriveCrewSchedule } from "../components/operations/crewSchedule";
 import { operationAPI } from "../components/operations/operationsUtils";
 import { useAuth } from "../../context/AuthContext";
+import { useStudioIdentity } from "../../utils/studioIdentity";
+import { eventOnStudioDay, formatStudioDate, formatStudioTime, studioDayKey, studioDateTimeToISO, studioTimezone } from "../../utils/studioTime";
+import '../components/calendar/calendarRefinements.css';
 import { GOOGLE_PREVIEW_MESSAGE, googleCalendarHandoff, googleConnectionError } from "../components/calendar/googleConnection";
 import {
   WorkspaceHeader,
@@ -32,55 +36,56 @@ import {
   useWorkspaceData,
   workspaceRequest,
   recordError,
-  recordDate,
 } from "../components/operations/workspaceData";
-const keyDate = (value) => {
-  const d = new Date(value);
-  return (
-    d.getFullYear() +
-    "-" +
-    String(d.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(d.getDate()).padStart(2, "0")
-  );
-};
-const time = (value) =>
-  new Date(value).toLocaleTimeString("en-IN", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+function CalendarEventEditor({ timezone, ...props }) {
+  // One editing session uses one resolved zone. Later settings refreshes must
+  // not remount the form or reinterpret a time the user has already entered.
+  const [editorTimezone] = useState(timezone);
+  return <EventForm key={editorTimezone} timezone={editorTimezone} {...props} />;
+}
 export default function Calendar() {
   const { user } = useAuth();
+  const { identity, loading: identityLoading } = useStudioIdentity();
+  const timezone = studioTimezone(identity?.timezone);
+  const time = value => formatStudioTime(value, timezone);
+  const dateLabel = (key, options) => calendarDateLabel(key, options, timezone);
+  const eventTime = event => event.allDay === true ? 'All day' : `${time(event.start)} – ${studioDayKey(event.start, timezone) !== studioDayKey(event.end, timezone) ? formatStudioDate(event.end, { day: 'numeric', month: 'short', year: undefined }, timezone) + ' ' : ''}${time(event.end)}`;
   const isPreview = user?.isPreview === true;
-  const [sessionParams]=useSearchParams();
+  const [sessionParams, setSessionParams]=useSearchParams();
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/calendar",
     "/api/photographers",
     "/api/leads",
   ]);
   const [events = [], crew = [], leads = []] = data;
+  const eventId = sessionParams.get('event');
+  const linkedEvent = events.find(event => String(event._id) === eventId);
+  const linkedDay = linkedEvent ? studioDayKey(linkedEvent.start, timezone) : '';
   const connection = useWorkspaceData(["/api/calendar/sync-status"]);
   const sync = connection.data[0] || {};
-  const [month, setMonth] = useState(
-      () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    ),
-    [selected, setSelected] = useState(() => keyDate(new Date())),
+  const [monthState, setMonth] = useState(null),
+    [selectedState, setSelected] = useState(null),
     [view, setView] = useState(() =>
       window.innerWidth < 680 ? "agenda" : "month",
     ),
+    [agendaScope, setAgendaScope] = useState("month"),
     [query, setQuery] = useState(""),
     [crewFilter, setCrewFilter] = useState("all"),
-    [editing, setEditing] = useState(()=>sessionParams.get("contact")?{
+    [editingState, setEditing] = useState(()=>sessionParams.get("contact")?{
       title:"Client session",type:"Meeting",contactId:sessionParams.get("contact"),studioProjectId:sessionParams.get("project")||null,
-      start:new Date(new Date().setHours(10,0,0,0)).toISOString(),end:new Date(new Date().setHours(11,0,0,0)).toISOString(),
     }:undefined),
-    [detail, setDetail] = useState(null),
+    [detailState, setDetail] = useState(null),
     [deleting, setDeleting] = useState(null),
     [busy, setBusy] = useState(false),
     [saveError, setSaveError] = useState(""),
     [syncBusy, setSyncBusy] = useState(false),
     [connectionError, setConnectionError] = useState("");
   const callbackResult = sessionParams.get("sync");
+  const todayKey = studioDayKey(new Date(), timezone);
+  const month = linkedDay ? linkedDay.slice(0, 7) : monthState || todayKey.slice(0, 7);
+  const selected = linkedDay || selectedState || todayKey;
+  const editing = editingState && !editingState.start ? { ...editingState, start: studioDateTimeToISO(`${selected}T10:00`, timezone), end: studioDateTimeToISO(`${selected}T11:00`, timezone) } : editingState;
+  const detail = linkedEvent || detailState;
   const setupMessage = isPreview ? GOOGLE_PREVIEW_MESSAGE : sync.setupMessage || "";
   useEffect(() => {
     const socket = io(operationAPI, {
@@ -98,25 +103,18 @@ export default function Calendar() {
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
-  const first = new Date(month);
-  first.setDate(1 - ((first.getDay() + 6) % 7));
-  const days = Array.from({ length: 42 }, (_, index) => {
-    const d = new Date(first);
-    d.setDate(d.getDate() + index);
-    return d;
-  });
-  const inDay = (event, day) => {
-    const start = new Date(day);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    return new Date(event.start) < end && new Date(event.end) > start;
-  };
-  const selectedDay = new Date(selected + "T00:00:00");
+  const days = calendarMonthGrid(month);
   const selectedEvents = visible
-    .filter((event) => inDay(event, selectedDay))
+    .filter((event) => eventOnStudioDay(event, selected, timezone))
     .sort((a, b) => new Date(a.start) - new Date(b.start));
-  const monthEvents = calendarMonthLoad(visible, month).events;
+  const monthEvents = calendarMonthLoad(visible, month, timezone).events;
+  const agendaEvents = agendaScope === 'day' ? selectedEvents : [...monthEvents].sort((a, b) => new Date(a.start) - new Date(b.start));
+  const returnTo = safeStudioReturn(sessionParams.get('returnTo'), '');
+  const closeDetail = () => {
+    setDetail(null);
+    if (linkedDay) { setMonth(linkedDay.slice(0, 7)); setSelected(linkedDay); }
+    if (eventId) setSessionParams(current => { const next = new URLSearchParams(current); next.delete('event'); return next; }, { replace: true });
+  };
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60000);
@@ -124,14 +122,14 @@ export default function Calendar() {
   }, []);
   const schedule = deriveCrewSchedule(crew, events, now);
   const changeMonth = (offset) => {
-    const next = new Date(month.getFullYear(), month.getMonth() + offset, 1);
+    const next = shiftCalendarMonth(month, offset);
     setMonth(next);
-    setSelected(keyDate(next));
+    setSelected(`${next}-01`);
   };
   const openNew = () => {
-    const start = new Date(selected + "T10:00:00");
-    const end = new Date(selected + "T18:00:00");
-    setEditing({ start: start.toISOString(), end: end.toISOString() });
+    const start = studioDateTimeToISO(`${selected}T10:00`, timezone);
+    const end = studioDateTimeToISO(`${selected}T18:00`, timezone);
+    setEditing({ start, end });
     setSaveError("");
   };
   const save = async (values) => {
@@ -222,7 +220,7 @@ export default function Calendar() {
               : "Connect Google"}
         </button>
         {sync.isSynced && sync.syncError && <button className="studio-button" onClick={connect} disabled={isPreview || syncBusy}>Reconnect Google</button>}
-        <button className="studio-button primary" onClick={openNew}>
+        <button className="studio-button primary" onClick={openNew} disabled={identityLoading}>
           <Plus size={14} />
           Schedule event
         </button>
@@ -268,7 +266,9 @@ export default function Calendar() {
         ]}
       />
       <WorkspaceError error={error} retry={reload} />
-      <CalendarInsights key={month.getFullYear() + "-" + month.getMonth()} events={visible} month={month} selected={selected} onSelect={setSelected} loading={loading} />
+      {returnTo && <Link className="studio-button small calendar-return-link" to={returnTo}><ChevronLeft size={15} /> Back to previous page</Link>}
+      {eventId && !loading && !error && !linkedEvent && <WorkspaceError error="This event could not be found. It may have been removed or is no longer accessible." />}
+      <CalendarInsights key={month + timezone} events={visible} month={month} selected={selected} onSelect={setSelected} loading={loading} timezone={timezone} />
       <section className="studio-card workspace-calendar">
         <div className="workspace-calendar-heading">
           <div className="workspace-calendar-nav">
@@ -281,10 +281,7 @@ export default function Calendar() {
                 <ChevronLeft size={17} />
               </button>
               <h2>
-                {month.toLocaleDateString("en-IN", {
-                  month: "long",
-                  year: "numeric",
-                })}
+                {dateLabel(`${month}-01`, { month: "long", year: "numeric", day: undefined })}
               </h2>
               <button
                 className="studio-icon-button"
@@ -297,10 +294,9 @@ export default function Calendar() {
             <button
               className="studio-button small"
               onClick={() => {
-                setMonth(
-                  new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-                );
-                setSelected(keyDate(new Date()));
+                const today = studioDayKey(new Date(), timezone);
+                setMonth(today.slice(0, 7));
+                setSelected(today);
               }}
             >
               Today
@@ -311,7 +307,7 @@ export default function Calendar() {
               <button
                 key={mode}
                 className={view === mode ? "active" : ""}
-                onClick={() => setView(mode)}
+                onClick={() => { setView(mode); if (mode === "agenda") setAgendaScope("month"); }}
                 aria-pressed={view === mode}
               >
                 {mode === "month" ? "Month" : "Agenda"}
@@ -339,6 +335,7 @@ export default function Calendar() {
             ))}
           </select>
         </div>
+        {view === 'agenda' && <div className="workspace-agenda-heading"><div><h3>{agendaScope === 'day' ? dateLabel(selected) : 'Agenda for ' + dateLabel(`${month}-01`, { month: 'long', year: 'numeric', day: undefined })}</h3><p className="studio-muted">{agendaEvents.length} {agendaEvents.length === 1 ? 'event' : 'events'} · {timezone}</p></div>{agendaScope === 'day' && <button type="button" className="studio-button small" onClick={() => setAgendaScope('month')}>Show whole month</button>}</div>}
         {loading ? (
           <WorkspaceEmpty loading />
         ) : view === "month" ? (
@@ -358,28 +355,28 @@ export default function Calendar() {
                   </div>
                 ))}
                 {days.map((day) => {
-                  const dayEvents = visible.filter(event => inDay(event, day));
+                  const dayEvents = visible.filter(event => eventOnStudioDay(event, day, timezone));
                   return (
                     <div
                       role="group"
-                      aria-label={recordDate(day)}
+                      aria-label={dateLabel(day)}
                       className={
                         "workspace-calendar-day" +
-                        (day.getMonth() !== month.getMonth() ? " outside" : "") +
-                        (keyDate(day) === selected ? " selected" : "")
+                        (day.slice(0, 7) !== month ? " outside" : "") +
+                        (day === selected ? " selected" : "")
                       }
-                      key={keyDate(day)}
+                      key={day}
                     >
                       <button
                         className={
                           "workspace-day-number" +
-                          (keyDate(day) === keyDate(new Date()) ? " today" : "")
+                          (day === studioDayKey(new Date(), timezone) ? " today" : "")
                         }
-                        aria-label={"Select " + recordDate(day) + (dayEvents.length ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}` : '')}
-                        aria-pressed={keyDate(day) === selected}
-                        onClick={() => setSelected(keyDate(day))}
+                        aria-label={"Select " + dateLabel(day) + (dayEvents.length ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}` : '')}
+                        aria-pressed={day === selected}
+                        onClick={() => setSelected(day)}
                       >
-                        <span>{day.getDate()}</span>
+                        <span>{Number(day.slice(8, 10))}</span>
                         <span className="workspace-calendar-day-count" aria-hidden="true">
                           {dayEvents.length > 0 && <i />}
                           {dayEvents.length > 1 && <small>{dayEvents.length}</small>}
@@ -391,7 +388,7 @@ export default function Calendar() {
                           <button
                             className={
                               "workspace-calendar-event type-" +
-                              event.type.toLowerCase().replace(/[^a-z]/g, "")
+                              String(event.type || 'Other').toLowerCase().replace(/[^a-z]/g, "")
                             }
                             key={event._id}
                             onClick={() => setDetail(event)}
@@ -403,7 +400,8 @@ export default function Calendar() {
                         <button
                           className="workspace-more-events"
                           onClick={() => {
-                            setSelected(keyDate(day));
+                            setSelected(day);
+                            setAgendaScope("day");
                             setView("agenda");
                           }}
                         >
@@ -415,25 +413,23 @@ export default function Calendar() {
                 })}
               </div>
             </div>
-            <section className="workspace-mobile-day-events" aria-label={'Events for ' + recordDate(selectedDay)}>
-              <h3>{recordDate(selectedDay)}</h3>
+            <section className="workspace-mobile-day-events" aria-label={'Events for ' + dateLabel(selected)}>
+              <h3>{dateLabel(selected)}</h3>
               <p>Tap a day to review its events.</p>
               {selectedEvents.length ? selectedEvents.map(event => (
                 <button key={event._id} className="workspace-agenda-event" onClick={() => setDetail(event)}>
                   <span>
                     <strong>{event.title}</strong>
-                    <small>{time(event.start)} – {time(event.end)} · {event.location || 'Location to be confirmed'}</small>
+                    <small>{eventTime(event)} · {event.location || 'Location to be confirmed'}</small>
                   </span>
                   <ChevronRight size={16} aria-hidden="true" />
                 </button>
               )) : <p className="workspace-day-empty">No events scheduled for this day.</p>}
             </section>
           </>
-        ) : monthEvents.length ? (
+        ) : agendaEvents.length ? (
           <div className="workspace-agenda">
-            {monthEvents
-              .sort((a, b) => new Date(a.start) - new Date(b.start))
-              .map((event) => (
+            {agendaEvents.map((event) => (
                 <button
                   key={event._id}
                   className="workspace-agenda-event"
@@ -441,16 +437,14 @@ export default function Calendar() {
                 >
                   <span className="workspace-date-tile">
                     <small>
-                      {new Date(event.start).toLocaleDateString("en-IN", {
-                        month: "short",
-                      })}
+                      {formatStudioDate(event.start, { month: "short", day: undefined, year: undefined }, timezone)}
                     </small>
-                    <strong>{new Date(event.start).getDate()}</strong>
+                    <strong>{formatStudioDate(event.start, { day: "numeric", month: undefined, year: undefined }, timezone)}</strong>
                   </span>
                   <span>
                     <strong>{event.title}</strong>
                     <small>
-                      {time(event.start)} – {time(event.end)} ·{" "}
+                      {eventTime(event)} ·{" "}
                       {event.location || "Location to be confirmed"}
                     </small>
                     <small>
@@ -465,7 +459,7 @@ export default function Calendar() {
         ) : (
           <WorkspaceEmpty
             title={query.trim() || crewFilter !== "all" ? "No matching events" : "A little space in the diary"}
-            description={query.trim() || crewFilter !== "all" ? "Try another search or choose All crew." : "Schedule the next shoot or consultation for this month."}
+            description={query.trim() || crewFilter !== "all" ? "Try another search or choose All crew." : agendaScope === 'day' ? "No events are scheduled for this selected day." : "Schedule the next shoot or consultation for this month."}
           />
         )}
       </section>
@@ -482,15 +476,16 @@ export default function Calendar() {
         <WorkspaceError error={"Google sync: " + sync.syncError} />
       )}
       <p className="workspace-calendar-timezone">
-        Times shown in {Intl.DateTimeFormat().resolvedOptions().timeZone}.{" "}
+        Times shown in {timezone}.{" "}
         {sync.lastSyncAt
-          ? "Last Google sync: " + recordDate(sync.lastSyncAt)
+          ? "Last Google sync: " + formatStudioDate(sync.lastSyncAt, {}, timezone)
           : ""}
       </p>
-      {editing !== undefined && (
-        <EventForm
-          key={editing?._id || selected}
+      {editing !== undefined && !identityLoading && (
+        <CalendarEventEditor
+          key={editing?._id || editing?.contactId || 'new-event'}
           initialData={editing}
+          timezone={timezone}
           crew={crew}
           leads={leads}
           busy={busy}
@@ -502,7 +497,7 @@ export default function Calendar() {
       {detail && (
         <WorkspaceDialog
           title={detail.title}
-          onClose={() => setDetail(null)}
+          onClose={closeDetail}
           footer={
             <>
               {!detail.isReadOnly && (
@@ -511,7 +506,7 @@ export default function Calendar() {
                     className="studio-button danger"
                     onClick={() => {
                       setDeleting(detail);
-                      setDetail(null);
+                      closeDetail();
                       setSaveError("");
                     }}
                   >
@@ -522,7 +517,7 @@ export default function Calendar() {
                     className="studio-button primary"
                     onClick={() => {
                       setEditing(detail);
-                      setDetail(null);
+                      closeDetail();
                       setSaveError("");
                     }}
                   >
@@ -537,8 +532,7 @@ export default function Calendar() {
           <div className="workspace-event-detail">
             <p>
               <CalendarDays size={16} />
-              {recordDate(detail.start)} · {time(detail.start)} –{" "}
-              {time(detail.end)}
+              {formatStudioDate(detail.start, {}, timezone)} · {eventTime(detail)}
             </p>
             <p>
               <MapPin size={16} />

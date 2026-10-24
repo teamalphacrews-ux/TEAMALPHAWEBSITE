@@ -10,13 +10,14 @@ export const whatsappContactUrl = (number, message = '') => {
 };
 export function useStudioIdentity() {
   const [identity, setIdentity] = useState(null);
+  const [loading, setLoading] = useState(() => Boolean(localStorage.getItem('token')));
   useEffect(() => {
     const controller = new AbortController();
-    const changed = event => setIdentity(event.detail);
+    const changed = event => { setIdentity(event.detail); setLoading(false); };
     window.addEventListener('studio-settings-updated', changed);
     const token = localStorage.getItem('token');
-    if (token) axios.get(API + '/api/studio/settings', { signal: controller.signal, headers: { Authorization: 'Bearer ' + token } }).then(result => setIdentity(result.data)).catch(() => {});
+    if (token) axios.get(API + '/api/studio/settings', { signal: controller.signal, headers: { Authorization: 'Bearer ' + token } }).then(result => setIdentity(result.data)).catch(() => {}).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); window.removeEventListener('studio-settings-updated', changed); };
   }, []);
-  return { name: identity?.studioName || 'Team Alpha', photo: studioImageUrl(identity?.profilePhotoUrl || identity?.logoUrl), identity };
+  return { name: identity?.studioName || 'Team Alpha', photo: studioImageUrl(identity?.profilePhotoUrl || identity?.logoUrl), identity, loading };
 }

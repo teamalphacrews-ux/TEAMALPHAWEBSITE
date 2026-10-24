@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Plus,
   FileText,
@@ -8,7 +8,11 @@ import {
   Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import {useNavigate} from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useStudioIdentity } from '../../utils/studioIdentity';
+import { formatStudioDate, studioDayKey, studioTimezone } from '../../utils/studioTime';
+import { invoiceDueQueue, invoiceOutstandingBalance } from '../components/finance/duePayments';
+import DuePayments from '../components/finance/DuePayments.jsx';
 import {
   WorkspaceHeader,
   WorkspaceMetrics,
@@ -22,15 +26,21 @@ import {
   useWorkspaceData,
   workspaceRequest,
   recordError,
-  recordDate,
   rupees,
 } from "../components/operations/workspaceData";
 import { remainingAmount } from "../components/studio/leadUtils";
 import { FinanceInsights, ExpenseBreakdown } from "../components/finance/FinanceInsights";
 import { bookingCollections } from "../components/operations/insightData";
-import { contactPaymentTotals } from "../components/contacts/contactPaymentTotals";
 export default function Finance() {
   const navigate=useNavigate();
+  const [params, setParams] = useSearchParams();
+  const tab = ['due', 'invoices', 'ledger'].includes(params.get('view')) ? params.get('view') : 'bookings';
+  const setTab = value => setParams(current => { const next = new URLSearchParams(current); next.set('view', value); return next; });
+  const { identity } = useStudioIdentity();
+  const timezone = studioTimezone(identity?.timezone);
+  const recordDate = value => formatStudioDate(value, {}, timezone);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const timer = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(timer); }, []);
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/studio/finance",
     "/api/invoices",
@@ -38,8 +48,7 @@ export default function Finance() {
   const { leads = [], entries = [] } = data[0] || {};
   const invoices = data[1] || [];
   const collections = bookingCollections(leads);
-  const [tab, setTab] = useState("bookings"),
-    [query, setQuery] = useState(""),
+  const [query, setQuery] = useState(""),
     [entry, setEntry] = useState(undefined),
     [form, setForm] = useState({}),
     [payment, setPayment] = useState(null),
@@ -48,15 +57,13 @@ export default function Finance() {
     [updatingInvoice, setUpdatingInvoice] = useState(""),
     [deleting, setDeleting] = useState(null);
   const bookings = leads.filter((lead) => lead.status === "Converted");
+  const dueRows = invoiceDueQueue(invoices, now, timezone);
   const paidExpenses = entries.filter(
     (row) => row.type === "expense" && row.status === "Paid",
   );
   const sum = (rows, key) =>
     rows.reduce((total, row) => total + (Number(row[key]) || 0), 0);
-  const invoiceBalance = row => {
-    const totals = contactPaymentTotals([row]);
-    return totals.upcoming + totals.pastDue;
-  };
+  const invoiceBalance = invoiceOutstandingBalance;
   const openEntry = (row) => {
     setEntry(row || null);
     setForm(
@@ -65,7 +72,7 @@ export default function Finance() {
             title: row.description,
             amount: row.amount,
             category: row.category,
-            date: new Date(row.date).toISOString().slice(0, 10),
+            date: studioDayKey(row.date, timezone),
             type: row.type,
             status: row.status,
           }
@@ -73,7 +80,7 @@ export default function Finance() {
             title: "",
             amount: "",
             category: "Operational",
-            date: new Date().toISOString().slice(0, 10),
+            date: studioDayKey(now, timezone),
             type: "expense",
             status: "Paid",
           },
@@ -216,14 +223,14 @@ export default function Finance() {
             note: "From your cash ledger",
           },
           {
-            label: "Invoice balances",
-            value: rupees(invoices.reduce((s, i) => s + invoiceBalance(i), 0)),
-            note: "Separate from booking balances",
+            label: "Due now",
+            value: <Link className="finance-due-summary-link" to="/admin/finance?view=due" aria-label="Review invoice payments due now">{rupees(dueRows.reduce((sum, row) => sum + Math.round(row.amountDue * 100), 0) / 100)}<ArrowUpRight size={17} /></Link>,
+            note: "Issued INR invoices · today & overdue",
           },
         ]}
       />
       <WorkspaceError error={error} retry={reload} />
-      <FinanceInsights entries={entries} leads={leads} loading={loading || (!!error && !data.length)} />
+      {tab !== 'due' && <FinanceInsights entries={entries} leads={leads} loading={loading || (!!error && !data.length)} />}
       <div className="workspace-info">
         <Wallet size={16} />
         <p>
@@ -232,11 +239,12 @@ export default function Finance() {
           transactions entered there.
         </p>
       </div>
-      <div className="workspace-two-column">
+      <div className={tab === 'due' ? 'finance-due-layout' : 'workspace-two-column'}>
         <section className="studio-card">
           <div className="studio-tabs">
             {[
               ["bookings", "Booking payments"],
+              ["due", "Due now"],
               ["invoices", "Invoices"],
               ["ledger", "Cash ledger"],
             ].map(([key, label]) => (
@@ -260,7 +268,7 @@ export default function Finance() {
               placeholder="Search financial records…"
             />
           </div>
-          {loading || !visible.length ? (
+          {tab === 'due' ? <DuePayments rows={dueRows} loading={loading || (!!error && !data.length)} query={query} timezone={timezone} /> : loading || !visible.length ? (
             <WorkspaceEmpty
               loading={loading}
               title={query.trim() ? "No matching financial records" : "A clear ledger starts here"}
@@ -393,7 +401,7 @@ export default function Finance() {
             </div>
           )}
         </section>
-        <aside className="workspace-rail">
+        {tab !== 'due' && <aside className="workspace-rail">
           <ExpenseBreakdown entries={entries} loading={loading} onCategory={category => { setTab("ledger"); setQuery(category); }} />
           <section className="studio-card">
             <h2 className="studio-section-title">Cash ledger snapshot</h2>
@@ -422,7 +430,7 @@ export default function Finance() {
               receipt separately when using the cash ledger.
             </p>
           </section>
-        </aside>
+        </aside>}
       </div>
       {entry !== undefined && (
         <WorkspaceDialog
