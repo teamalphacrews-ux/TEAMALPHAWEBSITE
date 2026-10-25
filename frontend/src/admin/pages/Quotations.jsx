@@ -375,6 +375,30 @@ export default function Quotations() {
       if (generation === generationRef.current) setBusy(false);
     }
   };
+  const openClientLink = async () => {
+    if (busy) return;
+    const quote = currentRef.current;
+    if (!quote?.acceptedAt && quote?.status !== "Accepted") {
+      await act("share");
+      return;
+    }
+    const generation = generationRef.current;
+    setBusy(true);
+    setSaveError("");
+    try {
+      const result = await workspaceRequest("get", `/api/studio/quotations/${quote._id}/client-link`);
+      if (generation !== generationRef.current) return;
+      let url;
+      try { url = new URL(result?.url); } catch { throw new Error("The studio did not return an active smart client link."); }
+      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash || !/^\/quote\/[a-f\d]{64}$/i.test(url.pathname)) throw new Error("The studio did not return a valid smart client link.");
+      setShareUrl(url.href);
+      setModal("link");
+    } catch (error) {
+      if (generation === generationRef.current) setSaveError(error.response ? recordError(error) : error.message);
+    } finally {
+      if (generation === generationRef.current) setBusy(false);
+    }
+  };
   const preview = async () => {
     const generation = generationRef.current;
     try {
@@ -432,13 +456,13 @@ export default function Quotations() {
   };
   const manageClientLink = async regenerate => {
     if (!current?._id || busy) return;
-    if (dirty) { setSaveError('Save and share the revised quote before managing its client link.'); return; }
+    if (dirty) { setSaveError('Save and share the revised quote before managing its smart client link.'); return; }
     setBusy(true);
     try {
       const result = await workspaceRequest(regenerate ? 'post' : 'delete', `/api/studio/quotations/${current._id}/share${regenerate ? '/regenerate' : ''}`, {});
       if (result.quote) loadQuote(result.quote);
       if (regenerate) { setShareUrl(`${window.location.origin}/quote/${result.token}`); setModal('link'); }
-      toast.success(regenerate ? 'New link created with current studio visibility settings. Previous copies no longer work.' : 'Client link revoked');
+      toast.success(regenerate ? 'New smart client link created with current studio visibility settings. Previous copies no longer work.' : 'Smart client link revoked');
       reload();
     } catch (error) { setSaveError(recordError(error)); }
     finally { setBusy(false); setActionMenu(false); }
@@ -476,8 +500,8 @@ export default function Quotations() {
       </button>
       <button onClick={() => act("duplicate")}>Duplicate</button>
       {['Sent', 'Accepted'].includes(current?.status) && <>
-        <button onClick={() => manageClientLink(false)}>Revoke client link</button>
-        <button onClick={() => manageClientLink(true)}>Regenerate client link</button>
+        <button onClick={() => manageClientLink(false)}>Revoke smart client link</button>
+        <button onClick={() => manageClientLink(true)}>Regenerate smart client link</button>
       </>}
       {!current?.acceptedAt && current?.status !== "Accepted" && (
         <button
@@ -868,18 +892,17 @@ export default function Quotations() {
                     </button>
                   )}
                   <button onClick={preview}>View quote</button>
-                  {current?.invoiceId ? (
+                  {current?.invoiceId && (
                     <Link
                       className="qw-primary"
                       to={`/admin/invoices/${current.invoiceId}`}
                     >
                       View invoice
                     </Link>
-                  ) : (
-                    <button className="qw-primary" onClick={() => act("share")}>
-                      Share
-                    </button>
                   )}
+                  <button className={current?.invoiceId ? "qw-button" : "qw-primary"} disabled={busy} onClick={openClientLink}>
+                    Smart client link
+                  </button>
                 </>
               )}
             </div>
@@ -1384,7 +1407,7 @@ export default function Quotations() {
               <div className="qw-send-footer">
                 <button onClick={() => setModal("schedule")}>Schedule</button>
                 <button onClick={() => setModal("manual")}>
-                  Send via link
+                  Share smart client link
                 </button>
                 <label>
                   <input
@@ -1436,8 +1459,8 @@ export default function Quotations() {
               number: "Edit quote number",
               project: "Link to project",
               photo: "Add photo",
-              link: "Get Quote Link",
-              manual: "Send via link",
+              link: "Smart client link",
+              manual: "Share smart client link",
               schedule: "Schedule Quote",
               history: "Email history",
               cancel: "Cancel quote",
@@ -1449,7 +1472,7 @@ export default function Quotations() {
           footer={
             <>
               <button className="qw-button" onClick={() => setModal("")}>
-                Cancel
+                {modal === "link" ? "Done" : "Cancel"}
               </button>
               {modal === "discount" ? (
                 <>
@@ -1479,13 +1502,13 @@ export default function Quotations() {
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(shareUrl);
-                      toast.success("Link copied to clipboard");
+                      toast.success("Smart client link copied");
                     } catch {
                       toast.error("Select and copy the link.");
                     }
                   }}
                 >
-                  Copy Link
+                  Copy link
                 </button>
               ) : (
                 modal !== "history" && (
@@ -1686,10 +1709,11 @@ export default function Quotations() {
             </>
           ) : modal === "link" ? (
             <>
-              <p>Your contact can access the quote from the following link:</p>
+              <p>Share one link for your client’s quotation, invoice, payments and post-production updates.</p>
+              <p>The client can review and accept the quotation here. After your studio reviews and issues the invoice, the same link can show the invoice and payment schedule. Published production updates appear as work progresses.</p>
               <input
                 className="qw-link-input"
-                aria-label="Quote share link"
+                aria-label="Smart client link"
                 readOnly
                 value={shareUrl}
               />
@@ -1697,19 +1721,19 @@ export default function Quotations() {
                 <a
                   target="_blank"
                   rel="noreferrer"
-                  href={`https://wa.me/?text=${encodeURIComponent(`Hi ${current?.clientName}, please review your Team Alpha quote: ${shareUrl}`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`Hi ${current?.clientName}, here is your Team Alpha smart client link. Review your quotation here and return to the same link for your issued invoice, payment schedule and published production updates: ${shareUrl}`)}`}
                 >
                   Share via WhatsApp ↗
                 </a>
                 <a target="_blank" rel="noreferrer" href={shareUrl}>
-                  View client quote ↗
+                  Open smart client link ↗
                 </a>
               </div>
+              <p>Only information enabled in the saved client-visibility settings is shared. Quote acceptance deadlines and client-link expiry still apply.</p>
             </>
           ) : modal === "manual" ? (
             <p>
-              This quote will be marked as sent without being automatically
-              emailed to your contact. Please send the link manually.
+              This quotation will be marked as sent. Copy or share the smart client link yourself; no email is sent automatically. Your client can return to this same link for an issued invoice, payments and published production updates, according to the saved visibility settings.
             </p>
           ) : modal === "schedule" ? (
             <Field label="Send date and time">

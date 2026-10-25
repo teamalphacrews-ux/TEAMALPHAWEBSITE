@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../utils/branding";
 import axios from "axios";
 import {
@@ -8,26 +8,33 @@ import {
   ChevronDown,
   Clock3,
   FileText,
+  Wallet,
+  Receipt,
+  Clapperboard,
   FolderOpen,
   MessageSquare,
   LockKeyhole,
   RefreshCw,
   Send,
   UsersRound,
+  Sun,
+  Moon,
   X,
 } from "lucide-react";
 import { API_BASE_URL } from "../utils/apiConfig";
 import { resolveStudioImage } from '../utils/settingsDefaults';
 import {
-  clientMoney as money,
   clientDate as date,
-  paymentRows,
   messageRequestId,
 } from "../utils/clientProjectData";
 import { InvoiceDocument } from "./PublicInvoice";
+import ClientFeatureCard from './ClientFeatureCard';
+import ClientPaymentDialog from './ClientPaymentDialog';
+import { clientDashboardSummary, clientPaymentRows } from '../utils/clientDashboardData';
 import "./clientProjectWorkspace.css";
+import './clientSmartDashboard.css';
 
-const projectSections = ["quotation", "invoice", "delivery", "crew"];
+const projectSections = ["quotation", "invoice", "payments", "delivery", "crew"];
 const sectionFromHash = () => {
   const id = window.location.hash.replace("#project-", "");
   return projectSections.includes(id) ? id : null;
@@ -111,13 +118,19 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
   const [project, setProject] = useState(null),
     [messages, setMessages] = useState([]),
     [cursor, setCursor] = useState(null),
-    [activeSection, setActiveSection] = useState(sectionFromHash),
+    [activeSection, setActiveSection] = useState(() => sectionFromHash() || (quote.status === 'Accepted' ? null : 'quotation')),
     [openPayment, setOpenPayment] = useState(null),
     [openDelivery, setOpenDelivery] = useState(null),
     [openCrew, setOpenCrew] = useState(null),
     [chatOpen, setChatOpen] = useState(
       () => window.location.hash === "#project-support",
     );
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [paymentRequest, setPaymentRequest] = useState(null);
+  const closePayment = useCallback(() => setPaymentRequest(null), []);
+  const [appearance, setAppearance] = useState(() => { try { return localStorage.getItem('teamalpha-client-appearance') === 'dark' ? 'dark' : 'daylight'; } catch { return 'daylight'; } });
+  useEffect(() => { try { localStorage.setItem('teamalpha-client-appearance', appearance); } catch { /* Appearance still works for this visit. */ } }, [appearance]);
+  const accepted = quote.status === 'Accepted';
   const [error, setError] = useState(""),
     [messageError, setMessageError] = useState(""),
     [text, setText] = useState(""),
@@ -133,6 +146,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
     stickToLatest = useRef(true);
   const endpoint = `${API_BASE_URL}/api/quotes/${token}`;
   useEffect(() => {
+    if (!accepted) return;
     let active = true,
       fetching = false;
     const controller = new AbortController();
@@ -187,7 +201,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", visibleLoad);
     };
-  }, [endpoint]);
+  }, [endpoint, accepted, refreshKey]);
   useEffect(() => {
     let restore = null;
     const beforePrint = () => {
@@ -243,6 +257,15 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
   }, [chatOpen, messages]);
   const toggleSection = (id) =>
     setActiveSection((current) => (current === id ? null : id));
+  const openSection = id => {
+    setActiveSection(id);
+    window.history.replaceState(window.history.state, '', '#project-' + id);
+    requestAnimationFrame(() => {
+      const section = document.getElementById('project-' + id);
+      section?.querySelector('.cp-accordion-heading > button')?.focus({ preventScroll: true });
+      section?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    });
+  };
   const closeChat = () => {
     setChatOpen(false);
     chatLauncherRef.current?.focus({ preventScroll: true });
@@ -298,16 +321,19 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       setOlderBusy(false);
     }
   };
-  const invoice = project?.invoice?.document,
+  const summary = clientDashboardSummary({ quote, project });
+  const money = (value, currency = summary.invoice.currency || summary.quotation.currency) => value === null || value === undefined ? '—' : new Intl.NumberFormat('en-IN', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value);
+  const invoice = summary.invoice.available ? project.invoice.document : null,
     production = project?.production,
     deliveries = production?.deliveries || [];
   const visibility = project?.visibility || {}, chatEnabled = !!project && visibility.allowChat !== false;
-  const approved = project?.invoice?.state === 'issued' && !!invoice,
-    invoiceIssued = approved || project?.invoice?.state === 'hidden',
-    started = ["in_progress", "delivered", 'deliveries_only'].includes(production?.state);
-  const completed = deliveries.filter((task) =>
-    ["Ready", "Uploaded to Drive", "Delivered"].includes(task.stage),
-  ).length;
+  const approved = summary.invoice.available,
+    invoiceIssued = approved,
+    started = ['in_progress', 'delivered'].includes(production?.state) || (production?.state === 'deliveries_only' && deliveries.length > 0);
+  const completed = summary.production.ready;
+  const waiting = !accepted ? 'After acceptance' : error ? 'Temporarily unavailable' : !project ? 'Loading' : 'Studio review';
+  const invoiceStatus = approved ? 'Issued' : summary.invoice.state === 'cancelled' ? 'Cancelled' : summary.invoice.state === 'hidden' ? 'Studio-managed' : waiting;
+  const paymentStatus = summary.payments.available ? summary.payments.balance === 0 ? 'Paid in full' : !summary.payments.scheduleKnown ? 'Schedule pending' : summary.payments.next?.state === 'Awaiting date' ? 'Date to confirm' : summary.payments.dueNow > 0 ? 'Payment due' : 'Scheduled' : invoiceStatus;
   const crew = project?.crew || [
     ...new Map(
       deliveries
@@ -318,20 +344,14 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
   const invoiceSummary = (
     <ProjectSection
       id="project-invoice"
-      title="Invoice & payments"
+      title="Your invoice"
       subtitle={
         invoice?.documentNumber ||
         project?.invoice?.number ||
         "Prepared after quote acceptance"
       }
       icon={FileText}
-      badge={
-        approved
-          ? "Issued"
-          : project?.invoice?.state === "cancelled"
-            ? "Cancelled"
-            : "Awaiting studio approval"
-      }
+      badge={invoiceStatus}
       good={approved}
       open={activeSection === "invoice"}
       onToggle={() => toggleSection("invoice")}
@@ -341,36 +361,46 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
           <div className="cp-money-grid">
             <div>
               <small>Total</small>
-              <strong>{money(invoice.total)}</strong>
+              <strong>{money(summary.invoice.total)}</strong>
             </div>
             <div>
               <small>Received</small>
-              <strong>
-                {money(
-                  invoice.status === "Paid"
-                    ? invoice.total
-                    : invoice.advancePaid,
-                )}
-              </strong>
+              <strong>{money(summary.invoice.paid)}</strong>
             </div>
             <div>
               <small>Balance due</small>
-              <strong>
-                {money(
-                  Math.max(
-                    0,
-                    invoice.total -
-                      (invoice.status === "Paid"
-                        ? invoice.total
-                        : invoice.advancePaid || 0),
-                  ),
-                )}
-              </strong>
+              <strong>{money(summary.invoice.balance)}</strong>
             </div>
+          </div>
+          <details
+            className="cp-document-disclosure"
+            data-document="invoice"
+            onClickCapture={() => selectPrintDocument("invoice")}
+          >
+            <summary>View full invoice <ChevronDown size={17} /></summary>
+            <div className="cp-embedded-invoice"><InvoiceDocument invoice={invoice} /></div>
+          </details>
+        </>
+      ) : (
+        <div className="cp-empty-inline"><Receipt size={24} /><div>
+          <h3>{!accepted ? 'Your invoice follows your confirmation' : summary.invoice.state === 'cancelled' ? 'Please contact your studio' : error ? 'Please refresh your project' : 'Your invoice is being reviewed'}</h3>
+          <p>{!accepted ? 'Review and accept your quotation. Your studio will then review and issue your invoice here, through this same link.' : summary.invoice.state === 'cancelled' ? 'The studio has cancelled this invoice. Contact us below for the next step.' : 'Your quote is accepted. Your studio will review the invoice and publish it here. Keep this same link.'}</p>
+        </div></div>
+      )}
+    </ProjectSection>
+  );
+  const paymentsSummary = (
+    <ProjectSection id="project-payments" title="Payments & schedule" subtitle="Confirmed payments and your next instalment." icon={Wallet} badge={paymentStatus} good={summary.payments.available && summary.payments.balance === 0} open={activeSection === 'payments'} onToggle={() => toggleSection('payments')}>
+      {summary.payments.available ? (<>
+          {summary.payments.balance > 0 && <div className="cp-payment-action"><div><h3>Ready for your next payment?</h3><p>Use your studio’s UPI or bank transfer details.</p></div><button type="button" className="cp-button" onClick={() => setPaymentRequest({})}><Wallet size={16} /> Make payment</button></div>}
+          <div className="cp-money-grid">
+            <div><small>Received</small><strong>{money(summary.invoice.paid)}</strong></div>
+            <div><small>Balance</small><strong>{money(summary.payments.balance)}</strong></div>
+            <div><small>Due now</small><strong>{money(summary.payments.dueNow)}</strong></div>
           </div>
           <h3>Payment schedule</h3>
           <div className="cp-payment-list" aria-label="Payment schedule">
-            {paymentRows(invoice).map((row) => (
+            {clientPaymentRows(invoice).map((row) => (
               <ProjectSection
                 key={row.number}
                 id={"project-payment-" + row.number}
@@ -403,32 +433,14 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
                     <dd>{money(row.remaining / 100)}</dd>
                   </div>
                 </dl>
+                {row.remaining > 0 && <button type="button" className="cp-button secondary" onClick={() => setPaymentRequest({ amountPaise: row.remaining })}>Make payment · {money(row.remaining / 100)}<ArrowUpRight size={15} /></button>}
               </ProjectSection>
             ))}
           </div>
           <div className="cp-card-footer">
             <span>Payments are updated when confirmed by the studio.</span>
           </div>
-          <details
-            className="cp-document-disclosure"
-            data-document="invoice"
-            open={openPayment === "document"}
-            onClickCapture={() => selectPrintDocument("invoice")}
-          >
-            <summary
-              onClick={(event) => {
-                event.preventDefault();
-                setOpenPayment((current) =>
-                  current === "document" ? null : "document",
-                );
-              }}
-            >
-              View full invoice & payment details <ChevronDown size={17} />
-            </summary>
-            <div className="cp-embedded-invoice">
-              <InvoiceDocument invoice={invoice} />
-            </div>
-          </details>
+          {!summary.payments.scheduleKnown && <p className="cp-muted">Your studio is finalising the instalment dates. Please check back or contact the studio.</p>}
         </>
       ) : (
         <div className="cp-empty-inline">
@@ -437,12 +449,12 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
             <h3>
               {project?.invoice?.state === "cancelled"
                 ? "Please contact your studio"
-                : "Your invoice is being reviewed"}
+                : "Your payment schedule will appear here"}
             </h3>
             <p>
               {project?.invoice?.state === "cancelled"
                 ? "The studio has cancelled this invoice. You can contact us below for the next step."
-                : "Your quote is accepted. Your studio will review the generated invoice and publish its payment schedule here. Keep this same link."}
+                : !accepted ? 'Once you accept the quotation and your studio issues the invoice, you can see instalments, due dates and confirmed payments here.' : 'Your studio will publish the payment schedule after reviewing and issuing your invoice.'}
             </p>
           </div>
         </div>
@@ -455,8 +467,8 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       title="Post-production & delivery"
       subtitle={
         started
-          ? visibility.showProgress === false ? 'Files published by your studio.' : `${completed} of ${deliveries.length} deliverables ready`
-          : "Updates appear here when production starts."
+          ? visibility.showProgress === false ? 'Files published by your studio.' : completed === null ? 'Your studio is preparing the next update.' : `${completed} of ${deliveries.length} deliverables ready`
+          : "Photos, album and films, all in one place."
       }
       icon={FolderOpen}
       open={activeSection === "delivery"}
@@ -536,7 +548,10 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       : "/assets/studio-wedding.webp";
   const delivered = production?.state === "delivered";
   const currentStage =
-    project?.invoice?.state === "cancelled"
+    !accepted
+      ? summary.quotation.status === 'Expired' ? 'Please contact your studio' : 'Your story starts here'
+      : error ? 'Project updates are temporarily unavailable'
+      : project?.invoice?.state === "cancelled"
       ? "Your studio is here to help"
       : delivered
         ? "Your story, delivered"
@@ -546,7 +561,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
             ? "Ready for the next chapter"
             : "A beautiful beginning";
   const journey = [
-    { label: "Quotation", state: "Accepted", done: true },
+    { label: "Quotation", state: accepted ? 'Accepted' : summary.quotation.status === 'Expired' ? 'Expired' : 'Your review', done: accepted },
     {
       label: "Invoice & payments",
       state:
@@ -556,23 +571,30 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
             ? invoice?.status === "Paid"
               ? "Paid"
               : "Issued"
-            : "Studio review",
+            : !accepted ? 'Upcoming' : error ? 'Unavailable' : 'Studio review',
       done: approved,
     },
     {
       label: "Post-production",
-      state: delivered ? "Complete" : started ? "In progress" : "Not started",
+      state: !accepted ? 'Upcoming' : error ? 'Unavailable' : !project ? 'Loading' : delivered ? "Complete" : started ? "In progress" : "Not started",
       done: delivered,
     },
     {
       label: "Final delivery",
-      state: delivered ? "Delivered" : "Upcoming",
+      state: error ? 'Unavailable' : delivered ? "Delivered" : "Upcoming",
       done: delivered,
     },
   ].filter(step => visibility.showPayments !== false || step.label !== 'Invoice & payments');
+  const featureCards = [
+    { id: 'quotation', label: 'Quotation', icon: FileText, tone: 'quote', status: accepted ? 'Accepted' : summary.quotation.status === 'Expired' ? 'Expired' : 'Ready to review', value: money(summary.quotation.total, summary.quotation.currency), detail: accepted ? 'Your celebration, confirmed.' : 'Your proposal, thoughtfully prepared.', footnote: accepted ? 'View accepted quotation' : 'Review your quotation' },
+    { id: 'invoice', label: 'Invoice', icon: Receipt, tone: 'invoice', status: invoiceStatus, value: approved ? money(summary.invoice.total) : '—', detail: approved ? summary.invoice.number : !accepted ? 'Available after quote acceptance.' : summary.invoice.state === 'hidden' ? 'Managed by your studio.' : error ? 'Please refresh for updates.' : 'Your studio will issue it here.', footnote: approved ? 'View issued invoice' : 'See the next step', disabled: summary.invoice.state === 'hidden' },
+    { id: 'payments', label: 'Payments', icon: Wallet, tone: 'payments', status: paymentStatus, value: summary.payments.available ? money(summary.payments.balance) : '—', detail: summary.payments.available ? summary.payments.balance === 0 ? 'All confirmed payments received.' : 'Remaining balance' : !accepted ? 'Instalments follow your invoice.' : summary.invoice.state === 'hidden' ? 'Managed by your studio.' : 'Dates appear once your invoice is issued.', footnote: summary.payments.next ? `${summary.payments.next.state} · ${date(summary.payments.next.dueDate)}` : 'View payment schedule', disabled: summary.invoice.state === 'hidden' },
+    { id: 'delivery', label: 'Post-production', icon: Clapperboard, tone: 'production', status: summary.production.state === 'hidden' ? 'Studio-managed' : delivered ? 'Delivered' : started ? visibility.showProgress === false ? 'Files available' : 'In progress' : !accepted ? 'After your event' : error ? 'Unavailable' : 'Updates to follow', value: summary.production.completionPercent !== null ? `${summary.production.completionPercent}%` : summary.production.published > 0 ? `${summary.production.published} files` : '—', detail: summary.production.total > 0 ? `${summary.production.completed} of ${summary.production.total} deliverables complete` : summary.production.state === 'hidden' ? 'Managed by your studio.' : 'Photos, album, traditional & cinematic films.', footnote: 'Follow your creative progress', progress: summary.production.completionPercent, disabled: summary.production.state === 'hidden' },
+  ];
   return (
     <div
-      className="client-project"
+      className="client-project cp-dashboard"
+      data-theme={appearance}
       ref={workspaceRef}
       data-print-document={approved ? "invoice" : "quote"}
     >
@@ -583,13 +605,16 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
           <img src={resolveStudioImage(quote.studio.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt={quote.studio.name} />
           <span>
             {quote.studio.name}
-            <small>CLIENT EXPERIENCE</small>
+            <small>YOUR CLIENT DASHBOARD</small>
           </span>
         </div>
+        <div className="cp-topbar-tools">
+          <button type="button" className="cp-theme-toggle" aria-label={appearance === 'dark' ? 'Switch to Daylight mode' : 'Switch to Dark mode'} onClick={() => setAppearance(mode => mode === 'dark' ? 'daylight' : 'dark')}>{appearance === 'dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}</button>
         <span className="cp-private-label">
           <LockKeyhole size={13} strokeWidth={1.5} aria-hidden="true" /> Private
           project
         </span>
+        </div>
       </header>
       <main className="cp-main">
         <section className="cp-welcome" aria-labelledby="client-project-title">
@@ -601,11 +626,11 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
           />
           <div className="cp-cover-shade" />
           <div className="cp-welcome-content">
-            <span className="cp-eyebrow">PREPARED FOR {quote.clientName}</span>
+            <span className="cp-eyebrow">YOUR PROJECT OVERVIEW</span>
             <h1 id="client-project-title">
-              {quote.title || "Your celebration, thoughtfully together."}
+              {quote.clientName || 'Your celebration'}
             </h1>
-            <p>Every detail of your story, beautifully together.</p>
+            <p>{quote.title || 'Your quotation, payments and creative journey.'}</p>
             <div className="cp-cover-footer">
               <span>{quote.documentNumber}</span>
               <span>
@@ -615,6 +640,10 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
             </div>
           </div>
         </section>
+        <section className="cp-feature-grid" aria-label="Your project at a glance">
+          {featureCards.map(card => <ClientFeatureCard key={card.id} {...card} open={activeSection === card.id} onClick={() => openSection(card.id)} />)}
+        </section>
+        {summary.payments.available && summary.payments.balance > 0 && <section className="cp-payment-action cp-next-action" aria-label="Your next payment"><div><span className="cp-eyebrow">{summary.payments.next ? 'NEXT PAYMENT' : 'REMAINING BALANCE'}</span><h2>{money(summary.payments.next?.amount ?? summary.payments.balance)} <span>{summary.payments.next ? `${summary.payments.next.state} · ${date(summary.payments.next.dueDate)}` : 'Contact your studio for the schedule'}</span></h2><p>{summary.invoice.number} · Updated after your studio confirms receipt.</p></div><button type="button" className="cp-button" onClick={() => setPaymentRequest({})}><Wallet size={17} /> Make payment<ArrowUpRight size={15} /></button></section>}
         {visibility.showProgress !== false && <section
           className="cp-journey-card"
           aria-labelledby="client-journey-title"
@@ -650,17 +679,18 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
         </section>}
         <div className="cp-workspace-heading">
           <span className="cp-eyebrow">YOUR PROJECT</span>
-          <h2>A little closer to your story.</h2>
+          <h2>Every detail, in one place.</h2>
           <p>
-            Your documents, creative progress and the people making it happen.
+            Open a section to explore your documents, updates and project team.
           </p>
         </div>
         {error && (
           <div className="cp-error" role="alert">
-            {error}
+            <span>{error}</span>
+            <button type="button" className="cp-button secondary" onClick={() => setRefreshKey(key => key + 1)}><RefreshCw size={15} /> Try again</button>
           </div>
         )}
-        {!project && !error && (
+        {accepted && !project && !error && (
           <p className="cp-loading" role="status">
             <RefreshCw size={18} />
             Loading your project…
@@ -671,16 +701,16 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
           title="Your quotation"
           subtitle={quote.documentNumber}
           icon={CheckCircle2}
-          badge="Accepted"
-          good
+          badge={accepted ? 'Accepted' : summary.quotation.status === 'Expired' ? 'Expired' : 'Open'}
+          good={accepted}
           open={activeSection === "quotation"}
           onToggle={() => toggleSection("quotation")}
         >
-          <p className="cp-accepted-note">
+          {accepted && <p className="cp-accepted-note">
             <CheckCircle2 size={17} />
             Accepted on {date(quote.acceptedAt)}. Your studio has your
             confirmation.
-          </p>
+          </p>}
           <div
             className="cp-quote-document"
             onClickCapture={() => selectPrintDocument("quote")}
@@ -689,6 +719,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
           </div>
         </ProjectSection>
         {visibility.showPayments !== false && invoiceSummary}
+        {visibility.showPayments !== false && paymentsSummary}
         {(visibility.showProgress !== false || visibility.showDeliverables !== false) && deliveryCards}
         {visibility.showCrew !== false && <ProjectSection
           id="project-crew"
@@ -738,6 +769,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
           )}
         </ProjectSection>}
       </main>
+      {paymentRequest && invoice && <ClientPaymentDialog invoice={invoice} theme={appearance} amountPaise={paymentRequest.amountPaise} onClose={closePayment} />}
       {chatEnabled && <><aside
         id="project-support"
         className="cp-chat-popup"

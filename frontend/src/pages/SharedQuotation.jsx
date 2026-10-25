@@ -313,7 +313,7 @@ export default function SharedQuotation() {
       )}
     </div>
   );
-  return quote?.status === "Accepted" && !preview ? (
+  return quote && !preview ? (
     <ClientProjectWorkspace key={token} token={token} quote={quote}>
       {document}
     </ClientProjectWorkspace>

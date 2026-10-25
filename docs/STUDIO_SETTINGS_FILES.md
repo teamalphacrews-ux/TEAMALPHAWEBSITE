@@ -1,6 +1,6 @@
 # Modified and added files
 
-Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a2004c6e759e3bde3`). Includes settings, Gmail, appearance, workflow refinements, overview ordering/switches, Finance due payments, mobile records, shared quotation status and studio timezone behavior. Generated build outputs, local environment files and sample preview fixtures are excluded.
+Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a2004c6e759e3bde3`). Includes settings, Gmail, appearance, operational workflow refinements and the smart client dashboard with bank/UPI handoff. Generated builds, environment files and sample preview fixtures are excluded.
 
 - `backend/.env.example`
 - `backend/controllers/photographerController.js`
@@ -65,6 +65,7 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `backend/tests/drive-gallery-security.test.js`
 - `backend/tests/gmail.test.js`
 - `backend/tests/invoice-workflow.test.js`
+- `backend/tests/quote-client-link.test.js`
 - `backend/tests/quote-lifecycle.test.js`
 - `backend/tests/quote-workflow.test.js`
 - `backend/tests/sessionFixture.js`
@@ -155,9 +156,15 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `frontend/src/admin/studio-responsive.css`
 - `frontend/src/admin/studio-settings-defaults.json`
 - `frontend/src/context/AuthContext.jsx`
+- `frontend/src/pages/ClientFeatureCard.jsx`
+- `frontend/src/pages/ClientPaymentDialog.jsx`
 - `frontend/src/pages/ClientProjectWorkspace.jsx`
 - `frontend/src/pages/PublicInvoice.jsx`
 - `frontend/src/pages/SharedQuotation.jsx`
+- `frontend/src/pages/clientPaymentDialog.css`
+- `frontend/src/pages/clientSmartDashboard.css`
+- `frontend/src/utils/clientDashboardData.js`
+- `frontend/src/utils/clientPayment.js`
 - `frontend/src/utils/dashboardData.js`
 - `frontend/src/utils/invoiceDocument.js`
 - `frontend/src/utils/overviewPreferences.js`
@@ -166,6 +173,8 @@ Complete PR #7 file list relative to its PR #6 base (`16ba996385b7aff680b4554a20
 - `frontend/src/utils/studioIdentity.js`
 - `frontend/src/utils/studioNavigation.js`
 - `frontend/src/utils/studioTime.js`
+- `frontend/test/client-dashboard.test.mjs`
+- `frontend/test/client-payment.test.mjs`
 - `frontend/test/dashboardData.test.mjs`
 - `frontend/test/finance-due-queue.test.mjs`
 - `frontend/test/overview-finance.test.mjs`

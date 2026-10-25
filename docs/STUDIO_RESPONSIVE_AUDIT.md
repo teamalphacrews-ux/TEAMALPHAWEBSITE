@@ -71,3 +71,17 @@ Calendar More events opens only the selected day's agenda with Show whole month 
 - Final validation: 83 frontend tests, 220 backend tests, Studio/public/mobile ESLint, production frontend build (3,470 modules) and git diff --check passed. These checks do not claim physical-device certification or Lighthouse performance scores.
 
 The local network preview was restarted at http://192.168.29.248:5173/admin with the existing sample-data backend. Production publishing remains paused.
+
+## Smart client dashboard preview — 25 October
+
+The four-card smart dashboard was checked both before acceptance and with a separate sample Accepted quotation, issued invoice, partial payment, three instalments, four deliverables and two assigned crew. Demo records are isolated from the main preview and excluded from Git.
+
+Browser review covered opening invoice/payment/production sections, one-open-section behavior, full invoice content, published photo details and the floating chat popup. The first-share quotation still exposes its original explicit acceptance action; no acceptance was submitted. Viewport checks covered phone, tablet, laptop/desktop and a 2560px wide display without document-width overflow; four desktop cards become two columns on narrow screens.
+
+Payment options were inspected without invoking UPI or transferring funds. The sample instalment was ₹15,000 after the recorded advance allocation. The dialog was visually checked in Daylight and charcoal; at 375 × 812px it measured 351 × 788px within the viewport. Shift+Tab/Tab stayed inside it; Escape closed it, restored body scrolling and returned focus to Make payment. The client Daylight preference was restored after review.
+
+This is viewport emulation and sample-data validation, not physical-device or completed bank/UPI transaction certification. Screenshot export remains unavailable; visual evidence used inline browser screenshots. Production publishing remains paused.
+
+The four decorative card animations are distinct: quotation aurora ribbons, invoice light sweep, payment waves and a production orbital glow. Solid figures remain stationary and readable. The welcome panel uses a separately framed image rather than a full photo background. This motion is decorative and does not represent fabricated financial or production trends.
+
+Validation for this follow-up: all 105 frontend tests and 226 backend tests passed, alongside Studio/public/mobile ESLint and the production frontend build (3,476 modules). The separately populated client preview complements the main preview, whose Finance register remains without issued due rows. No live deployment, UPI handoff or bank transfer was performed.

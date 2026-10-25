@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../utils/branding";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { Printer, Download, X } from "lucide-react";
+import { Printer, Download } from "lucide-react";
+import ClientPaymentDialog from "./ClientPaymentDialog";
 import { API_BASE_URL } from "../utils/apiConfig";
 import { resolveStudioImage } from '../utils/settingsDefaults';
 import "../admin/pages/invoiceWorkspace.css";
@@ -18,13 +19,14 @@ import {
 export function InvoiceDocument({ invoice, preview = false }) {
   const [payment, setPayment] = useState(false),
     [pdfError, setPdfError] = useState("");
+  const closePayment = useCallback(() => setPayment(false), []);
   const i = invoice,
     items = rows(i),
     paid = i.status === "Paid" ? Number(i.total) : Number(i.advancePaid || 0),
     outstanding = Math.max(0, i.total - paid);
   const schedule =
     (i.paymentScheduleEnabled
-      ? i.paymentSchedule
+      ? (i.paymentSchedule || []).filter(p => p && typeof p === "object").slice().sort((a, b) => String(a.dueDate || "").localeCompare(String(b.dueDate || "")))
       : [{ amountPaise: Math.round(i.total * 100), dueDate: i.dueDate }]) || [];
   const payments = schedule.map((p, index) => {
     const credit = Math.max(
@@ -164,7 +166,7 @@ export function InvoiceDocument({ invoice, preview = false }) {
               className="invoice-pay-now"
               onClick={() => setPayment(true)}
             >
-              VIEW PAYMENT DETAILS
+              {preview ? "Payment instructions" : "Make payment"}
             </button>
           )}
         </section>
@@ -287,80 +289,7 @@ export function InvoiceDocument({ invoice, preview = false }) {
           )}
         </footer>
       </main>
-      {payment && (
-        <div
-          className="invoice-payment-overlay"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setPayment(false);
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="invoice-payment-title"
-          >
-            <button
-              className="invoice-payment-close"
-              onClick={() => setPayment(false)}
-              aria-label="Close payment instructions"
-            >
-              <X />
-            </button>
-            <h2 id="invoice-payment-title">Payment instructions</h2>
-            <p>
-              Amount due: <strong>{money(outstanding)}</strong>
-            </p>
-            <p>
-              Accepted methods:{" "}
-              {(i.acceptedPaymentMethods || []).join(" · ") ||
-                "Contact the studio"}
-            </p>
-            <p className="invoice-document-note">
-              {i.studio?.paymentInstructions ||
-                "Please contact the studio for payment details."}
-            </p>
-            {i.studio?.bankDetails &&
-              i.acceptedPaymentMethods?.includes("BANKING") && (
-                <p className="invoice-document-note">
-                  <strong>Bank transfer</strong>
-                  <br />
-                  {i.studio.bankDetails}
-                </p>
-              )}
-            {i.studio?.upiId &&
-              i.acceptedPaymentMethods?.some((m) =>
-                ["UPI", "G-pay"].includes(m),
-              ) && (
-                <p>
-                  <strong>UPI ID:</strong> {i.studio.upiId}
-                </p>
-              )}
-            {i.allowTip && (
-              <p>
-                Tips are optional. Contact the studio if you would like to
-                include a tip.
-              </p>
-            )}
-            <p className="invoice-payment-hint">
-              Include invoice {i.documentNumber} as your reference. Your payment
-              will appear after the studio confirms receipt.
-            </p>
-            {i.studio?.email && (
-              <a
-                href={`mailto:${i.studio.email}?subject=${encodeURIComponent(`Payment for invoice ${i.documentNumber}`)}`}
-              >
-                Contact studio
-              </a>
-            )}
-            <button
-              className="invoice-pay-now"
-              onClick={() => setPayment(false)}
-            >
-              DONE
-            </button>
-          </section>
-        </div>
-      )}
+      {payment && <ClientPaymentDialog invoice={invoice} onClose={closePayment} />}
     </div>
   );
 }
