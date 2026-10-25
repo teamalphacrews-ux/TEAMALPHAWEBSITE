@@ -1,0 +1,171 @@
+.studio-whatsapp-page { min-width: 0; }
+.studio-whatsapp-page :is(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--studio-text); outline-offset: 3px; }
+.studio-whatsapp-page button { cursor: pointer; }
+.studio-whatsapp-page button:disabled { cursor: not-allowed; }
+.studio-whatsapp-page :is(input, select, textarea) { color: var(--studio-text); background: var(--studio-canvas); border: 1px solid var(--studio-border); font: inherit; }
+.studio-whatsapp-page .studio-page-heading { margin-bottom: 24px; }
+.studio-whatsapp-page .wa-connection-strip { display: flex; align-items: center; gap: 17px; padding: 21px 24px; margin-bottom: 22px; border: 1px solid var(--studio-border); border-radius: 22px; box-shadow: none; }
+.wa-brand-icon { display: grid; place-items: center; width: 45px; height: 45px; flex-shrink: 0; border: 1px solid var(--studio-border); border-radius: 15px; background: var(--appearance-subtle); color: var(--studio-text); }
+.wa-connection-strip > div { min-width: 0; flex: 1; }
+.wa-connection-strip strong { font-size: 13px; font-weight: 600; color: var(--studio-text); }
+.wa-connection-strip p { font-size: 12px; line-height: 1.8; color: var(--studio-muted); margin: 5px 0 0; overflow-wrap: anywhere; }
+.wa-connection-strip .studio-badge { flex-shrink: 0; white-space: nowrap; }
+.wa-connection-strip .studio-button { flex-shrink: 0; }
+.studio-whatsapp-page .wa-setup { border: 1px solid var(--studio-border); box-shadow: none; padding: 29px 30px; }
+.wa-setup-heading { display: flex; align-items: center; gap: 15px; margin-bottom: 29px; }
+.wa-setup-heading h2 { color: var(--studio-text); font-family: inherit; font-size: 19px; font-weight: 550; letter-spacing: -.035em; line-height: 1.4; margin: 0 0 5px; }
+.wa-setup-heading p { color: var(--studio-muted); font-size: 11px; line-height: 1.8; margin: 0; }
+.wa-setup > ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 25px; padding: 0; margin: 0; list-style: none; }
+.wa-setup > ol > li { display: flex; flex-direction: column; align-items: flex-start; gap: 15px; min-width: 0; }
+.wa-setup > ol > li > span { display: grid; place-items: center; width: 29px; height: 29px; flex-shrink: 0; font-size: 10px; border: 1px solid var(--studio-border); color: var(--studio-muted); border-radius: 50%; }
+.wa-setup h3 { color: var(--studio-text); font-family: inherit; font-size: 13px; font-weight: 550; line-height: 1.6; margin: 0 0 9px; }
+.wa-setup li p { color: var(--studio-muted); font-size: 12px; line-height: 1.85; margin: 0; }
+.wa-setup li a { display: inline-flex; align-items: center; gap: 6px; color: var(--studio-text); font-size: 11px; line-height: 1.7; min-height: 36px; margin-top: 12px; text-decoration: none; }
+.wa-setup details { margin-top: 12px; }
+.wa-setup summary { cursor: pointer; color: var(--studio-text); font-size: 11px; line-height: 1.8; }
+.wa-setup .wa-config-fields { padding: 13px 0 0; margin: 0; list-style: none; }
+.wa-setup .wa-config-fields li { margin: 0 0 7px; }
+.wa-config-fields code { font: 10px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--studio-muted); overflow-wrap: anywhere; }
+.wa-webhook-line { display: flex; align-items: flex-start; gap: 8px; padding: 12px; border: 1px solid var(--studio-border); border-radius: 12px; background: var(--studio-canvas); margin-top: 13px; }
+.wa-webhook-line code { flex: 1; min-width: 0; font: 10px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; color: var(--studio-text); }
+.wa-webhook-line button { flex-shrink: 0; }
+.wa-setup .wa-setup-footnote { color: var(--studio-muted); font-size: 11px; line-height: 1.8; padding-top: 23px; margin: 27px 0 0; border-top: 1px solid var(--studio-border); }
+.wa-workspace { display: grid; grid-template-columns: 310px minmax(0, 1fr); min-height: 680px; border: 1px solid var(--studio-border); border-radius: 24px; background: var(--studio-surface); overflow: hidden; }
+.wa-inbox { min-width: 0; border-right: 1px solid var(--studio-border); padding: 22px 0 16px; }
+.wa-inbox-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 20px; margin-bottom: 18px; }
+.wa-inbox-heading h2 { font-family: inherit; font-size: 14px; font-weight: 550; color: var(--studio-text); margin: 0; }
+.wa-inbox-heading > span { color: var(--studio-muted); font-size: 11px; border-radius: 999px; padding: 3px 8px; background: var(--appearance-subtle); }
+.wa-search { display: flex; align-items: center; gap: 9px; min-width: 0; min-height: 42px; margin: 0 16px 14px; border: 1px solid var(--studio-border); border-radius: 999px; padding: 3px 4px 3px 13px; color: var(--studio-muted); background: var(--studio-canvas); }
+.wa-search > svg { flex-shrink: 0; }
+.studio-whatsapp-page .wa-search input { border: 0; outline: none; box-shadow: none; background: transparent; color: var(--studio-text); width: 100%; min-width: 0; padding: 7px 0; font-size: 12px; }
+.wa-search button { flex-shrink: 0; }
+.wa-search:focus-within { outline: 2px solid var(--studio-text); outline-offset: 3px; }
+.wa-conversation-list { max-height: 650px; overflow: auto; overscroll-behavior: contain; }
+.wa-conversation-row { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; min-height: 88px; padding: 17px 19px; border: 0; border-left: 2px solid transparent; border-bottom: 1px solid var(--studio-border); color: var(--studio-text); background: var(--studio-surface); text-align: left; }
+.wa-conversation-row:hover, .wa-conversation-row.selected { background: var(--appearance-subtle); }
+.wa-conversation-row.selected { border-left-color: var(--studio-text); }
+.wa-avatar { display: grid; place-items: center; width: 38px; height: 38px; flex-shrink: 0; border: 1px solid var(--studio-border); border-radius: 50%; color: var(--studio-text); background: var(--appearance-subtle); font-size: 11px; font-weight: 550; }
+.wa-conversation-copy { min-width: 0; flex: 1; }
+.wa-conversation-copy > span { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.wa-conversation-copy strong { font-size: 12px; font-weight: 550; min-width: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wa-conversation-copy time { color: var(--studio-muted); font-size: 9px; white-space: nowrap; flex-shrink: 0; }
+.wa-conversation-copy small { display: block; flex: 1; min-width: 0; color: var(--studio-muted); margin-top: 7px; font-size: 11px; line-height: 1.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wa-conversation-copy b { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: var(--studio-text); margin-top: 5px; }
+.wa-load-more { display: flex; margin: 17px auto 0; }
+.wa-inbox .studio-error { margin: 14px; font-size: 11px; }
+.wa-thread { display: flex; flex-direction: column; min-width: 0; }
+.wa-thread-heading { display: flex; align-items: center; gap: 12px; padding: 22px 24px; border-bottom: 1px solid var(--studio-border); }
+.wa-thread-heading > div { min-width: 0; flex: 1; }
+.wa-thread-heading h2 { font-family: inherit; font-size: 16px; font-weight: 550; color: var(--studio-text); overflow-wrap: anywhere; line-height: 1.5; margin: 0 0 3px; }
+.wa-thread-heading p { color: var(--studio-muted); font-size: 11px; margin: 0; }
+.wa-thread-heading > a { flex-shrink: 0; }
+.wa-back { display: none !important; }
+.wa-context-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 20px; align-items: center; padding: 13px 24px; border-bottom: 1px solid var(--studio-border); background: var(--studio-surface); }
+.wa-window-status { display: inline-flex; align-items: center; gap: 7px; color: var(--studio-muted); font-size: 10px; line-height: 1.7; }
+.wa-window-status i { width: 5px; height: 5px; border-radius: 50%; background: var(--studio-muted); }
+.wa-window-status.open i { background: #62a77b; }
+.wa-context-bar > div { display: flex; flex-wrap: wrap; align-items: center; gap: 13px; }
+.wa-context-bar :is(button, a) { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 10px; color: var(--studio-text); background: none; border: 0; min-height: 30px; padding: 0; text-decoration: none; }
+.wa-messages { flex: 1; display: flex; flex-direction: column; gap: 15px; min-height: 290px; height: clamp(300px, 43vh, 570px); max-height: 620px; overflow: auto; overscroll-behavior: contain; padding: 24px; background: var(--studio-surface); }
+.wa-earlier { align-self: center; flex-shrink: 0; margin: 0 0 10px; }
+.wa-history-limit { color: var(--studio-muted); font-size: 10px; line-height: 1.8; margin: 0 0 10px; text-align: center; }
+.wa-message { align-self: flex-start; min-width: 0; max-width: 86%; border: 1px solid var(--studio-border); border-radius: 17px 17px 17px 5px; background: var(--studio-surface); color: var(--studio-text); padding: 12px 15px; }
+.wa-message.outbound { align-self: flex-end; border-radius: 17px 17px 5px 17px; background: var(--appearance-subtle); }
+.wa-message.attention { border-style: dashed; }
+.wa-message p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.85; margin: 0 0 9px; }
+.wa-message > div { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 7px 12px; color: var(--studio-muted); font-size: 9px; line-height: 1.7; }
+.wa-message time { white-space: nowrap; }
+.wa-message-status { display: inline-flex; align-items: center; gap: 3px; }
+.wa-message-error { display: block; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10px; color: var(--studio-muted); margin-top: 8px; }
+.wa-template-label { display: flex; align-items: center; gap: 5px; margin-bottom: 7px; color: var(--studio-muted); font-size: 9px; }
+.wa-composer { padding: 20px 24px 21px; border-top: 1px solid var(--studio-border); background: var(--studio-surface); }
+.wa-composer-heading { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 11px; }
+.wa-composer-heading > label { font-size: 11px; font-weight: 550; color: var(--studio-text); }
+.wa-composer-heading > button { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: 10px; color: var(--studio-muted); min-height: 30px; background: none; border: 0; padding: 0; }
+.studio-whatsapp-page .wa-composer textarea { display: block; width: 100%; min-width: 0; min-height: 86px; padding: 13px 14px; font-size: 12px; line-height: 1.8; resize: vertical; border-radius: 15px; background: var(--studio-canvas); }
+.wa-composer-footer { display: flex; align-items: center; justify-content: space-between; gap: 13px; margin-top: 13px; }
+.wa-composer-footer > small { color: var(--studio-muted); font-size: 10px; line-height: 1.7; }
+.wa-composer-footer > button { flex-shrink: 0; }
+.wa-template-composer > select { min-height: 43px; width: 100%; min-width: 0; border-radius: 12px; padding: 10px 12px; font-size: 12px; }
+.wa-template-composer > p { margin: 12px 0 0; color: var(--studio-muted); font-size: 11px; line-height: 1.8; }
+.wa-template-composer .wa-template-preview { white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; border: 1px solid var(--studio-border); border-radius: 13px; color: var(--studio-text); background: var(--studio-canvas); }
+.wa-template-composer > label { display: grid; grid-template-columns: 65px minmax(0, 1fr); align-items: center; gap: 10px; margin-top: 11px; color: var(--studio-muted); font-size: 10px; }
+.wa-template-composer > label > input { width: 100%; min-width: 0; min-height: 39px; padding: 8px 11px; border-radius: 10px; font-size: 12px; }
+.wa-template-composer > small { display: block; color: var(--studio-muted); margin-top: 13px; font-size: 10px; line-height: 1.8; }
+.wa-template-composer .wa-permission-needed { display: flex; align-items: flex-start; gap: 8px; }
+.wa-permission-needed svg { flex-shrink: 0; margin-top: 3px; }
+.wa-composer .studio-error { margin: 13px 0 0; font-size: 11px; }
+.wa-uncertain-action { margin-top: 13px; padding: 14px; border: 1px solid var(--studio-border); border-radius: 14px; background: var(--studio-canvas); }
+.wa-uncertain-action p { color: var(--studio-muted); font-size: 11px; line-height: 1.8; margin: 0 0 11px; }
+.wa-uncertain-action button { text-align: left; white-space: normal; }
+.wa-empty { text-align: center; color: var(--studio-muted); padding: 45px 23px; margin: auto; max-width: 430px; font-size: 12px; }
+.wa-empty > svg { display: block; margin: 0 auto 19px; }
+.wa-empty h3 { font-family: inherit; font-size: 15px; font-weight: 500; color: var(--studio-text); line-height: 1.5; margin: 0 0 12px; }
+.wa-empty p { font-size: 12px; line-height: 1.9; margin: 8px 0 0; }
+.wa-thread-empty { padding: 60px 32px; }
+.wa-thread-empty > .wa-brand-icon { width: 68px; height: 68px; border-radius: 24px; margin: 0 auto 21px; }
+.wa-thread-empty h2 { font-family: inherit; font-size: 24px; line-height: 1.3; letter-spacing: -.04em; font-weight: 500; color: var(--studio-text); margin: 0 0 15px; }
+.wa-page-note { display: flex; align-items: flex-start; gap: 9px; margin: 21px 1px 0; color: var(--studio-muted); font-size: 10px; line-height: 1.85; }
+.wa-page-note > svg { flex-shrink: 0; margin-top: 3px; }
+.wa-dialog-help { color: var(--studio-muted); font-size: 12px; line-height: 1.85; margin: 0 0 23px; }
+.wa-form-field { display: flex; flex-direction: column; gap: 9px; color: var(--studio-muted); font-size: 11px; line-height: 1.7; margin-bottom: 19px; }
+.wa-form-field > :is(input, select, textarea) { width: 100%; min-width: 0; min-height: 45px; color: var(--studio-text); background: var(--studio-canvas); border: 1px solid var(--studio-border); border-radius: 12px; padding: 11px 13px; font: inherit; font-size: 13px; line-height: 1.7; }
+.wa-form-field > textarea { resize: vertical; }
+.wa-permission-check { display: flex; align-items: flex-start; gap: 11px; font-size: 12px; line-height: 1.85; color: var(--studio-text); margin-bottom: 24px; }
+.wa-permission-check input { width: 17px; height: 17px; flex-shrink: 0; margin-top: 3px; accent-color: var(--studio-text); }
+@media (max-width: 1180px) {
+  .wa-workspace { grid-template-columns: 275px minmax(0, 1fr); }
+  .wa-context-bar { align-items: flex-start; flex-direction: column; gap: 6px; }
+  .wa-setup > ol { gap: 20px; }
+}
+@media (max-width: 900px) {
+  .wa-setup > ol { grid-template-columns: minmax(0, 1fr); gap: 23px; }
+  .wa-setup > ol > li { flex-direction: row; gap: 15px; }
+  .wa-connection-strip { flex-wrap: wrap; }
+  .wa-connection-strip > div { min-width: min(100%, 210px); }
+}
+@media (max-width: 760px) {
+  .studio-whatsapp-page .studio-page-heading { margin-bottom: 20px; }
+  .studio-whatsapp-page .wa-connection-strip { padding: 18px; gap: 12px; }
+  .wa-connection-strip > .studio-badge { margin-left: 57px; }
+  .wa-connection-strip > .studio-button { margin-left: auto; }
+  .studio-whatsapp-page .wa-setup { padding: 22px 20px; }
+  .wa-setup-heading { align-items: flex-start; margin-bottom: 25px; }
+  .wa-setup-heading h2 { font-size: 18px; }
+  .wa-setup li a { min-height: 44px; }
+  .wa-workspace { display: block; min-height: 530px; border-radius: 21px; }
+  .wa-workspace.has-selection .wa-inbox { display: none; }
+  .wa-workspace:not(.has-selection) .wa-thread { display: none; }
+  .wa-inbox { border-right: 0; }
+  .wa-conversation-list { max-height: 65vh; }
+  .wa-conversation-row { padding: 18px 17px; min-height: 86px; }
+  .wa-search { min-height: 46px; }
+  .studio-whatsapp-page .wa-search input { font-size: 16px; }
+  .wa-back { display: inline-flex !important; flex-shrink: 0; }
+  .wa-thread-heading { padding: 17px 16px; gap: 10px; }
+  .wa-thread-heading h2 { font-size: 15px; }
+  .wa-thread-heading > .wa-avatar { width: 34px; height: 34px; }
+  .wa-context-bar { padding: 11px 18px; gap: 7px; }
+  .wa-context-bar :is(button, a) { min-height: 38px; font-size: 11px; }
+  .wa-messages { padding: 19px 16px; min-height: 280px; height: 44dvh; max-height: 540px; }
+  .wa-message { max-width: 92%; padding: 12px 14px; }
+  .wa-message p { font-size: 12px; }
+  .wa-composer { padding: 18px 17px; }
+  .wa-composer-heading > button { min-height: 38px; font-size: 11px; }
+  .studio-whatsapp-page .wa-composer textarea { font-size: 16px; }
+  .wa-template-composer > select, .wa-template-composer > label > input { min-height: 44px; font-size: 16px; }
+  .wa-template-composer > label { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .wa-composer-footer { align-items: flex-end; }
+  .wa-composer-footer > small { font-size: 9px; }
+  .wa-composer-footer > button { min-height: 44px; padding-inline: 14px; }
+  .wa-form-field > :is(input, select, textarea) { font-size: 16px; }
+  .wa-page-note { font-size: 10px; }
+}
+@media (max-width: 360px) {
+  .wa-connection-strip > .studio-badge { margin-left: 0; }
+  .wa-composer-footer { align-items: stretch; flex-direction: column; }
+  .wa-composer-footer > button { align-self: flex-end; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .wa-conversation-row { transition: background .18s ease, border-color .18s ease; }
+}
