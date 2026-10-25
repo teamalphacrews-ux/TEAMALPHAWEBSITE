@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Save, Webhook, UsersRound, CalendarDays } from "lucide-react";
+import { Save, Webhook, UsersRound, CalendarDays, Mail } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   WorkspaceHeader,
@@ -147,6 +147,12 @@ export default function Settings() {
               title: "Google Calendar",
               copy: "Review your calendar connection and synchronization.",
               icon: CalendarDays,
+            },
+            {
+              to: "/admin/email",
+              title: "Email",
+              copy: "Connect Gmail and browse your inbox, sent mail and email search.",
+              icon: Mail,
             },
             {
               to: "/admin/users",

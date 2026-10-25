@@ -20,6 +20,7 @@ import {
   HardDrive,
   UserRound,
   ChevronDown,
+  Mail,
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
@@ -59,6 +60,7 @@ const groups = [
       { name: "Client support", path: "/admin/chats", icon: MessageSquare },
       { name: "Activity", path: "/admin/activity-log", icon: Bell },
       { name: "Integrations", path: "/admin/integrations", icon: Webhook },
+      { name: "Email", path: "/admin/email", icon: Mail },
       { name: "Settings", path: "/admin/settings", icon: Settings2 },
       { name: "Team & access", path: "/admin/users", icon: UsersRound },
     ],
