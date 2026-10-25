@@ -5,6 +5,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import API_BASE_URL from '../../utils/apiConfig';
 import GmailConnectionCard from '../components/integrations/GmailConnectionCard';
+import WhatsAppConnectionCard from '../components/integrations/WhatsAppConnectionCard';
 import { WorkspaceHeader } from '../components/operations/WorkspaceUI';
 import { useAuth } from '../../context/AuthContext';
 import './integrations.css';
@@ -33,8 +34,9 @@ export default function Integrations() {
     catch { toast.error('Copy is unavailable. Select and copy the text below.'); }
   };
   return <div className="studio-integrations">
-    <WorkspaceHeader title="Integrations" description="Connect your calendar, email and website enquiries." />
+    <WorkspaceHeader title="Integrations" description="Connect your calendar, email, WhatsApp and website enquiries." />
     <GmailConnectionCard />
+    <WhatsAppConnectionCard />
     <section className="studio-card studio-gmail-card"><span className="studio-webhook-icon"><CalendarDays size={24} strokeWidth={1.3} /></span><div><h2>Google Calendar</h2><p>Connect your studio calendar and manage event synchronization.</p><small>Your Calendar connection is managed from the Calendar workspace.</small></div><Link className="studio-button" to="/admin/calendar">Open calendar <ArrowRight size={15} /></Link></section>
     {error && <div className="studio-error" role="alert">{error}<button className="studio-button small" onClick={() => setRefresh(value => value + 1)}><RefreshCw size={13} />Retry</button></div>}
     <section className="studio-card studio-webhook-intro"><span className="studio-webhook-icon"><Webhook size={25} strokeWidth={1.3} /></span><div><h2>Website enquiries</h2><p>Connect a form or automation to create new leads in Team Alpha CRM.</p></div><span className={'studio-badge ' + (status?.configured ? 'green' : 'gold')}>{preview ? 'Preview only' : status ? status.configured ? 'Configured' : 'Setup needed' : error ? 'Status unavailable' : 'Checking configuration…'}</span></section>

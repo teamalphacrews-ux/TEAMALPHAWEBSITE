@@ -35,7 +35,8 @@ const readiness = createRuntimeReadiness({
     getConnectionState: () => mongoose.connection.readyState,
     models: ['Lead', 'Quotation', 'Invoice', 'StudioContact', 'StudioProject',
         'ContactDocument', 'ProjectMessage', 'QuoteDelivery', 'GmailConnection', 'GmailOAuthNonce',
-        'AdminSession', 'StudioBackup', 'RecoveryRecord', 'StudioProfileImage', 'DocumentCounter', 'Task', 'Notification', 'StudioOperationLease'].map(name => require(`./models/${name}`))
+        'AdminSession', 'StudioBackup', 'RecoveryRecord', 'StudioProfileImage', 'DocumentCounter', 'Task', 'Notification', 'StudioOperationLease',
+        'WhatsAppConnection', 'WhatsAppConversation', 'WhatsAppMessage', 'WhatsAppReceipt'].map(name => require(`./models/${name}`))
 });
 app.use(compression()); // Compress all responses
 const server = require('http').createServer(app);
@@ -50,7 +51,14 @@ app.set('onlineUsers', onlineUsers);
 // CRITICAL: Attach io instance so routes can access it for real-time broadcasts
 app.set('io', io);
 
-app.use(express.json());
+app.use(express.json({
+    verify: (req, _res, buffer) => {
+        // Meta signs the exact bytes. Keep them only for the WhatsApp webhook.
+        const pathname = req.originalUrl.split('?')[0].replace(/\/$/, '');
+        if (req.method === 'POST' && pathname === '/api/integrations/whatsapp/webhook')
+            req.rawBody = Buffer.from(buffer);
+    }
+}));
 const allowedOrigins = [
     "https://team-alpha-d64k.onrender.com",
     process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, "") : null
@@ -230,6 +238,7 @@ authRouter.get('/google/callback', googleOAuth.callback);
 
 app.use('/api/auth', authRouter);
 app.use('/api/integrations/gmail', require('./routes/gmailRoutes'));
+app.use('/api/integrations/whatsapp', require('./routes/whatsappRoutes'));
 app.use('/api/studio/security', require('./routes/studioSecurityRoutes'));
 app.use('/api/studio', require('./routes/studioPreferencesRoutes'));
 app.use('/api/studio', require('./routes/studioProfileRoutes'));

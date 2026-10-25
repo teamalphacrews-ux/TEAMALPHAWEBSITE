@@ -22,6 +22,7 @@ import {
   UserRound,
   ChevronDown,
   Mail,
+  MessageCircle,
 } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
@@ -33,6 +34,7 @@ const iconTones = {
   '/admin/chats': 'blue', '/admin/activity-log': 'rose', '/admin/integrations': 'violet',
   '/admin/settings': 'slate', '/admin/users': 'cyan',
   '/admin/email': 'rose',
+  '/admin/whatsapp': 'green',
 };
 const primaryItems = [
   { name: "Overview", path: "/admin", icon: LayoutDashboard, exact: true },
@@ -71,6 +73,7 @@ const groups = [
       { name: "Activity", path: "/admin/activity-log", icon: Bell },
       { name: "Integrations", path: "/admin/integrations", icon: Webhook },
       { name: "Email", path: "/admin/email", icon: Mail },
+      { name: "WhatsApp", path: "/admin/whatsapp", icon: MessageCircle },
       { name: "Settings", path: "/admin/settings", icon: Settings2 },
       { name: "Team & access", path: "/admin/users", icon: UsersRound },
     ],

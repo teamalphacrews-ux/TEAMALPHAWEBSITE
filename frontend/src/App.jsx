@@ -56,6 +56,7 @@ const AdminDataManagement = lazy(() => import("./admin/pages/DataManagement"));
 const AdminSettings = lazy(() => import("./admin/pages/Settings"));
 const AdminIntegrations = lazy(() => import("./admin/pages/Integrations"));
 const AdminEmail = lazy(() => import("./admin/pages/GmailInbox"));
+const AdminWhatsApp = lazy(() => import("./admin/pages/WhatsAppInbox"));
 const AdminProjects = lazy(() => import("./admin/pages/Projects"));
 const AdminCrew = lazy(() => import("./admin/pages/Crew"));
 const AdminPostProduction = lazy(() => import("./admin/pages/PostProduction"));
@@ -151,6 +152,7 @@ function App() {
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="integrations" element={<AdminIntegrations />} />
                 <Route path="email" element={<AdminEmail />} />
+                <Route path="whatsapp" element={<AdminWhatsApp />} />
                 <Route path="projects" element={<AdminProjects />} />
                 <Route path="crew" element={<AdminCrew />} />
                 <Route

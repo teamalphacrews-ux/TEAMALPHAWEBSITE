@@ -17,6 +17,7 @@ const destinations = [
   ['Finance', '/admin/finance', 'invoices expenses payments'],
   ['Integrations', '/admin/integrations', 'webhook enquiries connect automation'],
   ['Email', '/admin/email', 'gmail inbox sent mail messages'],
+  ['WhatsApp', '/admin/whatsapp', 'business inbox messages clients templates'],
   ['Client support', '/admin/chats', 'messages chat client project help'], ['Activity', '/admin/activity-log', 'notifications'], ['Team & access', '/admin/users', 'settings permissions users'],
 ];
 
