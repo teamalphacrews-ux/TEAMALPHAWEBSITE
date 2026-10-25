@@ -3,6 +3,7 @@ import { Webhook, Copy, Check, ArrowRight, ShieldCheck, RefreshCw, ExternalLink 
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import API_BASE_URL from '../../utils/apiConfig';
+import GmailConnectionCard from '../components/integrations/GmailConnectionCard';
 import './integrations.css';
 
 const sample = { name: 'Ananya & Arjun', email: 'couple@example.com', phone: '+919876543210', eventType: 'Wedding', eventDate: '2027-02-14', eventLocation: 'Bengaluru', notes: 'Interested in photography and cinematography.' };
@@ -27,6 +28,7 @@ export default function Integrations() {
   };
   return <div className="studio-integrations">
     <div className="studio-page-heading"><div><span className="studio-eyebrow">CONNECTED, THOUGHTFULLY</span><h1>Studio integrations</h1><p>Bring your enquiries into one considered workspace.</p></div><span className="studio-badge gold">Incoming enquiries</span></div>
+    <GmailConnectionCard />
     {error && <div className="studio-error" role="alert">{error}<button className="studio-button small" onClick={() => setRefresh(value => value + 1)}><RefreshCw size={13} />Retry</button></div>}
     <section className="studio-card studio-webhook-intro"><span className="studio-webhook-icon"><Webhook size={25} strokeWidth={1.3} /></span><div><h2>Enquiry webhook</h2><p>Connect a form or automation to create new leads in Team Alpha CRM.</p></div><span className={'studio-badge ' + (status?.configured ? 'green' : 'gold')}>{status ? status.configured ? 'Configured' : 'Setup needed' : error ? 'Status unavailable' : 'Checking configuration…'}</span></section>
     <div className="studio-integration-grid">

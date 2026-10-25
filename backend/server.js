@@ -34,7 +34,7 @@ const readiness = createRuntimeReadiness({
     connect: () => mongoose.connect(process.env.MONGO_URI, { family: 4 }),
     getConnectionState: () => mongoose.connection.readyState,
     models: ['Lead', 'Quotation', 'Invoice', 'StudioContact', 'StudioProject',
-        'ContactDocument', 'ProjectMessage', 'QuoteDelivery'].map(name => require(`./models/${name}`))
+        'ContactDocument', 'ProjectMessage', 'QuoteDelivery', 'GmailConnection', 'GmailOAuthNonce'].map(name => require(`./models/${name}`))
 });
 app.use(compression()); // Compress all responses
 const server = require('http').createServer(app);
@@ -227,6 +227,7 @@ app.use('/api/studio', require('./routes/quoteWorkflowRoutes'));
 app.use('/api/studio', require('./routes/studioRoutes'));
 app.use('/api/public-invoices', require('./routes/publicInvoiceRoutes'));
 app.use('/api/webhooks', require('./routes/webhookRoutes'));
+app.use('/api/integrations/gmail', require('./routes/gmailRoutes'));
 app.use('/api/chats', chatRoutes);
 app.use('/api/project-support', require('./routes/projectSupportRoutes'));
 app.use('/api/leads', leadRoutes);
