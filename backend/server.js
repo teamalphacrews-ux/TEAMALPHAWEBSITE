@@ -34,7 +34,8 @@ const readiness = createRuntimeReadiness({
     connect: () => mongoose.connect(process.env.MONGO_URI, { family: 4 }),
     getConnectionState: () => mongoose.connection.readyState,
     models: ['Lead', 'Quotation', 'Invoice', 'StudioContact', 'StudioProject',
-        'ContactDocument', 'ProjectMessage', 'QuoteDelivery'].map(name => require(`./models/${name}`))
+        'ContactDocument', 'ProjectMessage', 'QuoteDelivery', 'GmailConnection', 'GmailOAuthNonce',
+        'AdminSession', 'StudioBackup', 'RecoveryRecord', 'StudioProfileImage', 'DocumentCounter', 'Task', 'Notification', 'StudioOperationLease'].map(name => require(`./models/${name}`))
 });
 app.use(compression()); // Compress all responses
 const server = require('http').createServer(app);
@@ -109,6 +110,13 @@ readiness.initialize(() => {
     initCronJobs();
     require('./services/quoteWorkflow').startQuoteWorker();
     require('node-cron').schedule('* * * * *',()=>require('./services/invoiceDelivery').runInvoiceDeliveryJobs().catch(()=>console.error('Invoice delivery worker failed.')));
+    const settingsJobs = () => {
+        require('./services/studioRecovery').runBackupJobs().catch(() => console.error('Studio backup job failed.'));
+        require('./services/studioAutomation').runStudioAutomation().catch(() => console.error('Studio notification job failed.'));
+    };
+    settingsJobs();
+    const settingsTimer = setInterval(settingsJobs, 60000);
+    settingsTimer.unref();
 
     // --- Google Calendar Polling ---
     const { pollGoogleCalendar } = require('./services/googleCalendarService');
@@ -221,6 +229,11 @@ authRouter.post('/google/webhook', async (req, res) => {
 authRouter.get('/google/callback', googleOAuth.callback);
 
 app.use('/api/auth', authRouter);
+app.use('/api/integrations/gmail', require('./routes/gmailRoutes'));
+app.use('/api/studio/security', require('./routes/studioSecurityRoutes'));
+app.use('/api/studio', require('./routes/studioPreferencesRoutes'));
+app.use('/api/studio', require('./routes/studioProfileRoutes'));
+app.use('/api/studio', require('./routes/studioCommunicationRoutes'));
 app.use('/api/quotes', require('./routes/publicQuoteRoutes'));
 app.use('/api/studio', require('./routes/documentCoverRoutes'));
 app.use('/api/studio', require('./routes/quoteWorkflowRoutes'));

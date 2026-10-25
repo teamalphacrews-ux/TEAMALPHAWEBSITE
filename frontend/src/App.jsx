@@ -55,6 +55,7 @@ const AdminQuotations = lazy(() => import("./admin/pages/Quotations"));
 const AdminDataManagement = lazy(() => import("./admin/pages/DataManagement"));
 const AdminSettings = lazy(() => import("./admin/pages/Settings"));
 const AdminIntegrations = lazy(() => import("./admin/pages/Integrations"));
+const AdminEmail = lazy(() => import("./admin/pages/GmailInbox"));
 const AdminProjects = lazy(() => import("./admin/pages/Projects"));
 const AdminCrew = lazy(() => import("./admin/pages/Crew"));
 const AdminPostProduction = lazy(() => import("./admin/pages/PostProduction"));
@@ -73,7 +74,7 @@ function App() {
 
   return (
     <div className={`font-sans text-[#1C1C1C] ${isStudioPage ? "bg-white" : "bg-[#F7F5F2]"} min-h-screen selection:bg-black selection:text-white`}>
-      <Toaster position="top-right" />
+      <Toaster position="top-right" toastOptions={{ className: isStudioPage ? "studio-toast" : undefined }} />
       <Suspense
         fallback={
           <div className="flex h-screen w-full items-center justify-center text-xl">
@@ -149,6 +150,7 @@ function App() {
                 <Route path="data" element={<AdminDataManagement />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="integrations" element={<AdminIntegrations />} />
+                <Route path="email" element={<AdminEmail />} />
                 <Route path="projects" element={<AdminProjects />} />
                 <Route path="crew" element={<AdminCrew />} />
                 <Route

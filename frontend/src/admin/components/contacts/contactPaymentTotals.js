@@ -1,4 +1,4 @@
-export function contactPaymentTotals(invoices, now = new Date()) {
+export function contactPaymentTotals(invoices, now = new Date(), { includeDueToday = false } = {}) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
     year: "numeric",
@@ -7,6 +7,7 @@ export function contactPaymentTotals(invoices, now = new Date()) {
   }).formatToParts(now);
   const part = (type) => parts.find((item) => item.type === type).value;
   const today = `${part("year")}-${part("month")}-${part("day")}`;
+  const isDue = value => value && (String(value).slice(0, 10) < today || (includeDueToday && String(value).slice(0, 10) === today));
   const totals = { paid: 0, upcoming: 0, pastDue: 0 };
   for (const invoice of invoices) {
     if (
@@ -38,15 +39,14 @@ export function contactPaymentTotals(invoices, now = new Date()) {
         const applied = Math.min(remainingPaid, installment.amountPaise);
         remainingPaid -= applied;
         const key =
-          installment.dueDate &&
-          String(installment.dueDate).slice(0, 10) < today
+          isDue(installment.dueDate)
             ? "pastDue"
             : "upcoming";
         totals[key] += installment.amountPaise - applied;
       }
     } else {
       const key =
-        invoice.dueDate && String(invoice.dueDate).slice(0, 10) < today
+        isDue(invoice.dueDate)
           ? "pastDue"
           : "upcoming";
       totals[key] += total - paid;

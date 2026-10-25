@@ -6,7 +6,9 @@ import {
   MessageSquare,
   Search,
   Send,
+  RefreshCw,
 } from "lucide-react";
+import { WorkspaceHeader, WorkspaceError } from "../components/operations/WorkspaceUI";
 import {
   workspaceRequest,
   recordError,
@@ -17,18 +19,20 @@ import "./projectSupport.css";
 export default function ProjectSupport() {
   const [search, setSearch] = useSearchParams();
   const [threads, setThreads] = useState([]),
-    [selected, setSelected] = useState(search.get("quote") || ""),
     [query, setQuery] = useState("");
+  const selected = search.get("quote") || "";
+  const [refresh, setRefresh] = useState(0);
   const [detail, setDetail] = useState(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [threadError, setThreadError] = useState("");
-  const [text, setText] = useState(""),
+  const [draft, setDraft] = useState({ id: "", text: "" }),
     [sending, setSending] = useState(false),
     [sendError, setSendError] = useState(""),
     [olderBusy, setOlderBusy] = useState(false);
   const requestId = useRef(""),
     firstList = useRef(true);
+  const text = draft.id === selected ? draft.text : "";
   const current = detail?.id === selected ? detail.data : null;
   useEffect(() => {
     let active = true,
@@ -41,8 +45,8 @@ export default function ProjectSupport() {
         if (active) {
           setThreads(data);
           if (firstList.current) {
-            if (window.innerWidth > 700)
-              setSelected((id) => id || data[0]?._id || "");
+            if (window.innerWidth > 700 && data[0]?._id)
+              setSearch(current => current.get("quote") ? current : { quote: data[0]._id }, { replace: true });
             firstList.current = false;
           }
           setError("");
@@ -65,7 +69,7 @@ export default function ProjectSupport() {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", poll);
     };
-  }, []);
+  }, [refresh, setSearch]);
   useEffect(() => {
     if (!selected) return;
     let active = true,
@@ -132,11 +136,10 @@ export default function ProjectSupport() {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", poll);
     };
-  }, [selected]);
+  }, [selected, refresh]);
   const choose = (id) => {
-    setSelected(id);
-    setSearch({ quote: id }, { replace: true });
-    setText("");
+    setSearch(id ? { quote: id } : {}, { replace: true });
+    setDraft({ id, text: "" });
     setSendError("");
     requestId.current = "";
     setThreadError("");
@@ -145,14 +148,15 @@ export default function ProjectSupport() {
     event.preventDefault();
     if (sending || !text.trim() || !selected) return;
     const id = selected;
-    requestId.current ||= messageRequestId();
+    if (requestId.current?.thread !== id || requestId.current?.text !== text.trim())
+      requestId.current = { thread: id, text: text.trim(), value: messageRequestId() };
     setSending(true);
     setSendError("");
     try {
       const message = await workspaceRequest(
         "post",
         "/api/project-support/" + id + "/messages",
-        { text: text.trim(), requestId: requestId.current },
+        { text: text.trim(), requestId: requestId.current.value },
       );
       setDetail((old) =>
         old?.id !== id
@@ -167,7 +171,7 @@ export default function ProjectSupport() {
               },
             },
       );
-      setText("");
+      setDraft(previous => previous.id === id ? { id, text: "" } : previous);
       requestId.current = "";
       setThreads((old) =>
         old.map((thread) =>
@@ -231,21 +235,10 @@ export default function ProjectSupport() {
   );
   return (
     <div className="project-support">
-      <div className="studio-page-heading">
-        <div>
-          <span className="studio-eyebrow">CLIENT CONVERSATIONS</span>
-          <h1>Client support</h1>
-          <p className="studio-muted">
-            Project questions and replies, connected to each client’s original
-            quote link.
-          </p>
-        </div>
-      </div>
-      {error && (
-        <p role="alert" className="studio-error">
-          {error}
-        </p>
-      )}
+      <WorkspaceHeader title="Client support" description="Project questions and replies, connected to each client’s shared project link.">
+        <button type="button" className="studio-button" onClick={() => setRefresh(value => value + 1)} disabled={loading || sending}><RefreshCw size={15} />Refresh</button>
+      </WorkspaceHeader>
+      <WorkspaceError error={error} retry={() => setRefresh(value => value + 1)} />
       <div className={"support-workspace" + (selected ? " has-thread" : "")}>
         <aside className="support-inbox">
           <label className="studio-search">
@@ -269,6 +262,7 @@ export default function ProjectSupport() {
                   className={thread._id === selected ? "selected" : ""}
                   disabled={sending}
                   onClick={() => choose(thread._id)}
+                  aria-pressed={thread._id === selected}
                 >
                   <span className="support-avatar">
                     {thread.clientName
@@ -291,10 +285,9 @@ export default function ProjectSupport() {
             ) : (
               <div className="support-empty">
                 <MessageSquare size={28} />
-                <h3>No conversations yet</h3>
+                <h3>{query.trim() ? "No matching conversations" : "No conversations yet"}</h3>
                 <p>
-                  Accepted quotes appear here. Clients can message you from the
-                  same project link.
+                  {query.trim() ? "Try another client name or clear your search." : "Accepted quotes appear here. Clients can message you from the same project link."}
                 </p>
               </div>
             )}
@@ -310,10 +303,8 @@ export default function ProjectSupport() {
                 <button
                   className="support-back studio-icon-button"
                   aria-label="Back to conversations"
-                  onClick={() => {
-                    setSelected("");
-                    setSearch({}, { replace: true });
-                  }}
+                  disabled={sending}
+                  onClick={() => choose("")}
                 >
                   <ArrowLeft size={18} />
                 </button>
@@ -393,7 +384,7 @@ export default function ProjectSupport() {
                   )
                 )}
               </div>
-              <form className="support-composer" onSubmit={send}>
+              <form className="support-composer" onSubmit={send} aria-busy={sending}>
                 <label htmlFor="studio-support-reply">Reply to client</label>
                 <textarea
                   id="studio-support-reply"
@@ -402,7 +393,7 @@ export default function ProjectSupport() {
                   maxLength={2000}
                   value={text}
                   onChange={(event) => {
-                    setText(event.target.value);
+                    setDraft({ id: selected, text: event.target.value });
                     requestId.current = "";
                   }}
                   placeholder="Write a helpful reply…"

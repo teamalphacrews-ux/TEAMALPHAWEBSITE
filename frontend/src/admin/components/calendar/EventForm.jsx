@@ -1,12 +1,6 @@
 import { useState } from "react";
 import { WorkspaceDialog, WorkspaceField } from "../operations/WorkspaceUI";
-function localInput(value) {
-  if (!value) return "";
-  const d = new Date(value);
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
-}
+import { DEFAULT_STUDIO_TIMEZONE, studioDateTimeInput, studioDateTimeToISO } from '../../../utils/studioTime';
 export default function EventForm({
   onClose,
   onSave,
@@ -15,7 +9,9 @@ export default function EventForm({
   leads = [],
   busy,
   error,
+  timezone = DEFAULT_STUDIO_TIMEZONE,
 }) {
+  const [validationError, setValidationError] = useState('');
   const [form, setForm] = useState(() => ({
     title: "",
     type: "Wedding",
@@ -23,27 +19,31 @@ export default function EventForm({
     description: "",
     teamMembers: [],
     ...initialData,
-    start: localInput(initialData?.start),
-    end: localInput(initialData?.end),
+    start: studioDateTimeInput(initialData?.start, timezone),
+    end: studioDateTimeInput(initialData?.end, timezone),
     lead: initialData?.lead?._id || initialData?.lead || "",
   }));
   const change = (name, value) => setForm((c) => ({ ...c, [name]: value }));
   const submit = (event) => {
     event.preventDefault();
-    if (new Date(form.end) <= new Date(form.start)) return;
+    if (busy) return;
+    const start = studioDateTimeToISO(form.start, timezone), end = studioDateTimeToISO(form.end, timezone);
+    if (!start || !end) { setValidationError(`Enter valid start and end times in ${timezone}. A daylight-saving clock change may make a selected time unavailable.`); return; }
+    if (end <= start) { setValidationError('The end must be after the start.'); return; }
+    setValidationError('');
     onSave({
       ...form,
-      start: new Date(form.start).toISOString(),
-      end: new Date(form.end).toISOString(),
+      start,
+      end,
     });
   };
   return (
     <WorkspaceDialog
-      title={initialData?._id ? "Edit studio event" : "Schedule a new story"}
+      title={initialData?._id ? "Edit studio event" : "Schedule event"}
       onClose={onClose}
       onSubmit={submit}
       busy={busy}
-      error={error}
+      error={validationError || error}
       submitLabel="Save event"
     >
       <div className="studio-form-grid">
@@ -80,7 +80,7 @@ export default function EventForm({
           ]}
         />
         <WorkspaceField
-          label="Starts"
+          label={`Starts · ${timezone}`}
           name="start"
           value={form.start}
           onChange={change}
@@ -88,7 +88,7 @@ export default function EventForm({
           required
         />
         <WorkspaceField
-          label="Ends"
+          label={`Ends · ${timezone}`}
           name="end"
           value={form.end}
           onChange={change}
@@ -112,7 +112,7 @@ export default function EventForm({
           type="textarea"
         />
       </div>
-      {form.start && form.end && new Date(form.end) <= new Date(form.start) && (
+      {form.start && form.end && form.end <= form.start && (
         <p className="studio-error">The end must be after the start.</p>
       )}
       <fieldset className="workspace-crew-picker">
@@ -144,7 +144,7 @@ export default function EventForm({
         )}
       </fieldset>
       <p className="studio-muted">
-        Event times use your browser’s timezone. Google-linked events keep their
+        Event times use the studio timezone, {timezone}. Google-linked events keep their
         existing sync workflow.
       </p>
     </WorkspaceDialog>

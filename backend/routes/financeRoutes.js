@@ -246,16 +246,17 @@ router.put('/expense/:id', async (req, res) => {
 // Delete Expense
 router.delete('/expense/:id', async (req, res) => {
     try {
-        await Finance.findByIdAndDelete(req.params.id);
+        await require('../services/studioRecovery').recoverableDelete({ Model: Finance, filter: { _id: req.params.id, type: 'expense' }, actorId: req.user.id });
         res.json({ message: "Expense deleted" });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(err.status || 503).json({ error: err.status ? err.message : 'The expense could not be removed.' });
     }
 });
 
 // Safe Deletion for Income (Handled via Lead Payment resetting or Invoice deletion)
 router.delete('/income/:incomeType/:id', async (req, res) => {
     try {
+        await require('../services/studioSecurity').assertPermission(req.user.id, 'deletion');
         const { incomeType, id } = req.params;
 
         if (incomeType === 'Lead') {
@@ -269,14 +270,16 @@ router.delete('/income/:incomeType/:id', async (req, res) => {
         }
 
         if (incomeType === 'Invoice') {
-            const deletedInvoice = await Invoice.findByIdAndDelete(id);
+            const current = await Invoice.findById(id);
+            if (current?.sourceQuotation) return res.status(409).json({ error: 'Use invoice cancellation for an invoice linked to an accepted quotation.' });
+            const deletedInvoice = await require('../services/studioRecovery').recoverableDelete({ Model: Invoice, filter: { _id: id }, actorId: req.user.id });
             if (!deletedInvoice) return res.status(404).json({ error: 'Invoice not found' });
             return res.json({ message: 'Invoice deleted successfully' });
         }
 
         return res.status(400).json({ error: 'Invalid income type' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(err.status || 503).json({ error: err.status ? err.message : 'The income record could not be removed.' });
     }
 });
 

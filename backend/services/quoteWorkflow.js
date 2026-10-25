@@ -8,12 +8,12 @@ const mailer = require("./studioMailer");
 const pipeline = require("./enquiryPipeline");
 const fail = (message, status = 400) =>
   Object.assign(new Error(message), { status });
-function emailValues(body = {}) {
+function emailValues(body = {}, defaults = {}) {
   const subject =
-    body.subject === undefined ? "Your Team Alpha quotation" : body.subject;
+    body.subject === undefined ? defaults.subject || "Your Team Alpha quotation" : body.subject;
   const message =
     body.message === undefined
-      ? "Please review your quotation and accept it using the link below."
+      ? defaults.message || "Please review your quotation and accept it using the link below."
       : body.message;
   if (
     typeof subject !== "string" ||
@@ -50,6 +50,7 @@ async function shareQuote(id, expectedRevision) {
   if (!quote) throw fail("Quotation not found.", 404);
   if (expectedRevision !== undefined && quote.revision !== expectedRevision)
     throw fail("Quotation changed before delivery.", 409);
+  if (!require('../utils/documentDefaults').linkIsActive(quote)) throw fail('This client link expired or was revoked. Regenerate it before sharing.', 409);
   if (!["Draft", "Sent"].includes(quote.status) || expired(quote))
     throw fail(
       "Use an open quotation with a future expiry date before sharing.",
@@ -59,6 +60,7 @@ async function shareQuote(id, expectedRevision) {
     return { token: quote.shareToken, quote };
   }
   const token = quote.shareToken || crypto.randomBytes(32).toString("hex");
+  const options = require('../utils/documentDefaults').clientLinkOptions({}, quote.clientLinkOptions);
   const updated = await Quotation.findOneAndUpdate(
     {
       _id: quote._id,
@@ -72,7 +74,10 @@ async function shareQuote(id, expectedRevision) {
         shareToken: token,
         shareTokenHash: tokenHash(token),
         sharedAt: quote.sharedAt || new Date(),
+        clientLinkOptions: options,
+        ...(options.linkExpiryDays ? { linkExpiresAt: new Date(Date.now() + options.linkExpiryDays * 86400000) } : {}),
       },
+      $unset: { linkRevokedAt: 1 },
       $push: {
         timeline: {
           kind: "shared",
@@ -107,7 +112,6 @@ function safeQuote(q) {
   return value;
 }
 async function queueEmail(quote, body, scheduledFor) {
-  const values = emailValues(body);
   if (!mailer.mailerReady())
     throw fail(
       "Email delivery is not configured. Add SMTP or EMAIL_USER and EMAIL_PASS before sending.",
@@ -125,6 +129,8 @@ async function queueEmail(quote, body, scheduledFor) {
     throw fail("Schedule the email within the next 365 days.");
   if (scheduledFor && quote.expiryEnabled !== false && expired(quote, dueAt))
     throw fail("Schedule the email before the quotation expires.");
+  const studio = body.subject === undefined || body.message === undefined ? await StudioConfig.findOne({ key: 'studio' }) || {} : {};
+  const values = emailValues(body, require('../utils/documentDefaults').communicationValues(studio, 'quote', quote));
   const key = `${scheduledFor ? "scheduled" : "email"}:${quote._id}:${quote.revision}:${body.idempotencyKey || crypto.randomUUID()}`;
   const record = await QuoteDelivery.findOneAndUpdate(
     { key },
@@ -189,6 +195,7 @@ async function processDelivery(id) {
     );
     const valid =
       quote &&
+      require('../utils/documentDefaults').linkIsActive(quote) &&
       quote.revision === job.revision &&
       (job.kind === "confirmation"
         ? quote.status === "Accepted"
@@ -327,7 +334,7 @@ async function runQuoteDeliveryJobs() {
           });
         continue;
       }
-      if (!mailer.mailerReady() || !quote.remindersEnabled) continue;
+      if (!require('../utils/documentDefaults').linkIsActive(quote) || !mailer.mailerReady() || !quote.remindersEnabled) continue;
       // After downtime or a newly configured mailer, send the latest due reminder
       // once rather than delivering every missed reminder in a burst.
       const day = (quote.reminderDays || [])

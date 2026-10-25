@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../../utils/branding";
+import { quotationDefaults, addDocumentDays, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
+import { API_BASE_URL } from '../../utils/apiConfig';
+import { quotationStatus } from '../../utils/quotationStatus';
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   Plus,
@@ -13,6 +16,8 @@ import {
   MoveDown,
   ImagePlus,
   Printer,
+  Search,
+  ArrowUpRight,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { OperationsModal } from "../components/operations/OperationsUI";
@@ -24,6 +29,9 @@ import {
   recordDate,
 } from "../components/operations/workspaceData";
 import "./quotationWorkspace.css";
+import "./documentWorkspaceRefinements.css";
+import "./quotationList.css";
+import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 const covers = [
   "/assets/banner.jpg",
   "/assets/services/wedding.jpg",
@@ -42,6 +50,7 @@ const blankItem = () => ({
 const dateOnly = (d) => new Date(d).toISOString().slice(0, 10);
 const quoteNumber = (q) =>
   q.documentNumber || q._id?.slice(-6).toUpperCase() || "New";
+const quoteFilters = ["All", "Draft", "Open", "Accepted", "Expired", "Declined", "Cancelled", "Archived"];
 const defaultForm = (settings) => ({
   clientName: "",
   email: "",
@@ -51,7 +60,7 @@ const defaultForm = (settings) => ({
   title: "Wedding photography & cinematography",
   documentNumber: "",
   issueDate: dateOnly(Date.now()),
-  validUntil: dateOnly(Date.now() + 30 * 86400000),
+  validUntil: dateOnly(Date.now() + (settings.quotationValidityDays ?? 14) * 86400000),
   status: "Draft",
   items: [blankItem()],
   discountType: "amount",
@@ -64,6 +73,7 @@ const defaultForm = (settings) => ({
   expiryEnabled: true,
   remindersEnabled: false,
   reminderDays: [3, 7, 14, 21, 30],
+  ...quotationDefaults(settings),
   design: {
     coverImage: settings.coverImage || covers[0],
     colorTheme: settings.colorTheme || "#202622",
@@ -107,14 +117,15 @@ function Toggle({ label, checked, onChange, help }) {
   return (
     <div className="qw-setting">
       <strong>{label}</strong>
-      <label className="qw-toggle">
+      <label className="qw-toggle studio-switch-control">
         <input
           type="checkbox"
+          role="switch"
           aria-label={label}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span />
+        <span className="studio-switch-track" aria-hidden="true" />
         {checked ? "On" : "Off"}
       </label>
       {help && <p>{help}</p>}
@@ -288,15 +299,7 @@ export default function Quotations() {
     setSavedAt("Unsaved changes");
   };
 
-  const status = (q) =>
-    ["Draft", "Sent"].includes(q.status) &&
-    q.expiryEnabled !== false &&
-    q.validUntil &&
-    clock >= Date.parse(dateOnly(q.validUntil) + "T18:30:00Z")
-      ? "Expired"
-      : q.status === "Sent"
-        ? "Open"
-        : q.status;
+  const status = (quote) => quotationStatus(quote, clock);
   const subtotal = (form.items || []).reduce(
     (s, i) => s + Number(i.quantity) * Number(i.unitPricePaise),
     0,
@@ -372,6 +375,30 @@ export default function Quotations() {
       if (generation === generationRef.current) setBusy(false);
     }
   };
+  const openClientLink = async () => {
+    if (busy) return;
+    const quote = currentRef.current;
+    if (!quote?.acceptedAt && quote?.status !== "Accepted") {
+      await act("share");
+      return;
+    }
+    const generation = generationRef.current;
+    setBusy(true);
+    setSaveError("");
+    try {
+      const result = await workspaceRequest("get", `/api/studio/quotations/${quote._id}/client-link`);
+      if (generation !== generationRef.current) return;
+      let url;
+      try { url = new URL(result?.url); } catch { throw new Error("The studio did not return an active smart client link."); }
+      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash || !/^\/quote\/[a-f\d]{64}$/i.test(url.pathname)) throw new Error("The studio did not return a valid smart client link.");
+      setShareUrl(url.href);
+      setModal("link");
+    } catch (error) {
+      if (generation === generationRef.current) setSaveError(error.response ? recordError(error) : error.message);
+    } finally {
+      if (generation === generationRef.current) setBusy(false);
+    }
+  };
   const preview = async () => {
     const generation = generationRef.current;
     try {
@@ -391,8 +418,7 @@ export default function Quotations() {
       if (!q || generation !== generationRef.current) return;
       setCurrent(q);
       setEmail({
-        subject: `Quote #${quoteNumber(q)} from ${settings.studioName || "TEAM ALPHA"}`,
-        message: `Hi ${q.clientName},\n\nPlease take a moment to review your quote. Click the button below to get started.\n\nThanks,\n${settings.studioName || "TEAM ALPHA"}`,
+        ...documentCommunication(settings, 'quote', q),
         sendCopy: true,
         scheduledFor: "",
         idempotencyKey: crypto.randomUUID(),
@@ -419,7 +445,7 @@ export default function Quotations() {
       if (schedule) toast.success("Quote scheduled");
       else if (response.delivery?.status === "sent")
         toast.success("Quote email sent");
-      else toast("Delivery is pending. Check Email History before resending.");
+      else toast("Delivery is pending. Check Email history before resending.");
       setMode("list");
       reload();
     } catch (e) {
@@ -428,8 +454,21 @@ export default function Quotations() {
       setBusy(false);
     }
   };
+  const manageClientLink = async regenerate => {
+    if (!current?._id || busy) return;
+    if (dirty) { setSaveError('Save and share the revised quote before managing its smart client link.'); return; }
+    setBusy(true);
+    try {
+      const result = await workspaceRequest(regenerate ? 'post' : 'delete', `/api/studio/quotations/${current._id}/share${regenerate ? '/regenerate' : ''}`, {});
+      if (result.quote) loadQuote(result.quote);
+      if (regenerate) { setShareUrl(`${window.location.origin}/quote/${result.token}`); setModal('link'); }
+      toast.success(regenerate ? 'New smart client link created with current studio visibility settings. Previous copies no longer work.' : 'Smart client link revoked');
+      reload();
+    } catch (error) { setSaveError(recordError(error)); }
+    finally { setBusy(false); setActionMenu(false); }
+  };
   const actionItems = () => (
-    <div className="qw-dropdown">
+    <>
       {!current?.acceptedAt && current?.status !== "Accepted" && (
         <button
           onClick={() => {
@@ -438,7 +477,7 @@ export default function Quotations() {
             setActionMenu(false);
           }}
         >
-          Edit Quote Number
+          Edit quote number
         </button>
       )}
       <button
@@ -448,7 +487,7 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Create Template
+        Save as template
       </button>
       <button
         onClick={() => {
@@ -457,9 +496,13 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Link to Project
+        Link to project
       </button>
       <button onClick={() => act("duplicate")}>Duplicate</button>
+      {['Sent', 'Accepted'].includes(current?.status) && <>
+        <button onClick={() => manageClientLink(false)}>Revoke smart client link</button>
+        <button onClick={() => manageClientLink(true)}>Regenerate smart client link</button>
+      </>}
       {!current?.acceptedAt && current?.status !== "Accepted" && (
         <button
           onClick={() => {
@@ -467,7 +510,7 @@ export default function Quotations() {
             setActionMenu(false);
           }}
         >
-          Cancel Quote
+          Cancel quote
         </button>
       )}
       <button
@@ -492,7 +535,7 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Cancel Scheduled Sending
+        Cancel scheduled sending
       </button>
       <button
         onClick={async () => {
@@ -510,9 +553,9 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Email History
+        Email history
       </button>
-    </div>
+    </>
   );
   const applyTemplate = (t) => {
     lastSavedVersion.current = -1;
@@ -534,7 +577,7 @@ export default function Quotations() {
       remindersEnabled: !!t.remindersEnabled,
       reminderDays: t.reminderDays || [3, 7, 14, 21, 30],
       design: t.design || formRef.current.design,
-      validUntil: dateOnly(clock + (t.validityDays || 30) * 86400000),
+      validUntil: addDocumentDays(quotationDefaults(settings, clock).issueDate, t.validityDays ?? settings.quotationValidityDays ?? 14),
     };
     setDraft(f);
   };
@@ -599,117 +642,46 @@ export default function Quotations() {
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
+  const startNewQuote = () => {
+    setDraft(defaultForm(settings));
+    setMode("wizard");
+  };
+  const openListQuote = quote => {
+    loadQuote(quote);
+    setMode(quote.status === "Draft" ? "editor" : "detail");
+  };
   return (
-    <div className="qw-page">
+    <div className={'qw-page' + (mode === 'list' ? ' qw-list-workspace' : '')}>
       {mode === "list" && (
         <>
           <header className="qw-list-header">
-            <h1>Quotes</h1>
-            <input
-              aria-label="Search quotes"
-              placeholder="Search quote or contact name"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <Link className="qw-text-button" to="/admin/quote-templates">
-              Templates
-            </Link>
-            <button
-              className="qw-primary"
-              onClick={() => {
-                setDraft(defaultForm(settings));
-                setMode("wizard");
-              }}
-            >
-              New Quote
-            </button>
-          </header>
-          <div className="qw-tabs">
-            {[
-              "All",
-              "Draft",
-              "Open",
-              "Accepted",
-              "Expired",
-              "Declined",
-              "Cancelled",
-              "Archived",
-            ].map((f) => (
-              <button
-                className={filter === f ? "active" : ""}
-                key={f}
-                onClick={() => setFilter(f)}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-          {error && (
-            <p role="alert">
-              {error} <button onClick={reload}>Retry</button>
-            </p>
-          )}
-          {loading ? (
-            <p>Loading quotations…</p>
-          ) : (
-            <div className="qw-list-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Quote</th>
-                    <th>Client</th>
-                    <th>Amount</th>
-                    <th>Expires</th>
-                    <th>Status</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {visible.map((q) => (
-                    <tr key={q._id}>
-                      <td>
-                        <button
-                          onClick={() => {
-                            loadQuote(q);
-                            setMode(q.status === "Draft" ? "editor" : "detail");
-                          }}
-                        >
-                          Quote #{quoteNumber(q)}
-                        </button>
-                        <small>{q.title}</small>
-                      </td>
-                      <td>{q.clientName}</td>
-                      <td>{rupees(q.totalPaise / 100)}</td>
-                      <td>
-                        {q.expiryEnabled === false
-                          ? "No expiry"
-                          : recordDate(q.validUntil)}
-                      </td>
-                      <td>
-                        <span className="qw-badge">{status(q)}</span>
-                      </td>
-                      <td>
-                        <button
-                          aria-label={"Open quote " + q.clientName}
-                          onClick={() => {
-                            loadQuote(q);
-                            setMode(q.status === "Draft" ? "editor" : "detail");
-                          }}
-                        >
-                          •••
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!visible.length && (
-                <p className="qw-empty">
-                  No quotations yet. Create a quote to get started.
-                </p>
-              )}
+            <div><h1>Quotations</h1><p>Create proposals and follow every client decision.</p></div>
+            <div className="qw-list-actions">
+              <Link className="studio-button" to="/admin/quote-templates"><Copy size={15} />Templates</Link>
+              <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>
             </div>
-          )}
+          </header>
+          <section className="qw-list-panel" aria-label="Quotation list">
+            <div className="qw-list-toolbar">
+              <label className="studio-search qw-list-search"><Search size={17} aria-hidden="true" /><input aria-label="Search quotes" placeholder="Search quote or client name" value={search} onChange={event => setSearch(event.target.value)} /></label>
+              <label className="qw-list-status-filter"><span>Status</span><select className="studio-input" aria-label="Quote status" value={filter} onChange={event => setFilter(event.target.value)}>{quoteFilters.map(value => <option key={value}>{value}</option>)}</select></label>
+              <span className="qw-list-count" role="status">{error ? 'Unavailable' : loading ? 'Loading…' : `${visible.length} of ${quotes.length} quotes`}</span>
+            </div>
+            <div className="qw-list-filters" role="group" aria-label="Filter quotations by status">{quoteFilters.map(value => <button type="button" key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value}</button>)}</div>
+            {error ? <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={reload}>Retry</button></div> : loading ? <div className="qw-list-empty" role="status"><span className="studio-loader" />Loading quotations…</div> : visible.length ? <>
+              <div className="qw-list-columns" aria-hidden="true"><span>Quote</span><div className="qw-quote-metadata"><span>Client</span><span>Amount</span><span>Expires</span><span>Status</span></div><span /></div>
+              <div className="qw-quote-records">{visible.map(quote => <article className="qw-quote-row" key={quote._id} aria-labelledby={'quote-list-' + quote._id}>
+                <div className="qw-quote-description"><h2 id={'quote-list-' + quote._id}><button className="qw-quote-title" onClick={() => openListQuote(quote)}>Quote #{quoteNumber(quote)}</button></h2><p>{quote.title}</p></div>
+                <dl className="qw-quote-metadata">
+                  <div><dt>Client</dt><dd>{quote.clientName || 'Client to be confirmed'}</dd></div>
+                  <div className="qw-quote-amount"><dt>Amount</dt><dd>{rupees(quote.totalPaise / 100)}</dd></div>
+                  <div><dt>Expires</dt><dd>{quote.expiryEnabled === false ? 'No expiry' : recordDate(quote.validUntil)}</dd></div>
+                  <div><dt>Status</dt><dd><span className="qw-badge" data-status={status(quote).toLowerCase()}>{status(quote)}</span></dd></div>
+                </dl>
+                <button className="studio-icon-button qw-quote-open" aria-label={'Open quote ' + quote.clientName} onClick={() => openListQuote(quote)}><ArrowUpRight size={18} /></button>
+              </article>)}</div>
+            </> : <div className="qw-list-empty" role="status"><h2>{search.trim() || filter !== 'All' ? 'No matching quotations' : 'Your next proposal starts here'}</h2><p>{search.trim() || filter !== 'All' ? 'Try another client name or choose a different status.' : 'Create a quotation to start a new client conversation.'}</p>{search.trim() || filter !== 'All' ? <button className="studio-button" onClick={() => { setSearch(''); setFilter('All'); }}>Reset filters</button> : <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>}</div>}
+          </section>
         </>
       )}
       {mode === "wizard" && (
@@ -757,7 +729,7 @@ export default function Quotations() {
                 {!templates.length && (
                   <p>
                     No templates saved yet. Prepare a blank quote, then use
-                    Create Template.
+                    Save as template.
                   </p>
                 )}
               </>
@@ -883,16 +855,13 @@ export default function Quotations() {
             </span>
             <span className="qw-save-state">{busy ? "Saving…" : savedAt}</span>
             <div className="qw-header-actions">
-              <div className="qw-menu">
-                <button onClick={() => setActionMenu(!actionMenu)}>
-                  Actions <ChevronDown size={12} />
-                </button>
-                {actionMenu && actionItems()}
-              </div>
+              <WorkspaceActionMenu label="Actions" className="qw-menu" menuClassName="qw-dropdown" open={actionMenu} onOpenChange={setActionMenu} disabled={busy}>
+                {actionItems()}
+              </WorkspaceActionMenu>
               {mode === "editor" ? (
                 <>
                   <button onClick={() => setDesignOpen(!designOpen)}>
-                    Edit Design
+                    Edit design
                   </button>
                   <button onClick={preview}>Preview</button>
                   <button
@@ -906,7 +875,7 @@ export default function Quotations() {
                     disabled={busy}
                     onClick={prepareSend}
                   >
-                    Send Quote
+                    Send quote
                   </button>
                 </>
               ) : (
@@ -919,22 +888,21 @@ export default function Quotations() {
                         setMode("editor");
                       }}
                     >
-                      Edit Quote
+                      Edit quote
                     </button>
                   )}
-                  <button onClick={preview}>View Quote</button>
-                  {current?.invoiceId ? (
+                  <button onClick={preview}>View quote</button>
+                  {current?.invoiceId && (
                     <Link
                       className="qw-primary"
                       to={`/admin/invoices/${current.invoiceId}`}
                     >
-                      View Invoice
+                      View invoice
                     </Link>
-                  ) : (
-                    <button className="qw-primary" onClick={() => act("share")}>
-                      Share
-                    </button>
                   )}
+                  <button className={current?.invoiceId ? "qw-button" : "qw-primary"} disabled={busy} onClick={openClientLink}>
+                    Smart client link
+                  </button>
                 </>
               )}
             </div>
@@ -997,7 +965,7 @@ export default function Quotations() {
                 />
                 {form.remindersEnabled && (
                   <div className="qw-check-list">
-                    {[3, 7, 14, 21, 30].map((day) => (
+                    {[...new Set([3, 7, 14, 21, 30, ...(form.reminderDays || [])])].sort((a, b) => a - b).map((day) => (
                       <label key={day}>
                         <input
                           type="checkbox"
@@ -1323,7 +1291,7 @@ export default function Quotations() {
           {designOpen && (
             <aside className="qw-design">
               <header>
-                <h2>Edit Design</h2>
+                <h2>Edit design</h2>
                 <button
                   aria-label="Close design"
                   onClick={() => setDesignOpen(false)}
@@ -1403,7 +1371,7 @@ export default function Quotations() {
         <div className="qw-fullscreen">
           <header className="qw-doc-header">
             <button onClick={() => setMode("editor")}>
-              <X size={16} /> Send Quote
+              <X size={16} /> Send quote
             </button>
           </header>
           <div className="qw-send">
@@ -1439,7 +1407,7 @@ export default function Quotations() {
               <div className="qw-send-footer">
                 <button onClick={() => setModal("schedule")}>Schedule</button>
                 <button onClick={() => setModal("manual")}>
-                  Send via link
+                  Share smart client link
                 </button>
                 <label>
                   <input
@@ -1466,7 +1434,7 @@ export default function Quotations() {
               )}
             </section>
             <section className="qw-email-preview">
-              <img src={TEAM_ALPHA_LOGO} alt="Team Alpha" />
+              <img src={resolveStudioImage(current?.issuer?.logoUrl || settings.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt="Team Alpha" />
               <div>
                 Your quote is ready for review
                 <strong>Quote #{quoteNumber(current)}</strong>
@@ -1488,14 +1456,14 @@ export default function Quotations() {
               discount: "Add discount",
               tax: "Add tax",
               template: "Create template",
-              number: "Edit Quote Number",
-              project: "Link to Project",
+              number: "Edit quote number",
+              project: "Link to project",
               photo: "Add photo",
-              link: "Get Quote Link",
-              manual: "Send via link",
+              link: "Smart client link",
+              manual: "Share smart client link",
               schedule: "Schedule Quote",
-              history: "Email History",
-              cancel: "Cancel Quote",
+              history: "Email history",
+              cancel: "Cancel quote",
               archive: "Delete Quote",
               leave: "Unsaved changes",
             }[modal]
@@ -1504,7 +1472,7 @@ export default function Quotations() {
           footer={
             <>
               <button className="qw-button" onClick={() => setModal("")}>
-                Cancel
+                {modal === "link" ? "Done" : "Cancel"}
               </button>
               {modal === "discount" ? (
                 <>
@@ -1534,13 +1502,13 @@ export default function Quotations() {
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(shareUrl);
-                      toast.success("Link copied to clipboard");
+                      toast.success("Smart client link copied");
                     } catch {
                       toast.error("Select and copy the link.");
                     }
                   }}
                 >
-                  Copy Link
+                  Copy link
                 </button>
               ) : (
                 modal !== "history" && (
@@ -1741,10 +1709,11 @@ export default function Quotations() {
             </>
           ) : modal === "link" ? (
             <>
-              <p>Your contact can access the quote from the following link:</p>
+              <p>Share one link for your client’s quotation, invoice, payments and post-production updates.</p>
+              <p>The client can review and accept the quotation here. After your studio reviews and issues the invoice, the same link can show the invoice and payment schedule. Published production updates appear as work progresses.</p>
               <input
                 className="qw-link-input"
-                aria-label="Quote share link"
+                aria-label="Smart client link"
                 readOnly
                 value={shareUrl}
               />
@@ -1752,19 +1721,19 @@ export default function Quotations() {
                 <a
                   target="_blank"
                   rel="noreferrer"
-                  href={`https://wa.me/?text=${encodeURIComponent(`Hi ${current?.clientName}, please review your Team Alpha quote: ${shareUrl}`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`Hi ${current?.clientName}, here is your Team Alpha smart client link. Review your quotation here and return to the same link for your issued invoice, payment schedule and published production updates: ${shareUrl}`)}`}
                 >
                   Share via WhatsApp ↗
                 </a>
                 <a target="_blank" rel="noreferrer" href={shareUrl}>
-                  View client quote ↗
+                  Open smart client link ↗
                 </a>
               </div>
+              <p>Only information enabled in the saved client-visibility settings is shared. Quote acceptance deadlines and client-link expiry still apply.</p>
             </>
           ) : modal === "manual" ? (
             <p>
-              This quote will be marked as sent without being automatically
-              emailed to your contact. Please send the link manually.
+              This quotation will be marked as sent. Copy or share the smart client link yourself; no email is sent automatically. Your client can return to this same link for an issued invoice, payments and published production updates, according to the saved visibility settings.
             </p>
           ) : modal === "schedule" ? (
             <Field label="Send date and time">
@@ -1849,8 +1818,10 @@ export function QuoteReadDocument({ quote, settings = {} }) {
   return (
     <article className="qw-read-document">
       <div className="qw-document-brand">
-        <img src={TEAM_ALPHA_LOGO} alt="" width="88" height="88" />
-        <span>{settings.studioName || "TEAM ALPHA"}</span>
+        <img src={resolveStudioImage(quote.issuer?.logoUrl || settings.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt="" width="88" height="88" />
+        <span>{quote.issuer?.name || settings.legalName || settings.studioName || "TEAM ALPHA"}</span>
+        {quote.issuer?.address && <small>{quote.issuer.address}</small>}
+        {quote.issuer?.taxId && <small>GSTIN: {quote.issuer.taxId}</small>}
       </div>
       <h2>Items</h2>
       <table>

@@ -1,4 +1,5 @@
 const test = require("node:test");
+test.beforeEach(require('./sessionFixture'));
 const assert = require("node:assert/strict");
 const { Readable, Writable } = require("node:stream");
 const jwt = require("jsonwebtoken");

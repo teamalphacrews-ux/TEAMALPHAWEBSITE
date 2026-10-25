@@ -97,7 +97,7 @@
 .studio-app.studio-app .reference-tabs button.active:after { background: #455f89; }
 
 /* White panels, clear tables and consistent dialogs across every module. */
-.studio-app.studio-app :is(.studio-card, .studio-metric, .reference-template-card, .studio-crm-project-card, .reference-detail-card, .studio-welcome-banner, .studio-ops .ops-progress-card) { background: #fff; border: 1px solid var(--studio-border); border-radius: 16px; box-shadow: 0 2px 8px #15223b03; }
+.studio-app.studio-app :is(.studio-card, .studio-metric, .reference-template-card, .studio-crm-project-card, .reference-detail-card, .studio-welcome-banner, .studio-ops .ops-progress-card) { background: var(--studio-surface); border: 1px solid var(--studio-border); border-radius: 16px; box-shadow: 0 2px 8px #15223b03; }
 .studio-app.studio-app .studio-card { padding: 23px; }
 .studio-app.studio-app :is(.studio-crm-table-card, .studio-ops .ops-task-workspace, .studio-ops .ops-roster) { padding: 0; overflow: hidden; }
 .studio-app.studio-app :is(.studio-table, .studio-crm-table, .reference-table, .qw-list-table) th { background: #fff; color: #677080; padding: 13px 16px; border-color: var(--studio-border); font: 500 11px/1.6 var(--studio-font); letter-spacing: .015em; text-transform: none; }
@@ -125,13 +125,13 @@
 .studio-app.studio-app :is(.workspace-progress > span, .studio-ops .ops-progress-track > span, .studio-calendar-load-bar) { background: #799bda; }
 .studio-app.studio-app .support-message-list > article.studio { background: #f0f5ff; border-color: #e1eafa; }
 
-/* Editor chrome is white; covers, typography and client document designs are not changed. */
+/* Editor chrome follows the workspace theme; client document designs stay authored. */
 :is(.studio-app.studio-app, .studio-crm-overlay.studio-crm-overlay, .studio-crm-invoice-dialog.studio-crm-invoice-dialog) :is(
   .studio-crm-detail-body, .studio-crm-detail-card, .studio-crm-project-links,
   .ops-table-footer, .ops-search, .ops-form-note, .ops-cover-empty,
   .reference-note-editor textarea, .reference-project-note, .reference-template-item,
   .qw-page, .qw-fullscreen, .qw-doc-header, .qw-settings, .qw-editor-scroll, .qw-paper,
-  .qw-item, .qw-item-copy, .qw-read-paper, .qw-send, .qw-link-input, .qw-template-choice,
+  .qw-item, .qw-item-copy, .qw-send, .qw-link-input, .qw-template-choice,
   .invoice-editor, .invoice-editor-toolbar, .invoice-editor-body, .invoice-editor-settings,
   .invoice-editor-content, .invoice-edit-item, .invoice-item-copy, .invoice-schedule-row,
   .invoice-share-url, .invoice-full-preview, .invoice-send-overlay, .invoice-send-composer,
@@ -139,7 +139,7 @@
   .workspace-info, .workspace-weekday, .workspace-calendar-day.outside:not(.selected),
   .studio-calendar-load-value, .studio-webhook-security, .studio-copy-line,
   .studio-connection-steps pre, .studio-auth-form-panel
-) { background: #fff; }
+) { background: var(--studio-surface); }
 :is(.studio-app.studio-app, .studio-crm-overlay.studio-crm-overlay) :is(.studio-crm-detail-card, .studio-crm-project-card, .reference-detail-card) { border-color: var(--studio-border); border-radius: 14px; }
 .studio-app.studio-app .workspace-info { border-color: var(--studio-border); border-radius: 12px; color: #67778f; }
 .studio-app.studio-app .studio-webhook-json { background: #fff; color: #44526a; border: 1px solid var(--studio-border); border-radius: 12px; }

@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API from '../utils/apiConfig';
 
 const AuthContext = createContext();
 const cleanToken = raw => {
@@ -34,12 +35,28 @@ export const AuthProvider = ({ children }) => {
     navigate('/admin');
   }, [navigate]);
   const logout = useCallback(() => {
+    const token = localStorage.getItem('token');
+    if (token) fetch(API + '/api/studio/security/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, keepalive: true }).catch(() => {});
     Object.keys(localStorage).forEach(key => { if (key.startsWith('gallery_unlocked_')) localStorage.removeItem(key); });
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setSession({ user: null, token: null });
     navigate('/auth');
   }, [navigate]);
+  useEffect(() => {
+    if (!session.token || session.user?.role !== 'admin') return;
+    let lastActivity = 0;
+    const controller = new AbortController();
+    const activity = event => {
+      if ((event && !event.isTrusted) || document.visibilityState === 'hidden' || Date.now() - lastActivity < 60000) return;
+      lastActivity = Date.now();
+      fetch(API + '/api/studio/security/activity', { method: 'POST', headers: { Authorization: 'Bearer ' + session.token }, signal: controller.signal }).then(result => { if (result.status === 401) logout(); }).catch(() => {});
+    };
+    activity();
+    const events = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
+    events.forEach(event => window.addEventListener(event, activity, { passive: true, capture: true }));
+    return () => { controller.abort(); events.forEach(event => window.removeEventListener(event, activity, { capture: true })); };
+  }, [session.token, session.user?.role, logout]);
   const updateUser = useCallback(userData => {
     setSession(current => {
       const user = { ...current.user, ...userData };

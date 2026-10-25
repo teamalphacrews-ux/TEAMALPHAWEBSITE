@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { AlertCircle, ArrowUpRight, Loader2, X } from "lucide-react";
 
 export function OperationsModal({ title, description, onClose, children, footer, busy = false }) {
+  const dialogId = useId();
   const panelRef = useRef(null);
   const closeRef = useRef(onClose);
   const busyRef = useRef(busy);
@@ -11,15 +12,19 @@ export function OperationsModal({ title, description, onClose, children, footer,
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const panel = panelRef.current;
-    panel?.querySelector("input, select, textarea, button")?.focus();
+    const focusables = () => [...panel.querySelectorAll('button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex="0"]')].filter(node => node.getClientRects().length);
+    (panel.querySelector('input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])') || focusables()[0] || panel).focus();
     const handleKey = (event) => {
-      if (event.key === "Escape" && !busyRef.current) closeRef.current();
+      const dialogs = document.querySelectorAll('[role="dialog"][aria-modal="true"]');
+      if (dialogs[dialogs.length - 1] !== panel) return;
+      if (event.key === "Escape") { event.preventDefault(); if (!busyRef.current) closeRef.current(); return; }
       if (event.key !== "Tab") return;
-      const focusable = [...panel.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex="0"]')];
+      const focusable = focusables();
       const first = focusable[0];
       const last = focusable.at(-1);
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      if (!first) { event.preventDefault(); panel.focus(); }
+      else if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) { event.preventDefault(); first?.focus(); }
     };
     document.addEventListener("keydown", handleKey);
     return () => {
@@ -30,9 +35,9 @@ export function OperationsModal({ title, description, onClose, children, footer,
   }, []);
   return (
     <div className="studio-ops studio-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
-      <section className="studio-modal ops-modal" role="dialog" aria-modal="true" aria-labelledby="operations-modal-title" ref={panelRef}>
+      <section className="studio-modal ops-modal" role="dialog" aria-modal="true" aria-labelledby={`${dialogId}-title`} aria-describedby={description ? `${dialogId}-description` : undefined} aria-busy={busy} tabIndex={-1} ref={panelRef}>
         <div className="studio-modal-header">
-          <div><h2 id="operations-modal-title">{title}</h2>{description && <p className="studio-muted">{description}</p>}</div>
+          <div><h2 id={`${dialogId}-title`}>{title}</h2>{description && <p id={`${dialogId}-description`} className="studio-muted">{description}</p>}</div>
           <button type="button" className="ops-icon-button" aria-label="Close dialog" onClick={onClose} disabled={busy}><X size={18} /></button>
         </div>
         <div className="ops-modal-body">{children}</div>

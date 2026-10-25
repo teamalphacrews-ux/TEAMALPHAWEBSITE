@@ -8,12 +8,16 @@ import '../../studio-mobile.css';
 import '../../studio-brand.css';
 import { useAuth } from '../../../context/AuthContext';
 import useStudioDialog from '../studio/useStudioDialog';
+import { StudioPreferencesProvider, useStudioPreferences } from './StudioPreferences';
+import '../../studio-appearance.css';
+import '../../studio-responsive.css';
 
-export default function Layout() {
+function StudioLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const location = useLocation();
   const { user } = useAuth();
+  const { preferences } = useStudioPreferences();
   useEffect(() => {
     const previous = document.title;
     document.title = 'Team Alpha — Studio OS';
@@ -21,7 +25,7 @@ export default function Layout() {
   }, []);
   const drawerRef = useStudioDialog(() => setIsSidebarOpen(false), { enabled: isSidebarOpen });
 
-  return <div className={'studio-app' + (isFocusMode ? ' studio-focus-mode' : '')}>
+  return <div data-studio-theme={preferences.theme} className={'studio-app studio-personal-workspace' + (isFocusMode ? ' studio-focus-mode' : '')}>
     <a className="studio-skip-link" href="#studio-main">Skip to content</a>
     {!isFocusMode && <>
       {isSidebarOpen && <button className="studio-sidebar-scrim" aria-label="Close navigation" onClick={() => setIsSidebarOpen(false)} />}
@@ -39,3 +43,4 @@ export default function Layout() {
     </div>
   </div>;
 }
+export default function Layout() { return <StudioPreferencesProvider><StudioLayout /></StudioPreferencesProvider>; }

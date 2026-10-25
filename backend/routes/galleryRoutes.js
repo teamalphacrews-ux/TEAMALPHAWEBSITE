@@ -19,6 +19,7 @@ cloudinary.config({
 const router = express.Router();
 
 router.use(auth, requireAdmin);
+router.use((req, res, next) => req.method === 'DELETE' ? require('../services/studioSecurity').requirePermission('deletion')(req, res, next) : next());
 
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,

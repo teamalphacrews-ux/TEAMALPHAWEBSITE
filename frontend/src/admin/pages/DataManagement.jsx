@@ -73,7 +73,9 @@ export default function DataManagement() {
   };
   const archive = async (event) => {
     event.preventDefault();
+    if (busy) return;
     setBusy(true);
+    setSaveError("");
     try {
       await workspaceRequest("delete", "/api/studio/assets/" + archiving._id);
       setArchiving(null);
@@ -96,10 +98,10 @@ export default function DataManagement() {
       ]
         .join(" ")
         .toLowerCase()
-        .includes(query.toLowerCase()),
+        .includes(query.toLowerCase().trim()),
   );
   return (
-    <div>
+    <div className="studio-ops ops-data-workspace">
       <WorkspaceHeader
         eyebrow="CARE FOR EVERY FRAME"
         title="Data & backups"
@@ -122,7 +124,7 @@ export default function DataManagement() {
             label: "Recorded size",
             value:
               assets
-                .reduce((sum, r) => sum + r.sizeGb, 0)
+                .reduce((sum, r) => sum + (Number(r.sizeGb) || 0), 0)
                 .toLocaleString("en-IN") + " GB",
             note: "Based on entered metadata",
           },
@@ -166,12 +168,19 @@ export default function DataManagement() {
             ))}
           </select>
         </div>
-        {loading || !visible.length ? (
+        {error && !data.length ? (
+          <WorkspaceEmpty
+            title="Storage catalogue unavailable"
+            description="Use Retry above to reconnect to your studio records."
+          />
+        ) : loading || !visible.length ? (
           <WorkspaceEmpty
             loading={loading}
-            title="Every frame deserves a safe home"
-            description="Catalogue a shoot folder, its primary location and backup."
-          />
+            title={assets.length ? "No storage records match" : "Every frame deserves a safe home"}
+            description={assets.length ? "Try another folder, project or backup status." : "Catalogue a shoot folder, its primary location and backup."}
+          >
+            {!loading && (assets.length ? <button type="button" className="studio-button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear filters</button> : <button type="button" className="studio-button" onClick={() => open(null)}><Plus size={15} /> Add your first record</button>)}
+          </WorkspaceEmpty>
         ) : (
           <div className="studio-table-wrap">
             <table className="studio-table">
@@ -249,6 +258,7 @@ export default function DataManagement() {
           </div>
         )}
       </section>
+      {!loading && !error && <p className="ops-result-count" aria-live="polite">Showing {visible.length} of {assets.length} storage records</p>}
       {editing !== undefined && (
         <WorkspaceDialog
           title={editing ? "Storage & backup record" : "Catalogue your footage"}

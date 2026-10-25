@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { studioDateTimeToISO } from "../src/utils/studioTime.js";
 import {
   ledgerCashFlow,
   bookingCollections,
@@ -114,7 +115,7 @@ test("expense allocation sums numeric strings in paise and excludes unpaid recor
 });
 test("calendar workload uses exclusive midnight boundaries and counts multi-day coverage", () => {
   const stamp = (month, day, hour = 0) =>
-    new Date(2026, month, day, hour).toISOString();
+    studioDateTimeToISO(`2026-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:00`, "Asia/Kolkata");
   const result = calendarMonthLoad(
     [
       { _id: "prior", start: stamp(8, 30), end: stamp(9, 1) },
@@ -124,7 +125,7 @@ test("calendar workload uses exclusive midnight boundaries and counts multi-day 
       { _id: "bad", start: "bad", end: stamp(9, 10) },
       { _id: "reverse", start: stamp(9, 4), end: stamp(9, 3) },
     ],
-    new Date(2026, 9, 1),
+    "2026-10",
   );
   assert.equal(result.days.length, 31);
   assert.equal(result.events.length, 2);
@@ -148,7 +149,7 @@ test("empty charts retain honest zero values and valid calendar days", () => {
       (row) => row.income === 0 && row.expenses === 0 && row.net === 0,
     ),
   );
-  const leap = calendarMonthLoad([], new Date(2028, 1, 1));
+  const leap = calendarMonthLoad([], "2028-02");
   assert.equal(leap.days.length, 29);
   assert.equal(leap.peak, 0);
   assert.equal(leap.activeDays, 0);

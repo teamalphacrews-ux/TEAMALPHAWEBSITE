@@ -9,7 +9,9 @@ const auth = require('../middleware/auth');
 const requireAdmin = require('../middleware/requireAdmin');
 const Event = require('../models/Event');
 const Photographer = require('../models/Photographer');
+const StudioConfig = require('../models/StudioConfig');
 const { buildStudioOverview } = require('../utils/studioOverview');
+const { studioDayStart } = require('../utils/studioDay');
 
 const router = express.Router();
 
@@ -19,12 +21,14 @@ router.get('/studio-overview', async (req, res) => {
     try {
         await require('../services/enquiryPipeline').reconcile();
         const now = new Date();
+        const studio = await StudioConfig.findOne({ key: 'studio' }).select('timezone').lean();
+        const todayStart = studioDayStart(now, studio?.timezone);
         const [leadCounts, upcomingEventCount, pendingTaskCount, overdueTaskCount,
             activeCrew, clientCollections, events, datedTasks, undatedTasks, recentLeads] = await Promise.all([
             Lead.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
             Event.countDocuments({ end: { $gte: now } }),
             Task.countDocuments({ status: 'pending' }),
-            Task.countDocuments({ status: 'pending', dueDate: { $lt: now, $ne: null } }),
+            Task.countDocuments({ status: 'pending', dueDate: { $lt: todayStart, $ne: null } }),
             Photographer.countDocuments({ status: 'Active' }),
             DriveGallery.countDocuments(),
             Event.find({ end: { $gte: now } }).sort({ start: 1 }).limit(6)

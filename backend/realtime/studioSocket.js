@@ -4,7 +4,7 @@ const isAdmin = user => user.role === 'admin';
 const validRoomId = value => typeof value === 'string' && /^[a-f\d]{24}$/i.test(value);
 const canJoinRoom = (user, roomId) => roomId === user.id || (isAdmin(user) && (roomId === 'admin' || validRoomId(roomId)));
 
-function createSocketAuth({ User, getSecret = () => process.env.JWT_SECRET }) {
+function createSocketAuth({ User, getSecret = () => process.env.JWT_SECRET, verifySession = require('../services/studioSecurity').createSessionVerifier() }) {
     return async (socket, next) => {
         try {
             const token = socket.handshake?.auth?.token;
@@ -12,10 +12,17 @@ function createSocketAuth({ User, getSecret = () => process.env.JWT_SECRET }) {
             const decoded = jwt.verify(token, getSecret());
             if (!decoded.user || typeof decoded.user.id !== 'string') return next(new Error('Invalid authentication'));
             if (!validRoomId(decoded.user.id)) return next(new Error('Invalid authentication'));
-            const user = await User.findById(decoded.user.id).select('_id role');
+            const user = await User.findById(decoded.user.id).select('_id role +sessionVersion');
             if (!user) return next(new Error('Invalid authentication'));
+            const session = await verifySession({ token, decoded, user, touch: false });
+            if (session) socket.sessionId = String(session._id);
             // Read the current database role so revoked access takes effect on reconnect.
             socket.user = { id: String(user._id), role: user.role };
+            socket.revalidateSession = async () => {
+                const current = await User.findById(decoded.user.id).select('_id role +sessionVersion');
+                if (!current || current.role !== socket.user.role) throw new Error('Access changed');
+                await verifySession({ token, decoded, user: current, touch: false });
+            };
             return next();
         } catch {
             return next(new Error('Invalid authentication'));
@@ -31,6 +38,12 @@ function registerStudioSockets(io, { User, Message, ChatRoom, onlineUsers }) {
     });
 
     io.on('connection', socket => {
+        // Existing sockets must stop after revocation/expiry, not just on reconnect.
+        if (socket.revalidateSession && socket.use) {
+            socket.use(async (_packet, next) => { try { await socket.revalidateSession(); next(); } catch { socket.disconnect(true); next(new Error('Session ended')); } });
+        }
+        const sessionTimer = socket.revalidateSession ? setInterval(() => socket.revalidateSession().catch(() => socket.disconnect(true)), 30000) : null;
+        sessionTimer?.unref?.();
         const user = socket.user;
         const aliases = isAdmin(user) ? [user.id, 'admin'] : [user.id];
         for (const roomId of aliases) {
@@ -91,6 +104,7 @@ function registerStudioSockets(io, { User, Message, ChatRoom, onlineUsers }) {
         });
 
         socket.on('disconnect', () => {
+            if (sessionTimer) clearInterval(sessionTimer);
             for (const roomId of aliases) {
                 const sockets = onlineUsers.get(roomId);
                 sockets?.delete(socket.id);

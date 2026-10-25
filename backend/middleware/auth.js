@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 function createAuth({
   User = require("../models/User"),
   env = process.env,
+  verifySession = require('../services/studioSecurity').createSessionVerifier(),
 } = {}) {
   return async function auth(req, res, next) {
     let token = req.header("x-auth-token");
@@ -17,9 +18,9 @@ function createAuth({
     if (!token)
       return res.status(401).json({ msg: "No token, authorization denied" });
 
-    let identity;
+    let identity, decoded;
     try {
-      const decoded = jwt.verify(token, env.JWT_SECRET);
+      decoded = jwt.verify(token, env.JWT_SECRET);
       if (
         !decoded.user ||
         typeof decoded.user.id !== "string" ||
@@ -38,7 +39,7 @@ function createAuth({
       return res.status(401).json({ msg: "Token is not valid" });
     let current;
     try {
-      current = await User.findById(identity.id).select("_id role");
+      current = await User.findById(identity.id).select("_id role +sessionVersion");
     } catch {
       return res
         .status(503)
@@ -48,6 +49,12 @@ function createAuth({
     }
     if (!current || typeof current.role !== "string" || !current.role) {
       return res.status(401).json({ msg: "Token is not valid" });
+    }
+    try {
+      const session = await verifySession({ token, decoded, user: current, userAgent: req.headers?.['user-agent'], touch: false });
+      if (session) req.sessionId = String(session._id);
+    } catch (error) {
+      return res.status(error.status === 401 ? 401 : 503).json({ msg: error.status === 401 ? error.message : 'Session checks are temporarily unavailable.' });
     }
     // A valid signature proves who signed in, not that an old role or a
     // deleted account should retain access for the token's entire lifetime.

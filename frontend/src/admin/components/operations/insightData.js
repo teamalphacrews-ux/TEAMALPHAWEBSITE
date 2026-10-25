@@ -101,46 +101,5 @@ export function expenseAllocation(entries = []) {
     }))
     .sort((a, b) => b.amount - a.amount || a.label.localeCompare(b.label));
 }
-export const calendarDayKey = (date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-export function calendarMonthLoad(events = [], month) {
-  const start = new Date(month.getFullYear(), month.getMonth(), 1);
-  const end = new Date(month.getFullYear(), month.getMonth() + 1, 1);
-  const valid = events.filter((event) => {
-    const from = new Date(event.start),
-      to = new Date(event.end);
-    return (
-      Number.isFinite(from.getTime()) &&
-      Number.isFinite(to.getTime()) &&
-      to > from &&
-      from < end &&
-      to > start
-    );
-  });
-  const days = Array.from(
-    {
-      length: new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate(),
-    },
-    (_, index) => {
-      const day = new Date(month.getFullYear(), month.getMonth(), index + 1),
-        next = new Date(month.getFullYear(), month.getMonth(), index + 2);
-      return {
-        key: calendarDayKey(day),
-        day: index + 1,
-        label: day.toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "short",
-        }),
-        count: valid.filter(
-          (event) => new Date(event.start) < next && new Date(event.end) > day,
-        ).length,
-      };
-    },
-  );
-  return {
-    days,
-    events: valid,
-    activeDays: days.filter((day) => day.count > 0).length,
-    peak: Math.max(0, ...days.map((day) => day.count)),
-  };
-}
+export { studioDayKey as calendarDayKey } from "../../../utils/studioTime.js";
+export { calendarMonthLoad } from "../calendar/calendarData.js";
