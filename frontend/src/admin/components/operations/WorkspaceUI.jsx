@@ -1,3 +1,6 @@
+import StudioButton from '../common/StudioButton';
+import StudioSelect from '../common/StudioSelect';
+import { useId } from "react";
 import { RefreshCw, Search } from "lucide-react";
 import { OperationsModal } from "./OperationsUI";
 import "../../pages/studioOperations.css";
@@ -8,7 +11,7 @@ export function WorkspaceHeader({ eyebrow, title, description, children }) {
       <div>
         <span className="studio-eyebrow">{eyebrow}</span>
         <h1>{title}</h1>
-        <p>{description}</p>
+        <p className="studio-muted">{description}</p>
       </div>
       <div className="studio-heading-actions">{children}</div>
     </div>
@@ -20,7 +23,7 @@ export function WorkspaceMetrics({ items, loading }) {
       {items.map((item) => (
         <div className="studio-metric" key={item.label}>
           <span className="workspace-metric-label">{item.label}</span>
-          <strong className="workspace-metric-value">
+          <strong className={'workspace-metric-value' + (item.kind === 'label' ? ' is-label' : '')}>
             {loading ? "—" : item.value}
           </strong>
           <small className="studio-muted">{item.note}</small>
@@ -63,6 +66,7 @@ export function WorkspaceEmpty({
   loading,
   title = "No records yet",
   description = "Add the first record to get started.",
+  children,
 }) {
   return (
     <div className="studio-empty" role="status">
@@ -74,6 +78,7 @@ export function WorkspaceEmpty({
         <>
           <h3>{title}</h3>
           <p>{description}</p>
+          {children}
         </>
       )}
     </div>
@@ -89,6 +94,7 @@ export function WorkspaceDialog({
   submitLabel = "Save changes",
   footer,
 }) {
+  const formId = useId();
   return (
     <OperationsModal
       title={title}
@@ -97,23 +103,15 @@ export function WorkspaceDialog({
       footer={
         footer || (
           <>
-            <button className="studio-button" disabled={busy} onClick={onClose}>
-              Cancel
-            </button>
-            <button
-              className="studio-button primary"
-              form="workspace-record-form"
-              disabled={busy}
-            >
-              {busy ? "Saving…" : submitLabel}
-            </button>
+            <StudioButton type="button" disabled={busy} onClick={onClose}>Cancel</StudioButton>
+            <StudioButton variant="primary" type="submit" form={formId} loading={busy} loadingLabel="Saving changes">{submitLabel}</StudioButton>
           </>
         )
       }
     >
       <WorkspaceError error={error} />
       <form
-        id="workspace-record-form"
+        id={formId}
         onSubmit={onSubmit}
         className="workspace-form"
       >
@@ -150,7 +148,8 @@ export function WorkspaceField({
           required={required}
         />
       ) : options ? (
-        <select
+        <StudioSelect
+          title={label}
           className="studio-input"
           value={value ?? ""}
           onChange={(event) => onChange(name, event.target.value)}
@@ -164,7 +163,7 @@ export function WorkspaceField({
               {typeof option === "string" ? option : option.label}
             </option>
           ))}
-        </select>
+        </StudioSelect>
       ) : (
         <input
           className="studio-input"

@@ -1,4 +1,6 @@
 const crypto = require("crypto");
+const { invoiceIssuer } = require('./invoiceBranding');
+const { invoiceDefaults, billingDefaults, paymentSchedule, clientLinkOptions } = require('./documentDefaults');
 function expiryAt(value) {
   if (!value) return null;
   const date = new Date(value).toISOString().slice(0, 10);
@@ -13,8 +15,12 @@ function expired(quote, now = new Date()) {
 function tokenHash(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
-function invoiceFromQuote(quote) {
+function invoiceFromQuote(quote, studio = {}) {
+  const defaults = invoiceDefaults(studio, quote.acceptedAt);
   return {
+    ...defaults,
+    issuer: invoiceIssuer(studio, quote.issuer?.toObject?.() || quote.issuer || {}),
+    clientLinkOptions: clientLinkOptions(studio, quote.clientLinkOptions),
     title: quote.title || "",
     leadId: quote.lead || null,
     clientEmail: quote.email,
@@ -24,7 +30,8 @@ function invoiceFromQuote(quote) {
     sourceQuoteNumber: quote.documentNumber || "",
     documentStatus: "Draft",
     documentNumber: `INV-${String(quote.invoiceId || quote._id).slice(-8).toUpperCase()}`,
-    dueDate: new Date(new Date(quote.acceptedAt).getTime() + 30 * 86400000),
+    dueDate: new Date(defaults.dueDate),
+    paymentSchedule: defaults.paymentScheduleEnabled ? paymentSchedule(quote.totalPaise, defaults.invoiceDate, defaults.dueDate, billingDefaults(studio).paymentMilestones) : [],
     items: quote.items.map((i) => ({
       title: i.title || "",
       description: i.description || "",
@@ -41,7 +48,7 @@ function invoiceFromQuote(quote) {
       showLogo: true,
     },
     clientName: quote.clientName,
-    invoiceDate: quote.acceptedAt,
+    invoiceDate: defaults.invoiceDate,
     sourceQuotation: quote._id,
     sourceRevision: quote.revision,
     events: quote.items.map((i) => ({
@@ -63,6 +70,7 @@ function invoiceFromQuote(quote) {
   };
 }
 function publicQuote(q, studio) {
+  const issuer = invoiceIssuer(studio || {}, q.issuer?.toObject?.() || q.issuer || {});
   return {
     _id: q._id,
     clientName: q.clientName,
@@ -99,9 +107,13 @@ function publicQuote(q, studio) {
       q.status === "Accepted" ? "Accepted" : expired(q) ? "Expired" : q.status,
     invoiceReady: !!q.invoiceGeneratedAt,
     studio: {
-      name: studio?.studioName || "Team Alpha",
-      email: studio?.email || "",
-      phone: studio?.phone || "",
+      name: issuer.name,
+      address: issuer.address,
+      email: issuer.email,
+      phone: issuer.phone,
+      website: issuer.website,
+      taxId: issuer.taxId,
+      logoUrl: issuer.logoUrl,
       prefix: studio?.invoicePrefix || "TA",
     },
   };

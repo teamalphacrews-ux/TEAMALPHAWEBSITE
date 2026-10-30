@@ -1,0 +1,10 @@
+/* Extra device ergonomics only inside the iOS container; all Studio OS styles stay shared. */
+html[data-studio-native="ios"] { overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
+html[data-studio-native="ios"] body { overscroll-behavior: none; }
+html[data-studio-native="ios"] .studio-app { min-height: 100dvh; }
+html[data-studio-native="ios"] .studio-footer { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+html[data-studio-native="ios"] .studio-nav { -webkit-overflow-scrolling: touch; }
+@media(max-width:600px) {
+  html[data-studio-native="ios"] .studio-app :is(input,select,textarea) { font-size: max(16px, 1em); }
+  html[data-studio-native="ios"] .studio-app :is(.studio-button,.studio-icon-button) { min-height: 44px; }
+}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, MoreHorizontal } from "lucide-react";
 import { ContactForm } from "../components/contacts/ContactWorkflowUI";
+import { CompactContacts } from "../components/contacts/CompactWorkspaceRecords";
 import {
   useWorkspaceData,
   recordDate,
@@ -56,6 +57,7 @@ export default function Contacts() {
           <button
             key={label}
             className={tab === label ? "active" : ""}
+            aria-pressed={tab === label}
             onClick={() => setTab(label)}
           >
             {label}
@@ -64,7 +66,9 @@ export default function Contacts() {
       </div>
       <WorkspaceError error={error} retry={reload} />
       {visible.length ? (
-        <div className="reference-table-scroll">
+        <>
+        <CompactContacts contacts={visible} onEdit={setEditing} />
+        <div className="reference-table-scroll reference-desktop-records">
           <table className="reference-table">
             <thead>
               <tr>
@@ -118,6 +122,7 @@ export default function Contacts() {
             </tbody>
           </table>
         </div>
+        </>
       ) : (
         <WorkspaceEmpty
           loading={loading}

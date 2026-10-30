@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const taskSchema = new mongoose.Schema({
     title: { type: String, required: true },
+    templateKey: { type: String, immutable: true },
     status: { type: String, enum: ['pending', 'completed'], default: 'pending' },
     dueDate: Date,
     lead: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },
@@ -14,4 +15,5 @@ const taskSchema = new mongoose.Schema({
     assignee: { type: mongoose.Schema.Types.ObjectId, ref: 'Photographer', default: null }
 }, { timestamps: true });
 
+taskSchema.index({ lead: 1, templateKey: 1 }, { unique: true, partialFilterExpression: { lead: { $type: 'objectId' }, templateKey: { $type: 'string' } } });
 module.exports = mongoose.models.Task || mongoose.model('Task', taskSchema);

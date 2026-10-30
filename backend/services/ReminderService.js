@@ -25,6 +25,9 @@ const initCronJobs = () => {
 
     // Schedule task to run everyday at 8:00 AM server time
     cron.schedule('0 8 * * *', async () => {
+      await require('../saas/workers').forEachWorkspace(async () => {
+        // Tenant mail needs its own approved sender; never reuse Team Alpha SMTP.
+        if (require('../saas/tenantContext').currentWorkspace()) return;
         try {
             console.log("Running Daily Photographer Reminder Cron Job");
             const tomorrow = new Date();
@@ -88,14 +91,17 @@ const initCronJobs = () => {
                 }
             }
         } catch (error) {
-            console.error("Error running photographer reminder cron job:", error);
+            // The workspace runner records this failure without private mail data.
+            throw error;
         }
+      });
     });
 
     console.log("Photographer Reminder Cron Job Initialized to run daily at 8:00 AM.");
 };
 
 const sendEventNotification = async (event, photographerNames) => {
+    if (require('../saas/tenantContext').currentWorkspace()) return;
     if (!transporter) {
         console.warn("Transporter not initialized, skipping event notification emails.");
         return;

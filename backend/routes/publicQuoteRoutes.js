@@ -24,21 +24,26 @@ const wrap = (fn) => async (req, res) => {
       .json({ error: "Unable to complete this request. Please retry." });
   }
 };
-const validToken = (t) => typeof t === "string" && /^[a-f0-9]{64}$/.test(t);
+const validToken = (t) => require("../saas/publicTokens").isShareToken(t);
 async function find(token) {
-  return validToken(token)
+  const quote = validToken(token)
     ? Quotation.findOne({
         shareTokenHash: tokenHash(token),
         status: { $in: ["Sent", "Accepted"] },
       })
     : null;
+  const result = await quote;
+  return result && require('../utils/documentDefaults').linkIsActive(result) ? result : null;
 }
 async function ensureInvoice(q) {
   // The acceptance claim reserves a single invoice ID atomically. An interrupted
   // request can safely retry this insert without requiring replica-set transactions.
+  const studio = await StudioConfig.findOne({ key: 'studio' }) || {};
+  const values = invoiceFromQuote(q, studio);
+  values.documentNumber = await require('../services/documentNumbering').nextDocumentNumber('invoice', studio, q.acceptedAt, Invoice);
   return Invoice.findOneAndUpdate(
     { _id: q.invoiceId },
-    { $setOnInsert: invoiceFromQuote(q) },
+    { $setOnInsert: values },
     { upsert: true, new: true, runValidators: true },
   );
 }
@@ -127,7 +132,8 @@ router.post(
       return res.status(409).json({
         error: "Please contact the studio about this accepted quotation.",
       });
-    await require("../services/enquiryPipeline").syncQuote(q);
+    const linkedEnquiry = await require("../services/enquiryPipeline").syncQuote(q);
+    if (linkedEnquiry?._id) await require('../services/productionTemplates').applyDefaultProduction(linkedEnquiry._id);
     if (q.autoCreateInvoice !== false) {
       await ensureInvoice(q);
       q = await Quotation.findOneAndUpdate(
@@ -147,8 +153,10 @@ router.post(
         { $set: { acceptedNotifiedAt: new Date() } },
         { new: true },
       );
-      if (claimedNotification)
+      const studioSettings = await StudioConfig.findOne({ key: 'studio' });
+      if (claimedNotification && studioSettings?.automation?.notifyQuoteAccepted !== false)
         await Notification.create({
+          eventKey: 'quote-accepted:' + q._id,
           title: "Quotation accepted",
           description: `${q.clientName} accepted quotation ${q.documentNumber || String(q._id).slice(-6).toUpperCase()}.`,
           type: "System",

@@ -717,9 +717,6 @@
     padding: max(26px, env(safe-area-inset-top)) 24px
       max(18px, env(safe-area-inset-bottom));
   }
-  .studio-app.studio-auth .studio-auth-image-panel {
-    display: none;
-  }
   .studio-app.studio-auth .studio-auth-brand {
     max-width: 100%;
   }

@@ -157,7 +157,7 @@ export default function LeadDetails({ user, lead: initialLead, existingInvoice, 
                     <div className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4 md:px-6 lg:px-10 py-3 md:py-4 flex justify-between items-center w-full">
                         <div className="flex items-center gap-3 md:gap-6">
                             <button 
-                                onClick={onClose}
+                                aria-label="Close enquiry details" title="Close enquiry details" onClick={onClose}
                                 className="p-2 md:p-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all text-gray-400 hover:text-gray-900 border border-transparent hover:border-gray-200"
                             >
                                 <X size={18} />
@@ -483,7 +483,7 @@ export default function LeadDetails({ user, lead: initialLead, existingInvoice, 
                         <div className="bg-white/90 backdrop-blur-xl w-full max-w-lg rounded-3xl p-8 shadow-2xl relative border border-white/40">
                             <div className="flex justify-between items-center mb-6 border-b border-white/20 pb-4">
                                 <h3 className="font-luxury text-2xl text-[#2d2d2d]">Activity Log & Notes</h3>
-                                <button onClick={() => setShowFullLog(false)}><X size={20} className="text-[#8a8a8a] hover:text-[#2d2d2d] transition-colors" /></button>
+                                <button aria-label="Close activity log" title="Close activity log" onClick={() => setShowFullLog(false)}><X size={20} className="text-[#8a8a8a] hover:text-[#2d2d2d] transition-colors" /></button>
                             </div>
                             <div className="space-y-6">
                                 <div className="bg-white/40 p-4 rounded-2xl border border-white/60">

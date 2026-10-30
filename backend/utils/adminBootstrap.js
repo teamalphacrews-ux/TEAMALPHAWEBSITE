@@ -14,6 +14,7 @@ function sameSecret(left, right) {
 function createLoginHandler({
     User = require('../models/User'), env = process.env,
     hash = bcrypt.hash, compare = bcrypt.compare, sign = jwt.sign,
+    issueSession = require('../services/studioSecurity').openSession,
 } = {}) {
     async function findAccount(email) {
         // Legacy emails were not normalized. Never choose between two case
@@ -68,7 +69,7 @@ function createLoginHandler({
                     try {
                         user = await User.create({
                             firstName: 'System', lastName: 'Admin', email,
-                            password: passwordHash, role: 'admin',
+                            password: passwordHash, role: 'admin', studioOwner: true,
                         });
                     } catch (error) {
                         if (error.code !== 11000) throw error;
@@ -86,7 +87,9 @@ function createLoginHandler({
 
             const id = String(user._id || user.id);
             if (!/^[a-f\d]{24}$/i.test(id)) throw new Error('Saved account identity required');
-            const token = sign({ user: { id, role: user.role } }, env.JWT_SECRET, { expiresIn: '30d' });
+            const token = user.role === 'admin'
+                ? await issueSession(user, req, sign, env.JWT_SECRET)
+                : sign({ user: { id, role: user.role } }, env.JWT_SECRET, { expiresIn: '1d' });
             return res.json({ token, user: {
                 id, firstName: user.firstName, lastName: user.lastName,
                 email: user.email, role: user.role,

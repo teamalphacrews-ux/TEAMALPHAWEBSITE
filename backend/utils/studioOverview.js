@@ -8,6 +8,7 @@ function buildStudioOverview(data, now = new Date()) {
 
     return {
         generatedAt: now.toISOString(),
+        insights: data.insights || null,
         summary: {
             totalEnquiries,
             openEnquiries: totalEnquiries - bookedProjects - (counts.get('Archived') || 0),

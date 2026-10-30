@@ -10,7 +10,6 @@ const Invoice = require("../models/Invoice");
 const auth = require("../middleware/auth");
 const requireAdmin = require("../middleware/requireAdmin");
 const validate = require("../utils/studioRecords");
-const crypto = require("crypto");
 const router = express.Router();
 router.use(auth, requireAdmin);
 const wrap = (fn) => async (req, res) => {
@@ -74,7 +73,7 @@ router.get(
         .select("name status totalAmount depositAmount paymentStatus eventDate")
         .lean(),
       Invoice.find()
-        .select("clientName invoiceDate total advancePaid status")
+        .select("clientName invoiceDate total advancePaid status documentStatus dueDate paymentScheduleEnabled paymentSchedule currency")
         .sort({ invoiceDate: -1 })
         .lean(),
       Finance.find().sort({ date: -1 }).lean(),
@@ -84,14 +83,17 @@ router.get(
 );
 router.post(
   "/ledger",
-  wrap(async (req, res) =>
-    res.status(201).json(await Finance.create(validate.ledger(req.body))),
-  ),
+  wrap(async(req,res)=>{
+    const values=validate.ledger(req.body);
+    if(values.studioProjectId&&!await require('../models/StudioProject').exists({_id:values.studioProjectId}))throw Object.assign(new Error('Project not found'),{status:400});
+    res.status(201).json(await Finance.create(values));
+  }),
 );
 router.put(
   "/ledger/:id",
   wrap(async (req, res) => {
     const values = validate.ledger(req.body);
+    if(values.studioProjectId&&!await require('../models/StudioProject').exists({_id:values.studioProjectId}))throw Object.assign(new Error('Project not found'),{status:400});
     if (values.type !== "expense")
       throw Object.assign(
         new Error("An expense cannot change transaction type"),
@@ -109,10 +111,7 @@ router.put(
 router.delete(
   "/ledger/:id",
   wrap(async (req, res) => {
-    const result = await Finance.findOneAndDelete({
-      _id: req.params.id,
-      type: "expense",
-    });
+    const result = await require('../services/studioRecovery').recoverableDelete({ Model: Finance, filter: { _id: req.params.id, type: 'expense' }, actorId: req.user.id });
     if (!result) throw notFound();
     res.json({ removed: true });
   }),
@@ -127,15 +126,15 @@ router.get(
 );
 router.put(
   "/settings",
-  wrap(async (req, res) =>
-    res.json(
-      await StudioConfig.findOneAndUpdate(
+  wrap(async (req, res) => {
+    if (req.body?.security !== undefined || req.body?.backups !== undefined)
+      await require('../services/studioSecurity').assertOwner(req.user.id);
+    res.json(await StudioConfig.findOneAndUpdate(
         { key: "studio" },
         { $set: validate.settings(req.body) },
         { upsert: true, new: true, runValidators: true },
-      ),
-    ),
-  ),
+      ));
+  }),
 );
 router.get(
   "/clients",
@@ -203,7 +202,12 @@ router.get(
 router.post(
   "/quotations",
   wrap(async (req, res) => {
-    const values = validate.quotation(req.body);
+    if (["Sent", "Accepted"].includes(req.body?.status)) throw Object.assign(new Error("Use Share for client review. Acceptance is recorded from the client link."), { status: 400 });
+    const studio = await StudioConfig.findOne({ key: "studio" }) || {};
+    const { quoteDefaults, clientLinkOptions } = require("../utils/documentDefaults");
+    const { invoiceIssuer } = require("../utils/invoiceBranding");
+    const values = validate.quotation({ ...quoteDefaults(studio, req.body.issueDate || new Date()), ...req.body });
+    if (values.discountPaise > 0) await require('../services/studioSecurity').assertPermission(req.user.id, 'discounts');
     if (["Sent", "Accepted"].includes(values.status))
       throw Object.assign(
         new Error(
@@ -212,9 +216,12 @@ router.post(
         { status: 400 },
       );
     await require("./quoteWorkflowRoutes").references(values);
+    const documentNumber = values.documentNumber || await require("../services/documentNumbering").nextDocumentNumber("quotation", studio, values.issueDate, Quotation);
     const quote = await Quotation.create({
         ...values,
-        documentNumber: values.documentNumber || `TA-Q-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
+        documentNumber,
+        issuer: values.issuer || invoiceIssuer(studio),
+        clientLinkOptions: clientLinkOptions(studio),
         issueDate: values.issueDate || new Date().toISOString().slice(0,10),
         timeline: [{kind:"created",message:"Draft quote created.",at:new Date()}],
         history: [
@@ -245,6 +252,10 @@ router.put(
     // Atomic revision guard prevents one editor from overwriting another's saved proposal.
     if (!Number.isSafeInteger(req.body.revision))
       throw Object.assign(new Error("A revision is required"), { status: 400 });
+    const previous = await Quotation.findById(req.params.id);
+    if (!previous) throw notFound();
+    if (previous.discountType !== values.discountType || Number(previous.discountValue || 0) !== Number(values.discountValue || 0) || Number(previous.discountPaise || 0) !== Number(values.discountPaise || 0))
+      await require('../services/studioSecurity').assertPermission(req.user.id, 'discounts');
     const quote = await Quotation.findOneAndUpdate(
       {
         _id: req.params.id,
@@ -333,6 +344,7 @@ router.put(
 router.delete(
   "/assets/:id",
   wrap(async (req, res) => {
+    await require('../services/studioSecurity').assertPermission(req.user.id, 'deletion');
     const record = await AssetRecord.findOneAndUpdate(
       { _id: req.params.id, archived: false },
       { $set: { archived: true } },

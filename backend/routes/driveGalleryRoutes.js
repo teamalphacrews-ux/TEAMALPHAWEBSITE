@@ -19,6 +19,7 @@ const Lead = require('../models/Lead');
 // Public portfolio media is published separately. A gallery password does not
 // authorize access to private studio collections or service-account files.
 router.use(auth, requireAdmin);
+router.use((req, res, next) => req.method === 'DELETE' ? require('../services/studioSecurity').requirePermission('deletion')(req, res, next) : next());
 
 // Configure Cloudinary
 cloudinary.config({

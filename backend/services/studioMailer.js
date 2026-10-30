@@ -10,6 +10,8 @@ const escapeHtml = (value) =>
       ],
   );
 function mailerReady() {
+  // Existing Team Alpha mailbox credentials are not a shared SaaS mail transport.
+  if (require('../saas/tenantContext').currentWorkspace()) return false;
   return process.env.SMTP_HOST
     ? !!(
         (process.env.SMTP_USER || process.env.EMAIL_USER) &&
@@ -48,6 +50,11 @@ async function sendStudioMail({ to, subject, text, html, cc, messageId }) {
       "Email delivery is not configured. Configure SMTP or EMAIL_USER and EMAIL_PASS.",
     );
   const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+  const studio = await require('../models/StudioConfig').findOne({ key: 'studio' }) || {};
+  const communication = studio.communication || {};
+  const senderName = String(communication.senderName || studio.studioName || 'Team Alpha').replace(/[\r\n\x00-\x1f]/g, '').slice(0, 200);
+  const senderAddress = /<([^<>]+)>/.exec(process.env.SMTP_FROM || '')?.[1] || process.env.SMTP_FROM || user;
+  const replyTo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(communication.replyTo || '') ? communication.replyTo : undefined;
   const transport = nodemailer.createTransport(
     process.env.SMTP_HOST
       ? {
@@ -67,7 +74,8 @@ async function sendStudioMail({ to, subject, text, html, cc, messageId }) {
   );
   try {
     const result = await transport.sendMail({
-      from: process.env.SMTP_FROM || user,
+      from: { name: senderName, address: senderAddress },
+      replyTo,
       to,
       cc,
       subject,

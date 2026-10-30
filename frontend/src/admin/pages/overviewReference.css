@@ -1,0 +1,153 @@
+/* The overview is a working canvas: warm photography, quiet chrome, useful data. */
+.studio-app.studio-app .studio-overview-reference { --ov-orange: #ef702d; --ov-track: #f0f1f2; --ov-bar: #e6e8eb; --ov-gap: 14px; width: 100%; max-width: 1780px; margin: 0 auto; }
+html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-reference { --ov-track: #34373b; --ov-bar: #45484f; }
+.studio-app.studio-app .studio-overview-reference :is(h1,h2,h3,p) { text-transform: none; }
+.studio-app.studio-app .studio-overview-reference .ov-page-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.studio-app.studio-app .studio-overview-reference .ov-page-eyebrow { font-size: 9px; font-weight: 550; letter-spacing: .1em; color: var(--studio-muted); }
+.studio-app.studio-app .studio-overview-reference .ov-page-toolbar h1 { font: 600 23px/1.3 var(--studio-font); letter-spacing: -.045em; margin: 3px 0 0; }
+.studio-app.studio-app .studio-overview-reference .ov-page-toolbar > div:last-child { display: flex; gap: 8px; }
+.studio-app.studio-app .studio-overview-reference .ov-page-toolbar .studio-button { min-height: 38px; padding: 8px 13px; font-size: 11px; background: var(--studio-surface); }
+.studio-app.studio-app .studio-overview-reference .studio-button.primary { background: #17191c !important; border-color: #17191c !important; color: #fff !important; }
+.studio-app.studio-app .studio-overview-reference .ov-reference-grid { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: var(--ov-gap); align-items: stretch; }
+.studio-overview-reference .ov-reference-slot { min-width: 0; grid-column: span 6; }
+.studio-overview-reference .ov-reference-slot > :first-child { height: 100%; box-sizing: border-box; }
+.studio-overview-reference .ov-welcome-slot { grid-column: span 8; min-width: 0; }
+.studio-overview-reference .ov-welcome-slot.is-wide { grid-column: 1 / -1; }
+.studio-overview-reference .ov-week-slot { grid-column: 1 / -1; min-width: 0; }
+.studio-app.studio-app .studio-overview-reference .ov-week-slot .ov-week-strip { margin-top: 0; }
+.studio-overview-reference :is(.ov-slot-upcomingSchedule,.ov-slot-bookingMomentum,.ov-slot-financePulse) { grid-column: span 4; }
+.studio-overview-reference :is(.ov-slot-productionPulse,.ov-slot-actionQueue) { grid-column: span 8; }
+.studio-overview-reference .ov-slot-activityMap { grid-column: span 7; }
+.studio-overview-reference .ov-slot-enquiryPipeline { grid-column: span 5; }
+.studio-overview-reference :is(.ov-slot-openEnquiries,.ov-slot-bookedProjects,.ov-slot-upcomingEvents,.ov-slot-pendingTasks) { grid-column: span 3; }
+.studio-overview-reference :is(.ov-slot-recentEnquiries,.ov-slot-quickActions) { grid-column: 1 / -1; }
+.studio-app.studio-app .studio-overview-reference .ov-welcome { position: relative; isolation: isolate; min-height: 282px; height: 100%; border-radius: 20px; overflow: hidden; background: #62200f; color: #fff; display: flex; align-items: center; padding: 30px; }
+.studio-overview-reference .ov-welcome-photo { position: absolute; z-index: -3; inset: 0 0 0 auto; width: 68%; height: 100%; object-fit: cover; object-position: 40% 46%; mix-blend-mode: luminosity; opacity: .75; }
+.studio-overview-reference .ov-welcome::before { content: ''; position: absolute; inset: 0; z-index: -2; background: linear-gradient(95deg,#251510 0%,#5e1e0b 35%,#b3491399 62%,#d96a1d40 100%); }
+.studio-overview-reference .ov-welcome-light { position: absolute; z-index: -1; width: 75%; height: 150%; left: 10%; bottom: -100%; border-radius: 50%; background: #ff7b18; filter: blur(50px); opacity: .65; animation: ov-warm-glow 10s ease-in-out infinite alternate; pointer-events: none; }
+.studio-app.studio-app .studio-overview-reference .ov-welcome-copy { position: relative; z-index: 1; max-width: 65%; }
+.studio-app.studio-app .studio-overview-reference .ov-welcome-copy > span { font-size: 10px; color: #ffdfca; }
+.studio-app.studio-app .studio-overview-reference .ov-welcome h2 { font: 600 clamp(28px,2.8vw,46px)/1.03 var(--studio-font) !important; color: white; letter-spacing: -.05em; margin: 13px 0; }
+.studio-app.studio-app .studio-overview-reference .ov-welcome-copy p { font-size: 11px; line-height: 1.65; margin: 0 0 19px; color: #f4d5c6; }
+.studio-app.studio-app .studio-overview-reference .ov-welcome-copy a { display: inline-flex; align-items: center; gap: 16px; padding: 11px 15px; min-height: 40px; border-radius: 999px; background: white; color: #211915; font-size: 11px; font-weight: 600; transition: transform .25s, box-shadow .25s; }
+.studio-app.studio-app .studio-overview-reference .ov-welcome-copy a:hover { transform: translateY(-2px); box-shadow: 0 8px 20px #0003; }
+.studio-overview-reference .ov-welcome-glass { position: absolute; left: 57%; top: 20%; display: grid; place-items: center; width: 62px; height: 68px; border: 1px solid #ffdfac65; background: #ffb7561a; backdrop-filter: blur(6px); border-radius: 16px; transform: rotate(-15deg); color: white; animation: ov-glass-float 8s ease-in-out infinite alternate; }
+.studio-overview-reference .ov-welcome-note { position: absolute; right: 18px; bottom: 26px; width: 132px; padding: 16px 13px; border: 1px solid #ffffff50; background: #361a115c; backdrop-filter: blur(10px); border-radius: 14px; transform: rotate(5deg); display: grid; gap: 10px; color: white; }
+.studio-overview-reference .ov-welcome-note small { color: #ffddc9; font-size: 9px; }
+.studio-overview-reference .ov-welcome-note strong { font-size: 15px; font-weight: 500; line-height: 1.4; letter-spacing: -.02em; }
+.studio-overview-reference .ov-welcome-note > span { font-size: 8px; color: #ffdcc8; line-height: 1.5; }
+.studio-app.studio-app .studio-overview-reference .ov-card { position: relative; min-width: 0; padding: 19px 20px 15px; border-radius: 18px; background: var(--studio-surface); color: var(--studio-text); border: 1px solid transparent; overflow: hidden; }
+.studio-app.studio-app .studio-overview-reference .ov-card-heading { display: flex; align-items: flex-start; gap: 10px; padding-right: 18px; margin-bottom: 17px; }
+.studio-overview-reference .ov-card-icon { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 30px; background: #18191b; border-radius: 9px; color: #fff; }
+.studio-app.studio-app .studio-overview-reference .ov-card-heading h2 { font: 600 13px/1.3 var(--studio-font); letter-spacing: -.025em; margin: 0 0 3px; color: var(--studio-text); }
+.studio-app.studio-app .studio-overview-reference .ov-card-heading p { font-size: 9px; line-height: 1.4; color: var(--studio-muted); margin: 0; }
+.studio-overview-reference .ov-period { display: flex; align-items: center; gap: 4px; white-space: nowrap; font-size: 9px; color: var(--studio-muted); background: var(--studio-canvas); border-radius: 999px; padding: 5px 7px; margin-left: auto; }
+.studio-app.studio-app .studio-overview-reference .overview-hide-card { width: 24px; height: 24px; min-height: 24px; top: 7px; right: 6px; background: transparent; opacity: .45; }
+.studio-app.studio-app .studio-overview-reference .overview-hide-card:is(:hover,:focus-visible) { opacity: 1; background: var(--ov-track); }
+.studio-overview-reference .ov-number-row { display: flex; align-items: baseline; gap: 12px; }
+.studio-overview-reference .ov-number-row > strong { font-size: 28px; font-weight: 600; letter-spacing: -.05em; }
+.studio-overview-reference .ov-number-row small { font-weight: 450; font-size: 11px; letter-spacing: 0; margin-left: 7px; }
+.studio-overview-reference .ov-change { font-size: 11px; color: #278866; }
+.studio-overview-reference .ov-change.is-down { color: #c35030; }
+.studio-overview-reference .ov-number-note { color: var(--studio-muted); font-size: 9px; margin: 4px 0 0; }
+.studio-overview-reference .ov-area-chart { margin: 6px -20px 0; }
+.studio-overview-reference .ov-area-chart > svg { width: 100%; height: 100px; display: block; overflow: visible; }
+.studio-overview-reference .ov-chart-days { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 4px; }
+.studio-overview-reference .ov-area-chart .ov-chart-days { padding: 0 15px; }
+.studio-overview-reference .ov-chart-days button { border: 0; background: transparent; color: var(--studio-muted); min-height: 28px; padding: 4px; border-radius: 7px; font-size: 10px; cursor: pointer; }
+.studio-overview-reference .ov-chart-days button:is(:hover,[aria-pressed=true]) { background: #fff0e5; color: #ae461c; }
+.studio-overview-reference .ov-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 9px; color: var(--studio-muted); border-top: 1px solid var(--studio-border); padding-top: 11px; margin-top: 6px; }
+.studio-overview-reference .ov-card-bottom b { color: var(--studio-text); }
+.studio-overview-reference .ov-chart-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 10px; color: var(--studio-muted); margin-top: -5px; }
+.studio-overview-reference .ov-chart-toolbar b { color: var(--studio-text); font-size: 18px; font-weight: 600; }
+.studio-overview-reference .ov-chart-selector { display: flex; padding: 3px; background: var(--studio-canvas); border-radius: 999px; }
+.studio-overview-reference .ov-chart-selector button { font-size: 9px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--studio-muted); cursor: pointer; }
+.studio-overview-reference .ov-chart-selector button[aria-pressed=true] { background: var(--studio-surface); color: var(--studio-text); box-shadow: 0 2px 5px #00000008; }
+.studio-overview-reference .ov-rhythm-chart { display: block; width: 100%; height: 128px; margin: 6px 0 4px; overflow: visible; }
+.studio-overview-reference .ov-rhythm-days { padding-left: 12px; margin-bottom: 14px; color: var(--studio-muted); text-align: center; font-size: 10px; }
+.studio-overview-reference .ov-axis-label { font-size: 9px; fill: var(--studio-muted); font-family: var(--studio-font); }
+.studio-overview-reference .ov-chart-legend { display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; font-size: 9px; color: var(--studio-muted); }
+.studio-overview-reference .ov-chart-legend span { display: flex; align-items: center; gap: 5px; }
+.studio-overview-reference .ov-chart-legend i { width: 6px; height: 6px; border-radius: 2px; background: var(--ov-bar); }
+.studio-overview-reference .ov-chart-legend .is-orange { background: #ff8d55; }
+.studio-overview-reference .ov-chart-legend .is-line { height: 2px; width: 10px; background: var(--studio-text); }
+.studio-overview-reference .ov-chart-legend a { display: flex; align-items: center; gap: 5px; margin-left: auto; color: var(--studio-text); }
+.studio-overview-reference .ov-heatmap { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 10px; margin: 25px 0 10px; }
+.studio-overview-reference .ov-heatmap-day { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; }
+.studio-overview-reference :is(.ov-heatmap i,.ov-heatmap-foot i) { display: block; aspect-ratio: 1; border-radius: 50%; background: var(--ov-track); width: 100%; max-width: 9px; justify-self: center; }
+.studio-overview-reference [data-level="1"] { background: #ffd6bf !important; }
+.studio-overview-reference [data-level="2"] { background: #ffaa7e !important; }
+.studio-overview-reference [data-level="3"] { background: #f36b2a !important; }
+.studio-overview-reference .ov-heatmap-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.studio-overview-reference .ov-heatmap-foot p { font-size: 9px; margin: 0; color: var(--studio-muted); }
+.studio-overview-reference .ov-heatmap-foot span { display: flex; align-items: center; gap: 4px; color: var(--studio-muted); font-size: 8px; }
+.studio-overview-reference .ov-heatmap-foot i { width: 6px; height: 6px; }
+.studio-overview-reference .ov-chart-data { font-size: 10px; margin-top: 10px; color: var(--studio-muted); }
+.studio-overview-reference .ov-chart-data summary { cursor: pointer; width: fit-content; }
+.studio-overview-reference .ov-chart-data p { margin: 10px 0; line-height: 1.6; }
+.studio-overview-reference .ov-chart-data table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.studio-overview-reference .ov-chart-data :is(th,td) { border-bottom: 1px solid var(--studio-border); padding: 5px; text-align: left; }
+.studio-overview-reference .ov-chart-data caption { text-align: left; padding: 5px; }
+.studio-overview-reference .ov-rings { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin: 24px 0 13px; }
+.studio-overview-reference .ov-ring { position: relative; width: 100%; max-width: 120px; margin: auto; aspect-ratio: 1; }
+.studio-overview-reference .ov-ring svg { width: 100%; height: 100%; }
+.studio-overview-reference .ov-ring > div { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.studio-overview-reference .ov-ring strong { font-size: clamp(18px,1.6vw,28px); line-height: 1.2; color: var(--studio-text); font-weight: 550; letter-spacing: -.05em; }
+.studio-overview-reference .ov-ring small { font-size: 9px; color: var(--studio-muted); margin-top: 4px; }
+.studio-overview-reference .ov-rings a > span { display: block; text-align: center; font-size: 9px; color: var(--studio-muted); margin-top: 4px; }
+.studio-overview-reference .ov-ring-caption { font-size: 9px; color: var(--studio-muted); text-align: center; margin: 14px 0 0; line-height: 1.6; }
+.studio-overview-reference .ov-ring-progress { transition: stroke-dasharray .8s ease; }
+.studio-overview-reference .ov-chart-empty { display: grid; place-items: center; min-height: 150px; color: var(--studio-muted); font-size: 11px; text-align: center; }
+.studio-app.studio-app .studio-overview-reference .overview-workspace-card { border: 0; border-radius: 18px; padding: 20px; }
+.studio-app.studio-app .studio-overview-reference .studio-card-heading h3 { font-size: 14px; }
+.studio-app.studio-app .studio-overview-reference .studio-card-subtitle { font-size: 10px; }
+.studio-app.studio-app .studio-overview-reference .studio-task-row { min-height: 59px; padding: 10px 0; }
+.studio-app.studio-app .studio-overview-reference .studio-task-row h3 { font-size: 11px; }
+.studio-app.studio-app .studio-overview-reference .studio-task-row p { font-size: 10px; }
+.studio-app.studio-app .studio-overview-reference .overview-feature-card.finance { --feature-ink: var(--studio-text); background: var(--studio-surface); border: 0; border-radius: 18px; padding: 20px; box-shadow: none; min-height: 280px; }
+.studio-app.studio-app .studio-overview-reference .overview-feature-card.finance::before { border: 0; }
+.studio-app.studio-app .studio-overview-reference .overview-finance-profit { color: var(--studio-text); font-size: 32px; }
+.studio-app.studio-app .studio-overview-reference .overview-feature-label { color: var(--studio-text); font-size: 13px; }
+.studio-app.studio-app .studio-overview-reference .overview-finance-waves { opacity: .1; color: #f87938; }
+.studio-app.studio-app .studio-overview-reference .overview-fluid-glow { display: none; }
+.studio-app.studio-app .studio-overview-reference .overview-feature-card.finance > a { color: var(--studio-text); background: var(--studio-canvas); border: 0; }
+.studio-app.studio-app .studio-overview-reference .overview-stat { border: 0 !important; background: var(--studio-surface) !important; border-radius: 18px !important; }
+.studio-app.studio-app .studio-overview-reference .overview-stat-content { padding: 18px; }
+.studio-app.studio-app .studio-overview-reference .overview-stat .studio-metric-value { font-size: 29px; margin: 7px 0; }
+.studio-app.studio-app .studio-overview-reference .overview-stat .studio-metric-top { font-size: 11px; }
+.studio-app.studio-app .studio-overview-reference .overview-stat .studio-metric-foot { font-size: 9px; }
+.studio-app.studio-app .studio-overview-reference .overview-enquiry-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); column-gap: 30px; }
+.studio-app.studio-app .studio-overview-reference .overview-enquiry-list li { border-top: 1px solid var(--studio-border); }
+.studio-app.studio-app .studio-overview-reference .overview-enquiry-row { min-height: 75px; }
+.studio-app.studio-app .studio-overview-reference .overview-enquiry-person strong { font-size: 12px; }
+.studio-app.studio-app .studio-overview-reference .studio-quick-action { border-radius: 18px; padding: 16px; }
+.studio-app.studio-app .studio-overview-reference .ov-week-strip { display: flex; align-items: center; gap: 12px; background: var(--studio-surface); border-radius: 16px; margin-top: 14px; padding: 14px 18px; }
+.studio-app.studio-app .studio-overview-reference .ov-week-strip h2 { font: 600 12px/1.5 var(--studio-font); letter-spacing: -.02em; margin: 0; }
+.studio-overview-reference .ov-week-strip p { font-size: 9px; margin: 2px 0 0; color: var(--studio-muted); }
+.studio-overview-reference .ov-week-days { display: flex; gap: 12px; margin-left: auto; }
+.studio-overview-reference .ov-week-days > span { display: grid; justify-items: center; gap: 4px; }
+.studio-overview-reference .ov-week-days i { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: var(--ov-track); color: var(--studio-muted); }
+.studio-overview-reference .ov-week-days i.is-active { background: #fff0e7; color: #f16e29; }
+.studio-overview-reference .ov-week-days small { font-size: 8px; color: var(--studio-muted); }
+.studio-overview-reference .ov-week-strip > a { display: inline-flex; align-items: center; gap: 13px; margin-left: auto; padding: 10px 14px; border-radius: 999px; background: #17191c; color: white; font-size: 10px; white-space: nowrap; }
+.studio-overview-reference :is(button,a,summary):focus-visible { outline: 2px solid #ec782f; outline-offset: 3px; }
+.studio-overview-reference .ov-draw-line { animation: ov-line-in .9s ease both; }
+@keyframes ov-line-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ov-warm-glow { to { transform: translate(8%,-6%) scale(1.15); opacity: .9; } }
+@keyframes ov-glass-float { to { transform: translateY(-9px) rotate(-8deg); } }
+@media(min-width:1700px) { .studio-app.studio-app .studio-overview-reference .ov-welcome { min-height: 330px; padding: 38px; }.studio-overview-reference .ov-welcome-note { width: 160px; right: 35px; }.studio-overview-reference .ov-welcome-note strong { font-size: 20px; }.studio-app.studio-app .studio-overview-reference .ov-card { padding: 24px; }.studio-overview-reference .ov-rhythm-chart { height: 180px; }.studio-overview-reference .ov-area-chart > svg { height: 132px; } }
+@media(max-width:1300px) { .studio-overview-reference .ov-period { font-size: 8px; padding: 4px; }.studio-overview-reference .ov-period svg { display: none; }.studio-app.studio-app .studio-overview-reference .ov-card { padding: 17px 16px 14px; }.studio-overview-reference .ov-welcome-glass { display: none; }.studio-overview-reference .ov-welcome-note { width: 115px; right: 14px; }.studio-app.studio-app .studio-overview-reference .ov-card-heading { gap: 8px; }.studio-overview-reference .ov-rings { gap: 10px; }.studio-overview-reference .ov-week-days { gap: 7px; } }
+@media(max-width:850px) { .studio-overview-reference .ov-welcome-slot { grid-column: 1/-1; }.studio-overview-reference .ov-reference-slot { grid-column: span 6; }.studio-overview-reference .ov-slot-productionPulse { grid-column: 1/-1; }.studio-overview-reference .ov-slot-activityMap { grid-column: 1/-1; }.studio-overview-reference .ov-slot-actionQueue { grid-column: 1/-1; }.studio-overview-reference :is(.ov-slot-openEnquiries,.ov-slot-bookedProjects,.ov-slot-upcomingEvents,.ov-slot-pendingTasks) { grid-column: span 3; }.studio-overview-reference :is(.ov-slot-recentEnquiries,.ov-slot-quickActions) { grid-column: 1/-1; }.studio-overview-reference .ov-welcome-photo { width: 60%; }.studio-overview-reference .ov-welcome-note { width: 160px; }.studio-overview-reference .ov-week-strip { flex-wrap: wrap; }.studio-overview-reference .ov-week-days { order: 2; width: 100%; justify-content: space-between; margin: 3px 0; }.studio-overview-reference .ov-heatmap i { max-width: 12px; }.studio-overview-reference .ov-period { font-size: 9px; }.studio-app.studio-app .studio-overview-reference .ov-card-heading h2 { font-size: 14px; } }
+@media(max-width:600px) { .studio-app.studio-app .studio-overview-reference { --ov-gap: 12px; }.studio-app.studio-app .studio-overview-reference .ov-page-toolbar { align-items: flex-end; gap: 8px; }.studio-overview-reference .ov-page-eyebrow { display: none; }.studio-app.studio-app .studio-overview-reference .ov-page-toolbar h1 { font-size: 20px; }.studio-app.studio-app .studio-overview-reference .ov-page-toolbar .studio-button { min-height: 44px; font-size: 10px; padding: 8px 10px; gap: 5px; }.studio-overview-reference .ov-reference-slot { grid-column: 1/-1; }.studio-overview-reference :is(.ov-slot-openEnquiries,.ov-slot-bookedProjects,.ov-slot-upcomingEvents,.ov-slot-pendingTasks) { grid-column: span 6; }.studio-app.studio-app .studio-overview-reference .ov-welcome { min-height: 265px; padding: 24px; }.studio-app.studio-app .studio-overview-reference .ov-welcome h2 { font-size: 34px !important; }.studio-app.studio-app .studio-overview-reference .ov-welcome-copy { max-width: 75%; }.studio-overview-reference .ov-welcome-note { display: none; }.studio-overview-reference .ov-welcome-photo { width: 80%; opacity: .65; object-position: 40% center; }.studio-app.studio-app .studio-overview-reference .ov-card { padding: 20px; }.studio-overview-reference .ov-area-chart > svg { height: 135px; }.studio-overview-reference .ov-chart-days button { min-height: 36px; }.studio-overview-reference .ov-chart-selector button { min-height: 36px; padding: 7px 12px; font-size: 10px; }.studio-overview-reference .ov-card-heading p { font-size: 10px; }.studio-overview-reference .ov-chart-data summary { min-height: 32px; padding-top: 6px; }.studio-app.studio-app .studio-overview-reference .overview-hide-card { width: 32px; height: 32px; min-height: 32px; }.studio-app.studio-app .studio-overview-reference .overview-enquiry-list { grid-template-columns: minmax(0,1fr); }.studio-overview-reference .ov-rings { margin: 20px 0; }.studio-overview-reference .ov-ring strong { font-size: 27px; }.studio-overview-reference .ov-ring small { font-size: 11px; }.studio-app.studio-app .studio-overview-reference .ov-week-strip { gap: 10px; }.studio-overview-reference .ov-week-strip > a { order: 3; width: 100%; justify-content: center; min-height: 42px; margin: 0; }.studio-app.studio-app .studio-overview-reference .overview-stat .studio-metric-top { padding-right: 15px; }.studio-app.studio-app .studio-overview-reference .studio-quick-actions { grid-template-columns: minmax(0,1fr); } }
+@media(max-width:600px) {
+  .studio-app.studio-app .studio-overview-reference .ov-card-heading p { font-size: 11px; }
+  .studio-overview-reference .ov-rhythm-days { font-size: 11px; }
+  .studio-overview-reference .ov-axis-label { font-size: 15px; }
+  .studio-overview-reference :is(.ov-number-note,.ov-card-bottom,.ov-chart-legend,.ov-ring-caption,.ov-heatmap-foot p,.ov-chart-data,.ov-week-strip p) { font-size: 11px; line-height: 1.6; }
+  .studio-overview-reference :is(.ov-chart-days button,.ov-chart-selector button,.ov-rings a > span,.ov-chart-data table) { font-size: 11px; }
+  .studio-app.studio-app .studio-overview-reference .studio-task-row h3 { font-size: 13px; }
+  .studio-app.studio-app .studio-overview-reference .studio-task-row p { font-size: 11px; }
+  .studio-app.studio-app .studio-overview-reference .overview-stat .studio-metric-foot { font-size: 11px; }
+}
+@media(prefers-reduced-motion:reduce) { .studio-overview-reference *, .studio-overview-reference *::before { animation: none !important; transition: none !important; } }
+html[data-studio-motion=reduced] .studio-overview-reference *, html[data-studio-motion=reduced] .studio-overview-reference *::before { animation: none !important; transition: none !important; }

@@ -1,0 +1,56 @@
+/* Compact phone scale. Visual glyphs shrink; touch areas and editable text stay usable. */
+@media(max-width:768px) {
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace { --studio-mobile-bar:calc(88px + env(safe-area-inset-bottom)); }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-main { padding:18px 14px 24px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace.studio-focus-mode .studio-main { padding:0; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-symbol-tile { width:28px!important; height:28px!important; flex-basis:28px!important; border-radius:9px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-nav-item { font-size:13px; min-height:46px; padding:7px 10px; gap:11px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-nav-group-toggle { font-size:10px; min-height:44px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-sidebar .studio-brand strong { font-size:15px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-sidebar .studio-brand small { font-size:10px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar { min-height:60px; padding-top:max(6px,env(safe-area-inset-top)); padding-bottom:6px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar-context strong { font-size:14px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar :is(.studio-icon-button,.studio-profile-button) { width:44px; height:44px; min-width:44px; border-radius:13px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar .studio-profile-button { border-radius:50%; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar .studio-icon-button > svg { width:17px; height:17px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar .studio-avatar { width:28px; height:28px; font-size:10px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-page-heading,.reference-heading,.ops-heading) h1 { font-size:22px!important; line-height:1.2; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-page-heading,.reference-heading,.ops-heading) p { font-size:12px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-section-title,.studio-card-heading h2,.studio-card-heading h3,.studio-crm-card-heading h2) { font-size:15px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary) { min-height:44px; font-size:13px; padding:10px 13px; gap:7px; border-radius:12px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary) > svg { width:15px; height:15px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-phone-record-table tbody > tr > td { font-size:13px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.reference-mobile-record-heading h2,.reference-project-name,.reference-contact-name) { font-size:14px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-phone-record-table tbody > tr { padding:15px; gap:12px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-field > span,.ops-field > span,.invoice-field > span) { font-size:12px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(input:not([type=checkbox]):not([type=radio]),select,textarea) { font-size:16px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation { min-height:68px; padding:5px; border-radius:22px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > :is(a,button) { min-height:56px; font-size:9.5px; gap:3px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation .studio-mobile-tab-icon { width:26px!important; height:26px!important; flex-basis:auto!important; border-radius:8px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation .studio-mobile-tab-icon > svg { width:19px!important; height:19px!important; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > .is-active .studio-mobile-tab-icon > svg { width:17px!important; height:17px!important; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ov-page-toolbar { gap:10px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ov-page-toolbar h1 { font-size:21px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ov-page-toolbar .studio-button { min-height:44px; font-size:12px; padding:9px 12px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference :is(.ov-card-heading h2,.overview-feature-label) { font-size:14px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference .ov-welcome h2 { font-size:26px!important; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference .ov-card { padding:17px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference :is(.studio-task-row h3,.overview-enquiry-person strong) { font-size:13px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-page-title { margin-bottom:20px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-page-title h1 { font-size:22px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-profile-tile { padding:16px; gap:12px; min-height:88px; border-radius:22px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-profile-tile img { width:44px; height:44px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-profile-tile strong { font-size:17px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-profile-tile small { font-size:11px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-grouped .settings-row-label strong { font-size:14px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-grouped .settings-grouped-rows > :is(.settings-directory-link,.settings-quick-theme) { min-height:56px; padding-block:10px; gap:12px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-grouped-rows > * + *::before { left:55px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-grouped .settings-disclosure-heading strong { font-size:14px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-grouped .settings-disclosure-heading > button { min-height:68px; padding:16px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-grouped .settings-category h2 { font-size:11px!important; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-grouped .settings-directory-grid { gap:22px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-section-heading h2 { font-size:20px!important; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-section-heading .studio-symbol-tile { width:32px!important; height:32px!important; flex-basis:32px!important; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-modal-header h2,.studio-crm-detail-header h2,.studio-crm-dialog-header h2) { font-size:20px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-arrange-label strong { font-size:12px; }
+}

@@ -10,6 +10,7 @@ const {
 const invoiceValues = require("../utils/invoiceValues");
 const Quotation = require("../models/Quotation");
 const Invoice = require("../models/Invoice");
+test.beforeEach(t => { t.mock.method(Invoice, 'exists', async () => null); });
 const StudioConfig = require("../models/StudioConfig");
 const router = require("../routes/publicQuoteRoutes");
 const token = "a".repeat(64);

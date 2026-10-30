@@ -1,6 +1,9 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { AnimatePresence } from "framer-motion";
+import { useAuth } from './context/AuthContext';
+import { StudioPreviewStart, StudioPreviewNavigation } from './native/StudioPreview';
+import { SAAS_RELEASE_ENABLED } from './saas/release';
 
 // Public website pages load independently of internal Studio OS routes.
 const PublicLayout = lazy(() => import("./public/PublicLayout"));
@@ -36,11 +39,19 @@ const PublicNotFound = lazy(() =>
 );
 const SharedQuotation = lazy(() => import("./pages/SharedQuotation"));
 const AuthPage = lazy(() => import("./components/AuthPage"));
+const SignupPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/AuthPages').then(module => ({ default: module.SignupPage }))) : null;
+const AcceptInvitationPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/AuthPages').then(module => ({ default: module.AcceptInvitationPage }))) : null;
+const ProductHome = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/ProductHome')) : null;
+const ProductLoginPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/SocialAuth').then(module => ({ default: module.ProductLoginPage }))) : null;
+const SocialCallbackPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/SocialAuth').then(module => ({ default: module.SocialCallbackPage }))) : null;
+const WorkspacePage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/WorkspacePage')) : null;
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Admin imports
 const AdminLayout = lazy(() => import("./admin/components/common/Layout"));
+const ShootDay = lazy(()=>import('./admin/pages/ShootDay'));
+const OfflineDraftsHub = lazy(()=>import('./offline/OfflineDrafts').then(module=>({default:module.OfflineDraftsHub})));
 const AdminDashboard = lazy(() => import("./admin/pages/Dashboard"));
 const AdminContacts = lazy(() => import("./admin/pages/Contacts"));
 const AdminContactDetail = lazy(() => import("./admin/pages/ContactDetail"));
@@ -55,6 +66,8 @@ const AdminQuotations = lazy(() => import("./admin/pages/Quotations"));
 const AdminDataManagement = lazy(() => import("./admin/pages/DataManagement"));
 const AdminSettings = lazy(() => import("./admin/pages/Settings"));
 const AdminIntegrations = lazy(() => import("./admin/pages/Integrations"));
+const AdminEmail = lazy(() => import("./admin/pages/GmailInbox"));
+const AdminWhatsApp = lazy(() => import("./admin/pages/WhatsAppInbox"));
 const AdminProjects = lazy(() => import("./admin/pages/Projects"));
 const AdminCrew = lazy(() => import("./admin/pages/Crew"));
 const AdminPostProduction = lazy(() => import("./admin/pages/PostProduction"));
@@ -68,12 +81,14 @@ const AdminUserManagement = lazy(() => import("./admin/pages/UserManagement"));
 import { Toaster } from "react-hot-toast";
 
 function App() {
+  const { user } = useAuth();
   const location = useLocation();
-  const isStudioPage = location.pathname === "/auth" || location.pathname === "/admin" || location.pathname.startsWith("/admin/");
+  const isStudioPage = location.pathname.startsWith("/studio-os") || location.pathname === "/auth" || location.pathname === '/signup' || /^\/(?:join|invite)\//.test(location.pathname) || location.pathname === "/admin" || location.pathname.startsWith("/admin/");
 
   return (
     <div className={`font-sans text-[#1C1C1C] ${isStudioPage ? "bg-white" : "bg-[#F7F5F2]"} min-h-screen selection:bg-black selection:text-white`}>
-      <Toaster position="top-right" />
+      {import.meta.env.DEV && <StudioPreviewNavigation />}
+      <Toaster position="top-right" toastOptions={{ className: isStudioPage ? "studio-toast" : undefined }} />
       <Suspense
         fallback={
           <div className="flex h-screen w-full items-center justify-center text-xl">
@@ -117,12 +132,20 @@ function App() {
             </Route>
             <Route path="/quote" element={<Navigate to="/enquire" replace />} />
             <Route path="/auth" element={<AuthPage />} />
+            {import.meta.env.DEV && <Route path="/native-preview/start" element={<StudioPreviewStart />} />}
+            {SAAS_RELEASE_ENABLED && <><Route path="/signup" element={<SignupPage />} />
+            <Route path="/studio-os" element={<ProductHome />} />
+            <Route path="/studio-os/login" element={<ProductLoginPage />} />
+            <Route path="/studio-os/auth/callback" element={<SocialCallbackPage />} />
+            <Route path="/join/:token" element={<AcceptInvitationPage />} />
+            <Route path="/invite/:token" element={<AcceptInvitationPage />} /></>}
             <Route path="/portal/*" element={<Navigate to="/" replace />} />
 
             {/* Protected Admin Routes */}
             <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
+                <Route path="shoot-day" element={<ShootDay/>}/><Route path="offline-drafts" element={<OfflineDraftsHub/>}/>
                 <Route path="crm" element={<AdminCRM />} />
                 <Route path="quotations" element={<AdminQuotations />} />
                 <Route path="contacts" element={<AdminContacts />} />
@@ -149,6 +172,8 @@ function App() {
                 <Route path="data" element={<AdminDataManagement />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="integrations" element={<AdminIntegrations />} />
+                <Route path="email" element={<AdminEmail />} />
+                <Route path="whatsapp" element={<AdminWhatsApp />} />
                 <Route path="projects" element={<AdminProjects />} />
                 <Route path="crew" element={<AdminCrew />} />
                 <Route
@@ -163,7 +188,9 @@ function App() {
                 <Route path="calendar" element={<AdminCalendarPage />} />
                 <Route path="activity-log" element={<AdminActivityLog />} />
                 <Route path="chats" element={<AdminChats />} />
-                <Route path="users" element={<AdminUserManagement />} />
+                <Route path="users" element={SAAS_RELEASE_ENABLED && user?.workspace ? <WorkspacePage initialTab="team" /> : <AdminUserManagement />} />
+                {SAAS_RELEASE_ENABLED && <><Route path="workspace" element={<WorkspacePage />} />
+                <Route path="subscription" element={<WorkspacePage initialTab="subscription" />} /></>}
               </Route>
             </Route>
           </Routes>

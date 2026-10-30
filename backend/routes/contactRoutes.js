@@ -103,7 +103,7 @@ async function documentsFor(contact, studioProjectId) {
       .sort({ createdAt: -1 })
       .lean(),
     Event.find(projectFilter)
-      .select("title start end location type contactId studioProjectId")
+      .select("title start end location type contactId studioProjectId description teamMembers lead")
       .sort({ start: -1 })
       .lean(),
     Document.find({ ...projectFilter, status: { $ne: "Archived" } })
@@ -162,7 +162,7 @@ router.get(
   wrap(async (_req, res) =>
     res.json(
       await Project.find({ status: { $ne: "Archived" } })
-        .populate("contactId", "firstName lastName email")
+        .populate("contactId", "firstName lastName email phone")
         .sort({ createdAt: -1 })
         .lean(),
     ),
@@ -176,6 +176,7 @@ router.post(
     const project = await Project.create(values);
     const lead = await pipeline.ensureProject(project._id);
     project.leadId = lead._id;
+    if (project.status === 'Booked') await require('../services/productionTemplates').applyDefaultProduction(lead._id);
     res.status(201).json(project);
   }),
 );
@@ -186,12 +187,28 @@ router.get(
       .populate("contactId")
       .populate("additionalClients", "firstName lastName email");
     if (!project) throw error("Project not found", 404);
-    res.json({
-      project,
-      ...(await documentsFor(project.contactId, project._id)),
-    });
+    const [related,production]=await Promise.all([documentsFor(project.contactId,project._id),require('../services/projectWorkspace').productionFor(project)]);
+    res.json({project,...related,production});
   }),
 );
+router.patch('/studio-projects/:id/crew',wrap(async(req,res)=>{
+ const action=req.body?.action;
+ if(!['assign','remove'].includes(action))throw error('Choose assign or remove.');
+ const photographerId=validate.identifier(req.body?.photographerId,'Crew member'),project=await Project.findById(id(req));
+ if(!project)throw error('Project not found',404);
+ if(project.status==='Archived')throw error('Restore this project before changing its crew.',409);
+ const production=await require('../services/projectWorkspace').productionFor(project);
+ if(!production.lead)throw error('Review this project’s enquiry connection before changing crew.',409);
+ const Photographer=require('../models/Photographer'),Lead=require('../models/Lead');
+ const person=await Photographer.findById(photographerId).select('name status').lean();
+ if(!person)throw error('Crew member not found',404);
+ if(action==='assign'&&person.status==='Inactive')throw error('Choose an active crew member.');
+ if(await Photographer.countDocuments({name:person.name})!==1)throw error('Give each crew member a distinct name before assigning.',409);
+ const filter={_id:production.lead._id,contactId:project.contactId,$or:[{studioProjectId:project._id},{studioProjectId:null}]};
+ const result=await Lead.updateOne(filter,action==='assign'?{$addToSet:{people:person.name}}:{$pull:{people:person.name}});
+ if(!result.matchedCount)throw error('The project connection changed. Refresh and try again.',409);
+ res.json({success:true});
+}));
 router.patch(
   "/studio-projects/:id",
   wrap(async (req, res) => {
@@ -207,6 +224,7 @@ router.patch(
       );
     const lead = await pipeline.ensureProject(project._id);
     project.leadId = lead._id;
+    if (project.status === 'Booked' && existing.status !== 'Booked') await require('../services/productionTemplates').applyDefaultProduction(lead._id);
     res.json(project);
   }),
 );

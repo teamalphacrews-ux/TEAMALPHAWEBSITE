@@ -9,7 +9,10 @@ const auth = require('../middleware/auth');
 const requireAdmin = require('../middleware/requireAdmin');
 const Event = require('../models/Event');
 const Photographer = require('../models/Photographer');
+const StudioConfig = require('../models/StudioConfig');
 const { buildStudioOverview } = require('../utils/studioOverview');
+const { studioDayStart } = require('../utils/studioDay');
+const { overviewTimezone, overviewInsightWindow, overviewActivityPipeline, buildOverviewInsights } = require('../utils/studioOverviewInsights');
 
 const router = express.Router();
 
@@ -19,12 +22,18 @@ router.get('/studio-overview', async (req, res) => {
     try {
         await require('../services/enquiryPipeline').reconcile();
         const now = new Date();
+        const studio = await StudioConfig.findOne({ key: 'studio' }).select('timezone').lean();
+        const timezone = req.query?.timezone === undefined ? overviewTimezone(studio?.timezone) : overviewTimezone(req.query.timezone, true);
+        const todayStart = studioDayStart(now, timezone);
+        const insightWindow = overviewInsightWindow(now, timezone);
+        const throughNow = new Date(now.getTime() + 1);
         const [leadCounts, upcomingEventCount, pendingTaskCount, overdueTaskCount,
-            activeCrew, clientCollections, events, datedTasks, undatedTasks, recentLeads] = await Promise.all([
+            activeCrew, clientCollections, events, datedTasks, undatedTasks, recentLeads,
+            leadActivity, eventActivity, taskActivity, taskDueActivity, completedTaskCount] = await Promise.all([
             Lead.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
             Event.countDocuments({ end: { $gte: now } }),
             Task.countDocuments({ status: 'pending' }),
-            Task.countDocuments({ status: 'pending', dueDate: { $lt: now, $ne: null } }),
+            Task.countDocuments({ status: 'pending', dueDate: { $lt: todayStart, $ne: null } }),
             Photographer.countDocuments({ status: 'Active' }),
             DriveGallery.countDocuments(),
             Event.find({ end: { $gte: now } }).sort({ start: 1 }).limit(6)
@@ -34,15 +43,22 @@ router.get('/studio-overview', async (req, res) => {
             Task.find({ status: 'pending', dueDate: null }).sort({ createdAt: -1 }).limit(8)
                 .select('title status dueDate lead').populate('lead', 'name eventDate').lean(),
             Lead.find().sort({ createdAt: -1 }).limit(6)
-                .select('name eventType eventDate status followUpDate createdAt').lean()
+                .select('name eventType eventDate status followUpDate createdAt').lean(),
+            Lead.aggregate(overviewActivityPipeline('createdAt', insightWindow.previousStart, throughNow, timezone)),
+            Event.aggregate(overviewActivityPipeline('start', insightWindow.start, insightWindow.end, timezone)),
+            Task.aggregate(overviewActivityPipeline('createdAt', insightWindow.start, throughNow, timezone)),
+            Task.aggregate(overviewActivityPipeline('dueDate', insightWindow.start, insightWindow.end, timezone, true)),
+            Task.countDocuments({ status: 'completed' }),
         ]);
         res.json(buildStudioOverview({
             leadCounts, upcomingEventCount, pendingTaskCount, overdueTaskCount,
-            activeCrew, clientCollections, events, datedTasks, undatedTasks, recentLeads
+            activeCrew, clientCollections, events, datedTasks, undatedTasks, recentLeads,
+            insights: buildOverviewInsights({ leadCounts, leadActivity, eventActivity, taskActivity,
+                taskDueActivity, completedTaskCount, pendingTaskCount }, now, timezone),
         }, now));
     } catch (err) {
         console.error('Studio overview error:', err.message);
-        res.status(500).json({ error: 'Unable to load the studio overview' });
+        res.status(err.status === 400 ? 400 : 500).json({ error: err.status === 400 ? err.message : 'Unable to load the studio overview' });
     }
 });
 

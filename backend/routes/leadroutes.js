@@ -52,6 +52,8 @@ router.patch('/:id', async (req, res) => {
 
         const updatedLead = await Lead.findByIdAndUpdate(req.params.id, allowedLeadFields(req.body), { new: true, runValidators: true });
         await pipeline.syncFromEnquiry(updatedLead, req.body);
+        if (status === 'Converted' && oldLead.status !== 'Converted')
+            await require('../services/productionTemplates').applyDefaultProduction(updatedLead._id);
 
         // Update corresponding User if linked or email matches
         if (updatedLead) {
@@ -101,6 +103,7 @@ router.post('/:id/remind/:photographerName', async (req, res) => {
 // DELETE Lead
 router.delete('/:id', async (req, res) => {
     try {
+        await require('../services/studioSecurity').assertPermission(req.user.id, 'deletion');
         const lead = await Lead.findById(req.params.id);
         if (!lead) return res.status(404).json({ error: 'Enquiry not found' });
         if (lead.studioProjectId) {
@@ -108,10 +111,10 @@ router.delete('/:id', async (req, res) => {
             await pipeline.syncFromEnquiry(archived, { status: 'Archived' });
             return res.json({ archived: true });
         }
-        await Lead.findByIdAndDelete(req.params.id);
+        await require('../services/studioRecovery').recoverableDelete({ Model: Lead, filter: { _id: req.params.id }, actorId: req.user.id });
         res.json({ message: "Lead deleted successfully" });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(err.status || 500).json({ error: err.status ? err.message : 'The enquiry could not be removed.' });
     }
 });
 

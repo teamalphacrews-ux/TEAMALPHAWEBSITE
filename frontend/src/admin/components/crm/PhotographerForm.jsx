@@ -44,7 +44,7 @@ export default function PhotographerForm({ onClose, onAdded }) {
                         <p className="text-[9px] text-[#8a8a8a] mt-2 font-bold uppercase tracking-[0.2em] bg-white/50 px-3 py-1 rounded-full border border-white/40 inline-block">Team Expansion Registry</p>
                     </div>
                     <button
-                        onClick={onClose}
+                        aria-label="Close photographer form" title="Close photographer form" onClick={onClose}
                         className="p-2.5 bg-white/60 hover:bg-white text-[#8a8a8a] hover:text-[#2d2d2d] rounded-full transition-all hover:rotate-90 hover:shadow-md"
                     >
                         <X size={18} />

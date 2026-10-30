@@ -1,4 +1,5 @@
 const test = require("node:test");
+test.beforeEach(require('./sessionFixture'));
 const assert = require("node:assert/strict");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
@@ -68,4 +69,18 @@ test("project notes are bounded, timestamped, and cannot replace existing notes"
   assert.equal((await dispatch("POST", "/studio-projects/" + projectId + "/notes", { body: " Site visit complete ", createdAt: "2000-01-01" })).status, 201);
   assert.equal(captured.$push.notes.$each[0].body, "Site visit complete"); assert.equal(captured.$push.notes.$slice, -200); assert.notEqual(captured.$push.notes.$each[0].createdAt.getFullYear(), 2000);
   assert.equal((await dispatch("POST", "/studio-projects/" + projectId + "/notes", { body: "" })).status, 400);
+});
+test('crew edits are atomic and reject ambiguous or stale project connections',async t=>{
+ const Lead=require('../models/Lead'),Photographer=require('../models/Photographer'),production=require('../services/projectWorkspace');
+ t.mock.method(Project,'findById',async()=>({_id:projectId,contactId,status:'Booked'}));
+ t.mock.method(production,'productionFor',async()=>({lead:{_id:contactId}}));
+ let person={_id:projectId,name:'Sara',status:'Active'},count=1,matched=1,captured;
+ t.mock.method(Photographer,'findById',()=>({select:()=>({lean:async()=>person})}));
+ t.mock.method(Photographer,'countDocuments',async()=>count);
+ t.mock.method(Lead,'updateOne',async(filter,update)=>{captured={filter,update};return{matchedCount:matched};});
+ const url='/studio-projects/'+projectId+'/crew';
+ assert.equal((await dispatch('PATCH',url,{action:'assign',photographerId:projectId})).status,200);assert.deepEqual(captured.update,{$addToSet:{people:'Sara'}});assert.equal(String(captured.filter.contactId),contactId);
+ assert.equal((await dispatch('PATCH',url,{action:'remove',photographerId:projectId})).status,200);assert.deepEqual(captured.update,{$pull:{people:'Sara'}});
+ count=2;assert.equal((await dispatch('PATCH',url,{action:'assign',photographerId:projectId})).status,409);count=1;person={...person,status:'Inactive'};assert.equal((await dispatch('PATCH',url,{action:'assign',photographerId:projectId})).status,400);person={...person,status:'Active'};matched=0;assert.equal((await dispatch('PATCH',url,{action:'assign',photographerId:projectId})).status,409);
+ assert.equal((await dispatch('PATCH',url,{action:'assign',photographerId:projectId},'client')).status,403);assert.equal((await dispatch('PATCH',url,{action:'assign',photographerId:projectId},null)).status,401);
 });
