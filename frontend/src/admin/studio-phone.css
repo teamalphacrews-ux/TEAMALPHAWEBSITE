@@ -1,0 +1,218 @@
+/* Phone interaction layer, shared by Safari and the iOS workspace.
+   Record cells keep their actions and table semantics; authored client documents are excluded. */
+.studio-mobile-navigation { display: none; }
+.studio-menu-search { display: flex; align-items: center; gap: 9px; margin: 0 3px 18px; padding: 0 12px; border: 1px solid var(--studio-border); background: var(--studio-surface); border-radius: 12px; color: var(--studio-muted); min-height: 44px; }
+.studio-menu-search input { min-width: 0; width: 100%; height: 44px; border: 0; background: transparent; color: var(--studio-text); font: inherit; font-size: 14px; outline-offset: 3px; }
+.studio-menu-search:focus-within { outline: 2px solid var(--studio-muted); outline-offset: 2px; }
+.studio-menu-search input:focus { outline: none; }
+.studio-menu-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.studio-menu-search button { display: grid; place-items: center; background: none; border: 0; color: inherit; min-width: 32px; min-height: 40px; }
+.studio-menu-empty { font-size: 14px; line-height: 1.6; color: var(--studio-muted); padding: 12px; }
+.studio-phone-field-label, .studio-phone-action-label, .studio-phone-menu-action { display: none; }
+.studio-document-number-field { display: block; min-width: 0; }
+.qw-item > .studio-document-number-field > input { width: 100%; min-width: 0; border: 1px solid var(--studio-border); background: var(--studio-surface); color: var(--studio-text); box-sizing: border-box; padding: 10px; font-size: 11px; }
+.invoice-edit-item > .studio-document-number-field > input { width: 100%; min-width: 0; background: var(--studio-surface); color: var(--studio-text); border: 1px solid var(--studio-border); padding: 12px; font-size: 13px; }
+.studio-document-settings-panel[hidden] { display: none !important; }
+.studio-document-settings-toggle { display: none; }
+
+@media (max-width: 768px) {
+  .studio-app.studio-app.studio-personal-workspace { --studio-page-gutter: 16px; --studio-mobile-bar: calc(68px + env(safe-area-inset-bottom)); }
+  .studio-app.studio-app.studio-personal-workspace .studio-workspace { padding-bottom: var(--studio-mobile-bar); }
+  .studio-app.studio-app.studio-personal-workspace .studio-main { padding: 22px 16px 28px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-focus-mode .studio-workspace { padding-bottom: 0; }
+  .studio-app.studio-app.studio-personal-workspace.studio-focus-mode .studio-main { padding: 0; }
+  .studio-app.studio-app.studio-personal-workspace .studio-topbar { min-height: 62px; padding-inline: 12px; border-bottom: 1px solid var(--studio-border); }
+  .studio-app.studio-app.studio-personal-workspace .studio-topbar-context strong { font-size: 15px; letter-spacing: -.02em; }
+  .studio-app.studio-app.studio-personal-workspace .studio-topbar-actions { gap: 4px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-topbar-divider { display: none; }
+  .studio-app.studio-app.studio-personal-workspace .studio-topbar :is(.studio-icon-button,.studio-profile-button) { border-radius: 13px; }
+  .studio-app.studio-app .studio-mobile-navigation { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); position: fixed; inset: auto 0 0; z-index: 50; min-height: var(--studio-mobile-bar); padding: 5px max(8px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)); border-top: 1px solid var(--studio-border); background: color-mix(in srgb,var(--studio-surface) 94%,transparent); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 -4px 24px #00000006; }
+  .studio-app.studio-app .studio-mobile-navigation > :is(a,button) { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 5px; min-width: 0; min-height: 56px; padding: 6px 2px; border: 0; border-radius: 13px; font: inherit; font-size: 10px; font-weight: 550; line-height: 1.3; background: transparent; color: var(--studio-muted); text-decoration: none; }
+  .studio-app.studio-app .studio-mobile-navigation > .is-active { color: var(--studio-text); background: var(--appearance-subtle); }
+  .studio-mobile-navigation > :is(a,button):focus-visible { outline: 2px solid var(--studio-text); outline-offset: -2px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-sidebar-container { width: min(380px,calc(100vw - 20px)); }
+  .studio-app.studio-app.studio-personal-workspace .studio-sidebar { border-radius: 0 22px 22px 0; padding-inline: 14px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-sidebar :is(.studio-nav-item,.studio-nav-group-toggle) { min-height: 48px; font-size: 14px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-nav-group-toggle { font-size: 12px; letter-spacing: .035em; }
+  .studio-app.studio-app.studio-personal-workspace .studio-nav-item .studio-app-icon { width: 22px; height: 22px; flex-basis: 22px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-nav-item .studio-app-icon svg { width: 21px; height: 21px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-menu-search input { font-size: 16px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-sidebar .studio-brand-row { margin-bottom: 16px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-sidebar .studio-brand strong { font-size: 16px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-sidebar .studio-brand small { font-size: 12px; }
+  .studio-app.studio-app .studio-footer { font-size: 11px; line-height: 1.6; }
+  html[data-studio-keyboard] .studio-mobile-navigation { display: none !important; }
+  html[data-studio-keyboard] .studio-app.studio-app.studio-personal-workspace .studio-workspace { padding-bottom: 0; }
+
+  /* One predictable control scale across all operational screens. */
+  :is(.studio-app.studio-personal-workspace,.studio-crm-overlay,.studio-ops.studio-modal-overlay) :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary) { min-height: 46px; border-radius: 12px; font-size: 14px; line-height: 1.35; font-weight: 550; letter-spacing: -.01em; padding: 11px 15px; gap: 8px; justify-content: center; }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-page-heading,.reference-heading,.ops-heading) { gap: 16px; margin-bottom: 22px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-page-heading,.reference-heading,.ops-heading) h1 { font-size: 28px; line-height: 1.15; letter-spacing: -.045em; }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-page-heading,.reference-heading,.ops-heading) p { font-size: 14px; line-height: 1.6; }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-eyebrow,.reference-eyebrow) { font-size: 10px; letter-spacing: .12em; margin-bottom: 8px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-card,.reference-detail-card,.reference-template-card,.ops-schedule-card) { border: 1px solid var(--studio-border); border-radius: 18px; box-shadow: none; }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-section-title,.studio-card-heading h2,.studio-card-heading h3,.studio-crm-card-heading h2) { font-size: 18px; line-height: 1.35; letter-spacing: -.025em; }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-muted,.studio-card-subtitle,.workspace-info p,.studio-empty p) { font-size: 13px; line-height: 1.65; }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-field > span,.invoice-field > span,.ops-field > span) { font-size: 13px; font-weight: 550; margin-bottom: 7px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-input,.ops-input,.reference-input) { min-height: 48px; border-radius: 11px; padding: 11px 12px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-search,.reference-search,.ops-search) { min-height: 48px; border: 1px solid var(--studio-border); border-radius: 12px; background: var(--studio-surface); }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-tabs,.reference-tabs,.qw-tabs,.studio-crm-stage-filters) { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 5px; padding: 4px; scroll-padding-inline: 4px; border-radius: 13px; background: var(--appearance-subtle); border-bottom: 0; margin-bottom: 18px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-tabs,.reference-tabs,.qw-tabs,.studio-crm-stage-filters) > button { flex: 0 0 auto; min-height: 44px; padding: 10px 14px; border: 0; border-radius: 10px; font-size: 13px; line-height: 1.4; background: transparent; color: var(--studio-muted); }
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-tabs,.reference-tabs,.qw-tabs,.studio-crm-stage-filters) > button:is(.active,[aria-pressed=true]) { background: var(--studio-surface); color: var(--studio-text); box-shadow: 0 1px 4px #0000000d; font-weight: 600; }
+  .studio-app.studio-app.studio-personal-workspace .studio-badge { font-size: 11px; line-height: 1.45; padding: 5px 8px; border-radius: 7px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-metric { padding: 16px; border-radius: 16px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-metric :is(small,.workspace-metric-label) { font-size: 12px; line-height: 1.5; }
+  .studio-app.studio-app.studio-personal-workspace .studio-empty { padding: 32px 18px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-empty h3 { font-size: 17px; }
+
+  /* A mobile record is the same table row, with all values and actions in view. */
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table { display: block; width: 100%; min-width: 0; border-collapse: separate; font-size: 14px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table tbody { display: grid; gap: 12px; padding: 2px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table tbody > tr { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px 16px; padding: 17px; border: 1px solid var(--studio-border); border-radius: 16px; background: var(--studio-surface); color: var(--studio-text); }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table tbody > tr > td { display: block; min-width: 0; padding: 0; border: 0; font-size: 14px; line-height: 1.5; white-space: normal; overflow-wrap: anywhere; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table td::before { content: attr(data-label); display: block; color: var(--studio-muted); font-size: 11px; font-weight: 500; line-height: 1.5; margin-bottom: 5px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table td:first-child { grid-column: 1/-1; padding-bottom: 12px; border-bottom: 1px solid var(--studio-border); }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table td:first-child::before { display: none; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table td:first-child strong { font-size: 16px; font-weight: 600; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table td small { display: block; font-size: 12px; line-height: 1.6; margin-top: 4px; color: var(--studio-muted); }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table td:last-child { grid-column: 1/-1; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding-top: 10px; border-top: 1px solid var(--studio-border); }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table td:last-child::before { display: none; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table td[colspan] { grid-column: 1/-1; border: 0; display: block; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table :is(.ops-row-actions,.studio-crm-row-actions) { width: 100%; justify-content: flex-end; gap: 8px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table .ops-row-actions .ops-status-select { flex: 1; max-width: 220px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-crm-table-scroll:has(.studio-phone-record-table) { overflow: visible; padding: 0 12px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-crm-table-scroll:has(.studio-phone-record-table) .studio-crm-avatar { width: 40px; height: 40px; flex-basis: 40px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-crm-card-heading { padding: 20px 16px 12px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-crm-stage-filters { margin-inline: 12px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.reference-mobile-record-action,.reference-mobile-record-heading button,.reference-mobile-contact-info a) { min-height: 44px; }
+  .studio-app.studio-app.studio-personal-workspace .reference-mobile-record-heading button { min-width: 44px; }
+  .studio-app.studio-app.studio-personal-workspace .reference-mobile-record-heading h2 { font-size: 17px; }
+  .studio-app.studio-app.studio-personal-workspace .reference-mobile-record-meta dd { font-size: 14px; }
+  .studio-app.studio-app.studio-personal-workspace .reference-mobile-record-action { font-size: 14px; }
+  .studio-app.studio-app.studio-personal-workspace .ops-schedule-card { scroll-margin-top: 84px; }
+
+  .studio-app.studio-app.studio-personal-workspace .studio-crm-metrics { gap: 10px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-crm-metrics .studio-metric { padding: 14px; min-height: 0; }
+  .studio-app.studio-app.studio-personal-workspace .studio-crm-metrics .studio-metric > strong { font-size: 26px; margin: 8px 0 0; }
+  .studio-app.studio-app.studio-personal-workspace .studio-crm-metrics .studio-metric > small { font-size: 11px; line-height: 1.5; margin-top: 5px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table .studio-icon-button { color: var(--studio-text); background: var(--appearance-subtle); border: 1px solid var(--studio-border); opacity: 1; border-radius: 10px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-record-table .studio-crm-delete { color: var(--studio-muted); }
+  .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-header { display: flex; flex-wrap: wrap; position: relative; gap: 12px; padding: 18px 16px; }
+  .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-identity { flex: 1 1 100%; padding-right: 44px; }
+  .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-actions { width: 100%; gap: 8px; }
+  .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-actions .studio-button { width: auto; min-height: 44px; gap: 8px; }
+  .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-actions .studio-icon-button { position: absolute; right: 10px; top: 12px; }
+  .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-identity h2 { font-size: 23px; }
+
+  .studio-app.studio-app.studio-personal-workspace .studio-page-heading { align-items: stretch; }
+  .studio-app.studio-app.studio-personal-workspace .studio-page-heading > div:first-child { width: 100%; }
+  .studio-app.studio-app.studio-personal-workspace .studio-page-heading > .studio-button { align-self: flex-start; }
+  .studio-app.studio-app.studio-personal-workspace :is(.ops-title-button,.ops-assignment-button,.studio-crm-project-title,.studio-crm-project-crew button,.reference-text-button.workspace-wide,.workspace-view-tabs button,.wa-context-bar a,.wa-setup summary) { min-height: 44px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.ops-title-button,.studio-crm-project-title) { display: flex; align-items: center; text-align: left; font-size: 16px; line-height: 1.45; }
+  .studio-app.studio-app.studio-personal-workspace .ops-assignment-button { display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; border-radius: 10px; background: var(--appearance-subtle); font-size: 13px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-crm-view-toggle button { min-width: 44px; min-height: 44px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-crm-project-crew button { font-size: 13px; padding-inline: 8px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-crm-project-links { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .studio-app.studio-app.studio-personal-workspace .settings-search button { width: 44px; height: 44px; }
+  .studio-app.studio-app.studio-personal-workspace .wa-setup summary { display: flex; align-items: center; font-size: 13px; }
+  .studio-app.studio-app.studio-personal-workspace .ops-metrics .studio-metric { padding: 14px; }
+  .studio-app.studio-app.studio-personal-workspace .ops-metrics .studio-metric-value { margin-block: 7px; }
+
+  /* Reading a dashboard should not require zooming into desktop-size labels. */
+  .studio-app.studio-app.studio-personal-workspace .ov-page-toolbar { flex-wrap: wrap; align-items: center; gap: 14px; }
+  .studio-app.studio-app.studio-personal-workspace .ov-page-toolbar h2 { font-size: 26px; }
+  .studio-app.studio-app.studio-personal-workspace .ov-page-toolbar .studio-button { font-size: 13px; padding: 10px 14px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-overview-reference :is(.ov-card-heading h2,.overview-feature-label) { font-size: 16px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-overview-reference :is(.ov-card-heading p,.ov-number-note,.ov-card-bottom,.ov-chart-legend,.ov-ring-caption,.ov-heatmap-foot p,.ov-chart-data,.ov-week-strip p,.studio-task-row p,.studio-metric-foot) { font-size: 12px; line-height: 1.6; }
+  .studio-app.studio-app.studio-personal-workspace .studio-overview-reference .ov-period { font-size: 10px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-overview-reference :is(.ov-chart-days button,.ov-chart-selector button,.ov-chart-data summary,.ov-card-bottom a,.ov-chart-legend a,.ov-week-strip > a) { min-height: 44px; font-size: 12px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-overview-reference .ov-card-heading { padding-right: 28px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-overview-reference .overview-hide-card { width: 44px; height: 44px; min-height: 44px; top: 1px; right: 1px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-overview-reference .studio-task-row h3 { font-size: 14px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-overview-reference .overview-stat .studio-metric-top { font-size: 12px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-overview-reference .overview-enquiry-person strong { font-size: 14px; }
+
+  /* Document editors: visible field names, touch-sized tools, intentional spacing. */
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools,.invoice-item-actions) { position: static; display: flex; grid-column: 1/-1; gap: 5px; justify-content: flex-end; opacity: 1; }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools,.invoice-item-actions) button { display: grid; place-items: center; min-width: 44px; min-height: 44px; border-radius: 10px; background: var(--appearance-subtle); }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-field-label { display: block; font-size: 12px; line-height: 1.5; color: var(--studio-muted); margin-bottom: 6px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item) { padding: 14px; gap: 14px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item) textarea { min-height: 116px; line-height: 1.6; }
+  .studio-app.studio-app.studio-personal-workspace .studio-document-settings-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 12px; min-height: 50px; padding: 14px 16px; border: 0; border-bottom: 1px solid var(--studio-border); background: var(--studio-surface); color: var(--studio-text); font: inherit; font-size: 14px; font-weight: 600; text-align: left; }
+  .studio-app.studio-app.studio-personal-workspace .studio-document-settings-toggle small { display: block; font-size: 12px; font-weight: 400; color: var(--studio-muted); margin-top: 4px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-settings,.invoice-editor-settings) { max-height: none; overflow: visible; padding: 0; }
+  .studio-app.studio-app.studio-personal-workspace .studio-document-settings-panel > h2 { display: none; }
+
+  .studio-app.studio-app.studio-personal-workspace .studio-document-settings-panel { padding: 20px 16px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-document-settings-toggle > span { flex: 1; }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item) { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-item-copy,.invoice-item-copy) { grid-column: 1/-1; }
+  .studio-app.studio-app.studio-personal-workspace .invoice-item-copy > input { padding-right: 14px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item) > strong { grid-column: 1/-1; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; font-size: 17px; border-top: 1px solid var(--studio-border); }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item) > strong .studio-phone-field-label { margin: 0; font-weight: 500; }
+  .studio-app.studio-app.studio-personal-workspace .studio-document-number-field > input { min-height: 48px; border-radius: 10px; font-size: 16px; }
+  .studio-app.studio-app.studio-personal-workspace .invoice-price-input { min-height: 48px; padding: 0 10px; border-radius: 10px; }
+  .studio-app.studio-app.studio-personal-workspace .invoice-price-input input { padding: 0; min-height: 46px; border: 0; background: transparent; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-action-label { display: inline; font-size: 13px; font-weight: 550; }
+  .studio-app.studio-app.studio-personal-workspace button:has(> .studio-phone-action-label) { width: auto; min-height: 44px; padding: 10px 12px; display: inline-flex; align-items: center; gap: 7px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-detail-table td:last-child { grid-column: auto; display: block; padding: 0; border: 0; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-detail-table td:last-child::before { display: block; }
+  .studio-app.studio-app.studio-personal-workspace .studio-phone-detail-table td[colspan] { grid-column: 1/-1; }
+  .studio-app.studio-app.studio-personal-workspace :is(.invoice-toolbar-actions,.qw-header-actions) .studio-phone-menu-action { display: flex; }
+  .studio-app.studio-app.studio-personal-workspace :is(.invoice-toolbar-actions,.qw-header-actions) > .studio-desktop-toolbar-action { display: none; }
+  .studio-app.studio-app.studio-personal-workspace :is(.invoice-toolbar-actions,.qw-header-actions) { gap: 8px; flex-wrap: wrap; }
+  .studio-app.studio-app.studio-personal-workspace :is(.invoice-toolbar-actions,.qw-header-actions) > :is(button,.invoice-menu,.qw-menu) { flex: 1 1 auto; min-height: 44px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.invoice-toolbar-actions,.qw-header-actions) > :is(.invoice-primary,.qw-primary) { flex: 1 1 100%; }
+
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-header-actions,.invoice-toolbar-actions) > button,
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-header-actions,.invoice-toolbar-actions) > :is(.qw-menu,.invoice-menu) > button { font-size: 14px; font-weight: 550; padding: 11px 14px; border-radius: 11px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools,.invoice-item-actions) button:not(:disabled) { color: var(--studio-text); }
+  .studio-app.studio-app.studio-personal-workspace .studio-document-number-field > :is(input,.invoice-price-input) { color: var(--studio-text); background: var(--studio-surface); border-color: var(--studio-border); }
+
+  .studio-app.studio-app.studio-personal-workspace .reference-icon-button { min-width: 44px; min-height: 44px; }
+  .studio-app.studio-app.studio-personal-workspace .studio-insight-text-button { min-height: 44px; padding-inline: 10px; }
+
+  /* Phone dialogs have a stable header, scrollable body and reachable actions. */
+  :is(.studio-app.studio-modal-overlay,.studio-crm-overlay,.studio-ops.studio-modal-overlay) { padding: 8px 8px max(8px,env(safe-area-inset-bottom)); align-items: center; }
+  :is(.studio-app,.studio-crm-overlay,.studio-ops) :is(.studio-modal,.studio-crm-dialog) { max-width: 100%; max-height: calc(var(--studio-visible-height,100dvh) - 16px - env(safe-area-inset-bottom)); border-radius: 20px; }
+  :is(.studio-app,.studio-crm-overlay,.studio-ops) :is(.studio-modal-header,.studio-crm-dialog-header) { flex-shrink: 0; padding: 18px 16px; gap: 12px; }
+  :is(.studio-app,.studio-crm-overlay,.studio-ops) :is(.studio-modal-header h2,.studio-crm-dialog-header h2) { font-size: 21px; line-height: 1.25; letter-spacing: -.03em; }
+  :is(.studio-app,.studio-crm-overlay,.studio-ops) :is(.ops-modal-body,.studio-crm-dialog-body) { padding: 18px 16px; overscroll-behavior-y: contain; }
+  :is(.studio-app,.studio-crm-overlay,.studio-ops) :is(.studio-modal-footer,.studio-crm-dialog-footer) { display: flex; flex-wrap: wrap; gap: 10px; padding: 12px 16px max(12px,env(safe-area-inset-bottom)); flex-shrink: 0; background: var(--studio-surface); }
+  :is(.studio-app,.studio-crm-overlay,.studio-ops) :is(.studio-modal-footer,.studio-crm-dialog-footer) > button { flex: 1; min-height: 46px; }
+  .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-actions .studio-button { font-size: 13px; padding: 10px 12px; }
+
+  .studio-ops.studio-modal-overlay .ops-modal { display: flex; flex-direction: column; overflow: hidden; }
+  .studio-ops.studio-modal-overlay .ops-modal-body { min-height: 0; flex: 1 1 auto; overflow-y: auto; }
+  .studio-ops.studio-modal-overlay .studio-modal .studio-modal-footer .studio-button { font-size: 14px; border-radius: 12px; }
+  .studio-ops.studio-modal-overlay .workspace-crew-picker label { min-height: 48px; padding-block: 8px; }
+  .studio-ops.studio-modal-overlay .workspace-crew-picker label span { font-size: 14px; }
+  .studio-ops.studio-modal-overlay .workspace-crew-picker small { font-size: 10px; }
+
+  /* Communications retain their existing list/detail behavior, with readable content. */
+  .studio-app.studio-app .support-conversation > header { flex-wrap: wrap; gap: 12px; padding: 16px; }
+  .studio-app.studio-app .support-conversation > header > div:not(.support-context-links) { flex: 1; min-width: 0; }
+  .studio-app.studio-app .support-context-links { flex-basis: 100%; margin: 0; gap: 8px; }
+  .studio-app.studio-app .support-context-links a { padding: 9px 12px; background: var(--appearance-subtle); border-radius: 10px; font-size: 12px; min-height: 44px; }
+  .studio-app.studio-app .support-message-list { min-height: 180px; height: clamp(200px,42dvh,360px); }
+  .studio-app.studio-app :is(.support-thread-list strong,.studio-email-subject,.studio-email-row-top strong) { font-size: 14px; }
+  .studio-app.studio-app :is(.support-thread-list small,.studio-email-snippet,.studio-email-account small) { font-size: 13px; line-height: 1.6; }
+  .studio-app.studio-app :is(.support-earlier,.wa-context-bar button,.wa-composer-heading button,.studio-email-controls nav button) { min-height: 44px; }
+  .studio-app.studio-app .studio-email-row-top { flex-wrap: wrap; gap: 4px; }
+  .studio-app.studio-app .studio-email-detail-heading { flex-wrap: wrap; gap: 12px; }
+  .studio-app.studio-app .studio-email-body { font-size: 15px; line-height: 1.75; }
+  .studio-app.studio-app .settings-save-bar { bottom: calc(var(--studio-mobile-bar) + 8px); border-radius: 16px; padding: 12px; gap: 10px; }
+  html[data-studio-keyboard] .studio-app.studio-app .settings-save-bar { bottom: 8px; }
+  .studio-app.studio-app .settings-disclosure-heading > button { min-height: 76px; padding: 16px; }
+  .studio-app.studio-app .settings-directory-link { min-height: 76px; }
+  .studio-app.studio-app .settings-group-content { padding: 4px 16px 20px; }
+}
+@media (prefers-reduced-motion: no-preference) and (max-width:768px) {
+  .studio-mobile-navigation > :is(a,button) { transition: background 160ms ease,color 160ms ease; }
+}
+@media (max-width:360px) {
+  .studio-app.studio-app.studio-personal-workspace .studio-main { padding-inline: 12px; }
+  .studio-app.studio-app .studio-mobile-navigation { padding-inline: 4px; }
+  .studio-app.studio-app .studio-mobile-navigation > :is(a,button) { font-size: 9px; }
+}

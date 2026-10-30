@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion as Motion, AnimatePresence } from "framer-motion";
-import { X, Upload, Link as LinkIcon, CheckCircle2, Loader2, Info } from "lucide-react";
+import { X, Upload, Link as LinkIcon, CheckCircle2, Info } from "lucide-react";
+import StudioButton from '../common/StudioButton';
+import StudioIcon from '../common/StudioIcon';
 import axios from "axios";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../../utils/apiConfig";
@@ -90,9 +92,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess, clientFo
               <h2 className="text-2xl font-serif text-[#2d2d2d]">Add Media</h2>
               <p className="text-[10px] uppercase tracking-widest text-[#8a8a8a] mt-1 font-bold">New Gallery Entry</p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-all">
-              <X size={20} className="text-[#8a8a8a]" />
-            </button>
+            <StudioButton type="button" variant="icon" label="Close media upload" icon={X} disabled={isUploading} onClick={onClose} />
           </div>
 
           <div className="p-8 space-y-8">
@@ -102,7 +102,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess, clientFo
                 onClick={() => setTab("file")}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${tab === "file" ? 'bg-white shadow-sm text-black' : 'text-[#8a8a8a] hover:text-[#2d2d2d]'}`}
               >
-                <Upload size={14} /> File Upload
+                <StudioIcon icon={Upload} size={18} /> File Upload
               </button>
               <button
                 onClick={() => setTab("link")}
@@ -171,12 +171,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess, clientFo
                 </div>
               )}
 
-              <button
-                type="submit" disabled={isUploading}
-                className="w-full py-5 rounded-2xl bg-linear-to-br from-[#cfe8d5] to-[#d9cdeb] text-[#2d2d2d] text-xs font-bold uppercase tracking-[0.3em] shadow-xl shadow-black/5 hover:-translate-y-1 active:scale-95 transition-all disabled:opacity-50"
-              >
-                {isUploading ? <Loader2 className="animate-spin mx-auto" /> : "Finalize & Save"}
-              </button>
+              <StudioButton type="submit" variant="primary" fullWidth icon={Upload} loadingIcon={Upload} loading={isUploading} loadingLabel={tab === "file" ? "Uploading media" : "Saving Drive collection"}>Save to gallery</StudioButton>
             </form>
           </div>
         </Motion.div>

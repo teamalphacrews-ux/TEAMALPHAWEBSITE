@@ -9,7 +9,6 @@ const invoiceValues = require("../utils/invoiceValues");
 const {
   shareInvoice,
   sendInvoiceEmail,
-  invoiceNumber,
 } = require("../services/invoiceDelivery");
 const { mailerReady } = require("../services/studioMailer");
 const router = express.Router();
@@ -60,14 +59,19 @@ router.get("/delivery-status", (req, res) =>
 router.post(
   "/",
   wrap(async (req, res) => {
-    const values = invoiceValues(req.body);
+    const studio = await StudioConfig.findOne({ key: "studio" }) || {};
+    const { invoiceWithDefaults, clientLinkOptions } = require('../utils/documentDefaults');
+    const values = invoiceWithDefaults(req.body, studio, invoiceValues);
+    if (values.discount > 0) await require('../services/studioSecurity').assertPermission(req.user.id, 'discounts');
+    if (values.documentStatus === 'Sent') await require('../services/studioSecurity').assertPermission(req.user.id, 'invoiceIssue');
     if (!values.issuer)
       values.issuer = invoiceIssuer(
-        (await StudioConfig.findOne({ key: "studio" })) || {},
+        studio,
       );
     await linked(values);
     const i = new Invoice(values);
-    if (!i.documentNumber) i.documentNumber = invoiceNumber(i);
+    i.clientLinkOptions = clientLinkOptions(studio);
+    if (!i.documentNumber) i.documentNumber = await require('../services/documentNumbering').nextDocumentNumber('invoice', studio, i.invoiceDate, Invoice);
     await i.save();
     res.status(201).json(i);
   }),
@@ -81,6 +85,8 @@ router.put(
   wrap(async (req, res) => {
     const i = await load(req.params.id);
     const values = invoiceValues(req.body, i.toObject());
+    if (values.discountType !== i.discountType || Number(values.discountValue || 0) !== Number(i.discountValue ?? i.discount ?? 0)) await require('../services/studioSecurity').assertPermission(req.user.id, 'discounts');
+    if (values.documentStatus === 'Sent' && i.documentStatus !== 'Sent') await require('../services/studioSecurity').assertPermission(req.user.id, 'invoiceIssue');
     if (!values.issuer)
       values.issuer = invoiceIssuer(
         (await StudioConfig.findOne({ key: "studio" })) || {},
@@ -97,6 +103,7 @@ router.put(
 );
 router.post(
   "/:id/approve",
+  require('../services/studioSecurity').requirePermission('invoiceIssue'),
   wrap(async (req, res) => {
     const invoice = await load(req.params.id);
     if (
@@ -136,6 +143,7 @@ router.post(
 );
 router.post(
   "/:id/share",
+  require('../services/studioSecurity').requirePermission('invoiceIssue'),
   wrap(async (req, res) => {
     const invoice = await load(req.params.id, true);
     const url = await shareInvoice(invoice);
@@ -162,13 +170,24 @@ router.delete(
     const i = await load(req.params.id);
     await Invoice.updateOne(
       { _id: i._id },
-      { $unset: { shareToken: 1, shareTokenHash: 1 } },
+      { $unset: { shareToken: 1, shareTokenHash: 1 }, $set: { linkRevokedAt: new Date() } },
     );
     res.json({ message: "Invoice link revoked" });
   }),
 );
+router.post('/:id/share/regenerate', require('../services/studioSecurity').requirePermission('invoiceIssue'), wrap(async (req, res) => {
+  const invoice = await load(req.params.id);
+  if (invoice.status === 'Cancelled' || invoice.documentStatus !== 'Sent') return res.status(409).json({ error: 'Issue this invoice before regenerating its link.' });
+  const token = require('../saas/publicTokens').createShareToken();
+  const options = require('../utils/documentDefaults').clientLinkOptions(await StudioConfig.findOne({ key: 'studio' }) || {});
+  if (!options.showPayments) return res.status(409).json({ error: 'Enable client payment visibility in studio settings before regenerating this invoice link.' });
+  const result = await Invoice.updateOne({ _id: invoice._id, documentStatus: 'Sent', status: { $ne: 'Cancelled' } }, { $set: { shareToken: token, shareTokenHash: require('../utils/quoteLifecycle').tokenHash(token), clientLinkOptions: options, sharedAt: new Date(), ...(options.linkExpiryDays ? { linkExpiresAt: new Date(Date.now() + options.linkExpiryDays * 86400000) } : {}) }, $unset: { linkRevokedAt: 1, ...(options.linkExpiryDays ? {} : { linkExpiresAt: 1 }) } });
+  if (!result.matchedCount) return res.status(409).json({ error: 'Invoice changed. Reload before regenerating its link.' });
+  res.json({ url: `${require('../services/studioMailer').frontendOrigin()}/invoice/${token}`, message: 'New invoice link created. The previous link is no longer valid.' });
+}));
 router.post(
   "/:id/send",
+  require('../services/studioSecurity').requirePermission('invoiceIssue'),
   wrap(async (req, res) => {
     const invoice = await load(req.params.id, true);
     if (
@@ -217,6 +236,7 @@ router.post(
         {
           $set: {
             scheduledDelivery: {
+              requestedBy: req.user.id,
               at,
               subject: String(req.body.subject || "").slice(0, 200),
               message: String(req.body.message || "").slice(0, 12000),
@@ -260,6 +280,7 @@ router.post(
   "/:id/duplicate",
   wrap(async (req, res) => {
     const i = await load(req.params.id);
+    if (i.discount > 0) await require('../services/studioSecurity').assertPermission(req.user.id, 'discounts');
     const values = invoiceValues({
       ...i.toObject(),
       documentNumber: "",
@@ -268,13 +289,16 @@ router.post(
       advancePaid: 0,
     });
     const copy = new Invoice(values);
-    copy.documentNumber = invoiceNumber(copy);
+    const studio = await StudioConfig.findOne({ key: 'studio' }) || {};
+    copy.clientLinkOptions = require('../utils/documentDefaults').clientLinkOptions(studio);
+    copy.documentNumber = await require('../services/documentNumbering').nextDocumentNumber('invoice', studio, copy.invoiceDate, Invoice);
     await copy.save();
     res.status(201).json(copy);
   }),
 );
 router.delete(
   "/:id",
+  require('../services/studioSecurity').requirePermission('deletion'),
   wrap(async (req, res) => {
     const i = await load(req.params.id);
     if (
@@ -287,7 +311,8 @@ router.delete(
         error:
           "Sent, paid or quotation-linked invoices can be cancelled, but not deleted.",
       });
-    await Invoice.findByIdAndDelete(i._id);
+    const deleted = await require('../services/studioRecovery').recoverableDelete({ Model: Invoice, filter: { _id: i._id, documentStatus: { $ne: 'Sent' }, status: { $ne: 'Paid' }, sourceQuotation: null, sharedAt: null }, actorId: req.user.id, label: `Invoice ${i.documentNumber || i._id}` });
+    if (!deleted) return res.status(409).json({ error: 'Invoice changed before deletion. Reload and try again.' });
     res.json({ message: "Invoice deleted" });
   }),
 );

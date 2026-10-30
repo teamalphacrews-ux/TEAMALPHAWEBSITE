@@ -1,3 +1,5 @@
+// Install before compiling operational models: a verified workspace selects its own database.
+require('./saas/tenantModels').installTenantModels();
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -30,32 +32,46 @@ const { parseProfileUpdate } = require('./utils/profileUpdate');
 const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
+if (/^[12]$/.test(process.env.SAAS_TRUST_PROXY_HOPS || '')) app.set('trust proxy', Number(process.env.SAAS_TRUST_PROXY_HOPS));
 const readiness = createRuntimeReadiness({
     connect: () => mongoose.connect(process.env.MONGO_URI, { family: 4 }),
     getConnectionState: () => mongoose.connection.readyState,
     models: ['Lead', 'Quotation', 'Invoice', 'StudioContact', 'StudioProject',
-        'ContactDocument', 'ProjectMessage', 'QuoteDelivery'].map(name => require(`./models/${name}`))
+        'ContactDocument', 'ProjectMessage', 'QuoteDelivery', 'GmailConnection', 'GmailOAuthNonce',
+        'AdminSession', 'StudioBackup', 'RecoveryRecord', 'StudioProfileImage', 'DocumentCounter', 'Task', 'Notification', 'StudioOperationLease',
+        'WhatsAppConnection', 'WhatsAppConversation', 'WhatsAppMessage', 'WhatsAppReceipt', 'WabbMessageAttempt', 'StudioPushDevice', 'FinanceReceipt'].map(name => require(`./models/${name}`)).concat(Object.values(require('./saas/models')))
 });
 app.use(compression()); // Compress all responses
 const server = require('http').createServer(app);
 const io = require('socket.io')(server, {
     cors: { origin: "*", methods: ["GET", "POST", "PATCH"] }
 });
+const workspaceRealtime = require('./saas/realtime').createWorkspaceRealtime(io);
+const scopedIO = workspaceRealtime.scoped;
 
 // Tracks online users for WhatsApp-style ticks
 const onlineUsers = new Map();
 app.set('onlineUsers', onlineUsers);
 
 // CRITICAL: Attach io instance so routes can access it for real-time broadcasts
-app.set('io', io);
+app.set('io', scopedIO);
 
-app.use(express.json());
+app.use(express.json({
+    verify: (req, _res, buffer) => {
+        // Meta signs the exact bytes. Keep them only for the WhatsApp webhook.
+        const pathname = req.originalUrl.split('?')[0].replace(/\/$/, '');
+        if (req.method === 'POST' && ['/api/integrations/whatsapp/webhook', '/api/saas/billing/webhook'].includes(pathname))
+            req.rawBody = Buffer.from(buffer);
+    }
+}));
 const allowedOrigins = [
     "https://team-alpha-d64k.onrender.com",
+    "https://team-alpha-studio.onrender.com",
+    "https://teamalpha.photography",
     process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, "") : null
 ].filter(Boolean);
 
-app.use(cors({
+const studioCors = cors({
     origin: (origin, callback) => {
         if (!origin) return callback(null, true);
 
@@ -75,16 +91,27 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "x-auth-token", "Authorization", "x-sheet-id", "x-sheet-name"],
     credentials: true
-}));
+});
+app.use((req, res, next) => {
+    // Apple's authorization response is a top-level form POST, not a CORS API call.
+    // Only this exact callback bypasses CORS; the one-use state and verified token
+    // are still mandatory, and browser proof is required before issuing a session.
+    if (req.method === 'POST' && req.path === '/api/saas/oauth/apple/callback') return next();
+    return studioCors(req, res, next);
+});
 
 // Health remains reachable while the database/indexes initialize; other APIs fail closed.
 app.get('/api/health', readiness.health);
 app.use('/api', readiness.requireReady);
+app.use('/api', require('./saas/access').createWorkspaceMiddleware({ onWorkspace: workspaceRealtime.ensureWorkspace }));
+app.use('/api', require('./saas/publicTokens').createPublicWorkspaceMiddleware({ Workspace: require('./saas/models').Workspace }));
+// The personal website retains shared support modules without publishing SaaS APIs.
+if (process.env.SAAS_ENABLED === 'true') app.use('/api/saas', require('./saas/routes'));
 
 // --- Socket.IO Middleware ---
 // Attach socket instance to req so routes can emit events
 app.use((req, res, next) => {
-    req.io = io;
+    req.io = scopedIO;
     next();
 });
 
@@ -97,7 +124,7 @@ registerStudioSockets(io, {
     onlineUsers
 });
 
-app.set('io', io);
+app.set('io', scopedIO);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     maxAge: '7d', // Cache for 7 days
@@ -108,7 +135,16 @@ readiness.initialize(() => {
     console.log("Database connection and index initialization complete.");
     initCronJobs();
     require('./services/quoteWorkflow').startQuoteWorker();
-    require('node-cron').schedule('* * * * *',()=>require('./services/invoiceDelivery').runInvoiceDeliveryJobs().catch(()=>console.error('Invoice delivery worker failed.')));
+    const { forEachWorkspace } = require('./saas/workers');
+    require('node-cron').schedule('* * * * *',()=>forEachWorkspace(() => require('./services/invoiceDelivery').runInvoiceDeliveryJobs()).catch(()=>console.error('Invoice delivery worker failed.')));
+    const settingsJobs = () => {
+        forEachWorkspace(workspace => workspace ? require('./saas/service').expireInvitations(workspace._id) : Promise.resolve()).catch(() => console.error('Studio invitation cleanup failed.'));
+        forEachWorkspace(() => require('./services/studioRecovery').runBackupJobs()).catch(() => console.error('Studio backup job failed.'));
+        forEachWorkspace(() => require('./services/studioAutomation').runStudioAutomation()).catch(() => console.error('Studio notification job failed.'));
+    };
+    settingsJobs();
+    const settingsTimer = setInterval(settingsJobs, 60000);
+    settingsTimer.unref();
 
     // --- Google Calendar Polling ---
     const { pollGoogleCalendar } = require('./services/googleCalendarService');
@@ -131,6 +167,7 @@ readiness.initialize(() => {
 
 const authRouter = express.Router();
 authRouter.post('/register', async (req, res) => {
+    if (process.env.SAAS_ENABLED === 'true') return res.status(409).json({ msg: 'Create a studio at /signup or use your team invitation.' });
     try {
         const { firstName, lastName, email, password } = req.body;
         let user = await User.findOne({ email });
@@ -152,7 +189,7 @@ authRouter.post('/register', async (req, res) => {
 });
 
 const { createLoginHandler } = require('./utils/adminBootstrap');
-authRouter.post('/login', createLoginHandler({ User }));
+authRouter.post('/login', require('./saas/routes').authLimit, require('./saas/routes').legacyLogin, createLoginHandler({ User }));
 
 authRouter.get('/me', auth, async (req, res) => {
     try {
@@ -221,9 +258,18 @@ authRouter.post('/google/webhook', async (req, res) => {
 authRouter.get('/google/callback', googleOAuth.callback);
 
 app.use('/api/auth', authRouter);
+app.use('/api/integrations/gmail', require('./routes/gmailRoutes'));
+app.use('/api/integrations/whatsapp', require('./routes/whatsappRoutes'));
+app.use('/api/studio/security', require('./routes/studioSecurityRoutes'));
+app.use('/api/studio', require('./routes/studioPreferencesRoutes'));
+app.use('/api/studio', require('./routes/studioProfileRoutes'));
+app.use('/api/studio', require('./routes/studioCommunicationRoutes'));
 app.use('/api/quotes', require('./routes/publicQuoteRoutes'));
 app.use('/api/studio', require('./routes/documentCoverRoutes'));
 app.use('/api/studio', require('./routes/quoteWorkflowRoutes'));
+app.use('/api/studio/search', require('./routes/workspaceSearchRoutes'));
+app.use('/api/studio/devices', require('./routes/studioDeviceRoutes'));
+app.use('/api/studio', require('./routes/receiptRoutes'));
 app.use('/api/studio', require('./routes/studioRoutes'));
 app.use('/api/public-invoices', require('./routes/publicInvoiceRoutes'));
 app.use('/api/webhooks', require('./routes/webhookRoutes'));

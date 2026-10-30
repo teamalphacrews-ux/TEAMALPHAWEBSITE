@@ -1,0 +1,374 @@
+/* Studio OS product site: isolated from the photography website and admin theme. */
+.sos-product{--sos-ink:#20221f;--sos-muted:#747871;--sos-line:#e2e5de;--sos-lime:#d9fa76;--sos-paper:#f7f8f4;background:var(--sos-paper);color:var(--sos-ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.6;overflow:clip;font-synthesis:none}
+.sos-product *{box-sizing:border-box}.sos-product :is(h1,h2,h3,h4,p){margin:0}.sos-product :is(h1,h2,h3,h4){font-family:inherit;font-style:normal;font-weight:500;color:inherit}.sos-product :is(a,button,input){font:inherit}.sos-product a{color:inherit;text-decoration:none}.sos-product button{cursor:pointer}.sos-product button:disabled{cursor:default}.sos-product svg{flex-shrink:0}.sos-product :is(a,button,summary):focus-visible{outline:3px solid #749427;outline-offset:5px}.sos-product ::selection{background:#d9fa76;color:#20221f}.sos-product :is(section,div)[id]{scroll-margin-top:105px}.sos-container{width:min(1240px,calc(100% - 96px));margin-inline:auto}.sos-skip{position:fixed;top:10px;left:14px;z-index:10000;background:#20221f;color:white!important;padding:12px 20px;transform:translateY(-150%);border-radius:12px}.sos-skip:focus{transform:none}
+.sos-header{position:sticky;top:0;z-index:60;background:#f7f8f4ee;backdrop-filter:blur(20px);border-bottom:1px solid #e2e5de99}.sos-header-inner{display:flex;align-items:center;justify-content:space-between;gap:30px;height:86px}.sos-brand{display:inline-flex;gap:10px;align-items:center;flex-shrink:0}.sos-brand>span{width:37px;height:37px;border-radius:12px;display:grid;place-items:center;background:#272a25;color:#e5f6bd;box-shadow:inset 0 1px 0 #ffffff30}.sos-brand>strong{font-weight:650;font-size:26px;line-height:1;letter-spacing:-.065em}.sos-brand>strong>span{font-weight:450;color:#83877e;margin-left:2px}.sos-desktop-nav{display:flex;align-items:center;gap:29px;font-size:12px;font-weight:500}.sos-desktop-nav a{position:relative;padding-block:12px;color:#666b61;transition:color .2s}.sos-desktop-nav a:hover{color:#20221f}.sos-desktop-nav a:after{position:absolute;content:"";height:1px;background:currentColor;left:0;right:100%;bottom:7px;transition:right .2s}.sos-desktop-nav a:hover:after{right:0}.sos-header-actions{display:flex;align-items:center;gap:24px}.sos-signin{font-size:12px!important;font-weight:500!important}.sos-button{display:inline-flex;align-items:center;justify-content:center;gap:24px;min-height:54px;padding:15px 25px;border:1px solid transparent;border-radius:999px;font-size:13px!important;font-weight:500!important;line-height:1.5;transition:transform .25s,background .25s,box-shadow .25s}.sos-button:hover{transform:translateY(-2px)}.sos-button.dark{background:#242720;color:white;box-shadow:0 5px 12px #252d1410}.sos-button.dark:hover{background:#3c4531;box-shadow:0 7px 18px #252d1425}.sos-button.outline{border-color:#d9ded1;background:#ffffff40;color:#33382d}.sos-button.outline:hover{background:#fff}.sos-button.small{min-height:42px;padding:11px 18px;font-size:11px!important;gap:16px}.sos-menu-button{display:none;width:42px;height:42px;border:1px solid #d9ded1;border-radius:50%;background:transparent;color:#20221f}.sos-mobile-nav{display:none}
+.sos-hero{position:relative;isolation:isolate;padding:69px 0 32px;text-align:center}.sos-preview-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;font-size:10px;color:#5c6550;line-height:1.6;border:1px solid #dce6cc;border-radius:999px;background:#f2f6e9}.sos-preview-pill>i{width:5px;height:5px;background:#799542;border-radius:50%;box-shadow:0 0 0 3px #79954212}.sos-preview-pill>span{font-size:7px;letter-spacing:.1em;background:#e2ebd0;border-radius:99px;padding:3px 7px;margin-left:5px;color:#4d5c39}.sos-hero h1{font-size:clamp(60px,7.3vw,104px);letter-spacing:-.075em;line-height:1.01;font-weight:520;margin:27px auto 23px;max-width:900px}.sos-hero h1>span{color:#8a9780}.sos-hero-description{font-size:16px;line-height:1.8;color:#767d6e;letter-spacing:-.015em}.sos-hero-actions{display:flex;align-items:center;justify-content:center;gap:12px;margin:28px 0 15px}.sos-hero-note{font-size:10px;color:#8a9083}.sos-hero-glow{position:absolute;inset:32% -20% 0;z-index:-1;background:radial-gradient(ellipse at 30% 65%,#e8f7bcaa 0,transparent 43%),radial-gradient(ellipse at 80% 70%,#e5ded099 0,transparent 45%);filter:blur(10px);pointer-events:none}.sos-demo-caption{display:flex;align-items:center;justify-content:space-between;gap:20px;font-size:9px;color:#868d7c;margin-top:21px;text-align:left}.sos-demo-caption>span{display:flex;gap:8px;align-items:center}
+.sos-demo{--demo-bg:#f3f4f0;--demo-card:#fff;--demo-text:#262b22;--demo-muted:#87907f;--demo-line:#e7eae2;--demo-subtle:#edf0e7;position:relative;overflow:hidden;background:var(--demo-bg);color:var(--demo-text);text-align:left;border:1px solid #fff;border-radius:19px;box-shadow:0 24px 80px #354a1914,0 0 0 8px #ffffff88;margin:62px auto 0;transition:background .4s,color .4s,border-color .4s;max-width:1170px}.sos-demo.is-dark{--demo-bg:#1a1c1c;--demo-card:#242626;--demo-text:#eef0eb;--demo-muted:#a3aaa0;--demo-line:#333835;--demo-subtle:#30342e;border-color:#41453c;box-shadow:0 24px 80px #1a211a25,0 0 0 8px #ffffff70}.sos-demo-chrome{display:flex;align-items:center;justify-content:space-between;gap:20px;height:38px;padding:0 17px;border-bottom:1px solid var(--demo-line);background:var(--demo-card);color:var(--demo-muted);font-size:8px;transition:background .4s,border-color .4s}.sos-demo-chrome>span{display:flex;align-items:center;gap:7px}.sos-demo-chrome>small{font-size:8px}.sos-demo-dots{gap:5px!important}.sos-demo-dots>i{width:6px;height:6px;border-radius:50%;background:var(--demo-line)}.sos-demo-layout{display:grid;grid-template-columns:190px minmax(0,1fr)}.sos-demo-sidebar{background:var(--demo-card);border-right:1px solid var(--demo-line);padding:24px 13px 18px;display:flex;flex-direction:column;min-width:0;transition:background .4s,border-color .4s}.sos-demo-studio{display:flex;align-items:center;gap:10px;padding:0 11px 31px;font-size:12px;font-weight:550;line-height:1.5}.sos-demo-studio>svg{width:33px;height:33px;background:var(--demo-subtle);border-radius:10px;padding:7px}.sos-demo-studio small{display:block;font-size:8px;font-weight:400;color:var(--demo-muted)}.sos-demo-navigation{display:grid;gap:7px}.sos-demo-navigation button{display:flex;align-items:center;gap:10px;width:100%;min-height:39px;padding:10px 13px;border:1px solid transparent;border-radius:99px;background:transparent;font-size:10px;color:var(--demo-muted);text-align:left;transition:background .2s,color .2s}.sos-demo-navigation button[aria-selected=true]{background:var(--demo-subtle);border-color:var(--demo-line);color:var(--demo-text)}.sos-demo-navigation button:hover{background:var(--demo-subtle)}.sos-demo-navigation button>i{margin-left:auto;background:#b8df50;width:6px;height:6px;border-radius:50%;box-shadow:0 0 0 3px #b8df5020}.sos-demo-sidebar-note{padding:34px 12px 28px;color:var(--demo-muted);margin-top:auto}.sos-demo-sidebar-note>span{display:grid;width:30px;height:30px;place-items:center;background:var(--demo-subtle);border-radius:10px;margin-bottom:9px}.sos-demo-sidebar-note p{font-size:9px;line-height:1.8}.sos-demo-person{display:flex;align-items:center;gap:9px;padding:15px 7px 0;border-top:1px solid var(--demo-line);font-size:9px;font-weight:500}.sos-demo-person>i{display:grid;place-items:center;font-size:9px;font-style:normal;background:var(--demo-subtle);width:28px;height:28px;border-radius:50%}.sos-demo-person small{display:block;font-size:8px;color:var(--demo-muted);font-weight:400;margin-top:2px}.sos-demo-main{padding:0 23px 24px;min-width:0}.sos-demo-topline{min-height:59px;display:flex;justify-content:space-between;align-items:center;gap:15px;border-bottom:1px solid var(--demo-line);font-size:9px}.sos-demo-topline em{font-style:normal;color:var(--demo-muted);margin:0 8px}.sos-demo-topline>div{display:flex;align-items:center;gap:12px}.sos-demo-topline button{display:grid;place-items:center;width:31px;height:31px;border-radius:50%;border:1px solid var(--demo-line);color:var(--demo-text);background:var(--demo-card)}.sos-demo-search{display:flex;align-items:center;gap:8px;background:var(--demo-card);border:1px solid var(--demo-line);color:var(--demo-muted);border-radius:99px;padding:8px 25px 8px 11px;font-size:8px}.sos-demo-avatar{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:var(--demo-subtle);font-size:8px}.sos-demo-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:25px 0 20px}.sos-demo-heading small{font-size:7px;letter-spacing:.12em;color:var(--demo-muted)}.sos-demo-heading h3{font-size:22px;letter-spacing:-.055em;font-weight:550;line-height:1.3;margin-top:5px}.sos-demo-heading>span{display:flex;align-items:center;gap:6px;font-size:8px;border:1px solid var(--demo-line);border-radius:99px;background:var(--demo-card);padding:7px 10px;white-space:nowrap}.sos-demo-pulses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.sos-demo-pulses>article{position:relative;isolation:isolate;overflow:hidden;min-height:178px;border-radius:17px;padding:18px;color:#1c3d23;box-shadow:inset 0 1px 0 #ffffff80}.sos-demo-pulses article>div:first-child{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:9px;font-weight:500;position:relative;z-index:2}.sos-demo-pulses article>strong{display:block;font-size:40px;font-weight:550;letter-spacing:-.06em;line-height:1.2;margin:17px 0 3px;position:relative;z-index:2}.sos-demo-pulses article>p{font-size:8px;position:relative;z-index:2}.sos-demo-pulses .booking{background:linear-gradient(140deg,#eef4ba,#bfdc9b 70%,#95bf87)}.sos-demo-pulses .production{background:linear-gradient(135deg,#e6dbef,#c4c0e0 70%,#b4c7dd);color:#373452}.sos-demo-pulses .finance{background:linear-gradient(135deg,#fbddad,#f1c3a3 60%,#e9baa4);color:#644531}.sos-demo-bars{display:flex;align-items:flex-end;gap:4px;position:absolute;bottom:0;left:18px;right:18px;height:35px;opacity:.25;z-index:-1}.sos-demo-bars i{flex:1;border-radius:3px 3px 0 0;background:#2e824a;transform-origin:bottom;animation:sos-bars 6s ease-in-out infinite alternate}.sos-demo-bars i:nth-child(3n){animation-delay:-2s}.sos-demo-bars i:nth-child(3n+1){animation-delay:-4s}.sos-demo-orbits{position:absolute;right:-25px;bottom:-62px;width:160px;height:160px;z-index:-1;animation:sos-orbits 25s linear infinite}.sos-demo-orbits i{position:absolute;inset:0;border:1px solid #ffffff90;border-radius:50%;transform:rotate(-35deg) scaleX(.55);box-shadow:0 0 25px #ffffff30}.sos-demo-orbits i:nth-child(2){transform:rotate(25deg) scaleX(.55)}.sos-demo-orbits i:nth-child(3){transform:rotate(85deg) scaleX(.55)}.sos-demo-waves{position:absolute;inset:40% -50% -70%;z-index:-1}.sos-demo-waves i{position:absolute;inset:0;border-radius:40%;background:linear-gradient(90deg,#ed8d6520,#fff5c9a0,#ed8d6550);animation:sos-orbits 17s linear infinite}.sos-demo-waves i:nth-child(2){inset:10% 5% -10%;opacity:.5;animation-duration:24s;animation-direction:reverse}.sos-demo-bottom{display:grid;grid-template-columns:1.1fr 1fr;gap:13px;margin-top:16px;min-height:190px}.sos-demo-bottom>article{background:var(--demo-card);border:1px solid var(--demo-line);border-radius:16px;padding:17px;min-width:0;transition:background .4s,border-color .4s}.sos-demo-card-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.sos-demo-card-title h4{font-size:10px;font-weight:550;letter-spacing:-.02em}.sos-demo-card-title>svg{color:var(--demo-muted)}.sos-demo-event{display:flex;gap:10px;align-items:center;padding-top:12px}.sos-demo-event>span{display:flex;align-items:center;justify-content:center;flex-direction:column;width:32px;height:37px;flex-shrink:0;background:var(--demo-subtle);border-radius:8px;font-size:14px;font-weight:500;line-height:1.25}.sos-demo-event>span>small{font-size:6px;font-weight:500;letter-spacing:.03em}.sos-demo-event>div{min-width:0;flex:1}.sos-demo-event strong{font-size:9px;font-weight:500;display:block}.sos-demo-event>div>small{font-size:7px;color:var(--demo-muted)}.sos-demo-event em{font-size:7px;font-style:normal;white-space:nowrap;color:var(--demo-muted)}.sos-demo-task{display:flex;align-items:center;gap:9px;min-height:55px;border-bottom:1px solid var(--demo-line)}.sos-demo-task:last-child{border:0}.sos-demo-task>i{width:16px;height:16px;border:1px solid var(--demo-line);border-radius:5px;flex-shrink:0}.sos-demo-task>div{flex:1;min-width:0}.sos-demo-task strong{display:block;font-size:9px;font-weight:500}.sos-demo-task small{display:block;font-size:7px;color:var(--demo-muted);margin-top:3px}.sos-demo-task>span{font-size:7px;color:var(--demo-muted);padding:2px 5px;border-radius:5px;background:var(--demo-subtle)}.sos-demo-task>b{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:8px;font-weight:500;background:var(--demo-subtle)}.sos-demo-totals{margin:0}.sos-demo-totals>div{display:flex;justify-content:space-between;gap:10px;font-size:9px;padding:11px 0;border-bottom:1px solid var(--demo-line)}.sos-demo-totals>div:last-child{border:0}.sos-demo-totals dt{color:var(--demo-muted)}.sos-demo-totals dd{margin:0;font-weight:500}.sos-demo-progress{padding:13px 0}.sos-demo-progress>div{display:flex;align-items:center;justify-content:space-between;font-size:9px}.sos-demo-progress strong{font-weight:500}.sos-demo-progress small{font-size:8px;color:var(--demo-muted)}.sos-demo-progress>i{display:block;height:4px;border-radius:99px;background:var(--demo-subtle);margin-top:9px;overflow:hidden}.sos-demo-progress>i>span{display:block;height:100%;background:#9dba73;border-radius:99px}
+.sos-eyebrow{display:flex;align-items:center;gap:8px;font-size:9px;font-weight:550;letter-spacing:.13em;color:#818978;line-height:1.7}.sos-belief{padding-block:120px 95px}.sos-belief h2,.sos-section-heading h2,.sos-faq h2{font-size:clamp(35px,4.3vw,57px);letter-spacing:-.055em;line-height:1.1;font-weight:500;margin-top:22px}.sos-belief h2>span{color:#92998a}.sos-problem-lines{display:grid;margin-top:48px;border-top:1px solid var(--sos-line)}.sos-problem-lines>div{display:grid;grid-template-columns:50px 1fr 1fr;gap:25px;align-items:center;border-bottom:1px solid var(--sos-line);padding:25px 0}.sos-problem-number{color:#9da590;font-size:11px}.sos-problem-lines p{font-size:20px;letter-spacing:-.035em}.sos-problem-lines>div>span:last-child{font-size:12px;color:#8a9280;justify-self:end}.sos-section-heading{display:flex;justify-content:space-between;gap:40px;align-items:flex-end;margin-bottom:43px}.sos-section-heading>p{max-width:380px;font-size:13px;line-height:1.9;color:#848c7c;margin-bottom:4px}.sos-workflow-section{padding-block:35px 110px}.sos-workflow-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:17px}.sos-workflow-tabs>button{display:flex;align-items:center;gap:10px;border:1px solid var(--sos-line);border-radius:12px;background:#fff7;color:#6f7866;padding:18px 15px;min-height:66px;font-size:13px;transition:background .2s,border-color .2s,color .2s}.sos-workflow-tabs>button>span{font-size:9px;color:#8c9780}.sos-workflow-tabs>button>svg:last-child{margin-left:auto;opacity:.4}.sos-workflow-tabs>button[aria-selected=true]{background:#e4edce;color:#314121;border-color:#cbdab1}.sos-workflow-tabs>button:hover{border-color:#9daa8e}.sos-workflow-panel{display:grid;grid-template-columns:1fr 1.05fr;gap:60px;align-items:center;padding:47px;background:#eef1e7;border:1px solid #e5e9dc;border-radius:24px;min-height:383px}.sos-workflow-step{font-size:10px;font-variant-numeric:tabular-nums;letter-spacing:.1em;color:#8a9878}.sos-workflow-description h3{font-size:32px;line-height:1.18;letter-spacing:-.045em;margin:18px 0;max-width:375px}.sos-workflow-description>p{font-size:13px;color:#758267;line-height:1.85;max-width:400px}.sos-text-link{display:inline-flex;align-items:center;gap:22px;padding:12px 0 5px;margin-top:21px;border-bottom:1px solid #b9c4aa;font-size:12px!important;font-weight:500!important}.sos-text-link:hover svg{transform:translate(2px,-2px)}.sos-text-link svg{transition:transform .2s}.sos-workflow-visual{background:#fff;border:1px solid #fff;border-radius:18px;box-shadow:0 12px 35px #435e2910;padding:23px}.sos-workflow-visual-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:20px;border-bottom:1px solid #edf0e6}.sos-workflow-visual-heading>span:first-child{font-size:8px;letter-spacing:.08em;color:#687759;display:flex;gap:8px;align-items:center}.sos-sample{font-size:6px;letter-spacing:.08em;border:1px solid #dae0d0;border-radius:99px;padding:3px 6px;color:#849175;white-space:nowrap}.sos-workflow-row{display:flex;align-items:center;gap:12px;padding:18px 0;border-bottom:1px solid #edf0e6}.sos-workflow-row>span:first-child{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:#edf3e4;color:#7c9660}.sos-workflow-row>div{flex:1;min-width:0}.sos-workflow-row strong{display:block;font-size:12px;font-weight:500;line-height:1.5}.sos-workflow-row small{display:block;font-size:10px;color:#96a18b;margin-top:3px}.sos-workflow-index{font-size:9px;color:#a9b39f}.sos-workflow-thread{display:flex;gap:8px;align-items:center;margin-top:20px;color:#8e9d7f;font-size:9px}
+.sos-smart-section{background:#20241f;color:#fafcf7;padding-block:100px;position:relative;isolation:isolate;overflow:hidden}.sos-smart-section:before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 80% 80%,#798b4830,transparent 60%);z-index:-1}.sos-smart-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:90px;align-items:center}.sos-smart-copy .sos-eyebrow{color:#b3c3a0}.sos-smart-copy h2{font-size:clamp(42px,4.8vw,69px);line-height:1.02;letter-spacing:-.065em;margin:27px 0}.sos-smart-copy h2>span{color:#bbd78c}.sos-smart-copy>p{max-width:340px;font-size:14px;line-height:1.9;color:#a3afa0}.sos-smart-benefits{display:grid;gap:12px;margin-top:26px}.sos-smart-benefits>span{display:flex;align-items:center;gap:10px;font-size:11px;color:#c1ccba}.sos-smart-benefits svg{color:#a5c773}.sos-smart-copy .sos-text-link{color:#d5e5bd;border-color:#687858;font-size:11px!important;margin-top:28px}.sos-client-demo{min-width:0;border-radius:23px;background:#f8f9f5;border:1px solid #fff8;padding:25px;color:#293024;box-shadow:0 30px 60px #0003;transform:rotate(1deg)}.sos-client-demo>header{display:flex;align-items:center;justify-content:space-between;gap:10px}.sos-client-demo>header>div{display:flex;align-items:center;gap:9px;font-size:8px;letter-spacing:.09em;font-weight:550}.sos-client-mark{display:grid;place-items:center;width:33px;height:33px;background:#e6eddc;border-radius:10px;color:#62764d}.sos-client-demo>header small{display:block;letter-spacing:0;font-size:7px;font-weight:400;color:#99a08f;margin-top:3px}.sos-client-welcome{padding:32px 0 24px;text-align:center}.sos-client-welcome>span{font-size:6px;letter-spacing:.15em;color:#96a08a}.sos-client-welcome h3{font-size:26px;letter-spacing:-.05em;margin:7px 0 5px}.sos-client-welcome p{font-size:9px;color:#8b967e}.sos-client-stages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.sos-client-stages button{position:relative;isolation:isolate;overflow:hidden;min-width:0;min-height:101px;padding:13px 11px;border:1px solid transparent;border-radius:13px;background:#e6eccf;color:#4a5b3a;display:flex;align-items:flex-start;flex-direction:column;gap:7px;text-align:left;transition:transform .25s,box-shadow .25s}.sos-client-stages button>span{font-size:9px;font-weight:500}.sos-client-stages button>small{font-size:7px;opacity:.8}.sos-client-stages button[aria-selected=true]{border-color:#65744f;box-shadow:0 0 0 3px #72835615;transform:translateY(-3px)}.sos-client-stages button:hover{transform:translateY(-3px)}.sos-client-stages .invoice{background:#e3dfee;color:#62536d}.sos-client-stages .payments{background:#f2dfc6;color:#7a6544}.sos-client-stages .production{background:#d5e6e7;color:#486b6b}.sos-client-stages button:after{content:"";position:absolute;z-index:-1;width:90px;height:90px;right:-50px;bottom:-50px;border-radius:40%;border:1px solid #ffffff9c;box-shadow:0 0 0 15px #ffffff20,0 0 0 30px #ffffff10;animation:sos-orbits 18s linear infinite}.sos-client-stages .invoice:after{border-radius:0;animation:sos-bars 7s ease-in-out infinite alternate}.sos-client-stages .payments:after{background:#ffffff30;border-radius:44%;right:-22px;bottom:-63px;animation-duration:8s}.sos-client-stages .production:after{border-radius:50%;animation:sos-smart-pulse 6s ease-in-out infinite}.sos-client-panel{margin-top:17px;padding:21px;background:#fff;border:1px solid #e7eadd;border-radius:15px}.sos-client-amount{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:16px}.sos-client-amount>span:first-child{font-size:9px;color:#939d86}.sos-client-amount strong{display:block;font-size:29px;line-height:1.3;letter-spacing:-.06em;color:#333e29;margin-top:5px;font-weight:500}.sos-client-status{display:flex;align-items:center;gap:4px;font-size:7px;color:#789457;background:#eef5e6;border:1px solid #e5eddc;padding:5px 7px;border-radius:99px}.sos-client-rows>div{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:9px;color:#788669;border-top:1px solid #edf0e6;padding:12px 0}.sos-client-rows strong{font-size:8px;color:#637e4b;font-weight:500}.sos-client-panel-note{padding:14px 15px;border-radius:10px;background:#f4f7ee;margin-top:6px}.sos-client-panel-note h4{font-size:11px;font-weight:550;letter-spacing:-.02em}.sos-client-panel-note p{font-size:9px;color:#869775;line-height:1.8;margin-top:5px}.sos-client-demo>footer{display:flex;align-items:center;gap:5px;margin-top:16px;color:#89967d;font-size:7px}.sos-client-support{margin-left:auto;display:flex;align-items:center;gap:5px;padding:7px 9px;border-radius:99px;background:#e7efdb;color:#647e48}
+.sos-toolkit{padding-block:105px 100px}.sos-toolkit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:27px}.sos-toolkit-grid>article{padding:8px 24px 7px 0;border-right:1px solid var(--sos-line);display:flex;flex-direction:column}.sos-toolkit-grid>article:last-child{border:0;padding-right:0}.sos-feature-icon{width:49px;height:49px;border-radius:16px;background:#eaf0df;display:grid;place-items:center;color:#7d9267;margin-bottom:25px;border:1px solid #dce5cf;box-shadow:inset 0 1px 0 white}.sos-toolkit-grid h3{font-size:19px;letter-spacing:-.035em;line-height:1.35;max-width:195px}.sos-toolkit-grid p{font-size:12px;color:#87917b;line-height:1.9;margin:15px 0 24px}.sos-feature-label{font-size:7px;color:#929e84;letter-spacing:.1em;margin-top:auto}
+.sos-integrations-section{background:#eef0e8;border-block:1px solid #e4e8db;padding-block:100px}.sos-integrations-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}.sos-integrations-grid>article{display:flex;align-items:flex-start;gap:17px;padding:30px 25px 30px 0;border-top:1px solid #dbe1d1}.sos-integrations-grid>article:nth-child(3n+2),.sos-integrations-grid>article:nth-child(3n){padding-left:25px}.sos-integration-icon{display:grid;place-items:center;width:45px;height:45px;flex-shrink:0;background:#fafcf7;border:1px solid #e2e8d8;border-radius:13px;color:#64774f;box-shadow:0 3px 8px #2d3d1210}.sos-integrations-grid h3{font-size:16px;font-weight:500;letter-spacing:-.025em;line-height:1.4}.sos-integration-status{font-size:8px;line-height:1.5;display:inline-block;color:#6d7e5a;background:#e3ead8;padding:4px 7px;border-radius:5px;margin-top:8px}.sos-integrations-grid p{font-size:11px;line-height:1.9;color:#87967a;margin-top:12px}
+.sos-plans{padding-block:105px 80px}.sos-plan-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.sos-plan-cards>article{padding:30px;border:1px solid var(--sos-line);border-radius:21px;background:#fff8;display:flex;flex-direction:column}.sos-plan-cards>article.is-featured{background:#eef4e3;border-color:#cfdcba}.sos-plan-cards header{display:flex;align-items:center;justify-content:space-between;gap:10px}.sos-plan-cards header>span{font-size:22px;font-weight:500;letter-spacing:-.035em}.sos-plan-cards header>small{font-size:6px;letter-spacing:.08em;padding:5px 7px;background:#dae7c1;border-radius:99px;color:#5e7048}.sos-plan-cards article>p{font-size:10px;color:#8b967f;margin-top:8px}.sos-plan-seats{display:flex;gap:15px;align-items:center;margin:28px 0}.sos-plan-seats>strong{font-size:66px;line-height:1;font-weight:450;letter-spacing:-.065em}.sos-plan-seats>span{font-size:10px;line-height:1.6;color:#8b957f}.sos-plan-cards ul{list-style:none;margin:0;padding:24px 0;border-block:1px solid #dce3d1;display:grid;gap:12px;font-size:11px;color:#72805f}.sos-plan-cards li{display:flex;align-items:center;gap:8px}.sos-plan-cards li>svg{color:#8ca470}.sos-plan-pricing{display:grid;gap:4px;margin:23px 0}.sos-plan-pricing>span{font-size:13px;font-weight:500}.sos-plan-pricing>small{font-size:9px;color:#8d9881}.sos-plan-cards .sos-button{justify-content:space-between;min-height:45px;padding:12px 17px;font-size:11px!important;margin-top:auto}.sos-plans-note{display:flex;justify-content:center;align-items:center;gap:7px;font-size:10px;line-height:1.7;color:#8b977d;margin-top:24px}
+.sos-faq{padding-block:30px 100px;display:grid;grid-template-columns:.7fr 1.3fr;gap:100px}.sos-faq>div:first-child>p{font-size:13px;line-height:1.8;color:#939e87;margin-top:22px}.sos-faq-list{border-top:1px solid var(--sos-line)}.sos-faq-list details{border-bottom:1px solid var(--sos-line)}.sos-faq-list summary{display:flex;align-items:center;justify-content:space-between;gap:22px;list-style:none;cursor:pointer;padding:23px 0;font-size:13px;font-weight:500;letter-spacing:-.015em;line-height:1.7}.sos-faq-list summary::-webkit-details-marker{display:none}.sos-faq-list summary svg{color:#96a288;transition:transform .2s}.sos-faq-list details[open] summary svg{transform:rotate(45deg)}.sos-faq-list details>p{font-size:12px;line-height:1.9;color:#7f8d6f;padding:0 36px 24px 0}
+.sos-final-section{padding:90px 0 70px;background:#242a20;color:#f9fcf4;text-align:center;position:relative;isolation:isolate;overflow:hidden}.sos-final-section .sos-eyebrow{justify-content:center;color:#a4b48c}.sos-final-section h2{font-size:clamp(45px,5.6vw,78px);letter-spacing:-.065em;line-height:1.05;margin:26px 0}.sos-final-section h2>span{color:#b8d58a}.sos-final-section p{font-size:14px;line-height:1.8;color:#9dac8d}.sos-final-actions{display:flex;justify-content:center;align-items:center;gap:12px;margin:29px 0}.sos-button.light{background:#d5edaa;color:#2e3b21}.sos-button.light:hover{background:#e3f7c1}.sos-button.ghost{border-color:#58674b;color:#ccd7bf;background:#ffffff04}.sos-button.ghost:hover{background:#ffffff0e}.sos-social-signup{display:grid;justify-content:center;gap:12px;margin-top:39px}.sos-social-signup>span{font-size:9px;color:#a0b08e}.sos-social-signup>div{display:flex;gap:22px;justify-content:center}.sos-social-signup a{display:flex;gap:12px;align-items:center;font-size:10px;color:#dce7ce;border-bottom:1px solid #586a46;padding-bottom:5px}.sos-social-signup>small{font-size:8px;color:#93a47e;line-height:1.8}.sos-final-orbit{position:absolute;left:-25%;top:-20%;width:70%;aspect-ratio:1;z-index:-1;opacity:.45;animation:sos-orbits 70s linear infinite}.sos-final-orbit>i{position:absolute;inset:0;border:1px solid #a7c57430;border-radius:50%;transform:scaleX(.4) rotate(45deg);box-shadow:0 0 100px #97b35a05}.sos-final-orbit>i:nth-child(2){transform:rotate(60deg) scaleX(.4)}.sos-final-orbit>i:nth-child(3){transform:rotate(120deg) scaleX(.4)}
+.sos-footer{background:#f7f8f4;padding:50px 0 23px}.sos-footer-top{display:flex;justify-content:space-between;gap:40px;padding-bottom:40px}.sos-footer-top p{font-size:11px;color:#9aa58d;margin-top:13px}.sos-footer-top>div:last-child{display:flex;align-items:flex-start;gap:30px;padding-top:12px}.sos-footer-top>div:last-child>a{display:flex;align-items:center;gap:6px;font-size:11px;color:#7b886c}.sos-footer-bottom{display:flex;justify-content:space-between;gap:20px;border-top:1px solid var(--sos-line);padding-top:22px;font-size:9px;color:#96a28b}.sos-footer-bottom>a{display:flex;align-items:center;gap:6px}
+@keyframes sos-orbits{to{transform:rotate(360deg)}}@keyframes sos-bars{from{transform:scaleY(.65);opacity:.65}to{transform:scaleY(1);opacity:1}}@keyframes sos-smart-pulse{0%,100%{transform:scale(.7);opacity:.4}50%{transform:scale(1.1);opacity:1}}
+@media(min-width:1700px){.sos-container{width:min(1380px,calc(100% - 160px))}.sos-demo{max-width:1240px}.sos-demo-main{padding-inline:30px}.sos-demo-pulses>article{min-height:195px}.sos-hero h1{font-size:112px}}
+@media(max-width:1100px){.sos-container{width:calc(100% - 64px)}.sos-desktop-nav{gap:18px;font-size:11px}.sos-header-actions{gap:16px}.sos-demo-layout{grid-template-columns:160px minmax(0,1fr)}.sos-demo-sidebar{padding-inline:9px}.sos-demo-main{padding-inline:17px}.sos-demo-heading h3{font-size:19px}.sos-demo-pulses>article{padding:14px;min-height:166px}.sos-demo-pulses article>strong{font-size:34px}.sos-demo-pulses article>div:first-child{font-size:8px}.sos-demo-bottom{gap:10px}.sos-demo-bottom>article{padding:14px}.sos-demo-search{display:none}.sos-smart-grid{gap:45px;grid-template-columns:.75fr 1.25fr}.sos-client-demo{padding:20px}.sos-toolkit-grid{gap:20px}.sos-toolkit-grid>article{padding-right:17px}.sos-workflow-panel{gap:35px;padding:35px}.sos-workflow-description h3{font-size:29px}.sos-workflow-tabs>button{padding:15px 12px;gap:8px;font-size:12px}.sos-workflow-tabs>button>span{display:none}.sos-plan-cards>article{padding:25px}.sos-plan-cards header>small{font-size:5px}.sos-integrations-grid>article{gap:12px;padding-right:16px}.sos-integrations-grid>article:nth-child(3n+2),.sos-integrations-grid>article:nth-child(3n){padding-left:16px}.sos-integration-icon{width:37px;height:37px}.sos-integration-icon svg{width:19px}.sos-faq{gap:55px}}
+@media(max-width:850px){.sos-header-inner{height:75px}.sos-desktop-nav{display:none}.sos-menu-button{display:grid;place-items:center}.sos-mobile-nav{display:grid;padding:12px 32px 25px;border-top:1px solid var(--sos-line);background:#f7f8f4}.sos-mobile-nav a{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--sos-line);font-size:14px}.sos-hero{padding-top:50px}.sos-hero h1{font-size:clamp(54px,9vw,78px)}.sos-demo-sidebar{display:none}.sos-demo-layout{display:block}.sos-demo-main{padding:0 22px 22px}.sos-demo-heading{margin-top:20px}.sos-demo-pulses>article{min-height:170px}.sos-demo-pulses article>strong{font-size:38px}.sos-demo-pulses article>div:first-child{font-size:9px}.sos-demo-bottom{min-height:180px}.sos-demo-caption{font-size:8px}.sos-belief{padding-block:80px 60px}.sos-problem-lines>div{grid-template-columns:30px 1fr;gap:6px 16px;padding:20px 0}.sos-problem-lines>div>span:last-child{grid-column:2;justify-self:start;font-size:11px}.sos-problem-lines p{font-size:19px}.sos-section-heading{display:block;margin-bottom:31px}.sos-section-heading>p{margin-top:20px}.sos-workflow-section{padding-bottom:75px}.sos-workflow-panel{padding:28px;gap:28px}.sos-workflow-description h3{font-size:25px}.sos-workflow-description>p{font-size:12px}.sos-workflow-visual{padding:18px}.sos-workflow-visual-heading .sos-sample{display:none}.sos-workflow-tabs>button{font-size:11px;gap:6px;justify-content:center;min-height:58px;padding:12px 8px}.sos-workflow-tabs>button>svg:last-child{display:none}.sos-workflow-tabs>button>svg{width:16px}.sos-smart-section{padding-block:75px}.sos-smart-grid{grid-template-columns:1fr;gap:45px;max-width:640px}.sos-smart-copy h2 br:nth-child(2){display:none}.sos-smart-copy h2>span:before{content:" "}.sos-smart-copy h2{font-size:56px}.sos-smart-copy>p{max-width:500px}.sos-client-demo{max-width:560px;transform:none}.sos-client-stages button{min-height:105px}.sos-toolkit{padding-block:75px}.sos-toolkit-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:35px}.sos-toolkit-grid>article:nth-child(2){border:0}.sos-toolkit-grid h3{max-width:230px}.sos-toolkit-grid p{max-width:280px}.sos-integrations-section{padding-block:75px}.sos-integrations-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sos-integrations-grid>article:nth-child(n){padding:25px 20px 25px 0}.sos-integrations-grid>article:nth-child(even){padding-left:20px;padding-right:0}.sos-plans{padding-block:75px}.sos-plan-cards{gap:12px}.sos-plan-cards>article{padding:21px 18px}.sos-plan-cards header{display:block}.sos-plan-cards header>small{display:inline-block;font-size:6px;margin-top:6px}.sos-plan-cards article>p{min-height:32px;font-size:9px}.sos-plan-cards .sos-plan-seats{display:block;margin:23px 0}.sos-plan-seats>strong{font-size:56px}.sos-plan-seats>span{display:block;font-size:9px;margin-top:10px}.sos-plan-cards li{font-size:10px;align-items:flex-start;gap:5px}.sos-plan-cards li>svg{width:12px;margin-top:2px}.sos-plan-pricing>span{font-size:11px}.sos-plan-cards .sos-button{padding:10px 12px;font-size:10px!important;gap:8px}.sos-plans-note{font-size:9px;align-items:flex-start}.sos-faq{padding-bottom:75px;gap:35px;grid-template-columns:.7fr 1.3fr}.sos-faq h2{font-size:36px}.sos-faq-list summary{font-size:12px}.sos-final-section{padding-block:75px}.sos-footer-top>div:last-child{gap:20px;flex-wrap:wrap}.sos-footer-top{gap:35px}.sos-footer-bottom{font-size:8px}}
+@media(max-width:600px){.sos-container{width:calc(100% - 40px)}.sos-header-inner{height:70px;gap:12px}.sos-brand{gap:8px}.sos-brand>strong{font-size:24px}.sos-brand>span{width:33px;height:33px;border-radius:10px}.sos-header-actions{gap:10px}.sos-signin{display:none}.sos-header-actions>.sos-button{padding:10px 13px;min-height:38px;font-size:10px!important;gap:8px}.sos-menu-button{width:38px;height:38px}.sos-mobile-nav{padding-inline:20px}.sos-hero{padding-top:36px}.sos-preview-pill{font-size:8px;padding:6px 9px;gap:6px}.sos-preview-pill>span{font-size:5px;margin-left:1px;padding:3px 5px}.sos-hero h1{font-size:clamp(43px,12vw,68px);margin-top:26px;letter-spacing:-.07em;line-height:1.06}.sos-hero-description{font-size:13px;line-height:1.8;max-width:320px;margin:auto}.sos-desktop-break{display:none}.sos-hero-actions{gap:8px;margin:24px 0 13px}.sos-button{font-size:11px!important;min-height:48px;padding:12px 17px;gap:12px}.sos-hero-actions .sos-button>svg{width:13px}.sos-hero-note{font-size:8px;max-width:280px;margin:auto}.sos-demo{margin-top:40px;border-radius:15px;box-shadow:0 20px 50px #354a1910,0 0 0 5px #ffffff90}.sos-demo-chrome{height:31px;padding-inline:12px;gap:7px}.sos-demo-chrome>span:nth-child(2){font-size:7px}.sos-demo-chrome>small{font-size:6px}.sos-demo-dots>i{width:4px;height:4px}.sos-demo-main{padding:0 13px 15px}.sos-demo-topline{height:49px;min-height:49px;font-size:8px}.sos-demo-topline>div{gap:8px}.sos-demo-topline em{margin-inline:5px}.sos-demo-topline button{width:31px;height:31px}.sos-demo-heading{margin:19px 0 14px}.sos-demo-heading small{font-size:6px}.sos-demo-heading h3{font-size:19px;max-width:230px;line-height:1.25}.sos-demo-heading>span{display:none}.sos-demo-pulses{gap:7px}.sos-demo-pulses>article{padding:11px 9px;min-height:132px;border-radius:12px}.sos-demo-pulses article>div:first-child{font-size:7px;line-height:1.4;min-height:21px;align-items:flex-start;gap:3px}.sos-demo-pulses article>div:first-child svg{display:none}.sos-demo-pulses article>strong{font-size:30px;margin-top:10px}.sos-demo-pulses article>p{font-size:6px;line-height:1.4}.sos-demo-bars{left:9px;right:9px;height:25px;gap:3px}.sos-demo-orbits{width:120px;height:120px;bottom:-62px}.sos-demo-bottom{grid-template-columns:1fr;gap:10px;min-height:0;margin-top:11px}.sos-demo-bottom>article{padding:14px;border-radius:12px}.sos-demo-card-title h4{font-size:11px}.sos-demo-event{gap:10px}.sos-demo-event strong,.sos-demo-task strong{font-size:10px}.sos-demo-event>div>small,.sos-demo-task small{font-size:8px}.sos-demo-event em{font-size:8px}.sos-demo-task>span{font-size:8px}.sos-demo-totals>div{font-size:10px}.sos-demo-progress>div{font-size:11px}.sos-demo-progress small{font-size:9px}.sos-demo-caption{display:block;font-size:8px;margin-top:16px;line-height:1.8}.sos-demo-caption>span:first-child{align-items:flex-start}.sos-demo-caption>span:first-child svg{margin-top:3px}.sos-demo-caption>span:last-child{margin:6px 0 0 21px;font-size:7px;color:#a0a895}.sos-belief{padding-block:58px 48px}.sos-eyebrow{font-size:7px;letter-spacing:.1em}.sos-belief h2,.sos-section-heading h2,.sos-faq h2{font-size:34px;line-height:1.13;letter-spacing:-.055em;margin-top:18px}.sos-problem-lines{margin-top:30px}.sos-problem-lines>div{padding-block:19px;gap:7px 13px;grid-template-columns:23px 1fr}.sos-problem-lines p{font-size:16px;line-height:1.5}.sos-problem-lines>div>span:last-child{font-size:10px}.sos-workflow-section{padding-top:20px;padding-bottom:55px}.sos-section-heading>p{font-size:12px;line-height:1.8}.sos-workflow-tabs{gap:5px;margin-bottom:12px}.sos-workflow-tabs>button{flex-direction:column;font-size:9px;line-height:1.4;gap:7px;padding:12px 5px;border-radius:10px;min-height:67px}.sos-workflow-tabs>button>svg{width:17px;height:17px}.sos-workflow-panel{grid-template-columns:1fr;padding:24px;gap:29px;border-radius:18px}.sos-workflow-description h3{font-size:29px;max-width:280px}.sos-workflow-description>p{font-size:12px;line-height:1.9}.sos-text-link{font-size:11px!important}.sos-workflow-visual{padding:18px;border-radius:14px}.sos-workflow-visual-heading>span:first-child{font-size:8px}.sos-workflow-row{padding-block:16px}.sos-workflow-row strong{font-size:11px}.sos-workflow-row small{font-size:9px}.sos-smart-section{padding-block:57px}.sos-smart-grid{gap:35px}.sos-smart-copy h2{font-size:49px;margin-block:22px}.sos-smart-copy>p{font-size:13px;line-height:1.85;max-width:330px}.sos-smart-benefits{gap:10px}.sos-smart-benefits>span{font-size:10px}.sos-client-demo{padding:17px;border-radius:19px}.sos-client-welcome{padding-top:28px}.sos-client-welcome h3{font-size:25px}.sos-client-stages{gap:5px}.sos-client-stages button{min-height:94px;padding:10px 8px;border-radius:10px;gap:7px}.sos-client-stages button>span{font-size:8px}.sos-client-stages button>small{font-size:6px}.sos-client-stages button>svg{width:16px;height:16px}.sos-client-panel{padding:16px;margin-top:14px}.sos-client-amount strong{font-size:27px}.sos-client-amount>span:first-child{font-size:8px}.sos-client-rows>div{font-size:8px}.sos-client-rows strong{font-size:7px}.sos-client-panel-note{padding:12px}.sos-client-panel-note h4{font-size:10px}.sos-client-panel-note p{font-size:8px}.sos-client-demo>footer{font-size:6px}.sos-client-demo>footer>span:not(.sos-client-support){max-width:155px;line-height:1.7}.sos-client-support{font-size:6px;padding:6px}.sos-toolkit{padding-block:60px}.sos-toolkit-grid{gap:28px 20px}.sos-toolkit-grid>article:nth-child(n){padding:0;border:0}.sos-feature-icon{width:43px;height:43px;border-radius:13px;margin-bottom:18px}.sos-toolkit-grid h3{font-size:17px;line-height:1.4}.sos-toolkit-grid p{font-size:11px;line-height:1.85;margin:11px 0 18px}.sos-feature-label{font-size:6px;letter-spacing:.07em}.sos-integrations-section{padding-block:58px}.sos-integrations-grid{grid-template-columns:1fr}.sos-integrations-grid>article:nth-child(n){padding:22px 0;gap:17px}.sos-integration-icon{width:44px;height:44px}.sos-integrations-grid h3{font-size:16px}.sos-integration-status{font-size:8px;margin-top:7px}.sos-integrations-grid p{font-size:11px;line-height:1.8;margin-top:10px}.sos-plans{padding-block:60px 50px}.sos-plan-cards{grid-template-columns:1fr;gap:15px}.sos-plan-cards>article{padding:27px}.sos-plan-cards header{display:flex}.sos-plan-cards header>span{font-size:25px}.sos-plan-cards header>small{font-size:6px;margin:0}.sos-plan-cards article>p{font-size:11px;min-height:0;margin-top:7px}.sos-plan-cards .sos-plan-seats{display:flex;gap:18px;margin:25px 0}.sos-plan-seats>strong{font-size:65px}.sos-plan-seats>span{font-size:11px;margin:0}.sos-plan-cards ul{padding-block:21px;gap:11px}.sos-plan-cards li{font-size:12px}.sos-plan-cards li>svg{width:15px}.sos-plan-pricing>span{font-size:14px}.sos-plan-pricing>small{font-size:10px}.sos-plan-cards .sos-button{font-size:12px!important;padding:13px 18px}.sos-plans-note{font-size:9px;text-align:left;justify-content:flex-start;gap:8px;line-height:1.8}.sos-plans-note svg{margin-top:3px}.sos-faq{display:block;padding-top:20px;padding-bottom:60px}.sos-faq>div:first-child>p{font-size:12px;margin-top:18px}.sos-faq-list{margin-top:28px}.sos-faq-list summary{font-size:13px;padding-block:21px}.sos-faq-list details>p{font-size:12px;padding-right:20px}.sos-final-section{padding-block:65px 55px}.sos-final-section h2{font-size:45px;line-height:1.08;margin-block:23px}.sos-final-section p{font-size:12px}.sos-final-actions{gap:8px;flex-wrap:wrap}.sos-final-actions .sos-button{font-size:10px!important;padding:13px 17px;gap:12px}.sos-social-signup{margin-top:31px}.sos-social-signup>div{gap:20px}.sos-social-signup a{font-size:9px;gap:8px}.sos-social-signup>small{font-size:7px;max-width:280px;margin:auto}.sos-footer{padding-block:38px 22px}.sos-footer-top{display:block;padding-bottom:28px}.sos-footer-top p{font-size:10px;margin-top:11px}.sos-footer-top>div:last-child{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:26px;padding:0}.sos-footer-top>div:last-child>a{font-size:11px}.sos-footer-bottom{display:flex;flex-wrap:wrap;gap:10px 20px;font-size:8px;padding-top:20px}.sos-footer-bottom>span:first-child{flex-basis:100%}}
+@media(prefers-reduced-motion:reduce){.sos-product *, .sos-product *:before,.sos-product *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.sos-button:hover{transform:none}.sos-client-stages button[aria-selected=true]{transform:none}}
+
+
+/* Studio OS product presentation: black canvas, clear type and product-first previews. */
+.sos-product{--sos-ink:#f4f4f5;--sos-muted:#929297;--sos-line:#28282c;--sos-lime:#a8baff;--sos-paper:#000;background:#000;color:#f4f4f5}
+.sos-container{width:min(1440px,calc(100% - 80px))}
+.sos-product :is(a,button,summary):focus-visible{outline:3px solid #9eaeff;outline-offset:5px}
+.sos-product ::selection{background:#b6c4ff;color:#111}
+.sos-header{background:#000e;border-color:transparent;backdrop-filter:blur(20px)}
+.sos-header-inner{height:72px;gap:34px}
+.sos-brand{gap:8px}.sos-brand>span{width:25px;height:29px;border-radius:0;background:transparent;color:#fff;box-shadow:none}
+.sos-brand>span>svg{width:24px;height:24px}
+.sos-brand>strong{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:24px;font-weight:650;letter-spacing:-.065em}
+.sos-brand>strong>span{color:#fff;font-weight:650;margin-left:3px;font-style:normal}
+.sos-desktop-nav{font-family:inherit;text-transform:none;font-size:13px;letter-spacing:-.015em;gap:26px;margin-right:auto}
+.sos-desktop-nav a{color:#b0b0b6}.sos-desktop-nav a:hover{color:#fff}
+.sos-header-actions{gap:24px}.sos-signin{font-size:13px!important;color:#b5b5bb!important}
+.sos-button{font-family:inherit!important;text-transform:none;letter-spacing:-.01em;font-size:14px!important;font-weight:550!important;border-radius:8px;min-height:46px;padding:13px 19px;gap:14px;transition:background .2s,transform .2s,box-shadow .2s}
+.sos-button.dark,.sos-button.light{background:#f7f7f8;color:#111;border-color:#f7f7f8;box-shadow:0 3px 12px #ffffff0a}
+.sos-button.dark:hover,.sos-button.light:hover{background:#dcdce1;border-color:#dcdce1;box-shadow:none;transform:translateY(-1px)}
+.sos-header-actions>.sos-button{font-size:12px!important;min-height:37px;padding:9px 14px;gap:8px}
+.sos-header-actions>.sos-button>svg{width:13px}
+.sos-button.outline,.sos-button.ghost{background:#252527;border-color:#303033;color:#f5f5f6;outline:none}
+.sos-button.outline:hover,.sos-button.ghost:hover{background:#38383c;border-color:#414146}
+.sos-product .sos-button:focus-visible{outline:3px solid #9eaeff;outline-offset:5px}
+.sos-menu-button{background:#212123;border-color:#333338;color:#f5f5f6;border-radius:8px}
+.sos-mobile-nav{background:#0e0e10;border-color:#29292d}.sos-mobile-nav a{border-color:#29292d}
+.sos-hero{text-align:left;padding:76px 0 0;isolation:isolate}
+.sos-hero>.sos-container{display:flex;flex-direction:column}
+.sos-preview-pill{display:none}
+.sos-hero h1{order:1;font-family:inherit;font-size:clamp(43px,4.2vw,64px);font-weight:550;letter-spacing:-.055em;line-height:1.08;margin:0;max-width:1050px;color:#f8f8fa}
+.sos-hero h1>span{color:#f8f8fa}
+.sos-hero-bottom{order:2;display:block;margin-top:23px}
+.sos-hero-description{font-size:18px;color:#93939b;line-height:1.55;max-width:760px;letter-spacing:-.02em}
+.sos-hero-actions{justify-content:flex-start;margin:27px 0 0;gap:12px}
+.sos-hero-actions .sos-button{font-size:14px!important}
+.sos-hero-smart-link{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:12px;color:#a9a9b4!important}
+.sos-hero-smart-link:hover{color:#fff!important}
+.sos-hero-note{font-size:11px;color:#7f7f89;margin-top:14px;line-height:1.6}
+.sos-hero-glow{display:none}
+.sos-demo-section-label{display:none}
+.sos-demo{order:3;max-width:none;margin:36px 0 0;border-radius:18px;border-color:#3b3c4a;box-shadow:0 0 90px #304aff1f,0 -4px 45px #547aff15}
+.sos-demo.is-dark{--demo-bg:#14151c;--demo-card:#1b1c25;--demo-text:#eeeeff;--demo-muted:#9a9eb7;--demo-line:#2e3040;--demo-subtle:#272a3a;background:radial-gradient(ellipse at 90% 0,#343e873b,transparent 65%),#14151c;border-color:#343848;box-shadow:0 0 90px #304aff1f,0 -4px 45px #547aff15}
+.sos-demo-chrome{height:41px}
+.sos-demo-main{padding:0 30px 27px}
+.sos-demo-layout{grid-template-columns:200px minmax(0,1fr)}
+.sos-demo-pulses>article{border-radius:12px;min-height:190px}
+.sos-demo-pulses .booking{background:linear-gradient(145deg,#b8cdff,#91aaf3 60%,#7b8dce);color:#1e2c56}
+.sos-demo-pulses .production{background:linear-gradient(140deg,#ded4ff,#b4a4e4 70%,#8d8ac7);color:#342858}
+.sos-demo-pulses .finance{background:linear-gradient(145deg,#b6e4f5,#8bbdcf 65%,#89a6c3);color:#193b4c}
+.sos-demo-bars i{background:#4054b3}
+.sos-demo-waves i{background:linear-gradient(90deg,#406eaa20,#c9f4ff90,#849dce50)}
+.sos-demo-navigation button[aria-selected=true]>i{background:#90a6ff;box-shadow:0 0 0 3px #8da7ff1c}
+.sos-demo-progress>i>span{background:#a3afff}
+.sos-demo-bottom>article{border-radius:12px}
+.sos-demo-caption{order:4;color:#9696a1;font-size:11px;margin-top:19px}
+.sos-demo-caption>span:last-child{color:#777783;font-size:11px}
+.sos-capability-line{order:5;display:flex;justify-content:space-between;align-items:center;gap:22px;border-bottom:1px solid #242429;margin-top:52px;padding:20px 0 48px;color:#acacb7}
+.sos-capability-line>span{display:flex;gap:10px;align-items:center;font-family:inherit;font-size:18px;font-weight:500;letter-spacing:-.035em}
+.sos-capability-line svg{color:#8d8d9a;stroke-width:1.5}
+.sos-eyebrow{font-family:inherit;font-size:11px;letter-spacing:.07em;color:#7e7e8b;line-height:1.65}
+.sos-belief{padding-block:110px 90px}
+.sos-belief h2{font-family:inherit;font-size:clamp(40px,4.5vw,64px);line-height:1.08;font-weight:550;letter-spacing:-.055em;margin-top:24px}
+.sos-belief h2>span{color:#888892}
+.sos-problem-lines{margin-top:45px}
+.sos-problem-lines>div{padding:26px 0}
+.sos-problem-number{font-size:12px;color:#747482}
+.sos-problem-lines p{font-size:22px;color:#e8e8ed}
+.sos-problem-lines>div>span:last-child{font-size:14px;color:#91919e}
+.sos-section-heading h2,.sos-faq h2{font-family:inherit;font-size:clamp(37px,4vw,56px);line-height:1.09;font-weight:550;letter-spacing:-.055em;margin-top:21px}
+.sos-section-heading>p{font-size:15px;color:#90909c;line-height:1.75;max-width:390px}
+.sos-workflow-section{padding-block:20px 110px}
+.sos-workflow-tabs{gap:10px;margin-bottom:15px}
+.sos-workflow-tabs>button{border-radius:10px;background:#111114;border-color:#2d2d34;color:#9b9ba8;font-size:14px;padding:18px 17px}
+.sos-workflow-tabs>button[aria-selected=true]{background:#242432;color:#e1e3ff;border-color:#555572}
+.sos-workflow-tabs>button:hover{border-color:#66667a}
+.sos-workflow-tabs>button>span{font-size:10px;color:#858594}
+.sos-workflow-panel{background:linear-gradient(115deg,#121217,#181822);border-color:#30303b;border-radius:20px;gap:60px;padding:45px}
+.sos-workflow-step{font-size:11px;color:#8b8ba6}
+.sos-workflow-description h3{font-family:inherit;font-size:32px;line-height:1.15;font-weight:500;letter-spacing:-.04em;color:#ededf7}
+.sos-workflow-description>p{font-size:15px;color:#9696a7;line-height:1.8}
+.sos-text-link{font-size:13px!important;color:#c3c5e4;border-color:#5a5a76}
+.sos-workflow-visual{background:#202027;border-color:#35353f;border-radius:14px;box-shadow:0 20px 55px #0003}
+.sos-workflow-visual-heading{border-color:#383842}
+.sos-workflow-visual-heading>span:first-child{color:#aaaabd}
+.sos-sample{border-color:#555563;color:#a7a7b6}
+.sos-workflow-row{border-color:#363640}.sos-workflow-row>span:first-child{background:#323244;color:#b5b5e0}
+.sos-workflow-row strong{color:#dedeea}.sos-workflow-row small{color:#9494a6}.sos-workflow-index{color:#747487}
+.sos-workflow-thread{color:#a2a2ba}
+.sos-smart-section{background:#0d0d12;border-block:1px solid #25252d;padding-block:100px}
+.sos-smart-section:before{background:radial-gradient(ellipse at 85% 55%,#4346a526,transparent 62%)}
+.sos-smart-grid{grid-template-columns:.85fr 1.15fr;gap:75px}
+.sos-smart-copy .sos-eyebrow{color:#9393ad}
+.sos-smart-copy h2{font-family:inherit;font-size:clamp(42px,4.7vw,66px);font-weight:550;line-height:1.06;letter-spacing:-.05em;margin:27px 0}
+.sos-smart-copy h2>span{color:#a8abf1}
+.sos-smart-copy>p{font-size:15px;line-height:1.85;color:#9696a8;max-width:370px}
+.sos-smart-benefits>span{font-size:14px;color:#c0c0d2}.sos-smart-benefits svg{color:#acb0f0}
+.sos-smart-copy .sos-text-link{color:#c5c7fa;border-color:#686a91;font-size:13px!important}
+.sos-client-demo{background:#1b1b25;color:#e5e5f4;border-color:#414151;box-shadow:0 30px 80px #0004,0 0 60px #5556a51c;transform:none;border-radius:18px}
+.sos-client-mark{background:#363648;color:#b9bde4}.sos-client-demo>header small{color:#8a8a9f}.sos-client-welcome>span{color:#8f8fa9}
+.sos-client-welcome h3{font-family:inherit;font-size:30px;font-weight:500;letter-spacing:-.05em}.sos-client-welcome p{color:#8f8fa4}
+.sos-client-stages button[aria-selected=true]{border-color:#bcc4ff;box-shadow:0 0 0 3px #a8b4ff20}
+.sos-client-stages button.quote{background:#c7d2f2;color:#3e4c70}
+.sos-client-stages button.invoice{background:#d4c9ec;color:#56446e}
+.sos-client-stages button.payments{background:#bcdae5;color:#375b6b}
+.sos-client-stages button.production{background:#cbd2e9;color:#44516e}
+.sos-client-panel{background:#15151d;border-color:#353543}
+.sos-client-amount>span:first-child{color:#9292ac}.sos-client-amount strong{color:#e2e2f7}
+.sos-client-status{color:#b5b7db;background:#2f3044;border-color:#43435a}
+.sos-client-rows>div{color:#a5a5bb;border-color:#30303e}.sos-client-rows strong{color:#cbcee9}
+.sos-client-panel-note{background:#252533}.sos-client-panel-note h4{color:#dedff3}.sos-client-panel-note p{color:#a0a0bb}
+.sos-client-demo>footer{color:#9494b1}.sos-client-support{background:#37374d;color:#c7c8ee}
+.sos-toolkit{padding-block:110px}
+.sos-toolkit-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:30px}
+.sos-toolkit-grid>article:nth-child(n){border:1px solid #2c2c32;border-radius:18px;padding:0 30px 28px;display:grid;grid-template-columns:1fr auto;gap:0 20px;background:#121216;overflow:hidden}
+.sos-feature-art{height:310px;border-radius:0;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;grid-column:1/-1;margin:0 -30px 26px;background:#1a1a23;color:#dedeea}
+.sos-feature-art.art-0{background:radial-gradient(ellipse at 60% 130%,#3b476e,transparent 65%),#191b25}
+.sos-feature-art.art-1{background:radial-gradient(ellipse at 5% 100%,#4c4370,transparent 65%),#1c1a27}
+.sos-feature-art.art-2{background:radial-gradient(ellipse at 100% 20%,#3f5061,transparent 70%),#1a2029}
+.sos-feature-art.art-3{background:radial-gradient(ellipse at 60% -30%,#4b4a70,transparent 70%),#1c1c28}
+.sos-feature-icon{width:34px;height:34px;background:#24242e;color:#aaaabf;border:1px solid #363641;border-radius:10px;grid-column:2;grid-row:2;margin:0}
+.sos-feature-icon>svg{width:17px;height:17px}
+.sos-toolkit-grid h3{grid-column:1;grid-row:2;max-width:none;font-size:24px;color:#e2e2eb;letter-spacing:-.04em}
+.sos-toolkit-grid>article>p{grid-column:1/-1;max-width:470px;color:#9696a6;font-size:15px;margin:14px 0 22px;line-height:1.8}
+.sos-feature-label{grid-column:1/-1;font-family:inherit;color:#79798e;font-size:10px;letter-spacing:.06em}
+.sos-art-team{background:#171923;border:1px solid #464d6c;border-radius:14px;padding:22px;width:65%;max-width:330px;box-shadow:0 30px 50px #0004}
+.sos-art-team>div{display:flex;justify-content:space-between;color:#979fbb;font-size:8px;letter-spacing:.08em;padding-bottom:20px}
+.sos-art-team p{display:flex;align-items:center;gap:10px;padding:14px 0;border-top:1px solid #30364c;font-size:10px;margin:0;max-width:none;color:#d3dbf4}
+.sos-art-team p>i{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#303b59;font-size:8px;font-style:normal;color:#9eb2e0}
+.sos-art-team p>strong{flex:1;font-size:10px;font-weight:400}.sos-art-team p>small{font-size:6px;background:#30364c;padding:4px 6px;border-radius:6px;color:#9eaed0}
+.sos-art-overview{width:75%;max-width:360px;padding:25px;border:1px solid #52476b;border-radius:14px;background:#262333;box-shadow:0 30px 50px #0003}
+.sos-art-overview>span{font-size:7px;letter-spacing:.08em;color:#aea4cc}
+.sos-art-overview>div{display:flex;gap:9px;margin:18px 0}
+.sos-art-overview>div>i{display:block;flex:1;height:80px;border-radius:9px;background:linear-gradient(130deg,#9eb8f1,#6378b0)}
+.sos-art-overview>div>i:nth-child(2){background:linear-gradient(130deg,#b7a2d6,#736085)}
+.sos-art-overview>div>i:nth-child(3){background:linear-gradient(130deg,#a1cee4,#638ea4)}
+.sos-art-overview>p{display:flex;gap:6px;margin:0!important}
+.sos-art-overview>p>span{height:3px;flex:1;background:#62577b;border-radius:99px}
+.sos-art-overview>strong{display:flex;align-items:center;justify-content:center;gap:12px;margin:25px auto 0;width:100px;padding:8px 10px;border:1px solid #4e4467;border-radius:99px;color:#b8a8d7}
+.sos-art-overview>strong>b{width:6px;height:6px;border-radius:50%;background:#c7b7e9}
+.sos-art-document{background:#dce2e8;color:#3b4d62;border-radius:5px;box-shadow:0 30px 60px #0004;width:56%;padding:25px 25px 19px}
+.sos-art-document>div:first-child{display:flex;align-items:center;gap:8px;font-size:6px;letter-spacing:.1em;color:#7d8b9e}
+.sos-art-document h4{font-family:inherit;font-size:23px;line-height:1.2;letter-spacing:-.05em;margin-top:25px;color:#44556c}
+.sos-art-document>p{font-size:7px!important;color:#8b98a8!important;margin:8px 0 23px!important}
+.sos-art-doc-line{height:3px;background:#b6c2cf;margin:9px 0;opacity:.7}.sos-art-doc-line.short{width:65%}
+.sos-art-document>strong{display:flex;align-items:center;justify-content:space-between;font-size:7px;color:#8b9cad;font-weight:400;margin-top:25px;padding-top:15px;border-top:1px solid #b5c5d2}
+.sos-art-workspaces{width:67%;max-width:330px;display:grid;gap:10px}
+.sos-art-workspaces>span{width:47px;height:47px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;background:#39394e;color:#c2c2df;border:1px solid #616180}
+.sos-art-workspaces p{display:flex;align-items:center;gap:12px;background:#262638;border:1px solid #49496b;border-radius:11px;padding:17px;margin:0!important;max-width:none;font-size:11px!important;color:#cecee6!important;box-shadow:0 10px 20px #0002}
+.sos-art-workspaces p:nth-of-type(2){transform:translateX(10px);background:#303044}.sos-art-workspaces p:nth-of-type(3){transform:translateX(4px)}
+.sos-art-workspaces i{font:5px ui-monospace,SFMono-Regular,Consolas,monospace;margin-left:auto;color:#9393b8}
+.sos-integrations-section{background:#0e0e11;border-block:1px solid #242429;padding-block:100px}
+.sos-integrations-grid>article{border-color:#29292f}
+.sos-integration-icon{background:#202026;border-color:#35353e;color:#bcbcd0;box-shadow:none;border-radius:12px}
+.sos-integrations-grid h3{color:#dedee9}
+.sos-integration-status{background:#272731;color:#a9a9c0;font-size:11px;line-height:1.65;border-radius:5px}
+.sos-integrations-grid p{color:#9292a3;font-size:15px;line-height:1.8}
+.sos-plans{padding-block:110px 95px}
+.sos-plan-cards>article{background:#111115;border-color:#2f2f37;border-radius:16px}
+.sos-plan-cards>article.is-featured{background:#1d1d25;border-color:#555568}
+.sos-plan-cards header>span{font-family:inherit;font-size:27px;font-weight:500;letter-spacing:-.04em}
+.sos-plan-cards header>small{background:#343443;color:#c0c2e0;font-size:9px;letter-spacing:.04em}
+.sos-plan-cards article>p{font-size:13px;color:#9191a4}
+.sos-plan-seats>strong{font-family:inherit;font-size:73px;font-weight:500;color:#e7e7f2;letter-spacing:-.05em}
+.sos-plan-seats>span{color:#9696ad;font-size:13px}
+.sos-plan-cards ul{border-color:#32323e;color:#b3b3c7}
+.sos-plan-cards li{font-size:13px}.sos-plan-cards li>svg{color:#a4a7d5}
+.sos-plan-pricing>span{color:#cdcde0;font-size:15px}.sos-plan-pricing>small{color:#9292a9;font-size:11px}
+.sos-plan-cards .sos-button{font-size:13px!important;border-radius:8px}
+.sos-plan-cards .sos-button.outline{border-color:#434353;color:#c1c1d7;background:#292934}
+.sos-plans-note{color:#85859b;font-size:11px}
+.sos-faq{padding-block:10px 100px}
+.sos-faq>div:first-child>p{color:#9393a4;font-size:15px}
+.sos-faq-list summary{color:#d1d1df;font-size:15px;font-weight:400}
+.sos-faq-list summary svg{color:#9393ad}.sos-faq-list details>p{color:#9999ad;font-size:15px;line-height:1.8}
+.sos-final-section{background:radial-gradient(ellipse at 50% 150%,#25203c,transparent 70%),#111115;padding-block:100px;border-block:1px solid #292930;text-align:center}
+.sos-final-section .sos-eyebrow{justify-content:center;color:#9393ad}
+.sos-final-section h2{font-family:inherit;font-weight:550;font-size:clamp(44px,5vw,72px);line-height:1.08;letter-spacing:-.055em;margin-block:27px}
+.sos-final-section h2>span{color:#aeafc7}
+.sos-final-section p{color:#9999ad;font-size:15px}
+.sos-final-actions{justify-content:center}
+.sos-social-signup{justify-content:center;text-align:center}
+.sos-social-signup>span{color:#a4a4ba;font-size:12px}
+.sos-social-signup>div{justify-content:center}
+.sos-social-signup a{color:#d2d2e7;border-color:#55556d;font-size:13px}
+.sos-social-signup>small{color:#8c8ca3;font-size:11px;max-width:470px}
+.sos-final-orbit{display:none}
+.sos-footer{background:#000;padding-top:55px}
+.sos-footer-top p{color:#858592;font-size:12px}
+.sos-footer-top>div:last-child>a{color:#ababba;font-size:12px}
+.sos-footer-bottom{color:#858594;font-size:11px}
+@media(min-width:1700px){.sos-container{width:min(1440px,calc(100% - 120px))}.sos-hero h1{font-size:66px}.sos-feature-art{height:360px}}
+@media(max-width:1100px){
+.sos-container{width:calc(100% - 64px)}
+.sos-header-inner{gap:22px}.sos-desktop-nav{gap:18px;font-size:12px}.sos-header-actions{gap:18px}
+.sos-hero h1{font-size:54px}.sos-hero-description{font-size:17px}
+.sos-demo-layout{grid-template-columns:170px minmax(0,1fr)}
+.sos-demo-main{padding-inline:22px}
+.sos-demo-pulses>article{min-height:173px}
+.sos-smart-grid{gap:45px}
+.sos-feature-art{height:285px}
+.sos-toolkit-grid>article:nth-child(n){padding-inline:24px}
+.sos-feature-art{margin-inline:-24px}
+.sos-toolkit-grid h3{font-size:22px}
+.sos-toolkit-grid>article>p{font-size:14px}
+.sos-art-team{width:74%}
+.sos-art-overview{width:80%}
+.sos-art-document{width:65%}
+.sos-art-workspaces{width:74%}
+.sos-plan-cards li{font-size:12px}
+.sos-plan-cards header{display:block}
+.sos-plan-cards header>small{display:inline-block;margin-top:8px}
+}
+@media(max-width:1000px){
+.sos-desktop-nav{display:none}
+.sos-header-inner{justify-content:space-between}
+.sos-menu-button{display:grid;place-items:center}
+.sos-mobile-nav{display:grid;padding:12px 30px 25px;border-top:1px solid var(--sos-line);background:#0e0e10}
+.sos-mobile-nav a{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--sos-line);font-size:15px}
+}
+@media(max-width:850px){
+.sos-hero{padding-top:55px}.sos-hero h1{font-size:48px}
+.sos-hero-smart-link{display:none}
+.sos-demo-layout{display:block}
+.sos-demo-sidebar{display:block;padding:10px 15px;border-right:0;border-bottom:1px solid var(--demo-line)}
+.sos-demo-studio,.sos-demo-sidebar-note,.sos-demo-person{display:none}
+.sos-demo-navigation{display:flex;gap:6px}
+.sos-demo-navigation>button{width:auto;flex:1;justify-content:center;max-width:180px;min-height:37px;font-size:10px;padding:8px 12px;border-radius:8px}
+.sos-demo-navigation>button>i{display:none}
+.sos-demo-main{padding-inline:22px}
+.sos-capability-line{gap:24px;flex-wrap:wrap;justify-content:flex-start;margin-top:40px;padding-bottom:35px}
+.sos-capability-line>span{flex:1 0 25%;font-size:17px}
+.sos-belief{padding-block:80px 65px}.sos-belief h2{font-size:46px}
+.sos-problem-lines>div{grid-template-columns:30px 1fr;gap:8px 16px;padding:23px 0}
+.sos-problem-lines>div>span:last-child{grid-column:2;font-size:14px}
+.sos-workflow-section{padding-bottom:85px}
+.sos-workflow-tabs>button{font-size:13px;padding:16px 11px}
+.sos-workflow-panel{gap:30px;padding:30px}
+.sos-workflow-description h3{font-size:28px}
+.sos-workflow-description>p{font-size:14px}
+.sos-smart-section{padding-block:80px}
+.sos-smart-grid{grid-template-columns:1fr;max-width:640px;gap:40px}
+.sos-smart-copy h2{font-size:53px}.sos-smart-copy>p{max-width:500px}
+.sos-toolkit{padding-block:85px}.sos-toolkit-grid{gap:22px}
+.sos-feature-art{height:250px}
+.sos-art-team{width:80%;padding:17px}.sos-art-team p{gap:7px;padding:11px 0}
+.sos-art-team p>strong{font-size:8px}.sos-art-team p>small{font-size:5px}
+.sos-art-team p>i{width:24px;height:24px;font-size:6px}
+.sos-art-overview{width:82%;padding:18px}.sos-art-overview>div>i{height:60px}
+.sos-art-document{width:70%;padding:20px}.sos-art-document h4{font-size:20px}
+.sos-art-workspaces{width:80%}.sos-art-workspaces p{padding:13px;font-size:8px!important;gap:7px}
+.sos-art-workspaces i{font-size:4px}
+.sos-toolkit-grid h3{font-size:21px}
+.sos-feature-icon{width:29px;height:29px}
+.sos-integrations-section{padding-block:80px}
+.sos-integrations-grid p{font-size:14px}
+.sos-plans{padding-block:85px 70px}
+.sos-plan-cards article>p{min-height:42px;font-size:12px}
+.sos-plan-cards li{font-size:12px}
+.sos-plan-pricing>span{font-size:13px}
+.sos-plan-cards .sos-button{font-size:11px!important}
+.sos-faq{padding-bottom:85px}
+.sos-final-section{padding-block:85px}
+}
+@media(max-width:600px){
+.sos-container{width:calc(100% - 36px)}
+.sos-header-inner{height:64px;gap:10px}
+.sos-brand>strong{font-size:22px}.sos-brand>span{width:22px;height:25px}
+.sos-header-actions{gap:9px}
+.sos-header-actions>.sos-button{font-size:11px!important;min-height:37px;padding:8px 11px}
+.sos-menu-button{width:37px;height:37px}
+.sos-mobile-nav{padding-inline:18px}
+.sos-hero{padding-top:50px}
+.sos-hero h1{font-size:clamp(35px,9.5vw,49px);line-height:1.09;letter-spacing:-.055em}
+.sos-hero-bottom{margin-top:20px}
+.sos-hero-description{margin:0;max-width:360px;font-size:15px;line-height:1.65}
+.sos-hero-actions{flex-wrap:wrap;gap:10px;margin-top:24px}
+.sos-hero-actions .sos-button,.sos-final-actions .sos-button{font-size:12px!important;min-height:44px;padding:12px 15px}
+.sos-hero-note{font-size:11px;max-width:325px;margin:14px 0 0;line-height:1.7}
+.sos-demo{margin-top:28px;border-radius:12px}
+.sos-demo-sidebar{padding:9px 12px}.sos-demo-navigation>button{font-size:9px;min-height:35px;padding:8px}
+.sos-demo-navigation>button>svg{width:14px;height:14px}
+.sos-demo-main{padding-inline:13px;padding-bottom:15px}
+.sos-demo-chrome{height:32px}
+.sos-demo-heading{margin:18px 0 15px}.sos-demo-heading h3{font-size:19px}
+.sos-demo-pulses>article{min-height:132px;padding:11px 9px}
+.sos-demo-pulses article>strong{font-size:29px;margin-top:10px}
+.sos-demo-caption,.sos-demo-caption>span:last-child{font-size:10px}
+.sos-capability-line{margin-top:28px;padding-block:15px 30px;gap:22px 13px}
+.sos-capability-line>span{font-size:15px;gap:7px;flex:1 0 27%}
+.sos-capability-line svg{width:16px}
+.sos-eyebrow,.sos-feature-label{font-size:10px;line-height:1.7}
+.sos-belief{padding-block:65px 50px}.sos-belief h2{font-size:35px;line-height:1.13;margin-top:20px}
+.sos-problem-lines{margin-top:28px}
+.sos-problem-lines>div{grid-template-columns:20px 1fr;padding-block:20px;gap:7px 13px}
+.sos-problem-lines p{font-size:18px;line-height:1.5}
+.sos-problem-lines>div>span:last-child{font-size:13px}
+.sos-section-heading h2,.sos-faq h2{font-size:35px;line-height:1.13;margin-top:19px}
+.sos-section-heading>p{font-size:14px;line-height:1.8;margin-top:18px}
+.sos-workflow-section{padding-bottom:65px}
+.sos-workflow-tabs>button{font-size:11px;padding:14px 5px;gap:8px;min-height:70px}
+.sos-workflow-panel{grid-template-columns:1fr;padding:24px 20px;gap:28px}
+.sos-workflow-description h3{font-size:28px;margin-top:14px}
+.sos-workflow-description>p{font-size:14px;line-height:1.8}
+.sos-text-link,.sos-smart-copy .sos-text-link{font-size:13px!important}
+.sos-workflow-visual{padding:19px}
+.sos-smart-section{padding-block:65px}
+.sos-smart-copy h2{font-size:44px;margin-block:24px;line-height:1.08}
+.sos-smart-copy>p{font-size:14px;line-height:1.85}
+.sos-smart-benefits>span{font-size:13px}
+.sos-client-demo{padding:17px}
+.sos-client-welcome h3{font-size:27px}
+.sos-client-amount strong{font-size:27px}
+.sos-toolkit{padding-block:65px}
+.sos-toolkit-grid{grid-template-columns:1fr;gap:23px}
+.sos-toolkit-grid>article:nth-child(n){padding:0 23px 25px}
+.sos-feature-art{height:285px;margin:0 -23px 24px}
+.sos-toolkit-grid h3{font-size:23px}
+.sos-toolkit-grid>article>p{font-size:14px;margin-block:13px 20px;line-height:1.8}
+.sos-feature-icon{width:32px;height:32px}
+.sos-feature-label{font-size:10px}
+.sos-art-team{width:72%;padding:20px}
+.sos-art-team p{padding:12px 0}
+.sos-art-team p>i{width:27px;height:27px;font-size:7px}
+.sos-art-team p>strong{font-size:9px}.sos-art-team p>small{font-size:6px}
+.sos-art-overview{width:78%;padding:23px}.sos-art-overview>div>i{height:70px}
+.sos-art-document{width:63%;padding:23px}.sos-art-document h4{font-size:23px}
+.sos-art-workspaces{width:73%}.sos-art-workspaces p{padding:15px;font-size:10px!important}
+.sos-art-workspaces i{font-size:5px}
+.sos-integrations-section{padding-block:65px}
+.sos-integrations-grid h3{font-size:18px}
+.sos-integrations-grid p{font-size:14px;line-height:1.8}
+.sos-integration-status{font-size:11px}
+.sos-plans{padding-block:65px 55px}
+.sos-plan-cards header{display:flex;gap:15px;flex-wrap:wrap}
+.sos-plan-cards header>small{margin:0;font-size:9px}
+.sos-plan-cards article>p{font-size:14px;min-height:0}
+.sos-plan-seats>strong{font-size:73px}
+.sos-plan-seats>span,.sos-plan-cards li{font-size:13px}
+.sos-plan-pricing>span{font-size:15px}
+.sos-plan-pricing>small,.sos-plans-note{font-size:11px}
+.sos-plan-cards .sos-button{font-size:13px!important}
+.sos-faq{padding-bottom:65px}
+.sos-faq>div:first-child>p,.sos-faq-list summary,.sos-faq-list details>p{font-size:14px}
+.sos-faq-list details>p{line-height:1.8}
+.sos-final-section{padding-block:65px}
+.sos-final-section h2{font-size:42px;line-height:1.1;margin-block:24px}
+.sos-final-section p{font-size:14px}
+.sos-final-actions{justify-content:center}
+.sos-social-signup>span,.sos-social-signup>small{font-size:11px;max-width:310px}
+.sos-social-signup>div{flex-wrap:wrap;gap:15px 22px}
+.sos-social-signup a{font-size:12px}
+.sos-footer{padding-block:45px 22px}
+.sos-footer-top p,.sos-footer-top>div:last-child>a,.sos-footer-bottom{font-size:11px}
+}

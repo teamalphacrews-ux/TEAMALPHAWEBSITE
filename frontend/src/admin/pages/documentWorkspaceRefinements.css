@@ -1,0 +1,90 @@
+/* Editor chrome follows Studio OS. Authored client documents keep their design. */
+.qw-page,
+.invoice-editor {
+  --document-ui-text: var(--studio-text, #24262b);
+  --document-ui-muted: var(--studio-muted, #696d75);
+  --document-ui-surface: var(--studio-surface, #fff);
+  --document-ui-border: var(--studio-border, #e3e5e7);
+  --document-ui-subtle: var(--appearance-subtle, #f0f1f2);
+  font-family: var(--brand-sans, Inter, sans-serif);
+  color: var(--document-ui-text);
+}
+.qw-page { background: transparent; }
+.qw-page :is(.qw-list-header, .qw-wizard, .qw-settings, .qw-design, .qw-paper) :is(h1, h2, h3) {
+  color: var(--document-ui-text);
+  font-family: inherit;
+}
+.qw-list-header { gap: 16px; padding: 0 0 24px; flex-wrap: wrap; }
+.qw-list-header h1 { font-size: 29px; letter-spacing: -.05em; }
+.qw-list-header > input { min-height: 44px; border: 1px solid transparent; background: var(--document-ui-surface); color: var(--document-ui-text); border-radius: 999px; padding: 11px 17px; }
+.qw-list-header > input::placeholder { color: var(--document-ui-muted); }
+.qw-primary, .qw-page .qw-primary, .qw-button, .invoice-editor .invoice-primary { min-height: 44px; border-radius: 999px; font-size: 13px; gap: 8px; }
+.qw-primary:hover, .invoice-editor .invoice-primary:hover { filter: brightness(.91); background: #24262b; }
+.qw-text-button, .invoice-editor :is(.invoice-editor-toolbar, .invoice-editor-settings, .invoice-editor-content) a, .invoice-editor .invoice-text-action { color: var(--appearance-link, #4f5b45) !important; }
+.qw-tabs { gap: 6px; padding: 5px; border: 0; border-radius: 999px; background: var(--document-ui-subtle); width: fit-content; max-width: 100%; }
+.qw-tabs button { min-height: 38px; padding: 8px 16px; border: 0; border-radius: 999px; color: var(--document-ui-muted); }
+.qw-tabs button.active { color: var(--document-ui-text); background: var(--document-ui-surface); box-shadow: 0 2px 6px #00000005; }
+.qw-list-table { background: var(--document-ui-surface); border-radius: 24px; padding: 7px 17px; }
+.qw-list-table td, .qw-list-table th { border-color: var(--document-ui-border); }
+.qw-list-table td button { color: var(--document-ui-text); min-height: 40px; border-radius: 9px; }
+.qw-list-table td button:hover { text-decoration: underline; text-underline-offset: 4px; }
+.qw-list-table small, .qw-empty { color: var(--document-ui-muted); }
+.qw-doc-header, .invoice-editor-toolbar { gap: 14px; border-color: var(--document-ui-border); }
+.qw-doc-header > button, .qw-doc-header > div > button, .qw-header-actions button:not(.qw-primary), .qw-design header button, .invoice-editor-toolbar button:not(.invoice-primary) { color: var(--document-ui-text); border-radius: 999px; min-height: 40px; }
+.qw-header-actions { gap: 7px; flex-wrap: wrap; }
+.qw-header-actions > button:not(.qw-primary):hover, .qw-doc-header > button:hover, .invoice-toolbar-actions > button:not(.invoice-primary):hover { background: var(--document-ui-subtle); }
+.qw-menu > button, .invoice-menu > button { display: inline-flex; align-items: center; gap: 7px; }
+.qw-dropdown, .invoice-menu > .invoice-action-dropdown { border: 1px solid var(--document-ui-border); border-radius: 18px; padding: 7px; min-width: 225px; max-width: calc(100vw - 32px); max-height: min(70vh, 600px); overflow-y: auto; background: var(--document-ui-surface); box-shadow: 0 18px 50px #00000014; }
+.qw-dropdown button, .invoice-action-dropdown > button { border-radius: 11px !important; min-height: 40px; }
+.qw-dropdown button:hover, .invoice-action-dropdown > button:hover { background: var(--document-ui-subtle) !important; }
+.qw-paper { border-radius: 24px; }
+.qw-item, .invoice-edit-item { border-radius: 17px; margin-bottom: 16px; }
+.qw-item-copy, .invoice-item-copy { overflow: hidden; border-radius: 11px; }
+.qw-item > input, .qw-field :is(input, select, textarea), .invoice-field :is(input, select, textarea), .invoice-date-control select, .invoice-price-input, .invoice-edit-item > input { border-radius: 11px; min-height: 44px; }
+.qw-item-copy :is(input, textarea), .qw-item > input, .invoice-item-copy > :is(input, textarea), .invoice-price-input { color: var(--document-ui-text); background: var(--document-ui-surface); }
+.qw-item-tools, .invoice-item-actions { border-radius: 999px; overflow: hidden; background: var(--document-ui-surface); }
+.qw-item-tools button, .invoice-item-actions > button { min-height: 36px; min-width: 36px; }
+.qw-wizard .qw-template-choice { border-radius: 18px; color: var(--document-ui-text); background: var(--document-ui-subtle); }
+.qw-wizard .qw-template-choice:hover { box-shadow: inset 0 0 0 1px var(--document-ui-border); }
+.qw-detail-meta { border-color: var(--document-ui-border); color: var(--document-ui-muted); }
+.qw-detail-meta strong { color: var(--document-ui-text); }
+.qw-detail-meta a, .qw-design p a, .qw-share-options a { color: var(--appearance-link, #4f5b45); }
+.qw-design { border-left: 1px solid var(--document-ui-border); background: var(--document-ui-surface); border-radius: 22px 0 0 22px; }
+.qw-settings :is(p, .qw-toggle, .qw-check-list), .qw-design > p, .qw-wizard > p { color: var(--document-ui-muted); }
+.qw-toggle input:checked + span { background: #626a70; }
+.qw-page :is(input[type=checkbox], input[type=radio]) { accent-color: #626a70; }
+.invoice-editor { border-radius: 24px; overflow: clip; background: var(--document-ui-surface); }
+.invoice-editor-toolbar { padding: 20px 25px; }
+.invoice-toolbar-actions { flex-wrap: wrap; }
+.invoice-editor .invoice-primary { background: #24262b !important; color: #fff !important; }
+.invoice-editor-section { margin-bottom: 36px; }
+.invoice-editor-section > h2 { color: var(--document-ui-text); letter-spacing: -.03em; }
+.invoice-editor .invoice-status { background: var(--document-ui-subtle); color: var(--document-ui-muted); }
+.invoice-editor .invoice-item-actions { overflow: visible; padding: 0 4px; }
+.qw-page :focus-visible, .invoice-editor :focus-visible { outline: 2px solid var(--appearance-link, #59664e); outline-offset: 3px; }
+html[data-studio-appearance=dark] :is(.qw-page, .invoice-editor) { --document-ui-text: #f2f2f4; --document-ui-muted: #b0b0b5; --document-ui-surface: #202124; --document-ui-border: #3c3d41; --document-ui-subtle: #2c2d31; }
+html[data-studio-appearance=dark] .qw-page .qw-tabs { background: #2c2d31; }
+html[data-studio-appearance=dark] .qw-page .qw-tabs button.active { color: #f2f2f4; background: #3c3d41; }
+html[data-studio-appearance=dark] .qw-page :is(.qw-item-copy input, .qw-item-copy textarea, .qw-item > input),
+html[data-studio-appearance=dark] .invoice-editor :is(.invoice-item-copy > input, .invoice-item-copy > textarea, .invoice-price-input, .invoice-date-control select) { color: #f2f2f4; background: #18191c; border-color: #3c3d41; }
+@media (max-width: 700px) {
+  .qw-list-header h1 { width: 100%; }
+  .qw-list-header > input { flex: 1 1 100%; order: 1; font-size: 16px; }
+  .qw-list-header .qw-text-button { margin-right: auto; }
+  .qw-tabs { width: 100%; border-radius: 18px; }
+  .qw-tabs button { font-size: 12px; }
+  .qw-list-table { padding: 5px 8px; border-radius: 20px; }
+  .qw-paper { border-radius: 18px; }
+  .qw-field :is(input, select, textarea), .qw-item-copy :is(input, textarea), .qw-item > input, .invoice-field :is(input, select, textarea), .invoice-item-copy > :is(input, textarea), .invoice-price-input { font-size: 16px; }
+  .qw-dropdown, .invoice-menu > .invoice-action-dropdown { right: auto; left: 0; }
+  .qw-item-tools, .invoice-item-actions { position: static; opacity: 1; grid-column: 1 / -1; justify-self: end; margin-bottom: -5px; box-shadow: none; }
+  .qw-doc-header { min-height: 108px; }
+  .qw-design { top: 0; bottom: 0; z-index: 10; width: min(100%, 370px); max-width: none; border-radius: 22px 0 0 22px; }
+  .invoice-editor { border-radius: 0; }
+  .invoice-editor-toolbar { padding: 16px; }
+  .invoice-toolbar-actions { gap: 3px; width: 100%; justify-content: flex-start; }
+  .invoice-toolbar-actions button { min-height: 42px; }
+  .invoice-editor-content { padding: 0 17px; }
+}
+@media (hover: none) { .qw-item-tools, .invoice-item-actions { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .qw-page *, .invoice-editor * { scroll-behavior: auto; transition-duration: .01ms; } }

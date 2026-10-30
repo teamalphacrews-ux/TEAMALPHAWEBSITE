@@ -138,6 +138,7 @@ function quotation(body) {
   );
   return {
     ...quoteMetadata(body),
+    ...(body.issuer !== undefined ? { issuer: require('./invoiceBranding').issuerValues(body.issuer) } : {}),
     clientName: text(body.clientName, "client name", 120, true),
     email: email(body.email),
     lead: reference(body.lead),
@@ -274,6 +275,7 @@ function settings(body) {
   if (upiId && !/^[A-Za-z0-9._-]{2,}@[A-Za-z0-9.-]{2,}$/.test(upiId))
     bad("Use a valid UPI ID");
   return {
+    ...require('./studioSettings').parseAdvancedSettings(body),
     ...(body.coverImage !== undefined
       ? { coverImage: branding.coverImage }
       : {}),
@@ -344,6 +346,7 @@ function ledger(body) {
   return {
     type,
     amount: paise / 100,
+    ...(body.studioProjectId !== undefined ? {studioProjectId:reference(body.studioProjectId)} : {}),
     description: text(body.title, "description", 300, true),
     category: text(body.category, "category", 80, true),
     date: date(body.date),

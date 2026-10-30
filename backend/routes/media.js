@@ -108,7 +108,7 @@ router.get('/files/:clientId', auth, async (req, res) => {
  * @desc    Delete file from Drive and DB
  * @access  Private/Admin
  */
-router.delete('/:id', auth, requireAdmin, async (req, res) => {
+router.delete('/:id', auth, requireAdmin, require('../services/studioSecurity').requirePermission('deletion'), async (req, res) => {
     try {
         const media = await Media.findById(req.params.id);
         if (!media) {

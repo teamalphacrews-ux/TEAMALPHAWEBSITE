@@ -1,0 +1,92 @@
+/* Compact phone overview; saved card order, data and motion remain intact. */
+.overview-phone-refined .ov-page-context{display:none}
+.studio-app.studio-app .overview-phone-refined .ov-view-tools{display:flex;align-items:center;gap:8px;padding:0;border:0;border-radius:0;background:transparent}
+@media(max-width:768px){
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined{--ov-gap:12px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-page-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;margin-bottom:10px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-page-toolbar > div{min-width:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-page-eyebrow{display:none}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-page-toolbar h1{font-size:21px;line-height:1.25;font-weight:600;letter-spacing:-.04em;margin:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-page-context{display:block;margin:5px 0 0;font-size:11px;line-height:1.5;color:var(--studio-muted)}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-page-toolbar .studio-button{min-height:44px;padding:9px 11px;gap:5px;border-radius:12px;font-size:12px;white-space:nowrap}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-view-controls{gap:8px;margin:8px 0 16px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-view-controls > [role=group]{min-width:0;gap:0;padding:2px;border-radius:12px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-view-controls > [role=group] > button{min-height:44px;padding:8px 13px;font-size:12px;border-radius:9px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-view-tools{flex-shrink:0;gap:6px;padding:0;border:0;background:transparent}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-view-tools .studio-button{min-height:44px;padding:8px 10px;gap:6px;border-radius:11px;font-size:11px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-customize-button{width:44px;min-width:44px;padding:10px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-customize-button > span{display:none}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-reference-grid{gap:12px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-reference-slot > :first-child{height:auto}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-hide-card{display:none}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-welcome{min-height:0;height:auto;padding:18px;border-radius:18px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-welcome-copy{width:100%;max-width:100%}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-welcome-copy > span{font-size:11px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-inspiration-category{margin-top:10px;font-size:9px;letter-spacing:.08em}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-inspiration-story h2{font-size:22px!important;line-height:1.15;margin:7px 0 10px;max-width:24ch}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-inspiration-story p{min-height:0;margin-bottom:12px;font-size:12px;line-height:1.55}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-inspiration-actions{flex-wrap:nowrap;gap:8px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-inspiration-actions > a{min-width:0;min-height:44px;padding:9px 12px;gap:8px;font-size:11px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-inspiration-actions > a > svg{flex-shrink:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-inspiration-actions > button{flex:0 0 44px;width:44px;min-height:44px;padding:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-inspiration-actions > button > span{display:none}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-schedule{min-height:0;padding:16px;border-radius:18px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-top{padding-right:0;gap:8px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-top h2{margin:0;font-size:14px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-navigation{gap:4px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-navigation button{width:44px;height:44px;min-height:44px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-navigation .overview-day-today{width:auto;padding-inline:10px;font-size:10px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-zone{margin:4px 0 12px;font-size:10px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-scene{min-height:100px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-timeline{min-height:76px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-empty{min-height:100px;padding:8px 0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-footer{padding-top:7px;font-size:10px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-day-footer a{min-height:44px;font-size:10px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined :is(.ov-card,.overview-workspace-card){padding:16px;border-radius:18px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-card-heading{gap:8px;margin-bottom:12px;padding-right:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-card-heading h2{font-size:14px;line-height:1.35}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-card-heading p{font-size:10px;line-height:1.5}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-period{padding:4px 6px;font-size:9px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-number-row > strong{font-size:26px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-number-row small{font-size:11px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-area-chart{margin-inline:-16px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-area-chart > svg{height:100px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-rhythm-chart{height:105px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-chart-toolbar{gap:7px;flex-wrap:wrap}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-heatmap{margin-top:16px;gap:7px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-heatmap-foot{flex-wrap:wrap}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined :is(.ov-number-note,.ov-card-bottom,.ov-chart-legend,.ov-ring-caption,.ov-heatmap-foot p){font-size:10px;line-height:1.5}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-card-heading{gap:8px;margin-bottom:8px;padding-right:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-card-heading h3{font-size:14px;line-height:1.4}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-card-subtitle{font-size:11px;line-height:1.5}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-task-row{min-height:0;grid-template-columns:44px minmax(0,1fr);gap:0 8px;padding:10px 0;align-items:center}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-task-check{position:relative;display:grid;place-items:center;grid-row:1 / 3;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;margin:0 0 0 -7px;border:0;border-radius:50%;background:transparent;color:var(--studio-muted)}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-task-check::before{content:'';position:absolute;inset:10px;border:1px solid var(--studio-border);border-radius:50%;background:var(--studio-canvas)}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-task-check > svg{position:relative;z-index:1;width:12px;height:12px;opacity:.6;color:var(--studio-muted)}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-task-check:is(:hover,:focus-visible)::before{border-color:var(--studio-control-accent);background:var(--studio-control-tint)}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-task-row h3{font-size:13px;font-weight:550;line-height:1.45}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-task-row p{margin:2px 0 0;font-size:11px;line-height:1.45}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-task-due{grid-column:2;justify-self:start;margin-top:5px;padding:3px 7px;font-size:10px;line-height:1.3}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined :is(.ov-slot-openEnquiries,.ov-slot-bookedProjects,.ov-slot-upcomingEvents,.ov-slot-pendingTasks){grid-column:span 6}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-stat{padding:0;min-height:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-stat-content{padding:14px;min-height:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-stat .studio-metric-top{padding-right:0;font-size:11px;line-height:1.4}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-stat .studio-metric-top > span:first-child{padding-right:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-stat .studio-metric-value{margin:6px 0;font-size:26px;line-height:1.2}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-stat .studio-metric-foot{font-size:10px;line-height:1.45;min-height:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-feature-card.finance{min-height:0;padding:18px;border-radius:18px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-finance-profit{font-size:28px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-finance-amounts{gap:10px;margin-top:14px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-finance-amounts dd{font-size:18px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-empty{padding:20px 18px;text-align:left;margin-top:12px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-empty h2{font-size:17px;line-height:1.4;margin:10px 0 7px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-empty p{font-size:12px;line-height:1.6;margin-bottom:14px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-empty > div{justify-content:flex-start;gap:8px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .overview-empty .studio-button{min-height:44px;padding:9px 12px;font-size:12px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .studio-data-note{flex-wrap:wrap;align-items:center;gap:7px;margin-top:18px;padding-top:12px;font-size:10px;line-height:1.5}
+}
+@media(max-width:360px){
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-shoot-day-link{width:44px;min-width:44px;padding:10px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-shoot-day-link > span{display:none}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .overview-phone-refined .ov-page-toolbar h1{font-size:19px}
+}

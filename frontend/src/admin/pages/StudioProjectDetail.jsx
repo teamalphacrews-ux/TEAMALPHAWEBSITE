@@ -1,5 +1,6 @@
+import StudioSelect from '../components/common/StudioSelect';
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   CalendarDays,
@@ -14,7 +15,6 @@ import toast from "react-hot-toast";
 import {
   useWorkspaceData,
   workspaceRequest,
-  recordDate,
   recordError,
 } from "../components/operations/workspaceData";
 import {
@@ -30,13 +30,24 @@ import {
 import {
   ContactDocuments,
   ContactPaymentSummary,
+  ContactPayments,
   ContactSessions,
   ContactConversations,
 } from "../components/contacts/ContactRelatedTables";
 import "./referenceContacts.css";
-export default function StudioProjectDetail() {
-  const { id } = useParams(),
-    navigate = useNavigate();
+import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
+import {ProjectOverview,ProjectOperations} from '../components/projects/ProjectOperations';
+import {useOfflineDraft,OfflineDraftStatus} from '../../offline/OfflineDrafts';
+import {useStudioPreferences} from '../components/common/StudioPreferences';
+import {useStudioIdentity} from '../../utils/studioIdentity';
+import {formatWorkspaceDate} from '../../utils/workspaceLocale';
+export default function StudioProjectDetail(){const {id}=useParams();return <StudioProjectWorkspace key={id} id={id}/>;}
+function StudioProjectWorkspace({id}){
+ const navigate=useNavigate(),[sectionParams,setSectionParams]=useSearchParams();
+ const tab=['documents','payments','crew','delivery'].includes(sectionParams.get('tab'))?sectionParams.get('tab'):'overview';
+ const setTab=value=>setSectionParams(previous=>{const next=new URLSearchParams(previous);if(value==='overview')next.delete('tab');else next.set('tab',value);return next;},{replace:true});
+ const {preferences}=useStudioPreferences(),{identity}=useStudioIdentity();
+ const recordDate=value=>formatWorkspaceDate(value,preferences,identity?.timezone);
   const { data, loading, error, reload } = useWorkspaceData([
       "/api/studio-projects/" + id,
       "/api/contacts",
@@ -47,6 +58,7 @@ export default function StudioProjectDetail() {
     [note, setNote] = useState(""),
     [busy, setBusy] = useState(false),
     [noteError, setNoteError] = useState("");
+  const noteDraft=useOfflineDraft({kind:'project-note',recordId:id,value:{body:note},dirty:Boolean(note.trim()),onRestore:value=>setNote(value.body||'')});
   if (!detail?.project || String(detail.project._id) !== id)
     return (
       <div className="reference-workspace">
@@ -106,15 +118,19 @@ export default function StudioProjectDetail() {
   const addNote = async (event) => {
     event.preventDefault();
     if (!note.trim() || busy) return;
+    if(noteDraft.candidate){setNoteError('Restore or discard the local draft before submitting.');return;}
+    if(!navigator.onLine){const kept=await noteDraft.saveNow();if(kept)toast.success('Saved on this device. Reconnect and submit the note.');else setNoteError('The note could not be saved locally. Keep this page open.');return;}
     setBusy(true);
     setNoteError("");
     try {
       await workspaceRequest("post", `/api/studio-projects/${id}/notes`, {
         body: note,
       });
+      await noteDraft.clear().catch(()=>toast('The note was saved. Review local drafts before resubmitting.'));
       setNote("");
       reload();
     } catch (err) {
+      if(!err.response||err.response.status>=500)await noteDraft.markUncertain();
       setNoteError(recordError(err));
     } finally {
       setBusy(false);
@@ -147,7 +163,7 @@ export default function StudioProjectDetail() {
     },
   ];
   return (
-    <div className="reference-workspace">
+    <div className="reference-workspace project-hub">
       <div className="reference-heading">
         <Link
           to={`/admin/contacts/${contact._id}`}
@@ -157,7 +173,7 @@ export default function StudioProjectDetail() {
           <ArrowLeft size={18} />
         </Link>
         <h1>{project.name}</h1>
-        <select
+        <div className="project-hub-header-actions"><StudioSelect
           aria-label="Project status"
           className={`reference-status-select ${project.status.toLowerCase()}`}
           value={project.status}
@@ -167,11 +183,9 @@ export default function StudioProjectDetail() {
           {["Inquiry", "Booked", "Completed", "Archived"].map((status) => (
             <option key={status}>{status}</option>
           ))}
-        </select>
+        </StudioSelect>
         <div className="reference-heading-spacer" />
-        <details className="reference-more">
-          <summary>More</summary>
-          <div className="reference-dropdown">
+        <WorkspaceActionMenu label="More">
             <button onClick={() => setEditing(true)}>Edit project</button>
             <button
               onClick={() => {
@@ -185,18 +199,19 @@ export default function StudioProjectDetail() {
             >
               Archive project
             </button>
-          </div>
-        </details>
+        </WorkspaceActionMenu>
         <ContactCreateMenu
           contact={contact}
           projectId={id}
           onDocument={openDocument}
-        />
+        /></div>
       </div>
       <WorkspaceError error={error} retry={reload} />
-      <div className="reference-detail-grid project">
+      <nav className="project-hub-tabs" aria-label="Project sections">{[['overview','Overview'],['documents','Documents'],['payments','Payments'],['crew','Crew'],['delivery','Delivery']].map(([value,label])=><button type="button" key={value} aria-pressed={tab===value} onClick={()=>setTab(value)}>{label}</button>)}</nav>
+      <div className={'reference-detail-grid project'+(tab==='overview'?'':' project-hub-wide')}>
         <main>
-          <ReferenceSection title={hasDocuments ? "Documents" : "Get Started"}>
+          {tab==='overview'&&<ProjectOverview detail={detail} onTab={setTab}/>}
+          {tab==='documents'&&<ReferenceSection title={hasDocuments ? "Documents" : "Get Started"}>
             {hasDocuments && (
               <ContactDocuments
                 quotations={quotations}
@@ -253,13 +268,14 @@ export default function StudioProjectDetail() {
                 onDraft={openDocument}
               />
             )}
-          </ReferenceSection>
-          <ReferenceSection title="Payments">
-            <ContactPaymentSummary invoices={invoices} />
-          </ReferenceSection>
+          </ReferenceSection>}
+          {tab==='payments'&&<ReferenceSection title="Payments">
+            <ContactPaymentSummary invoices={invoices}/><ContactPayments invoices={invoices}/>
+          </ReferenceSection>}
+          {['crew','delivery'].includes(tab)&&<ProjectOperations key={id+tab} projectId={id} production={detail.production} mode={tab} onSaved={reload}/>}
 
         </main>
-        <aside>
+        {tab==='overview'&&<aside>
           <ReferenceSection title="Project Details">
             <button
               className="reference-info-edit reference-icon-button"
@@ -310,7 +326,7 @@ export default function StudioProjectDetail() {
             </dl>
           </ReferenceSection>
           <ReferenceSection title="Notes">
-            <form onSubmit={addNote}>
+            <form onSubmit={addNote}><OfflineDraftStatus draft={noteDraft}/>
               <textarea
                 className="reference-project-note"
                 aria-label="New project note"
@@ -336,7 +352,7 @@ export default function StudioProjectDetail() {
               ))}
             </div>
           </ReferenceSection>
-        </aside>
+        </aside>}
       </div>
       {editing && (
         <ProjectForm

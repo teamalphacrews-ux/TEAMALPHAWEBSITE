@@ -1,0 +1,116 @@
+/* Shared geometry across phones, tablets, laptops and wide displays. */
+.studio-app.studio-app.studio-personal-workspace {
+  --studio-content-width:1700px;
+  --studio-page-gutter:clamp(16px,2.4vw,36px);
+}
+.studio-app.studio-app.studio-personal-workspace .studio-main {
+  width:100%; min-width:0; max-width:var(--studio-content-width);
+  margin-inline:auto; padding:28px var(--studio-page-gutter) 40px;
+}
+.studio-app.studio-app.studio-personal-workspace.studio-focus-mode .studio-main {padding:0;max-width:none}
+.studio-app.studio-app.studio-personal-workspace .studio-topbar {
+  padding-inline:max(var(--studio-page-gutter),calc((100% - var(--studio-content-width))/2 + var(--studio-page-gutter)));
+}
+.studio-app.studio-app.studio-personal-workspace .studio-main > * {min-width:0}
+.studio-app.studio-app.studio-personal-workspace .overview-feature-grid {gap:20px;container:studio-feature-cards / inline-size}
+@container studio-feature-cards (max-width:819px) {
+  .overview-feature-grid:has(>:nth-child(3):last-child) > :last-child {grid-column:1/-1}
+}
+@media(min-width:701px) and (max-width:768px) {
+  .studio-app.studio-app.studio-personal-workspace .overview-feature-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.studio-app.studio-app.studio-personal-workspace :is(.studio-page-heading,.reference-heading,.ops-heading) {
+  gap:16px 24px; flex-wrap:wrap; align-items:center;
+}
+.studio-app.studio-app.studio-personal-workspace :is(.studio-page-heading,.reference-heading,.ops-heading) > div:first-child {min-width:0}
+.studio-app.studio-app.studio-personal-workspace :is(.studio-heading-actions,.ops-heading-actions) {
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px; max-width:100%;
+}
+.studio-app.studio-app.studio-personal-workspace :is(.studio-toolbar,.ops-toolbar) {gap:12px;flex-wrap:wrap;align-items:center}
+.studio-app.studio-app.studio-personal-workspace :is(.studio-search,.reference-search,.ops-search) {
+  display:flex;align-items:center;gap:9px;min-width:0;min-height:44px;padding:0 13px;
+}
+.studio-app.studio-app.studio-personal-workspace :is(.studio-search,.reference-search,.ops-search) > svg {flex-shrink:0}
+.studio-app.studio-app.studio-personal-workspace :is(.studio-search,.reference-search,.ops-search) input {
+  flex:1; width:100%; min-width:0; height:42px; min-height:0; margin:0; padding:0;
+  border:0; border-radius:inherit; background:transparent; box-shadow:none; color:var(--studio-text);
+}
+.studio-app.studio-app.studio-personal-workspace .workspace-select {min-height:44px}
+.studio-app.studio-app.studio-personal-workspace .workspace-metric-value.is-label {
+  font-size:clamp(19px,1.6vw,25px);line-height:1.3;letter-spacing:-.035em;overflow-wrap:anywhere;
+}
+.studio-app.studio-app.studio-personal-workspace .studio-metric {min-width:0}
+.studio-app.studio-app.studio-personal-workspace :is(.studio-metric-foot,.workspace-metric-label,.workspace-contact) {overflow-wrap:anywhere}
+.studio-app.studio-app.studio-personal-workspace .workspace-calendar-heading {
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;
+}
+.studio-app.studio-app.studio-personal-workspace .workspace-calendar-nav {display:flex;align-items:center;gap:14px;flex-wrap:wrap;min-width:0}
+.studio-app.studio-app.studio-personal-workspace .workspace-calendar-paging {display:flex;align-items:center;gap:8px;min-width:0}
+.studio-app.studio-app.studio-personal-workspace .workspace-calendar-paging h2 {min-width:0;margin:0;text-align:center;font-size:20px;line-height:1.35}
+.studio-app.studio-app.studio-personal-workspace .workspace-calendar-paging .studio-icon-button {width:40px;height:40px;flex:0 0 40px}
+.studio-app.studio-app.studio-personal-workspace .workspace-calendar-day.outside:not(.selected) {background:var(--studio-canvas)}
+.studio-app.studio-app.studio-personal-workspace .workspace-calendar .studio-toolbar > .studio-search {flex:1;max-width:440px}
+.studio-app.studio-app.studio-personal-workspace .workspace-calendar .studio-toolbar > select {width:auto;min-width:170px}
+.studio-app.studio-app.studio-personal-workspace .reference-details dd {min-width:0;overflow-wrap:anywhere}
+.workspace-calendar-day-count,.workspace-mobile-day-events {display:none}
+
+/* Tablet portrait gets the full canvas and the existing accessible drawer. */
+@media(max-width:1100px) {
+  .studio-app.studio-app.studio-personal-workspace .studio-workspace {margin-left:0;width:100%;min-width:0}
+  .studio-app.studio-app.studio-personal-workspace .studio-sidebar-container {width:min(300px,calc(100vw - 32px));transform:translateX(-100%);z-index:80}
+  .studio-app.studio-app.studio-personal-workspace .studio-sidebar-container.is-open {transform:translateX(0)}
+  .studio-app.studio-app.studio-personal-workspace .studio-sidebar {height:100dvh;padding-bottom:env(safe-area-inset-bottom);overscroll-behavior:contain}
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-menu-button,.studio-nav-close) {display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0}
+  .studio-app.studio-app.studio-personal-workspace .studio-sidebar-scrim {display:block;position:fixed;inset:0;z-index:70;background:#10121866;border:0}
+  .studio-app.studio-app.studio-personal-workspace .studio-topbar {gap:12px}
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-topbar-workspace,.studio-breadcrumb-separator) {display:none}
+  .studio-app.studio-app.studio-personal-workspace .studio-topbar-context {gap:8px}
+  .studio-app.studio-app.studio-personal-workspace .studio-main .studio-icon-button {min-width:44px;min-height:44px}
+  .studio-app.studio-app.studio-personal-workspace :is(.studio-input,.studio-search input,.reference-search input,.ops-search input) {font-size:16px}
+  .studio-app.studio-app.studio-personal-workspace .studio-metric-grid:not(.overview-stat-strip) {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar-grid {min-width:0;width:100%}
+}
+@media(min-width:1101px) and (max-width:1280px) {
+  .studio-app.studio-app.studio-personal-workspace .studio-metric-grid:not(.overview-stat-strip) {gap:14px}
+  .studio-app.studio-app.studio-personal-workspace .studio-metric:not(.overview-stat) {padding:20px}
+}
+@media(max-width:700px) {
+  .studio-app.studio-app.studio-personal-workspace .studio-main {padding-block:22px 30px}
+  .studio-app.studio-app.studio-personal-workspace .studio-topbar {padding-inline:12px}
+  .studio-app.studio-app.studio-personal-workspace .studio-global-search {display:none}
+  .studio-app.studio-app.studio-personal-workspace .overview-feature-grid {grid-template-columns:minmax(0,1fr)}
+  .studio-app.studio-app.studio-personal-workspace .studio-heading-actions {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));width:100%}
+  .studio-app.studio-app.studio-personal-workspace .studio-heading-actions > :is(button,a) {justify-content:center;min-height:44px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar-heading {display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar-nav {display:contents}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar-paging {grid-column:1/-1;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:8px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar-paging h2 {font-size:20px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-view-tabs {justify-self:end;margin:0}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar .studio-toolbar {gap:10px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar .studio-toolbar > :is(.studio-search,select) {flex:1 0 100%;width:100%;max-width:none}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar-grid {min-width:0;width:100%}
+  .studio-app.studio-app.studio-personal-workspace .workspace-weekday {font-size:10px;padding:11px 0}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar-day {min-height:70px;padding:0}
+  .studio-app.studio-app.studio-personal-workspace .workspace-day-number {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:100%;min-width:0;height:68px;min-height:44px;padding:5px 0;border-radius:9px;font-size:12px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-day-number > span:first-child {display:grid;place-items:center;width:26px;height:26px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-day-number.today {background:transparent;color:var(--studio-text)}
+  .studio-app.studio-app.studio-personal-workspace .workspace-day-number.today > span:first-child {border-radius:50%;background:var(--studio-text);color:var(--studio-surface)}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar-day-count {display:flex;align-items:center;justify-content:center;gap:3px;min-height:8px;font-size:9px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar-day-count i {width:4px;height:4px;border-radius:50%;background:currentColor}
+  .studio-app.studio-app.studio-personal-workspace .workspace-calendar-day-count small {font-size:9px}
+  .studio-app.studio-app.studio-personal-workspace :is(.workspace-calendar-event,.workspace-more-events) {display:none}
+  .studio-app.studio-app.studio-personal-workspace .workspace-mobile-day-events {display:block;padding-top:20px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-mobile-day-events h3 {font-size:15px;margin:0 0 5px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-mobile-day-events > p {font-size:12px;line-height:1.6;color:var(--studio-muted);margin:0 0 14px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-mobile-day-events .workspace-day-empty {margin:20px 0 4px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-mobile-day-events .workspace-agenda-event {display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:52px;margin-top:10px;padding:13px;text-align:left;border-radius:14px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-mobile-day-events .workspace-agenda-event > span {min-width:0}
+  .studio-app.studio-app.studio-personal-workspace .workspace-mobile-day-events .workspace-agenda-event small {white-space:normal;overflow-wrap:anywhere}
+  .studio-app.studio-app.studio-personal-workspace .workspace-mobile-day-events .workspace-agenda-event > svg {flex-shrink:0}
+  .studio-app.studio-app.studio-personal-workspace .studio-metric-grid:not(.overview-stat-strip) {gap:12px}
+  .studio-app.studio-app.studio-personal-workspace .studio-metric:not(.overview-stat) {padding:18px 16px}
+  .studio-app.studio-app.studio-personal-workspace .workspace-metric-value.is-label {font-size:19px}
+}
+@media(max-width:380px) {
+  .studio-app.studio-app.studio-personal-workspace .studio-topbar-actions {gap:2px}
+}

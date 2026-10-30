@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import StudioButton from '../components/common/StudioButton';
+import StudioSelect from '../components/common/StudioSelect';
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -31,6 +33,7 @@ import {
   operationError,
 } from "../components/operations/operationsUtils";
 import "./studioOperations.css";
+import ApplyProductionTemplate from '../components/settings/ApplyProductionTemplate';
 
 const getLeadId = (task) =>
   typeof task.lead === "object" ? task.lead?._id : task.lead;
@@ -47,6 +50,7 @@ export default function PostProduction() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [projectError, setProjectError] = useState("");
+  const [crewError, setCrewError] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [projectFilter, setProjectFilter] = useState(
@@ -81,8 +85,10 @@ export default function PostProduction() {
       if (
         taskResult.status === "fulfilled" &&
         Array.isArray(taskResult.value.data)
-      )
+      ) {
         setTasks(taskResult.value.data);
+        setLoadError("");
+      }
       else
         setLoadError(
           operationError(
@@ -93,13 +99,18 @@ export default function PostProduction() {
       if (
         leadResult.status === "fulfilled" &&
         Array.isArray(leadResult.value.data)
-      )
+      ) {
         setLeads(leadResult.value.data);
+        setProjectError("");
+      }
       else
         setProjectError(
           "Projects are unavailable. You can still manage tasks without a project.",
         );
-      if (crewResult.status === "fulfilled") setCrew(crewResult.value.data);
+      if (crewResult.status === "fulfilled" && Array.isArray(crewResult.value.data)) {
+        setCrew(crewResult.value.data);
+        setCrewError("");
+      } else setCrewError("The crew roster is unavailable. Existing assignments are preserved; retry before changing the assigned person.");
       setLoading(false);
     });
   }, []);
@@ -196,6 +207,15 @@ export default function PostProduction() {
     });
     setFormError("");
   };
+  const openedTask=useRef('');
+  useEffect(()=>{
+    const id=search.get('task');if(!id||loading||openedTask.current===id)return;
+    const task=tasks.find(row=>row._id===id);if(!task)return;let active=true;
+    Promise.resolve().then(()=>{if(active){openedTask.current=id;openEditor(task);}});
+    return()=>{active=false;};
+    // Open only the explicitly requested loaded task.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[search,tasks,loading]);
   const saveTask = async (event) => {
     event.preventDefault();
     if (saving) return;
@@ -220,6 +240,7 @@ export default function PostProduction() {
           body,
           operationAuth(),
         );
+        if (!response.data?._id) throw new Error("The saved task was not returned.");
         setTasks((current) =>
           current.map((task) =>
             task._id === editing._id
@@ -235,6 +256,7 @@ export default function PostProduction() {
           { ...body, status: "pending" },
           operationAuth(),
         );
+        if (!response.data?._id) throw new Error("The saved task was not returned.");
         setTasks((current) => [
           {
             ...response.data,
@@ -254,6 +276,7 @@ export default function PostProduction() {
     }
   };
   const toggleTask = async (task) => {
+    if (busyId) return;
     setBusyId(task._id);
     try {
       const response = await axios.patch(
@@ -278,6 +301,7 @@ export default function PostProduction() {
     }
   };
   const deleteTask = async () => {
+    if (saving) return;
     setSaving(true);
     setFormError("");
     try {
@@ -307,9 +331,9 @@ export default function PostProduction() {
             A clear path from the last frame to the final delivery.
           </p>
         </div>
-        <button className="studio-button primary" onClick={() => openEditor()}>
+        <div className="studio-heading-actions"><ApplyProductionTemplate onApplied={fetchWorkspace} initialProject={projectFilter === 'all' || projectFilter === 'unassigned' ? '' : projectFilter} /><button className="studio-button primary" onClick={() => openEditor()}>
           <Plus size={16} /> Add task
-        </button>
+        </button></div>
       </div>
       <div className="studio-metric-grid ops-metrics">
         {[
@@ -373,7 +397,7 @@ export default function PostProduction() {
             </div>
             <ListChecks size={19} className="ops-quiet-icon" />
           </div>
-          <div className="studio-tabs ops-tabs" aria-label="Filter tasks">
+          <div className="studio-phone-filter"><StudioSelect aria-label="Filter tasks by status" value={filter} onChange={event=>setFilter(event.target.value)}>{[{id:"all",label:"All tasks",count:tasks.length},{id:"pending",label:"Pending",count:pending.length},{id:"completed",label:"Completed",count:completed.length},{id:"overdue",label:"Overdue",count:overdue.length}].map(tab=><option key={tab.id} value={tab.id}>{tab.label} · {tab.count}</option>)}</StudioSelect></div><div className="studio-tabs ops-tabs" aria-label="Filter tasks">
             {[
               { id: "all", label: "All tasks", count: tasks.length },
               { id: "pending", label: "Pending", count: pending.length },
@@ -402,7 +426,7 @@ export default function PostProduction() {
                 aria-label="Search tasks or projects"
               />
             </label>
-            <select
+            <StudioSelect
               className="studio-input ops-select"
               value={projectFilter}
               onChange={(event) => setProjectFilter(event.target.value)}
@@ -415,17 +439,17 @@ export default function PostProduction() {
                   {lead.name}
                 </option>
               ))}
-            </select>
+            </StudioSelect>
             <label className="ops-sort">
               <ArrowDownWideNarrow size={15} />
-              <select
+              <StudioSelect
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
                 aria-label="Sort tasks"
               >
                 <option value="due">Due date</option>
                 <option value="newest">Newest first</option>
-              </select>
+              </StudioSelect>
             </label>
           </div>
           {loading ? (
@@ -438,28 +462,28 @@ export default function PostProduction() {
             </div>
           ) : filteredTasks.length ? (
             <div className="ops-table-scroll">
-              <table className="studio-table ops-task-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Task & project</th>
-                    <th scope="col">Due date</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">
+              <table role="table" aria-label="Production tasks" className="studio-table ops-task-table studio-phone-record-table">
+                <thead role="rowgroup">
+                  <tr role="row">
+                    <th role="columnheader" scope="col">Task & project</th>
+                    <th role="columnheader" scope="col">Due date</th>
+                    <th role="columnheader" scope="col">Status</th>
+                    <th role="columnheader" scope="col">
                       <span className="ops-sr-only">Actions</span>
                     </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody role="rowgroup">
                   {filteredTasks.map((task) => {
                     const project = getProject(task);
                     const late = isOverdue(task, today);
                     const done = task.status === "completed";
                     return (
-                      <tr
+                      <tr role="row"
                         key={task._id}
                         className={done ? "ops-task-done" : ""}
                       >
-                        <td>
+                        <td role="cell" data-label="Task & project">
                           <div className="ops-task-title">
                             <button
                               className={`ops-complete-button ${done ? "is-complete" : ""}`}
@@ -509,7 +533,7 @@ export default function PostProduction() {
                             </div>
                           </div>
                         </td>
-                        <td>
+                        <td role="cell" data-label="Due date">
                           <span
                             className={`ops-due ${late ? "is-overdue" : ""}`}
                           >
@@ -528,7 +552,7 @@ export default function PostProduction() {
                             </small>
                           )}
                         </td>
-                        <td>
+                        <td role="cell" data-label="Status">
                           <span
                             className={`studio-badge ops-status ${done ? "completed" : "pending"}`}
                           >
@@ -536,7 +560,7 @@ export default function PostProduction() {
                             {done ? "Completed" : "Pending"}
                           </span>
                         </td>
-                        <td>
+                        <td role="cell" data-label="Actions">
                           <div className="ops-row-actions">
                             <button
                               className="ops-icon-button"
@@ -698,14 +722,7 @@ export default function PostProduction() {
               >
                 Cancel
               </button>
-              <button
-                className="studio-button primary"
-                type="submit"
-                form="production-task-form"
-                disabled={saving}
-              >
-                {saving ? "Saving…" : editing ? "Save changes" : "Add task"}
-              </button>
+              <StudioButton type="submit" variant="primary" form="production-task-form" loading={saving} loadingLabel="Saving production task">{editing ? "Save changes" : "Add task"}</StudioButton>
             </>
           }
         >
@@ -744,7 +761,7 @@ export default function PostProduction() {
               </label>
               <label className="studio-field">
                 <span>Project</span>
-                <select
+                <StudioSelect title="Project"
                   className="studio-input"
                   value={form.lead}
                   disabled={!!editing || !!projectError}
@@ -763,13 +780,13 @@ export default function PostProduction() {
                       {lead.name}
                     </option>
                   ))}
-                </select>
+                </StudioSelect>
               </label>
             </div>
             <div className="studio-form-grid">
               <label className="studio-field">
                 <span>Deliverable</span>
-                <select
+                <StudioSelect title="Deliverable"
                   className="studio-input"
                   value={form.deliveryType}
                   onChange={(event) =>
@@ -785,11 +802,11 @@ export default function PostProduction() {
                   ].map((value) => (
                     <option key={value}>{value}</option>
                   ))}
-                </select>
+                </StudioSelect>
               </label>
               <label className="studio-field">
                 <span>Production stage</span>
-                <select
+                <StudioSelect title="Production stage"
                   className="studio-input"
                   value={form.productionStage}
                   onChange={(event) =>
@@ -808,26 +825,29 @@ export default function PostProduction() {
                   ].map((value) => (
                     <option key={value}>{value}</option>
                   ))}
-                </select>
+                </StudioSelect>
               </label>
             </div>
             <label className="studio-field">
               <span>Assigned crew member</span>
-              <select
+              <StudioSelect title="Assigned crew member"
                 className="studio-input"
                 value={form.assignee}
+                disabled={!!crewError}
                 onChange={(event) =>
                   setForm({ ...form, assignee: event.target.value })
                 }
               >
                 <option value="">Not assigned</option>
+                {form.assignee && !crew.some(person => person._id === form.assignee) && <option value={form.assignee}>{editing?.assignee?.name || "Current assigned crew member"}</option>}
                 {crew.map((person) => (
                   <option key={person._id} value={person._id}>
                     {person.name} · {person.specialty}
                   </option>
                 ))}
-              </select>
+              </StudioSelect>
             </label>
+            {crewError && <OperationsError onRetry={fetchWorkspace}>{crewError}</OperationsError>}
             <label className="ops-client-visibility">
               <input
                 type="checkbox"
@@ -902,7 +922,7 @@ export default function PostProduction() {
       {deleting && (
         <OperationsModal
           title="Delete this task?"
-          description="This will permanently remove the task from your workspace."
+          description="This removes the task from the active production workspace and its client update. Owners can restore eligible records in Settings → Backups & recovery."
           onClose={() => setDeleting(null)}
           busy={saving}
           footer={
@@ -914,13 +934,7 @@ export default function PostProduction() {
               >
                 Keep task
               </button>
-              <button
-                className="studio-button ops-danger-button"
-                disabled={saving}
-                onClick={deleteTask}
-              >
-                {saving ? "Deleting…" : "Delete task"}
-              </button>
+              <StudioButton type="button" variant="destructive" loading={saving} onClick={deleteTask} loadingLabel="Deleting production task">Delete task</StudioButton>
             </>
           }
         >

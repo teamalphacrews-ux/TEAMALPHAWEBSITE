@@ -1161,7 +1161,7 @@
   font-size: 16px;
   margin: 0 0 30px;
 }
-.invoice-editor-settings > .invoice-field {
+.invoice-editor-settings .studio-document-settings-panel > .invoice-field {
   margin-bottom: 26px;
 }
 .invoice-editor-settings .invoice-date-control {

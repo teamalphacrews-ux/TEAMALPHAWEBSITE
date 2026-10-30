@@ -329,7 +329,7 @@
   color: #8c928e;
   line-height: 1.55;
 }
-.qw-settings > input {
+.qw-settings .studio-document-settings-panel > input {
   width: 100%;
   border: 1px solid #e1e7e2;
   padding: 10px;

@@ -142,7 +142,7 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
             <button
               type="button"
-              onClick={handleDownload}
+              aria-label="Download invoice PDF" title="Download invoice PDF" onClick={handleDownload}
               disabled={downloading}
               className="px-5 py-2.5 bg-gray-50 hover:bg-white text-[#2d2d2d] rounded-xl flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm border border-gray-200 disabled:opacity-50"
             >
@@ -150,7 +150,7 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
               <span className="hidden sm:inline">Download PDF</span>
             </button>
             <button
-              onClick={onClose}
+              aria-label="Close invoice" title="Close invoice" onClick={onClose}
               className="p-2.5 bg-gray-50 hover:bg-white text-[#8a8a8a] hover:text-[#2d2d2d] rounded-full transition-all hover:rotate-90 border border-transparent hover:border-gray-200 hover:shadow-sm"
             >
               <X size={18} />

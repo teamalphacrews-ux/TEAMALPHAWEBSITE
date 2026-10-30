@@ -4,6 +4,7 @@ const {
   projectView,
   messages,
   saveMessage,
+  assertClientChat,
 } = require("../services/clientProject");
 const wrap = (fn) => async (req, res) => {
   try {
@@ -33,6 +34,7 @@ router.get(
   "/:token/messages",
   wrap(async (req, res) => {
     const quote = await acceptedQuote(req.params.token);
+    await assertClientChat(quote);
     res.json(await messages(quote._id, req.query?.before));
   }),
 );

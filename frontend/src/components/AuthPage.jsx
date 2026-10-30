@@ -4,6 +4,7 @@ import { ArrowRight, ShieldCheck, Eye, EyeOff, ArrowUpRight } from 'lucide-react
 import { TEAM_ALPHA_LOGO } from '../utils/branding';
 import { useAuth } from '../context/AuthContext';
 import API_BASE_URL from '../utils/apiConfig';
+import { SAAS_RELEASE_ENABLED } from '../saas/release';
 import '../admin/studio.css';
 import '../admin/studio-mobile.css';
 import './auth.css';
@@ -24,7 +25,7 @@ export default function AuthPage() {
       const data = await result.json();
       if (!result.ok) throw new Error(data.msg || 'Please check your email and password.');
       if (data.user?.role !== 'admin') throw new Error('This sign-in is for the studio team.');
-      login(data.user, data.token);
+      await login(data.user, data.token);
     } catch (err) { setError(err.message === 'Failed to fetch' ? 'We couldn’t connect to your studio. Please try again shortly.' : err.message); }
     finally { setSubmitting(false); }
   };
@@ -38,11 +39,10 @@ export default function AuthPage() {
           <label className="studio-field" htmlFor="studio-password">Password<div className="studio-password-input"><input id="studio-password" className="studio-input" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Your password" required /><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></label>
           <button className="studio-button primary studio-auth-submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Enter your studio'}<ArrowRight size={16} /></button>
         </form>
-        <p className="studio-auth-help">Need access? Contact your studio administrator.</p>
-        <div className="studio-auth-security"><ShieldCheck size={14} /><span>Private workspace · Team Alpha team only</span></div>
+        {SAAS_RELEASE_ENABLED ? <p className="studio-auth-help">New to Studio OS? <Link to="/signup">Create your studio</Link><br />Joining a team? Open your studio invitation.</p> : <p className="studio-auth-help">Need access? Contact your studio administrator.</p>}
+        <div className="studio-auth-security"><ShieldCheck size={14} /><span>{SAAS_RELEASE_ENABLED ? 'A private workspace for every studio' : 'Private workspace · Team Alpha team only'}</span></div>
       </div>
       <footer className="studio-auth-footer"><span>© {new Date().getFullYear()} Team Alpha</span><Link to="/">Back to our website <ArrowUpRight size={12} /></Link></footer>
     </section>
-    <section className="studio-auth-image-panel" aria-label="Team Alpha wedding photography"><img src="/assets/studio-pre-wedding.webp" alt="A couple photographed by Team Alpha" /><div className="studio-auth-image-overlay" /><div className="studio-auth-image-caption"><span className="studio-eyebrow">THE ART OF RUNNING YOUR STUDIO</span><h2>More space<br />for <em>beautiful stories.</em></h2><p>From the first hello to the final frame.<br />Every detail, thoughtfully together.</p><span className="studio-auth-signature">TEAM ALPHA <span>THE WEDDING ARTIST</span></span></div><span className="studio-auth-image-label">PHOTOGRAPHY & CINEMATOGRAPHY</span></section>
   </div>;
 }

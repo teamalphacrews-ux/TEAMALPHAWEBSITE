@@ -1,3 +1,4 @@
+import StudioButton from '../common/StudioButton';
 import { useEffect, useState } from "react";
 import { ImagePlus, X } from "lucide-react";
 import axios from "axios";
@@ -55,7 +56,7 @@ export default function ClientCollectionForm({ client, onClose, onSaved }) {
     finally { setSaving(false); }
   };
   const coverUrl = preview || client?.thumbnail || "";
-  return <OperationsModal title={client ? "Edit client gallery" : "Create client gallery"} description="Set up a thoughtful home for your client’s photographs and films." onClose={onClose} busy={saving} footer={<><button className="studio-button" disabled={saving} onClick={onClose}>Cancel</button><button className="studio-button primary" form="client-collection-form" type="submit" disabled={saving}>{saving ? "Saving…" : client ? "Save changes" : "Create gallery"}</button></>}><form className="ops-form" id="client-collection-form" onSubmit={save}>
+  return <OperationsModal title={client ? "Edit client gallery" : "Create client gallery"} description="Set up a thoughtful home for your client’s photographs and films." onClose={onClose} busy={saving} footer={<><button className="studio-button" disabled={saving} onClick={onClose}>Cancel</button><StudioButton variant="primary" form="client-collection-form" type="submit" loading={saving} loadingLabel="Saving client gallery">{client ? "Save changes" : "Create gallery"}</StudioButton></>}><form className="ops-form" id="client-collection-form" onSubmit={save}>
     {saveError && <OperationsError>{saveError}</OperationsError>}
     <label className="studio-field"><span>Client name <b>*</b></span><input className="studio-input" autoComplete="off" required maxLength={150} value={name} onChange={event => setName(event.target.value)} placeholder="e.g. Sachitha & Yogesh" disabled={saving} /></label>
     <label className="studio-field"><span>Link a client account</span><select className="studio-input" value={accountId} disabled={accountsLoading || !!accountsError || saving} onChange={event => setAccountId(event.target.value)}><option value="" disabled={!!initialAccount}>{accountsLoading ? "Loading client accounts…" : "No linked account"}</option>{initialAccount && !accounts.some(account => account._id === initialAccount) && <option value={initialAccount}>Current linked account</option>}{accounts.map(account => <option key={account._id} value={account._id}>{account.firstName} {account.lastName} ({account.email})</option>)}</select><small>{initialAccount ? "Choose another registered account to change this gallery’s client link." : "Link an account so the client can find this collection after signing in."}</small></label>

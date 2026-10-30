@@ -70,7 +70,7 @@ const invoiceSchema = new mongoose.Schema(
     currency: { type: String, default: "INR" },
     timeline: [{ deliverable: String, time: String }],
     paymentScheduleEnabled: { type: Boolean, default: false },
-    paymentSchedule: [{ amountPaise: Number, dueDate: Date }],
+    paymentSchedule: [{ label: String, amountPaise: Number, dueDate: Date }],
     acceptedPaymentMethods: {
       type: [String],
       default: ["BANKING", "G-pay", "UPI"],
@@ -87,8 +87,12 @@ const invoiceSchema = new mongoose.Schema(
     shareToken: { type: String, select: false },
     shareTokenHash: { type: String, select: false },
     sharedAt: Date,
+    linkExpiresAt: Date,
+    linkRevokedAt: Date,
+    clientLinkOptions: { type: require('./documentLinkOptions'), default: undefined },
     approvedAt: Date,
     scheduledDelivery: {
+      requestedBy: String,
       at: Date,
       subject: String,
       message: String,

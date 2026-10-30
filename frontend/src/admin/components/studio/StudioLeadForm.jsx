@@ -1,9 +1,11 @@
+import StudioButton from '../common/StudioButton';
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
-import { X, Loader2 } from "lucide-react";
+import { X } from "lucide-react";
 import toast from "react-hot-toast";
 import { LEAD_STATUSES, PAYMENT_STATUSES, dateInput, studioApi, studioAuth } from "./leadUtils";
+import {useOfflineDraft,OfflineDraftStatus} from '../../../offline/OfflineDrafts';
 import useStudioDialog from "./useStudioDialog";
 
 const emptyLead = { name: "", email: "", phone: "", status: "New", eventType: "Wedding", eventDate: "", eventTime: "", eventLocation: "", followUpDate: "", remarks: "", notes: "", totalAmount: "", depositAmount: "", paymentStatus: "Unpaid", cloudLink: "", cloudPassword: "",  };
@@ -15,11 +17,15 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
   const inFlight = useRef(false);
   const dialogRef = useStudioDialog(onClose, { canClose: !saving });
   const editing = !!initialData?._id;
-  const set = (field) => (event) => setData((previous) => ({ ...previous, [field]: event.target.value }));
+  const [changed,setChanged]=useState(false);
+  const draft=useOfflineDraft({kind:'enquiry',value:data,dirty:changed,enabled:!editing,onRestore:value=>{setData({...emptyLead,...value});setChanged(true);}});
+  const set = (field) => (event) => {setChanged(true);setData((previous) => ({ ...previous, [field]: event.target.value }));};
 
   const submit = async (event) => {
     event.preventDefault();
     if (inFlight.current) return;
+    if(draft.candidate){setError('Restore or discard your saved draft before submitting.');return;}
+    if(!editing&&!navigator.onLine){if(await draft.saveNow())setError('Saved on this device. Reconnect and submit this enquiry.');else setError('Local storage is unavailable. Keep this page open.');return;}
     if (!data.name.trim() || !data.email.trim()) { setError("Please complete the required client details."); return; }
     if (Number(data.depositAmount) > Number(data.totalAmount)) { setError("The deposit cannot be greater than the project value."); return; }
     inFlight.current = true;
@@ -36,10 +42,12 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
       const response = editing
         ? await axios.patch(`${studioApi}/api/leads/${initialData._id}`, payload, studioAuth())
         : await axios.post(`${studioApi}/api/leads`, payload, studioAuth());
+      if(!editing)await draft.clear().catch(()=>toast('Enquiry saved. Review local drafts before resubmitting.'));
       onSaved(response.data);
       toast.success(editing ? "Enquiry updated" : "Enquiry created");
       onClose();
     } catch (err) {
+      if(!editing&&(!err.response||err.response.status>=500))await draft.markUncertain();
       setError(err.response?.data?.error || "We couldn’t save this enquiry. Please try again.");
     } finally { setSaving(false); inFlight.current = false; }
   };
@@ -51,7 +59,7 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
           <div><span className="studio-eyebrow">CLIENT RELATIONSHIPS</span><h2 id="studio-lead-form-title">{editing ? "Edit enquiry" : "A new beginning"}</h2><p className="studio-muted">{editing ? "Keep the details that matter up to date." : "Capture the first details of a beautiful story."}</p></div>
           <button type="button" className="studio-icon-button" aria-label="Close enquiry form" onClick={onClose} disabled={saving}><X size={20} /></button>
         </header>
-        <form onSubmit={submit} className="studio-crm-form-body">
+        <form onSubmit={submit} className="studio-crm-form-body"><OfflineDraftStatus draft={draft}/>
           {error && <div role="alert" className="studio-error">{error}</div>}
           <div className="studio-crm-form-section"><h3>Client details</h3><div className="studio-form-grid">
             <label className="studio-field">Full name<input data-autofocus required className="studio-input" value={data.name} onChange={set("name")} autoComplete="name" placeholder="Client or couple’s name" /></label>
@@ -74,7 +82,7 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
             <label className="studio-field">Cloud folder password<input className="studio-input" value={data.cloudPassword} onChange={set("cloudPassword")} autoComplete="off" /></label>
           </div></div>
           <div className="studio-crm-form-section"><label className="studio-field">Internal notes<textarea rows={3} className="studio-input" value={data.notes} onChange={set("notes")} placeholder="Visible to your studio team" /></label></div>
-          <footer className="studio-modal-footer"><button type="button" className="studio-button" onClick={onClose} disabled={saving}>Cancel</button><button type="submit" className="studio-button primary" disabled={saving}>{saving && <Loader2 className="studio-crm-spin" size={16} />}{saving ? "Saving…" : editing ? "Save changes" : "Create enquiry"}</button></footer>
+          <footer className="studio-modal-footer"><button type="button" className="studio-button" onClick={onClose} disabled={saving}>Cancel</button><StudioButton type="submit" variant="primary" loading={saving} loadingLabel="Saving enquiry">{editing ? "Save changes" : "Create enquiry"}</StudioButton></footer>
         </form>
       </section>
     </div>, document.body

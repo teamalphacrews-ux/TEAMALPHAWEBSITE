@@ -1,4 +1,5 @@
 const test = require("node:test");
+test.beforeEach(require('./sessionFixture'));
 const assert = require("node:assert/strict");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
@@ -293,6 +294,7 @@ test("every expanded studio route denies client access before storage operations
 });
 test("quotation update uses an atomic revision lease and returns conflict rather than overwriting", async (t) => {
   const Quotation = require("../models/Quotation");
+  t.mock.method(Quotation, 'findById', async () => ({ discountType: 'amount', discountValue: .01, discountPaise: 1 }));
   let captured;
   t.mock.method(Quotation, "findOneAndUpdate", async (filter, update) => {
     captured = { filter, update };

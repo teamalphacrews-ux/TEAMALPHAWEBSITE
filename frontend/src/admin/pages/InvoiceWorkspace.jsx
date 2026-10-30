@@ -1,5 +1,9 @@
+import StudioButton from '../components/common/StudioButton';
+import DocumentSettingsPanel from '../components/common/DocumentSettingsPanel';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../../utils/branding";
+import { invoiceDefaults, defaultPaymentSchedule, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
+import { API_BASE_URL } from '../../utils/apiConfig';
 import {
   Link,
   useNavigate,
@@ -8,6 +12,7 @@ import {
   useOutletContext,
 } from "react-router-dom";
 import {
+  Save, Send, ShieldCheck,
   ArrowLeft,
   ArrowUp,
   ArrowDown,
@@ -27,7 +32,10 @@ import { OperationsModal } from "../components/operations/OperationsUI";
 import { InvoiceDocument } from "../../pages/PublicInvoice";
 import { downloadInvoice } from "../../utils/invoiceDocument";
 import "./invoiceWorkspace.css";
+import "./documentWorkspaceRefinements.css";
+import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 import "./studioOperations.css";
+import "./invoiceWorkspaceRefinement.css";
 const addressOf = (c) =>
   [
     c?.addressLine1,
@@ -40,12 +48,12 @@ const addressOf = (c) =>
     .filter(Boolean)
     .join(", ");
 const studioIssuer = (studio) => ({
-  name: studio.studioName || "Team Alpha",
+  name: studio.legalName || studio.studioName || "Team Alpha",
   address: studio.address || "",
   email: studio.email || "",
   phone: studio.phone || "",
   website: studio.website || "",
-  taxId: studio.taxId || "",
+  taxId: studio.gstin || studio.taxId || "",
   logoUrl: studio.logoUrl || TEAM_ALPHA_LOGO,
   paymentInstructions: studio.paymentInstructions || "",
   bankDetails: studio.bankDetails || "",
@@ -152,6 +160,7 @@ function normalize(i) {
         ? Math.max(0, Number(i.extraCharges || 0) - Number(i.taxAmount))
         : i.extraCharges || 0,
     paymentSchedule: (i.paymentSchedule || []).map((p) => ({
+      label: p.label || '',
       amountPaise: p.amountPaise,
       dueDate: day(p.dueDate),
     })),
@@ -183,13 +192,15 @@ function Toggle({ label, checked, onChange, description }) {
   return (
     <div className="invoice-option">
       <strong>{label}</strong>
-      <label className="invoice-toggle">
+      <label className="invoice-toggle studio-switch-control">
         <input
           type="checkbox"
+          role="switch"
+          aria-label={label}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span />
+        <span className="studio-switch-track" aria-hidden="true" />
         {checked ? "On" : "Off"}
       </label>
       {description && <small>{description}</small>}
@@ -258,6 +269,7 @@ export default function InvoiceWorkspace() {
             await workspaceRequest("get", `/api/invoices/${id}`),
           );
         else {
+          invoice = { ...invoice, ...invoiceDefaults(studio), _useDefaultPaymentSchedule: true };
           const contact = contacts.find((c) => c._id === search.get("contact"));
           invoice.terms = studio.quotationTerms || "";
           invoice.design = {
@@ -363,7 +375,7 @@ export default function InvoiceWorkspace() {
     version.current++;
     dirty.current = true;
     setSaveState("Unsaved changes");
-    setDraft((d) => ({ ...d, [key]: value }));
+    setDraft((d) => ({ ...d, [key]: value, ...(key === 'paymentSchedule' ? { _useDefaultPaymentSchedule: false } : {}) }));
   };
   const subtotal = draft.items.reduce(
     (s, i) => s + Number(i.quantity || 0) * Number(i.unitPricePaise || 0),
@@ -384,9 +396,9 @@ export default function InvoiceWorkspace() {
   const accumulated = draft.paymentSchedule
     .slice(0, -1)
     .reduce((sum, p) => sum + Number(p.amountPaise || 0), 0);
-  const schedule = draft.paymentSchedule.map((p, index, arr) =>
+  const schedule = draft._useDefaultPaymentSchedule && draft.paymentScheduleEnabled ? defaultPaymentSchedule(context.studio, totalPaise, draft.invoiceDate, draft.dueDate) : draft.paymentSchedule.map((p, index, arr) =>
     index === arr.length - 1
-      ? { amountPaise: totalPaise - accumulated, dueDate: draft.dueDate }
+      ? { ...p, amountPaise: totalPaise - accumulated, dueDate: draft.dueDate }
       : p,
   );
   const current = {
@@ -421,6 +433,8 @@ export default function InvoiceWorkspace() {
           documentNumber: result.documentNumber,
           deliveries: result.deliveries,
           scheduledDelivery: result.scheduledDelivery,
+          paymentSchedule: (result.paymentSchedule || []).map(p => ({ ...p, dueDate: day(p.dueDate) })),
+          _useDefaultPaymentSchedule: false,
         }));
       }
       if (!id) navigate(`/admin/invoices/${result._id}`, { replace: true });
@@ -495,8 +509,7 @@ export default function InvoiceWorkspace() {
     const invoice = await save();
     if (!invoice) return;
     setCompose({
-      subject: `Invoice ${invoice.documentNumber} from ${draft.issuer?.name || "TEAM ALPHA"}`,
-      message: `Hi ${draft.clientName.split(" ")[0]},\n\nHere's your invoice for ${money(totalPaise / 100)} that's due by ${new Date(draft.dueDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Please review the invoice for details and payment options.\n\nThanks,\n${draft.issuer?.name || "TEAM ALPHA"}`,
+      ...documentCommunication(context.studio, 'invoice', invoice),
       sendCopy: true,
       scheduledAt: "",
       requestId: crypto.randomUUID(),
@@ -520,6 +533,8 @@ export default function InvoiceWorkspace() {
         ...d,
         documentStatus: "Sent",
         deliveries: updated.deliveries,
+        sharedAt: updated.sharedAt,
+        linkRevokedAt: updated.linkRevokedAt,
       }));
       setModal("link");
       setNotice(r.message);
@@ -549,7 +564,7 @@ export default function InvoiceWorkspace() {
         "get",
         `/api/invoices/${savedId.current}`,
       );
-      setDraft((d) => ({ ...d, deliveries: updated.deliveries }));
+      setDraft((d) => ({ ...d, deliveries: updated.deliveries, sharedAt: updated.sharedAt, linkRevokedAt: updated.linkRevokedAt }));
       if (!compose.scheduledAt)
         setDraft((d) => ({ ...d, documentStatus: "Sent" }));
       else
@@ -587,7 +602,15 @@ export default function InvoiceWorkspace() {
       if (name === "revoke") {
         await workspaceRequest("delete", `/api/invoices/${invoice._id}/share`);
         setLink("");
+        setDraft(previous => ({ ...previous, linkRevokedAt: new Date().toISOString() }));
         setNotice("Invoice link revoked.");
+      }
+      if (name === 'regenerate') {
+        const result = await workspaceRequest('post', `/api/invoices/${invoice._id}/share/regenerate`, {});
+        setLink(result.url);
+        setDraft(previous => ({ ...previous, sharedAt: new Date().toISOString(), linkRevokedAt: undefined }));
+        setModal('link');
+        setNotice('A new link is ready with current studio visibility settings. The previous invoice link no longer works.');
       }
     } catch (e) {
       setError(recordError(e));
@@ -674,15 +697,12 @@ export default function InvoiceWorkspace() {
         </span>
         <small role="status">{saveState}</small>
         <div className="invoice-toolbar-actions">
-          <div className="invoice-menu">
-            <button
-              aria-expanded={actions}
-              onClick={() => setActions(!actions)}
-            >
-              Actions ▾
-            </button>
-            {actions && (
-              <div>
+          <WorkspaceActionMenu label="Actions" className="invoice-menu" menuClassName="invoice-action-dropdown" open={actions} onOpenChange={setActions} disabled={busy}>
+            <>
+                {draft.documentStatus === "Draft" && <button className="studio-phone-menu-action" disabled={busy} onClick={() => { setActions(false); setModal("approve"); }}>Approve & issue</button>}
+                <button className="studio-phone-menu-action" disabled={busy || draft.documentStatus === "Cancelled"} onClick={async () => { setActions(false); const invoice = await save(); if (invoice) setModal("confirm-link"); }}><Link2 size={15} /> Share link</button>
+                <button className="studio-phone-menu-action" onClick={() => { setActions(false); setModal("design"); }}>Edit design</button>
+                <button className="studio-phone-menu-action" onClick={() => { setActions(false); setModal("preview"); }}>Preview</button>
                 <button onClick={() => action("duplicate")}>Duplicate</button>
                 <button
                   onClick={() => {
@@ -696,12 +716,13 @@ export default function InvoiceWorkspace() {
                 >
                   Download PDF
                 </button>
-                <button onClick={() => action("history")}>
+                <button onClick={() => action("history")} disabled={!id}>
                   Delivery history
                 </button>
-                <button onClick={() => action("revoke")}>
+                <button onClick={() => action("revoke")} disabled={!id || !draft.sharedAt || Boolean(draft.linkRevokedAt)}>
                   Revoke share link
                 </button>
+                <button onClick={() => action('regenerate')} disabled={draft.documentStatus !== 'Sent'}>Regenerate share link</button>
                 <button onClick={() => action("cancel")} disabled={!id}>
                   Cancel invoice
                 </button>
@@ -718,10 +739,10 @@ export default function InvoiceWorkspace() {
                 >
                   Delete invoice
                 </button>
-              </div>
-            )}
-          </div>
+            </>
+          </WorkspaceActionMenu>
           <button
+            className="studio-desktop-toolbar-action"
             disabled={busy || draft.documentStatus === "Cancelled"}
             onClick={async () => {
               const invoice = await save();
@@ -731,22 +752,12 @@ export default function InvoiceWorkspace() {
             <Link2 size={15} /> Share link
           </button>
           {draft.documentStatus === "Draft" && (
-            <button disabled={busy} onClick={() => setModal("approve")}>
-              Approve & issue
-            </button>
+            <StudioButton type="button" variant="outline" className="studio-desktop-toolbar-action" icon={ShieldCheck} disabled={busy} onClick={() => setModal("approve")}>Approve & issue</StudioButton>
           )}
-          <button onClick={() => setModal("design")}>Edit Design</button>
-          <button onClick={() => setModal("preview")}>Preview</button>
-          <button onClick={save} disabled={busy}>
-            Save
-          </button>
-          <button
-            className="invoice-primary"
-            onClick={openSend}
-            disabled={busy}
-          >
-            Send Invoice
-          </button>
+          <button className="studio-desktop-toolbar-action" onClick={() => setModal("design")}>Edit design</button>
+          <button className="studio-desktop-toolbar-action" onClick={() => setModal("preview")}>Preview</button>
+          <StudioButton type="button" icon={Save} onClick={save} disabled={busy} loadingLabel="Saving invoice">Save</StudioButton>
+          <StudioButton type="button" variant="primary" className="invoice-primary" icon={Send} onClick={openSend} disabled={busy} loadingLabel="Preparing invoice delivery">Send invoice</StudioButton>
         </div>
       </header>
       {error && (
@@ -767,6 +778,7 @@ export default function InvoiceWorkspace() {
           className="invoice-editor-settings"
           aria-label="Invoice settings"
         >
+<DocumentSettingsPanel title="Invoice settings" description="Due dates, reminders and payment options">
           <h2>Settings</h2>
           <Field
             label="Issue date"
@@ -831,13 +843,7 @@ export default function InvoiceWorkspace() {
           />
           {draft.paymentReminders && (
             <div className="invoice-checkboxes">
-              {[
-                [-7, "7 days before"],
-                [0, "On due date"],
-                [3, "3 days after"],
-                [7, "7 days after"],
-                [14, "14 days after"],
-              ].map(([n, label]) => (
+              {[...new Set([-7, 0, 3, 7, 14, ...draft.reminderOffsets])].sort((a, b) => a - b).map(n => [n, n === 0 ? 'On due date' : `${Math.abs(n)} days ${n < 0 ? 'before' : 'after'}`]).map(([n, label]) => (
                 <label key={n}>
                   <input
                     type="checkbox"
@@ -879,13 +885,14 @@ export default function InvoiceWorkspace() {
           >
             Edit document design
           </button>
-        </aside>
+        </DocumentSettingsPanel>
+</aside>
         <div className="invoice-editor-content">
           <section className="invoice-editor-section invoice-business">
             <div className="invoice-business-identity">
               {draft.design.showLogo !== false && (
                 <img
-                  src={draft.issuer?.logoUrl || TEAM_ALPHA_LOGO}
+                  src={resolveStudioImage(draft.issuer?.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)}
                   alt={draft.issuer?.name || "Team Alpha"}
                 />
               )}
@@ -1030,7 +1037,7 @@ export default function InvoiceWorkspace() {
                     maxLength={8000}
                   />
                 </div>
-                <input
+                <label className="studio-document-number-field"><span className="studio-phone-field-label">Quantity</span><input
                   aria-label={`Item ${index + 1} quantity`}
                   type="number"
                   min="1"
@@ -1040,8 +1047,8 @@ export default function InvoiceWorkspace() {
                   onChange={(e) =>
                     itemChange(index, "quantity", Number(e.target.value))
                   }
-                />
-                <label className="invoice-price-input">
+                /></label>
+                <label className="studio-document-number-field"><span className="studio-phone-field-label">Price (₹)</span><span className="invoice-price-input">
                   <span>₹</span>
                   <input
                     aria-label={`Item ${index + 1} price`}
@@ -1057,8 +1064,8 @@ export default function InvoiceWorkspace() {
                       )
                     }
                   />
-                </label>
-                <strong>
+                </span></label>
+                <strong><span className="studio-phone-field-label">Amount</span>
                   {money((item.quantity * item.unitPricePaise) / 100)}
                 </strong>
                 <div className="invoice-item-actions">
@@ -1151,10 +1158,10 @@ export default function InvoiceWorkspace() {
               maxLength={12000}
             />
           </section>
-          <section className="invoice-editor-section">
-            <h2>Payment schedule</h2>
+          <section className="invoice-editor-section invoice-payment-plan" aria-labelledby="invoice-payment-plan-title">
+            <h2 id="invoice-payment-plan-title">Payment schedule</h2>
             <Toggle
-              label="Payment Schedule"
+              label="Use installments"
               checked={draft.paymentScheduleEnabled}
               onChange={(v) => {
                 change("paymentScheduleEnabled", v);
@@ -1164,19 +1171,22 @@ export default function InvoiceWorkspace() {
             />
             {draft.paymentScheduleEnabled && (
               <div className="invoice-schedule">
-                <div className="invoice-schedule-heading">
-                  <span>PAYMENT</span>
-                  <span>AMOUNT</span>
-                  <span>DUE DATE</span>
-                </div>
                 {schedule.map((p, index) => (
-                  <div className="invoice-schedule-row" key={index}>
-                    <span>
-                      {index + 1} of {schedule.length}
-                    </span>
+                  <article className="invoice-installment-card" key={index} aria-label={`Payment ${index + 1} of ${schedule.length}`}>
+                    <header className="invoice-installment-heading">
+                      <strong>{p.label || `Payment ${index + 1}`}</strong>
+                      <small>{index === schedule.length - 1 ? "Remaining balance" : `${index + 1} of ${schedule.length}`}</small>
+                      {index < schedule.length - 1 && (
+                        <button type="button" aria-label={`Remove payment ${index + 1}`} disabled={schedule.length <= 2} onClick={() => change("paymentSchedule", schedule.filter((_, n) => n !== index))}>
+                          <X size={16} aria-hidden="true" />
+                        </button>
+                      )}
+                    </header>
+                    <div className="invoice-installment-fields">
                     {index === schedule.length - 1 ? (
-                      <div>
-                        {money(p.amountPaise / 100)}{" "}
+                      <div className="invoice-installment-summary">
+                        <span>Amount</span>
+                        <strong>{money(p.amountPaise / 100)}</strong>
                         <small>
                           {totalPaise
                             ? ((p.amountPaise / totalPaise) * 100).toFixed(2)
@@ -1185,10 +1195,12 @@ export default function InvoiceWorkspace() {
                         </small>
                       </div>
                     ) : (
-                      <div className="invoice-schedule-amount">
+                      <div className="invoice-installment-values">
+                        <label className="invoice-installment-field"><span>Amount (₹)</span>
                         <input
                           aria-label={`Payment ${index + 1} amount`}
                           type="number"
+                          inputMode="decimal"
                           min="0.01"
                           step="0.01"
                           value={p.amountPaise / 100}
@@ -1207,11 +1219,12 @@ export default function InvoiceWorkspace() {
                               ),
                             )
                           }
-                        />
-                        <label>
+                        /></label>
+                        <label className="invoice-installment-field"><span>Percentage (%)</span>
                           <input
                             aria-label={`Payment ${index + 1} percent`}
                             type="number"
+                            inputMode="decimal"
                             min="0.01"
                             max="99.99"
                             step="0.01"
@@ -1243,14 +1256,14 @@ export default function InvoiceWorkspace() {
                               )
                             }
                           />
-                          %
                         </label>
                       </div>
                     )}
                     {index === schedule.length - 1 ? (
-                      <span>{p.dueDate}</span>
+                      <div className="invoice-installment-summary"><span>Final due date</span><strong>{p.dueDate ? new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${p.dueDate}T00:00:00Z`)) : "Set a final due date"}</strong><small>Matches the invoice due date</small></div>
                     ) : (
-                      <div className="invoice-installment-date">
+                      <div className="invoice-installment-dates">
+                        <label className="invoice-installment-field"><span>Due date</span>
                         <input
                           aria-label={`Payment ${index + 1} due date`}
                           type="date"
@@ -1267,7 +1280,8 @@ export default function InvoiceWorkspace() {
                               ),
                             )
                           }
-                        />
+                        /></label>
+                        <label className="invoice-installment-field"><span>Quick date</span>
                         <select
                           aria-label={`Payment ${index + 1} due preset`}
                           value=""
@@ -1303,24 +1317,11 @@ export default function InvoiceWorkspace() {
                               {label}
                             </option>
                           ))}
-                        </select>
+                        </select></label>
                       </div>
                     )}
-                    {index < schedule.length - 1 && (
-                      <button
-                        aria-label={`Remove payment ${index + 1}`}
-                        disabled={schedule.length <= 2}
-                        onClick={() =>
-                          change(
-                            "paymentSchedule",
-                            schedule.filter((_, n) => n !== index),
-                          )
-                        }
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
+                    </div>
+                  </article>
                 ))}
                 <button
                   className="invoice-text-action"
@@ -1329,6 +1330,7 @@ export default function InvoiceWorkspace() {
                 >
                   <Plus size={15} /> Add another payment
                 </button>
+                <p className="invoice-installment-help">The final payment covers the remaining balance. Adding a payment splits the total equally across all installments.</p>
               </div>
             )}
           </section>
@@ -1479,22 +1481,10 @@ export default function InvoiceWorkspace() {
                   : "Close"}
               </button>
               {["cancel", "delete"].includes(modal) && (
-                <button
-                  className="invoice-primary"
-                  disabled={busy}
-                  onClick={destructive}
-                >
-                  Confirm
-                </button>
+                <StudioButton type="button" variant="destructive" disabled={busy} onClick={destructive} loadingLabel={modal === "delete" ? "Deleting invoice" : "Cancelling invoice"}>{modal === "delete" ? "Delete invoice" : "Cancel invoice"}</StudioButton>
               )}
               {modal === "approve" && (
-                <button
-                  className="invoice-primary"
-                  disabled={busy}
-                  onClick={approveInvoice}
-                >
-                  {busy ? "Issuing…" : "Approve & issue"}
-                </button>
+                <StudioButton type="button" variant="primary" className="invoice-primary" icon={ShieldCheck} disabled={busy} onClick={approveInvoice} loadingLabel="Issuing invoice">Approve & issue</StudioButton>
               )}
               {modal === "confirm-link" && (
                 <button
@@ -1865,7 +1855,7 @@ export default function InvoiceWorkspace() {
         <div className="invoice-send-overlay">
           <section className="invoice-send-composer">
             <button className="invoice-send-close" onClick={() => setModal("")}>
-              <X size={20} /> Send Invoice
+              <X size={20} /> Send invoice
             </button>
             <p>
               To: <strong>{draft.clientName}</strong>
@@ -1939,19 +1929,7 @@ export default function InvoiceWorkspace() {
                 />
                 Send me a copy
               </label>
-              <button
-                className="invoice-primary"
-                disabled={
-                  busy || !draft.clientEmail || !context.emailConfigured
-                }
-                onClick={send}
-              >
-                {busy
-                  ? "Sending…"
-                  : compose.scheduledAt
-                    ? "Schedule email"
-                    : "Send"}
-              </button>
+              <StudioButton type="button" variant="primary" className="invoice-primary" icon={Send} disabled={busy || !draft.clientEmail || !context.emailConfigured} onClick={send} loadingLabel={compose.scheduledAt ? "Scheduling invoice email" : "Sending invoice"}>{compose.scheduledAt ? "Schedule email" : "Send"}</StudioButton>
             </div>
             {!context.emailConfigured && (
               <small>
@@ -1962,7 +1940,7 @@ export default function InvoiceWorkspace() {
           </section>
           <section className="invoice-email-preview">
             <img
-              src={draft.issuer?.logoUrl || TEAM_ALPHA_LOGO}
+              src={resolveStudioImage(draft.issuer?.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)}
               alt={draft.issuer?.name || "Team Alpha"}
             />
             <div>

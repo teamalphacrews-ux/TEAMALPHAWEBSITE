@@ -28,6 +28,7 @@ import {
   ContactConversations,
 } from "../components/contacts/ContactRelatedTables";
 import "./referenceContacts.css";
+import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 export default function ContactDetail() {
   const { id } = useParams(),
     navigate = useNavigate();
@@ -130,15 +131,12 @@ export default function ContactDetail() {
           ))}
         </select>
         <div className="reference-heading-spacer" />
-        <details className="reference-more">
-          <summary>More</summary>
-          <div className="reference-dropdown">
+        <WorkspaceActionMenu label="More">
             <button onClick={() => setEditing(true)}>Edit contact</button>
             <button onClick={archive}>
               {contact.archived ? "Restore contact" : "Archive contact"}
             </button>
-          </div>
-        </details>
+        </WorkspaceActionMenu>
         {contact.archived ? (
           <span className="reference-status neutral">Archived</span>
         ) : (

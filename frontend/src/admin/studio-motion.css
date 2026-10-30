@@ -335,3 +335,16 @@
     scale: none !important;
   }
 }
+
+/* Personal reduced motion remains scoped to Studio OS, including portalled dialogs. */
+html[data-studio-motion=reduced] :is(.studio-app,.studio-crm-overlay,.studio-crm-invoice-dialog) *,
+html[data-studio-motion=reduced] :is(.studio-app,.studio-crm-overlay,.studio-crm-invoice-dialog) *::before,
+html[data-studio-motion=reduced] :is(.studio-app,.studio-crm-overlay,.studio-crm-invoice-dialog) *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+  scroll-behavior: auto !important;
+}
+html[data-studio-motion=reduced] .studio-app :is(.overview-card-motion i,.overview-fluid-glow i,.overview-finance-waves svg) { animation: none !important; will-change: auto !important; }
+html[data-studio-motion=reduced] :is(.studio-app,.studio-crm-overlay,.studio-crm-invoice-dialog) :is(.studio-button,.studio-icon-button,.reference-button,.reference-icon-button,.ops-icon-button,.qw-button,.qw-primary,.invoice-primary,.studio-profile-button,.studio-nav-close,.workspace-day-number,a.studio-metric,.studio-shoot-card,a.workspace-settings-link,.studio-nav-item,.studio-portfolio-link,.workspace-calendar-event,.overview-feature-card) { translate: none !important; scale: none !important; }
+html[data-studio-motion=reduced] .studio-app :is(.studio-nav-item,.studio-button,.studio-icon-button) > svg { scale: none !important; }

@@ -20,6 +20,7 @@ import {
 import { workspaceRequest, recordError } from "../operations/workspaceData";
 import "../../pages/referenceContacts.css";
 import { contactCountries } from "./countries";
+import { WorkspaceActionMenu } from "../operations/WorkspaceActionMenu";
 
 export function ContactForm({ record, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -453,8 +454,7 @@ export function ContactCreateMenu({
   onProject,
   onDocument,
 }) {
-  const [open, setOpen] = useState(false),
-    navigate = useNavigate();
+  const navigate = useNavigate();
   const query = new URLSearchParams({
     contact: contact._id,
     ...(projectId ? { project: projectId } : {}),
@@ -489,47 +489,15 @@ export function ContactCreateMenu({
     { name: "Message", icon: Mail, action: () => onDocument("Message") },
   ];
   return (
-    <div className="reference-create-menu">
-      <button
-        className="reference-button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-      >
-        Create New <ChevronDown size={14} />
-      </button>
-      {open && (
-        <>
-          <button
-            className="reference-menu-dismiss"
-            aria-label="Close create menu"
-            onClick={() => setOpen(false)}
-          />
-          <div className="reference-dropdown" role="menu">
-            {options
-              .filter((option) => option.action)
-              .map((option) => {
-                const Icon = option.icon;
-                return (
-                  <button
-                    role="menuitem"
-                    key={option.name}
-                    onClick={() => {
-                      setOpen(false);
-                      option.action();
-                    }}
-                  >
-                    <Icon size={17} />
-                    {option.name}
-                  </button>
-                );
-              })}
-          </div>
-        </>
-      )}
-    </div>
+    <WorkspaceActionMenu label="Create new" className="reference-create-menu" primary>
+      {options.filter(option => option.action).map(option => {
+        const Icon = option.icon;
+        return <button key={option.name} onClick={option.action}><Icon size={16} aria-hidden="true" />{option.name}</button>;
+      })}
+    </WorkspaceActionMenu>
   );
 }
+
 export function ContactNote({ note, onSave }) {
   const [editing, setEditing] = useState(false),
     [value, setValue] = useState(note || ""),

@@ -1,6 +1,7 @@
+import StudioButton from '../common/StudioButton';
 import { useState } from "react";
 import { motion as Motion, AnimatePresence } from "framer-motion";
-import { X, Upload, Link as LinkIcon, Info, Loader2, Calendar } from "lucide-react";
+import { X, Upload, Link as LinkIcon, Info, Calendar } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../../utils/apiConfig";
@@ -91,7 +92,7 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
           <div className="p-8 border-b border-black/5 bg-linear-to-br from-white/50 to-transparent shrink-0">
             <h2 className="page-title text-3xl font-bold">Add New Event</h2>
             <p className="text-[10px] uppercase font-bold tracking-[0.4em] text-[#cfe8d5] mt-2">Initialize Collection</p>
-            <button onClick={onClose} className="absolute top-8 right-8 p-3 hover:bg-black/5 rounded-full transition-all">
+            <button aria-label="Close event form" title="Close event form" onClick={onClose} className="absolute top-8 right-8 p-3 hover:bg-black/5 rounded-full transition-all">
               <X size={20} className="text-[#8a8a8a]" />
             </button>
           </div>
@@ -113,7 +114,7 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
                   <div className="relative aspect-[4/3] rounded-3xl overflow-hidden border-2 border-dashed border-[#cfe8d5] group-hover:border-[#cfe8d5]/80 transition-all">
                     <img src={thumbnailPreview} className="w-full h-full object-cover" alt="Preview" />
                     <button
-                      type="button" onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); }}
+                      type="button" aria-label="Remove selected event thumbnail" title="Remove thumbnail" onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); }}
                       className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black transition-all backdrop-blur-md"
                     >
                       <X size={14} />
@@ -157,12 +158,7 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
               </p>
             </div>
 
-            <button
-              type="submit" disabled={isSubmitting}
-              className="add-btn w-full py-5 text-sm tracking-[0.4em] shadow-xl shadow-[#cfe8d5]/30 disabled:opacity-50"
-            >
-              {isSubmitting ? <Loader2 className="animate-spin mx-auto" /> : "Deploy Event Collection"}
-            </button>
+            <StudioButton type="submit" variant="primary" fullWidth icon={Calendar} loading={isSubmitting} loadingLabel="Creating event collection">Create event collection</StudioButton>
           </form>
         </Motion.div>
       </div>

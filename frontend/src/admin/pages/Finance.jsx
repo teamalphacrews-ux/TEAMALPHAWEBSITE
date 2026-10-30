@@ -1,14 +1,18 @@
-import { useState } from "react";
+import StudioIcon from '../components/common/StudioIcon';
+import StudioSelect from '../components/common/StudioSelect';
+import { useEffect, useState, useRef } from "react";
 import {
   Plus,
   FileText,
   ArrowUpRight,
-  Pencil,
-  Wallet,
-  Trash2,
+  Wallet, CreditCard,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import {useNavigate} from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useStudioIdentity } from '../../utils/studioIdentity';
+import { formatStudioDate, studioDayKey, studioTimezone } from '../../utils/studioTime';
+import { invoiceDueQueue, invoiceOutstandingBalance } from '../components/finance/duePayments';
+import DuePayments from '../components/finance/DuePayments.jsx';
 import {
   WorkspaceHeader,
   WorkspaceMetrics,
@@ -22,57 +26,73 @@ import {
   useWorkspaceData,
   workspaceRequest,
   recordError,
-  recordDate,
   rupees,
 } from "../components/operations/workspaceData";
 import { remainingAmount } from "../components/studio/leadUtils";
 import { FinanceInsights, ExpenseBreakdown } from "../components/finance/FinanceInsights";
 import { bookingCollections } from "../components/operations/insightData";
-import { contactPaymentTotals } from "../components/contacts/contactPaymentTotals";
+import API from '../../utils/apiConfig';
+import ReceiptCapture from '../components/finance/ReceiptCapture';
+import {WorkspaceActionMenu} from '../components/operations/WorkspaceActionMenu';
+import {useAuth} from '../../context/AuthContext';
 export default function Finance() {
   const navigate=useNavigate();
+  const {token}=useAuth();
+  const [receiptFile,setReceiptFile]=useState(null),[openingReceipt,setOpeningReceipt]=useState('');
+  const expenseRequest=useRef(''),saveLock=useRef(false);
+  const [params, setParams] = useSearchParams();
+  const tab = ['due', 'invoices', 'ledger'].includes(params.get('view')) ? params.get('view') : 'bookings';
+  const setTab = value => setParams(current => { const next = new URLSearchParams(current); next.set('view', value); return next; });
+  const { identity } = useStudioIdentity();
+  const timezone = studioTimezone(identity?.timezone);
+  const recordDate = value => formatStudioDate(value, {}, timezone);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const timer = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(timer); }, []);
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/studio/finance",
     "/api/invoices",
+    "/api/studio-projects",
   ]);
   const { leads = [], entries = [] } = data[0] || {};
   const invoices = data[1] || [];
+  const projects=data[2]||[];
   const collections = bookingCollections(leads);
-  const [tab, setTab] = useState("bookings"),
-    [query, setQuery] = useState(""),
+  const [query, setQuery] = useState(""),
     [entry, setEntry] = useState(undefined),
     [form, setForm] = useState({}),
     [payment, setPayment] = useState(null),
     [busy, setBusy] = useState(false),
     [saveError, setSaveError] = useState(""),
+    [updatingInvoice, setUpdatingInvoice] = useState(""),
     [deleting, setDeleting] = useState(null);
   const bookings = leads.filter((lead) => lead.status === "Converted");
+  const dueRows = invoiceDueQueue(invoices, now, timezone);
   const paidExpenses = entries.filter(
     (row) => row.type === "expense" && row.status === "Paid",
   );
   const sum = (rows, key) =>
     rows.reduce((total, row) => total + (Number(row[key]) || 0), 0);
-  const invoiceBalance = row => {
-    const totals = contactPaymentTotals([row]);
-    return totals.upcoming + totals.pastDue;
-  };
+  const invoiceBalance = invoiceOutstandingBalance;
   const openEntry = (row) => {
+    setReceiptFile(null);
     setEntry(row || null);
     setForm(
       row
         ? {
             title: row.description,
+            studioProjectId:row.studioProjectId||"",
             amount: row.amount,
             category: row.category,
-            date: new Date(row.date).toISOString().slice(0, 10),
+            date: studioDayKey(row.date, timezone),
             type: row.type,
             status: row.status,
           }
         : {
             title: "",
+            studioProjectId:"",
             amount: "",
             category: "Operational",
-            date: new Date().toISOString().slice(0, 10),
+            date: studioDayKey(now, timezone),
             type: "expense",
             status: "Paid",
           },
@@ -81,25 +101,38 @@ export default function Finance() {
   };
   const change = (name, value) =>
     setForm((current) => ({ ...current, [name]: value }));
-  const saveEntry = async (event) => {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setSaveError("");
-    try {
-      await workspaceRequest(
-        entry ? "put" : "post",
-        entry ? "/api/studio/ledger/" + entry._id : "/api/studio/ledger",
-        { ...form, amount: String(form.amount) },
-      );
-      setEntry(undefined);
-      reload();
-      toast.success("Ledger record saved");
-    } catch (err) {
-      setSaveError(recordError(err));
-    } finally {
-      setBusy(false);
-    }
+  useEffect(()=>{
+    if(params.get('new')!=='expense'||expenseRequest.current===params.toString())return;
+    const signature=params.toString();let active=true;Promise.resolve().then(()=>{if(active){expenseRequest.current=signature;openEntry(null);}});return()=>{active=false;};
+    // New-entry defaults follow the current studio date.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[params,timezone]);
+  const closeEntry=()=>{setEntry(undefined);setReceiptFile(null);setParams(current=>{const next=new URLSearchParams(current);next.delete('new');return next;},{replace:true});expenseRequest.current='';};
+  const saveEntry=async event=>{
+    event.preventDefault();if(saveLock.current)return;saveLock.current=true;setBusy(true);setSaveError('');
+    let record=entry;
+    try{
+      record=await workspaceRequest(entry?'put':'post',entry?'/api/studio/ledger/'+entry._id:'/api/studio/ledger',{...form,amount:String(form.amount)});
+      if(!record?._id)throw new Error('The server did not confirm the transaction.');
+      setEntry(record);
+      if(receiptFile&&form.type==='expense'){
+        const body=new FormData();body.append('receipt',receiptFile,'receipt.jpg');
+        const response=await fetch(API+'/api/studio/ledger/'+record._id+'/receipt',{method:'POST',headers:{Authorization:'Bearer '+token},body});
+        if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||'Receipt upload failed. The expense is saved; retry to attach its photo.');}
+      }
+      closeEntry();reload();toast.success('Transaction saved');
+    }catch(err){if(record?._id){setEntry(record);reload();setSaveError('The expense is saved. '+(err.message||recordError(err))+' Retry here to update this same record.');}else setSaveError(recordError(err));}
+    finally{setBusy(false);saveLock.current=false;}
+  };
+  const viewReceipt=async row=>{
+    if(openingReceipt)return;setOpeningReceipt(row._id);
+    try{
+      const response=await fetch(API+'/api/studio/ledger/'+row._id+'/receipt',{headers:{Authorization:'Bearer '+token}});
+      if(!response.ok)throw new Error('Receipt could not be loaded.');
+      const file=await response.blob(),name='receipt-'+row._id+'.'+(file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg');
+      if(window.StudioOSNative?.saveFile)await window.StudioOSNative.saveFile(file,name);
+      else{const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+    }catch(err){toast.error(err.message);}finally{setOpeningReceipt('');}
   };
   const savePayment = async (event) => {
     event.preventDefault();
@@ -149,12 +182,16 @@ export default function Finance() {
     }
   };
   const invoiceStatus = async (row, status) => {
+    if (updatingInvoice || status === row.status) return;
+    setUpdatingInvoice(row._id);
     try {
       await workspaceRequest("put", "/api/invoices/" + row._id, { status });
       reload();
       toast.success("Invoice status updated");
     } catch (err) {
       toast.error(recordError(err));
+    } finally {
+      setUpdatingInvoice("");
     }
   };
   const expenseTotal = sum(paidExpenses, "amount");
@@ -171,7 +208,7 @@ export default function Finance() {
     ]
       .join(" ")
       .toLowerCase()
-      .includes(query.toLowerCase()),
+      .includes(query.trim().toLowerCase()),
   );
   return (
     <div>
@@ -211,32 +248,32 @@ export default function Finance() {
             note: "From your cash ledger",
           },
           {
-            label: "Invoice balances",
-            value: rupees(invoices.reduce((s, i) => s + invoiceBalance(i), 0)),
-            note: "Separate from booking balances",
+            label: "Due now",
+            value: <Link className="finance-due-summary-link" to="/admin/finance?view=due" aria-label="Review invoice payments due now">{rupees(dueRows.reduce((sum, row) => sum + Math.round(row.amountDue * 100), 0) / 100)}<ArrowUpRight size={17} /></Link>,
+            note: "Issued INR invoices · today & overdue",
           },
         ]}
       />
       <WorkspaceError error={error} retry={reload} />
-      <FinanceInsights entries={entries} leads={leads} loading={loading || (!!error && !data.length)} />
-      <div className="workspace-info">
-        <Wallet size={16} />
+      <details className="finance-balance-explainer"><summary><Wallet size={16} />How balances work</summary>
         <p>
           Booking and invoice balances are shown separately to avoid counting
           the same client payment twice. Ledger totals reflect only the
           transactions entered there.
         </p>
-      </div>
-      <div className="workspace-two-column">
+      </details>
+      <div className={tab === 'due' ? 'finance-due-layout' : 'workspace-two-column'}>
         <section className="studio-card">
-          <div className="studio-tabs">
+          <div className="studio-phone-filter finance-view-filter"><StudioSelect aria-label="View finance records" value={tab} onChange={event=>{setTab(event.target.value);setQuery("");}}>{[["bookings","Booking payments"],["due","Due now"],["invoices","Invoices"],["ledger","Cash ledger"]].map(([key,label])=><option key={key} value={key}>{label}</option>)}</StudioSelect></div><div className="studio-tabs finance-register-tabs">
             {[
               ["bookings", "Booking payments"],
+              ["due", "Due now"],
               ["invoices", "Invoices"],
               ["ledger", "Cash ledger"],
             ].map(([key, label]) => (
               <button
                 className={tab === key ? "active" : ""}
+                aria-pressed={tab === key}
                 key={key}
                 onClick={() => {
                   setTab(key);
@@ -254,28 +291,28 @@ export default function Finance() {
               placeholder="Search financial records…"
             />
           </div>
-          {loading || !visible.length ? (
+          {tab === 'due' ? <DuePayments rows={dueRows} loading={loading || (!!error && !data.length)} query={query} timezone={timezone} /> : loading || !visible.length ? (
             <WorkspaceEmpty
               loading={loading}
-              title="A clear ledger starts here"
-              description="Your existing studio records will appear in this view."
+              title={query.trim() ? "No matching financial records" : "A clear ledger starts here"}
+              description={query.trim() ? "Try another client, category or status." : "Your existing studio records will appear in this view."}
             />
           ) : (
             <div className="studio-table-wrap">
-              <table className="studio-table">
-                <thead>
-                  <tr>
-                    <th>{tab === "ledger" ? "Transaction" : "Client"}</th>
-                    <th>{tab === "ledger" ? "Amount" : "Total"}</th>
-                    <th>{tab === "ledger" ? "Date" : "Balance"}</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+              <table role="table" aria-label="Financial records" className="studio-table studio-phone-record-table">
+                <thead role="rowgroup">
+                  <tr role="row">
+                    <th role="columnheader">{tab === "ledger" ? "Transaction" : "Client"}</th>
+                    <th role="columnheader">{tab === "ledger" ? "Amount" : "Total"}</th>
+                    <th role="columnheader">{tab === "ledger" ? "Date" : "Balance"}</th>
+                    <th role="columnheader">Status</th>
+                    <th role="columnheader">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody role="rowgroup">
                   {visible.map((row) => (
-                    <tr key={row._id}>
-                      <td>
+                    <tr role="row" key={row._id}>
+                      <td role="cell" data-label="Record">
                         <strong>
                           {row.name || row.clientName || row.description}
                         </strong>
@@ -287,7 +324,7 @@ export default function Finance() {
                               : recordDate(row.invoiceDate)}
                         </small>
                       </td>
-                      <td>
+                      <td role="cell" data-label={tab === "ledger" ? "Amount" : "Total"}>
                         {rupees(
                           tab === "ledger"
                             ? row.amount
@@ -296,7 +333,7 @@ export default function Finance() {
                               : row.total,
                         )}
                       </td>
-                      <td>
+                      <td role="cell" data-label={tab === "ledger" ? "Date" : "Balance"}>
                         {tab === "ledger"
                           ? recordDate(row.date)
                           : rupees(
@@ -305,7 +342,7 @@ export default function Finance() {
                                 : invoiceBalance(row),
                             )}
                       </td>
-                      <td>
+                      <td role="cell" data-label="Status">
                         <span
                           className={
                             "studio-badge " +
@@ -316,23 +353,24 @@ export default function Finance() {
                               : "gold")
                           }
                         >
+                          {tab === "invoices" && row.documentStatus === "Sent" && row.status === "Paid" && <StudioIcon icon={CreditCard} size={16} status="success" label="Payment recorded as paid" />}
                           {row.documentStatus === "Draft" ? "Draft" : row.documentStatus === "Cancelled" ? "Cancelled" : row.paymentStatus || row.status}
                         </span>
                         {tab === "invoices" && (
-                          <select
+                          <StudioSelect
                             className="studio-input workspace-invoice-status"
                             aria-label={"Invoice status for " + row.clientName}
-                            disabled={["Draft", "Cancelled"].includes(row.documentStatus)}
+                            disabled={Boolean(updatingInvoice) || ["Draft", "Cancelled"].includes(row.documentStatus)}
                             value={row.status}
                             onChange={(e) => invoiceStatus(row, e.target.value)}
                           >
                             {["Pending", "Paid", "Cancelled"].map((v) => (
                               <option key={v}>{v}</option>
                             ))}
-                          </select>
+                          </StudioSelect>
                         )}
                       </td>
-                      <td>
+                      <td role="cell" data-label="Actions">
                         {tab === "bookings" ? (
                           <button
                             className="studio-button small"
@@ -354,28 +392,14 @@ export default function Finance() {
                             aria-label={"View invoice " + row.clientName}
                             onClick={() => navigate("/admin/invoices/"+row._id)}
                           >
-                            <ArrowUpRight size={15} />
+                            <ArrowUpRight size={15} /><span className="studio-phone-action-label">Open invoice</span>
                           </button>
                         ) : row.type === "expense" ? (
-                          <>
-                            <button
-                              className="studio-icon-button"
-                              aria-label={"Edit expense " + row.description}
-                              onClick={() => openEntry(row)}
-                            >
-                              <Pencil size={14} />
-                            </button>
-                            <button
-                              className="studio-icon-button"
-                              aria-label={"Remove expense " + row.description}
-                              onClick={() => {
-                                setDeleting(row);
-                                setSaveError("");
-                              }}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </>
+                          <WorkspaceActionMenu label="Expense options">
+                            <button type="button" onClick={()=>openEntry(row)}>Edit expense / receipt</button>
+                            {row.receipt?.bytes>0&&<button type="button" disabled={Boolean(openingReceipt)} onClick={()=>viewReceipt(row)}>View receipt</button>}
+                            <button type="button" onClick={()=>{setDeleting(row);setSaveError('');}}>Remove expense</button>
+                          </WorkspaceActionMenu>
                         ) : (
                           <span className="studio-muted">Receipt</span>
                         )}
@@ -387,7 +411,7 @@ export default function Finance() {
             </div>
           )}
         </section>
-        <aside className="workspace-rail">
+        {tab !== 'due' && <aside className="workspace-rail">
           <ExpenseBreakdown entries={entries} loading={loading} onCategory={category => { setTab("ledger"); setQuery(category); }} />
           <section className="studio-card">
             <h2 className="studio-section-title">Cash ledger snapshot</h2>
@@ -416,12 +440,13 @@ export default function Finance() {
               receipt separately when using the cash ledger.
             </p>
           </section>
-        </aside>
+        </aside>}
       </div>
+      {tab!=='due'&&<details className="studio-card finance-analysis-disclosure"><summary>Business insights & trends</summary><FinanceInsights entries={entries} leads={leads} loading={loading||!!error}/></details>}
       {entry !== undefined && (
         <WorkspaceDialog
           title={entry ? "Edit expense" : "Record a transaction"}
-          onClose={() => setEntry(undefined)}
+          onClose={closeEntry}
           onSubmit={saveEntry}
           busy={busy}
           error={saveError}
@@ -439,9 +464,10 @@ export default function Finance() {
                     status: value === "income" ? "Received" : "Paid",
                   }))
                 }
-                options={["expense", "income"]}
+                options={[{ value: "expense", label: "Expense" }, { value: "income", label: "Income" }]}
               />
             )}
+            {form.type==='expense'&&<WorkspaceField label="Project (optional)" name="studioProjectId" value={form.studioProjectId||''} onChange={change} options={[{value:'',label:'Studio overhead'},...projects.map(project=>({value:project._id,label:project.name}))]}/>}
             <WorkspaceField
               label="Description"
               name="title"
@@ -486,6 +512,7 @@ export default function Finance() {
               }
             />
           </div>
+          {form.type==='expense'&&<ReceiptCapture file={receiptFile} onChange={setReceiptFile} disabled={busy} existing={Boolean(entry?.receipt?.bytes)}/>}
         </WorkspaceDialog>
       )}
       {payment && (

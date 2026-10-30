@@ -1,5 +1,6 @@
+import StudioSelect from '../common/StudioSelect';
 import { useState } from "react";
-import { calendarMonthLoad } from "../operations/insightData";
+import { calendarMonthLoad } from "./calendarData";
 import "../operations/studioInsights.css";
 
 export default function CalendarInsights({
@@ -8,13 +9,16 @@ export default function CalendarInsights({
   selected,
   onSelect,
   loading,
+  timezone,
+  formatDate,
 }) {
   const {
     days,
     events: monthEvents,
     activeDays,
     peak,
-  } = calendarMonthLoad(events, month);
+  } = calendarMonthLoad(events, month, timezone);
+  const dayLabel = day => formatDate ? formatDate(day.key) : day.label;
   const [hovered, setHovered] = useState(null);
   const selectedIndex = Math.max(
     0,
@@ -51,7 +55,7 @@ export default function CalendarInsights({
           </p>
         </div>
         <div className="studio-calendar-load-controls">
-          <select
+          <StudioSelect
             aria-label="Inspect calendar day"
             value={days[selectedIndex].key}
             disabled={loading}
@@ -62,12 +66,12 @@ export default function CalendarInsights({
           >
             {days.map((day) => (
               <option key={day.key} value={day.key}>
-                {day.label}
+                {dayLabel(day)}
               </option>
             ))}
-          </select>
+          </StudioSelect>
           <div className="studio-calendar-load-value" aria-live="polite">
-            <strong>{active.label}</strong>
+            <strong>{dayLabel(active)}</strong>
             <span>
               {loading ? "—" : active.count}{" "}
               {active.count === 1 ? "event" : "events"}
@@ -87,8 +91,8 @@ export default function CalendarInsights({
             key={day.key}
             tabIndex={index === selectedIndex ? 0 : -1}
             aria-pressed={day.key === selected}
-            aria-label={`${day.label}: ${day.count} ${day.count === 1 ? "event" : "events"}`}
-            title={`${day.label}: ${day.count} events`}
+            aria-label={`${dayLabel(day)}: ${day.count} ${day.count === 1 ? "event" : "events"}`}
+            title={`${dayLabel(day)}: ${day.count} events`}
             onFocus={() => setHovered(index)}
             onBlur={() => setHovered(null)}
             onPointerEnter={() => setHovered(index)}
@@ -106,7 +110,7 @@ export default function CalendarInsights({
               }}
             />
             <small>
-              {index === 0 || (index + 1) % 5 === 0 || index === days.length - 1
+              {index === 0 || index === days.length - 1 || ((index + 1) % 5 === 0 && index < days.length - 3)
                 ? day.day
                 : ""}
             </small>

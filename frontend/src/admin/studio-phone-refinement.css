@@ -1,0 +1,168 @@
+/* Phone refinement: bounded controls, compact rhythm and theme-safe surfaces. */
+.studio-app .reference-list-row{background:var(--studio-surface);color:var(--studio-text);border-color:var(--studio-border)}
+.studio-app .reference-list-row small{color:var(--studio-muted)}
+.project-hub-header-actions{display:contents}
+.studio-app .finance-balance-explainer{margin:0 0 20px;border:1px solid var(--studio-border);border-radius:14px;background:var(--studio-surface);color:var(--studio-muted);padding:0 16px}
+.finance-balance-explainer summary{display:flex;align-items:center;gap:9px;cursor:pointer;min-height:44px;font-size:12px;font-weight:550;list-style:none}
+.finance-balance-explainer summary::after{content:'+';margin-left:auto;font-size:18px}
+.finance-balance-explainer[open] summary::after{content:'−'}
+.finance-balance-explainer p{font-size:12px;line-height:1.65;margin:0 0 14px}
+.studio-app .workspace-metric-value{font-variant-numeric:tabular-nums}
+@media(max-width:768px){
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace{--studio-mobile-bar:calc(92px + env(safe-area-inset-bottom,0px))}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-main{padding:18px 14px 28px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-page-heading,.reference-page-heading){gap:14px;margin-bottom:20px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-page-heading h1,.reference-page-heading h1,.qw-list-heading h1){font-size:24px;line-height:1.2;letter-spacing:-.045em;margin:0 0 8px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-page-heading>div>p{font-size:13px;line-height:1.55;margin:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-heading-actions,.ops-heading-actions){display:flex;flex-wrap:wrap;gap:8px;width:100%;margin:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-heading-actions,.ops-heading-actions)>.studio-button{flex:1;min-width:0;white-space:normal;padding:10px 12px;line-height:1.3}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-metric-grid{gap:10px;margin-bottom:20px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-metric{min-height:0;padding:14px;border-radius:18px;display:flex;flex-direction:column;justify-content:flex-start}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.workspace-metric-label,.ops-metric-top>span:first-child){font-size:11px;line-height:1.4;letter-spacing:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.workspace-metric-value,.ops-metrics .studio-metric>strong){font-size:25px;line-height:1.2;margin:9px 0 7px;letter-spacing:-.035em;font-weight:600}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .workspace-metric-value.is-label{font-size:17px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .workspace-metric-value a{font:inherit;display:inline-flex;align-items:center;gap:6px;color:var(--studio-text)}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-metric small{font-size:10px;line-height:1.45;margin:0;color:var(--studio-muted)}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-metric-icon{width:27px;height:27px;min-width:27px;border-radius:9px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-metric-icon svg{width:15px;height:15px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-metric-top{gap:6px;align-items:center}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.ops-section-heading,.ops-task-toolbar,.ops-crew-toolbar){padding:16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.ops-task-toolbar,.ops-crew-toolbar){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.ops-task-toolbar,.ops-crew-toolbar)>.ops-search{grid-column:1/-1;width:100%;min-width:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.ops-select,.ops-role-select){width:100%;max-width:none;min-width:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-sort{width:100%;min-width:0;display:block;position:relative}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-sort>svg{display:none}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-sort>.studio-select{width:100%;max-width:none}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.ops-task-tabs,.studio-crm-status-tabs,.studio-crm-tabs){gap:3px;padding:4px;scroll-padding:8px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.ops-task-tabs,.studio-crm-status-tabs,.studio-crm-tabs)>button{font-size:12px;min-height:40px;padding:8px 11px;white-space:nowrap}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.ops-task-tabs,.studio-crm-status-tabs,.studio-crm-tabs)>button span{font-size:10px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-crm-toolbar{padding:16px;gap:10px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-crm-toolbar-actions{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px;width:100%}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-crm-select-wrap{width:100%;min-width:0}
+ .studio-crm-select-wrap>.studio-select{width:100%}.studio-crm-select-wrap>svg{display:none}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-crm-row-actions{display:flex;width:100%;gap:8px;justify-content:stretch}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-crm-row-actions>.studio-icon-button{flex:1;justify-content:center;min-width:0;font-size:13px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-crm-row-actions>span{flex:0 0 auto}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-crm-row-actions .reference-more>button{min-height:44px;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;border:1px solid var(--studio-border);border-radius:12px;font-size:13px;white-space:nowrap}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-email-welcome{padding:26px 20px!important;text-align:left;min-height:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-email-welcome>svg{display:block;width:28px;height:28px;margin:0 0 16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-email-welcome h2{font-size:20px!important;line-height:1.3;margin:0 0 12px;letter-spacing:-.03em}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-email-welcome p{font-size:13px;line-height:1.65;margin:0 0 16px;max-width:none}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-email-welcome small{display:block;font-size:11px;line-height:1.5;margin:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-email-page>.workspace-info{padding:14px 16px;border-radius:16px;font-size:12px;line-height:1.6;margin:0 0 16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-button:disabled{opacity:.55;box-shadow:none}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .support-workspace.is-empty{min-height:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .support-workspace.is-empty .support-empty{min-height:0;max-width:none;padding:30px 18px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .support-empty>svg{display:block;margin:0 auto 14px;width:30px;height:30px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .support-empty h3{font-size:16px;line-height:1.4;margin:0 0 10px;text-align:center}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .support-empty p{font-size:12px;line-height:1.65;margin:0;text-align:center}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .support-sidebar{padding:16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-calendar-insight{padding:16px;border-radius:18px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-calendar-load-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;width:100%}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-calendar-load-controls>.studio-select{min-width:0;width:100%}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-calendar-load-value{padding:0;background:none;min-width:0;align-self:center}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-calendar-load-value strong{display:none}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-calendar-load-value span{font-size:12px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-calendar-load{height:84px;gap:3px;margin-top:14px;margin-bottom:24px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-insight-note{font-size:10px;line-height:1.5}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-calendar-panel{padding:16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub .reference-heading{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px 8px;align-items:center;margin:0 0 18px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub .reference-heading h1{grid-column:2;font-size:22px;line-height:1.25;margin:0;min-width:0;overflow-wrap:anywhere}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-header-actions{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px;min-width:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-header-actions>.reference-heading-spacer{display:none}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-header-actions>.studio-select{width:100%;min-width:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-header-actions .reference-more>button,.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-header-actions .reference-button{font-size:12px;min-height:44px;padding:9px 11px;border-radius:12px;gap:7px;white-space:nowrap}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:4px;overflow:visible;border-radius:14px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-tabs>button{padding:9px 2px;min-width:0;min-height:42px;font-size:11px;white-space:nowrap;border-radius:10px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.project-hub .project-hub-section,.project-hub .project-hub-overview,.shoot-day-event){padding:16px;border-radius:18px;margin-bottom:16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-intro h2{font-size:19px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-actions>.studio-button{justify-content:center;font-size:12px!important;min-width:0;padding:9px!important}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-task>.studio-select{grid-column:2;width:100%}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-shortcuts{gap:7px;margin-top:16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-shortcuts>button{min-height:88px;padding:12px 9px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-shortcuts span{font-size:10px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-controls{display:grid;grid-template-columns:44px minmax(0,1fr) 44px auto;gap:5px;margin:16px 0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-controls>.studio-field{width:100%;max-width:none;margin:0}
+ .shoot-day-controls>.studio-field>span{position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-controls .studio-input{padding:9px 8px;min-height:44px;width:100%;box-sizing:border-box}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-controls>.studio-button{padding:9px;font-size:12px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-zone{font-size:11px;line-height:1.6;margin:0 0 16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-event h2{font-size:18px;line-height:1.35}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-event>header{gap:8px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-crew{display:grid}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-person{display:grid;grid-template-columns:minmax(0,1fr) 44px 44px;width:100%;box-sizing:border-box;padding:6px 10px;gap:5px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-modal .studio-modal-header h2{text-transform:none;font-size:20px;letter-spacing:-.035em}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-modal .workspace-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 12px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-modal .studio-field{gap:6px;margin:0;min-width:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-modal .workspace-wide{grid-column:1/-1}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-modal .studio-field>span{font-size:12px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-modal .studio-input{border-radius:12px;background:var(--studio-surface);color:var(--studio-text);min-height:44px;padding:10px 12px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-modal :is(.studio-modal-header,.ops-modal-body){padding:18px 16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-modal .reference-text-button{font-size:13px;min-height:44px;justify-content:flex-start}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-offline-list article{display:grid;grid-template-columns:24px minmax(0,1fr) 44px;gap:12px;padding:16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-offline-list article>div{grid-column:2/-1}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-offline-list article>.studio-button{grid-column:1/3;justify-content:center;min-width:0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-offline-list article>.studio-icon-button{grid-column:3;min-width:44px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-offline-hub>.studio-muted{font-size:12px;line-height:1.65;margin:0 0 18px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-disclosures{gap:12px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-disclosure{border-radius:18px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-disclosure>button{min-height:70px;padding:15px 16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-disclosure>button strong{font-size:14px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-disclosure>button p{font-size:12px;line-height:1.5}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-disclosure-body{padding:16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-pref-start .studio-select{width:100%}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.reference-dropdown,.studio-crm-action-menu){max-width:min(280px,calc(100vw - 40px));border-radius:14px;padding:6px;background:var(--studio-surface);border-color:var(--studio-border)}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-dropdown button{min-height:44px;padding:10px 12px;font-size:13px;color:var(--studio-text);white-space:normal}
+}
+@media(max-width:360px){
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-header-actions{grid-template-columns:minmax(0,1fr) auto;gap:8px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-header-actions>.studio-select{grid-column:1/-1}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .project-hub-header-actions>.reference-create-menu{justify-self:end}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-controls{grid-template-columns:44px minmax(0,1fr) 44px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-controls>.studio-button{grid-column:1/-1;justify-self:end}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-metric{padding:12px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .workspace-metric-value{font-size:22px}
+}
+
+.studio-phone-filter,.studio-topbar-phone-title{display:none}
+@media(max-width:768px){
+ .studio-topbar-full-title{display:none}.studio-topbar-phone-title{display:inline}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-phone-filter{display:block;padding:0 16px 12px}
+ .studio-phone-filter>.studio-select{display:block;width:100%}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-crm-stage-filters,.ops-tabs){display:none}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-disclosure-heading>button{padding:15px 16px;min-height:72px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-disclosure-heading strong{font-size:14px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-disclosure-heading small{font-size:12px;line-height:1.5;margin-top:5px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .settings-disclosure>.settings-group-content{padding:16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .support-inbox{padding:16px 0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .support-workspace.is-empty .support-conversation{display:none}
+}
+
+@media(max-width:768px){
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .finance-register-tabs{display:none}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .finance-view-filter{padding:16px 16px 0}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-heading-actions:has(>.studio-button:only-child){width:auto;align-self:flex-start}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-heading-actions>.studio-button:only-child{flex:0 1 auto}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-crew-table tbody tr{position:relative;gap:12px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-crew-table tbody td:first-child{padding-right:44px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-crew-table tbody td:last-child{position:absolute;right:8px;top:8px;padding:0;border:0;display:block;width:44px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-crew-table tbody td:last-child::before{display:none}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .workspace-calendar{padding:16px;border-radius:18px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .workspace-calendar-heading{gap:14px}
+}
+
+@media(max-width:768px){
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-list-header h1{font-size:24px;line-height:1.2;letter-spacing:-.045em;margin-bottom:8px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-list-header p{font-size:13px;line-height:1.55}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-list-header{gap:16px;margin-bottom:20px}
+}
+
+.studio-app.studio-action-sheet-overlay{position:fixed;inset:0;z-index:1600;display:flex;justify-content:center;align-items:flex-end;min-height:0;padding:12px;background:rgba(0,0,0,.45)!important;backdrop-filter:blur(8px);box-sizing:border-box}
+.studio-action-sheet{width:min(100%,520px);max-height:min(78dvh,var(--studio-visible-height,78dvh));overflow:auto;background:var(--studio-surface);color:var(--studio-text);border:1px solid var(--studio-border);border-radius:24px;padding:8px 10px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 24px 80px #0004}
+.studio-action-sheet>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 8px 14px}
+.studio-action-sheet h2{font:600 18px/1.4 var(--studio-font);color:var(--studio-text);margin:0;letter-spacing:-.02em}
+.studio-action-sheet>header>button{display:grid;place-items:center;width:44px;height:44px;flex:0 0 44px;border:1px solid var(--studio-border);border-radius:50%;background:var(--studio-canvas);color:var(--studio-text)}
+.studio-action-sheet-items>button,.studio-action-sheet-items>a{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:12px;border:0;border-radius:12px;background:transparent;color:var(--studio-text);font:500 14px/1.5 var(--studio-font);text-align:left;white-space:normal;text-decoration:none}
+.studio-action-sheet-items>:hover{background:var(--studio-canvas)}
+.studio-action-sheet :is(button,a):focus-visible{outline:2px solid #5383ef;outline-offset:-2px}

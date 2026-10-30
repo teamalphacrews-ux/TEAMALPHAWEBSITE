@@ -1,0 +1,92 @@
+/* Overview's quiet application frame. Other workspaces keep their own styling. */
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell {
+  --studio-nav-width: 220px;
+  --studio-content-width: 1780px;
+  --studio-page-gutter: clamp(18px, 2vw, 32px);
+  --studio-canvas: #f1f2f3;
+  --studio-surface: #fff;
+  --studio-text: #17191c;
+  --studio-muted: #6b7077;
+  --studio-border: #e1e4e7;
+  --studio-nav-surface: #f1f2f3;
+  --studio-nav-hover: #e5e7e9;
+  --studio-nav-active: #17191c;
+  --studio-nav-accent: #fff;
+  --appearance-subtle: #e9ebed;
+  --appearance-link: #555b63;
+  --appearance-shadow: none;
+  background: var(--studio-canvas);
+}
+html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspace.studio-overview-shell {
+  --studio-canvas: #141517;
+  --studio-surface: #202225;
+  --studio-text: #f4f5f6;
+  --studio-muted: #aeb2b8;
+  --studio-border: #34373c;
+  --studio-nav-surface: #141517;
+  --studio-nav-hover: #26282c;
+  --studio-nav-active: #f1f2f3;
+  --studio-nav-accent: #17191c;
+  --appearance-subtle: #2a2d31;
+  --appearance-link: #d4d7dc;
+}
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-sidebar { padding: 18px 12px 0; border-right: 0; background: var(--studio-nav-surface); }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-brand-row { padding: 0; margin-bottom: 22px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-brand { gap: 9px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-brand-mark { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 9px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-brand strong { font-size: 13px; letter-spacing: -.02em; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-brand small { font-size: 9px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-sidebar-resize { width: 30px; height: 34px; border-radius: 8px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-nav { padding-inline: 0; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-nav-section-label { font-size: 9px; padding-left: 11px; color: var(--studio-muted); }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-nav-item { min-height: 42px; margin: 3px 0; padding: 9px 11px; gap: 10px; border-radius: 10px; font-size: 12px; color: var(--studio-muted); background: transparent; box-shadow: none; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-nav-item:hover { background: var(--studio-nav-hover); color: var(--studio-text); }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-nav-item.is-active { color: var(--studio-nav-accent); background: var(--studio-nav-active); border-color: transparent; box-shadow: none; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-nav-item.is-active :is(.studio-app-icon, svg) { color: inherit; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-nav-item .studio-app-icon { flex-basis: 18px; width: 18px; height: 18px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-nav-item .studio-app-icon svg { width: 17px; height: 17px; stroke-width: 1.65; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-nav-group-toggle { min-height: 36px; padding-inline: 11px; font-size: 9px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-sidebar-bottom { border-color: var(--studio-border); }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-sidebar-profile { gap: 7px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-sidebar-profile strong { font-size: 11px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-sidebar-profile small { font-size: 9px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-sidebar-profile button { width: 30px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar { height: 68px; min-height: 68px; gap: 24px; background: var(--studio-canvas); border: 0; box-shadow: none; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell :is(.studio-topbar-workspace, .studio-breadcrumb-separator) { display: none; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar-context strong { font-size: 13px; font-weight: 600; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar-actions { flex: 1; gap: 12px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-global-search { order: -1; margin-right: auto; width: min(380px, 100%); min-height: 38px; border: 1px solid transparent; border-radius: 999px; background: var(--studio-surface); padding: 0 13px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-global-search input { flex: 1; min-width: 0; width: 100%; font-size: 12px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-search-shortcut { flex-shrink: 0; font-size: 9px; padding: 1px 4px; border: 0; background: var(--studio-canvas); border-radius: 4px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-global-search:focus-within { border-color: var(--studio-muted); }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar :is(.studio-theme-toggle, .studio-notification-button) { width: 36px; height: 36px; background: var(--studio-surface); border: 0; border-radius: 50%; color: var(--studio-text); }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar-divider { display: none; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar .studio-avatar { width: 36px; height: 36px; color: var(--studio-text); background: var(--studio-surface); border-color: var(--studio-border); }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-preview-label { padding: 5px 18px; font-size: 10px; line-height: 1.5; background: var(--appearance-subtle); color: var(--studio-muted); }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-main { padding-top: 18px; }
+.studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-footer { font-size: 9px; color: var(--studio-muted); padding-block: 18px; }
+
+@media (min-width: 1101px) {
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell.studio-sidebar-compact { --studio-nav-width: 76px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell.studio-sidebar-compact .studio-sidebar { padding-inline: 9px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell.studio-sidebar-compact .studio-brand-row { margin-bottom: 12px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell.studio-sidebar-compact .studio-nav-item { justify-content: center; padding-inline: 8px; gap: 0; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell.studio-sidebar-compact .studio-nav-group-toggle { padding-inline: 8px; }
+}
+@media (max-width: 1100px) {
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-sidebar { padding-top: max(18px, env(safe-area-inset-top)); padding-bottom: env(safe-area-inset-bottom); }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell :is(.studio-nav-item, .studio-nav-group-toggle) { min-height: 44px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-sidebar-profile button { width: 44px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar { gap: 16px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar :is(.studio-theme-toggle, .studio-notification-button) { width: 44px; height: 44px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar .studio-avatar { width: 40px; height: 40px; }
+}
+@media (max-width: 700px) {
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell { --studio-page-gutter: 16px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar { height: auto; min-height: 64px; padding-top: max(7px, env(safe-area-inset-top)); gap: 10px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar-actions { flex: none; gap: 5px; margin-left: auto; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-topbar-context { gap: 6px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-global-search { display: none; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-preview-label { padding-inline: 16px; font-size: 9px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-overview-shell .studio-main { padding-top: 16px; }
+}
