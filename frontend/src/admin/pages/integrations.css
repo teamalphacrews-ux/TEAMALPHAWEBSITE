@@ -81,6 +81,19 @@
 .studio-email-welcome p{max-width:480px;margin:14px auto;color:var(--brand-muted);line-height:1.9}
 .studio-email-welcome small{display:block;color:var(--brand-muted);margin-top:22px}
 .studio-email-back{display:none!important}
+.studio-app .studio-email-setup{padding:24px;display:grid;gap:18px}
+.studio-email-setup-heading{display:flex;align-items:flex-start;gap:12px}
+.studio-email-setup-heading>svg{flex:none;margin-top:4px;color:var(--studio-accent)}
+.studio-email-setup h2{margin:0;font-size:18px;line-height:1.4}
+.studio-email-setup p{margin:5px 0 0;color:var(--studio-muted);font-size:13px;line-height:1.65}
+.studio-email-setup ol{list-style:none;padding:0;margin:0;display:grid;gap:0}
+.studio-email-setup li{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--studio-border)}
+.studio-email-setup li>svg{flex:none;margin-top:3px;color:var(--studio-muted)}
+.studio-email-setup li strong{font-size:13px;font-weight:600}
+.studio-email-setup li p{font-size:12px}
+.studio-email-setup-actions{display:flex;flex-wrap:wrap;gap:10px}
+.studio-email-setup small{color:var(--studio-muted);font-size:12px;line-height:1.6}
+@media(max-width:600px){.studio-app .studio-email-setup{padding:18px;gap:14px}.studio-email-setup-actions{display:grid;grid-template-columns:1fr}}
 .studio-email-page button:focus-visible,.studio-email-page a:focus-visible{outline:2px solid var(--brand-focus);outline-offset:3px}
 @media(max-width:1100px){.studio-email-controls{align-items:stretch;flex-direction:column;gap:12px}.studio-email-search{max-width:none}.studio-email-detail-heading{flex-direction:column;gap:10px}.studio-email-columns{grid-template-columns:minmax(250px,.9fr) minmax(0,1fr)}}
 @media(max-width:760px){.studio-gmail-card{flex-wrap:wrap;gap:12px}.studio-gmail-card-actions{width:100%;justify-content:space-between}.studio-email-toolbar,.studio-email-controls{padding:16px}.studio-email-controls nav{justify-content:space-between}.studio-email-controls nav button{min-height:44px}.studio-email-search input{font-size:16px!important}.studio-email-columns{display:block;min-height:360px}.studio-email-detail{display:none;padding:20px}.studio-email-columns.has-selection .studio-email-list{display:none}.studio-email-columns.has-selection .studio-email-detail{display:block}.studio-email-list{border-right:0}.studio-email-back{display:inline-flex!important;margin-bottom:24px}.studio-email-row{padding:18px 16px}.studio-email-row-top time{font-size:9px}.studio-email-detail-heading h2{font-size:25px}.studio-email-pagination button{min-height:44px}.studio-email-footnote{padding:14px 16px}}

@@ -12,7 +12,7 @@ const fail = (status, message) => {
   throw Object.assign(new Error(message), { status });
 };
 async function acceptedQuote(token) {
-  if (typeof token !== "string" || !/^[a-f0-9]{64}$/.test(token))
+  if (!require('../saas/publicTokens').isShareToken(token))
     fail(404, "This project link is unavailable.");
   const quote = await Quotation.findOne({
     shareTokenHash: tokenHash(token),

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { WorkspaceDialog, WorkspaceField } from "../operations/WorkspaceUI";
-import { DEFAULT_STUDIO_TIMEZONE, studioDateTimeInput, studioDateTimeToISO } from '../../../utils/studioTime';
+import { DEFAULT_STUDIO_TIMEZONE, studioDateTimeInput, studioDateTimeToISO, studioDayKey, shiftDayKey, validStudioDay } from '../../../utils/studioTime';
 export default function EventForm({
   onClose,
   onSave,
@@ -21,13 +21,19 @@ export default function EventForm({
     ...initialData,
     start: studioDateTimeInput(initialData?.start, timezone),
     end: studioDateTimeInput(initialData?.end, timezone),
+    allDay: initialData?.allDay === true,
+    startDate: initialData?.startDate || studioDayKey(initialData?.start, timezone),
+    lastDate: initialData?.endDateExclusive ? shiftDayKey(initialData.endDateExclusive, -1) : studioDayKey(initialData?.start, timezone),
     lead: initialData?.lead?._id || initialData?.lead || "",
   }));
   const change = (name, value) => setForm((c) => ({ ...c, [name]: value }));
   const submit = (event) => {
     event.preventDefault();
     if (busy) return;
-    const start = studioDateTimeToISO(form.start, timezone), end = studioDateTimeToISO(form.end, timezone);
+    if (form.allDay && (!validStudioDay(form.startDate) || !validStudioDay(form.lastDate) || form.lastDate < form.startDate)) { setValidationError('Choose a valid start and last day.'); return; }
+    const endDateExclusive = form.allDay ? shiftDayKey(form.lastDate, 1) : '';
+    const start = studioDateTimeToISO(form.allDay ? form.startDate + 'T00:00' : form.start, timezone);
+    const end = studioDateTimeToISO(form.allDay ? endDateExclusive + 'T00:00' : form.end, timezone);
     if (!start || !end) { setValidationError(`Enter valid start and end times in ${timezone}. A daylight-saving clock change may make a selected time unavailable.`); return; }
     if (end <= start) { setValidationError('The end must be after the start.'); return; }
     setValidationError('');
@@ -35,6 +41,10 @@ export default function EventForm({
       ...form,
       start,
       end,
+      allDay: form.allDay,
+      startDate: form.allDay ? form.startDate : '',
+      endDateExclusive,
+      dateTimezone: form.allDay ? timezone : '',
     });
   };
   return (
@@ -79,23 +89,14 @@ export default function EventForm({
             ...leads.map((l) => ({ value: l._id, label: l.name })),
           ]}
         />
-        <WorkspaceField
-          label={`Starts · ${timezone}`}
-          name="start"
-          value={form.start}
-          onChange={change}
-          type="datetime-local"
-          required
-        />
-        <WorkspaceField
-          label={`Ends · ${timezone}`}
-          name="end"
-          value={form.end}
-          onChange={change}
-          type="datetime-local"
-          min={form.start}
-          required
-        />
+        <label className="calendar-all-day"><input type="checkbox" checked={form.allDay} onChange={event => change('allDay', event.target.checked)} /><span>All-day event</span></label>
+        {form.allDay ? <>
+          <WorkspaceField label="First day" name="startDate" value={form.startDate} onChange={change} type="date" required />
+          <WorkspaceField label="Last day" name="lastDate" value={form.lastDate} onChange={change} type="date" min={form.startDate} required help="Includes this day." />
+        </> : <>
+          <WorkspaceField label={`Starts · ${timezone}`} name="start" value={form.start} onChange={change} type="datetime-local" required />
+          <WorkspaceField label={`Ends · ${timezone}`} name="end" value={form.end} onChange={change} type="datetime-local" min={form.start} required />
+        </>}
         <WorkspaceField
           wide
           label="Venue / location"
@@ -112,7 +113,7 @@ export default function EventForm({
           type="textarea"
         />
       </div>
-      {form.start && form.end && form.end <= form.start && (
+      {!form.allDay && form.start && form.end && form.end <= form.start && (
         <p className="studio-error">The end must be after the start.</p>
       )}
       <fieldset className="workspace-crew-picker">

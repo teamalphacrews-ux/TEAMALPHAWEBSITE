@@ -83,7 +83,12 @@ export function studioDayBounds(key, timezone = DEFAULT_STUDIO_TIMEZONE) {
   return dayBoundsCache.get(cacheKey);
 }
 
+export const validStudioDay = value => /^\d{4}-\d{2}-\d{2}$/.test(value || '') && Number.isFinite(Date.parse(value + 'T00:00:00Z')) && new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) === value;
+export const hasAllDayRange = event => event?.allDay === true && validStudioDay(event.startDate) && validStudioDay(event.endDateExclusive) && event.endDateExclusive > event.startDate;
+export const eventStartDay = (event, timezone = DEFAULT_STUDIO_TIMEZONE) => hasAllDayRange(event) ? event.startDate : studioDayKey(event?.start, timezone);
+
 export function eventOnStudioDay(event, key, timezone = DEFAULT_STUDIO_TIMEZONE) {
+  if (hasAllDayRange(event)) return validStudioDay(key) && event.startDate <= key && key < event.endDateExclusive;
   const bounds = studioDayBounds(key, timezone);
   const start = Date.parse(event.start), end = Date.parse(event.end);
   return !!bounds.start && !!bounds.end && Number.isFinite(start) && Number.isFinite(end) && end > start && start < Date.parse(bounds.end) && end > Date.parse(bounds.start);

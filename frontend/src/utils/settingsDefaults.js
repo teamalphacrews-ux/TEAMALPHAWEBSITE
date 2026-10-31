@@ -41,6 +41,10 @@ export function invoiceDefaults(studio = {}, now = Date.now()) {
     reminderOffsets: automation.invoiceReminderDays,
   };
 }
+export function invoiceScheduleToggle(draft, enabled) {
+  return { ...draft, paymentScheduleEnabled: enabled,
+    _useDefaultPaymentSchedule: enabled && !draft.paymentSchedule.length ? true : draft._useDefaultPaymentSchedule };
+}
 export function defaultPaymentSchedule(studio, totalPaise, invoiceDate, dueDate) {
   const { billing } = documentSettings(studio);
   const milestones = billing.paymentMilestones;

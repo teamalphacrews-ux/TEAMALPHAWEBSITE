@@ -84,7 +84,7 @@ function createGmailOAuthHandlers({
         const user = await Connection.findOneAndUpdate(filter, { $set: {
           email, tokenEnvelope: sealTokens({ access_token: tokens.access_token, refresh_token: refresh,
             ...(Number.isFinite(tokens.expiry_date) ? { expiry_date: tokens.expiry_date } : {}) }, flow.userId, env),
-          connectedAt: new Date(), lastError: '',
+          connectedAt: new Date(), lastError: '', lastErrorCode: '',
         } }, { new: true, upsert: Boolean(tokens.refresh_token), runValidators: true });
         if (!user) throw publicError('Please start Gmail connection again.', 409);
         res.redirect(config.frontendOrigin + '/admin/email?gmail=connected');

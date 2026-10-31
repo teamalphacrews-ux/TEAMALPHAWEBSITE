@@ -7,6 +7,7 @@ const schema = new mongoose.Schema({
   tokenEnvelope: { type: String, required: true, select: false },
   connectedAt: { type: Date, required: true },
   lastError: String,
+  lastErrorCode: String,
 }, { timestamps: true });
 
 module.exports = mongoose.models.GmailConnection || mongoose.model('GmailConnection', schema);

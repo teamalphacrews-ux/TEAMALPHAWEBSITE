@@ -114,7 +114,7 @@ function safeQuote(q) {
 async function queueEmail(quote, body, scheduledFor) {
   if (!mailer.mailerReady())
     throw fail(
-      "Email delivery is not configured. Add SMTP or EMAIL_USER and EMAIL_PASS before sending.",
+      "Studio email sending is not set up yet. Share the client link now, or finish outgoing email setup in Settings → Email & messages.",
       503,
     );
   mailer.frontendOrigin();

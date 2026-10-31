@@ -9,8 +9,10 @@ const ipadDesktop = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/6
 test('installed iPhone app uses More navigation in either orientation', () => {
   assert.equal(usesIPhoneAppNavigation({ nativeAvailable: true, userAgent: iphone }), true);
 });
-test('iPhone Safari keeps the website navigation', () => {
+test('iPhone Safari can opt into More while keeping the helper default explicit', () => {
   assert.equal(usesIPhoneAppNavigation({ userAgent: iphone }), false);
+  assert.equal(usesIPhoneAppNavigation({ userAgent: iphone, allowMobileWeb: true }), true);
+  for (const userAgent of [ipad, ipadDesktop]) assert.equal(usesIPhoneAppNavigation({ userAgent, allowMobileWeb: true }), false);
 });
 test('native iPad and desktop-mode iPad keep the original sidebar', () => {
   for (const userAgent of [ipad, ipadDesktop]) assert.equal(usesIPhoneAppNavigation({ nativeAvailable: true, userAgent }), false);

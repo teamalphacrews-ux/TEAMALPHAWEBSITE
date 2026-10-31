@@ -6,6 +6,7 @@ import { useAuth } from '../../../context/AuthContext';
 import API from '../../../utils/apiConfig';
 import { OVERVIEW_CARDS, defaultOverviewPreferences as defaultPreferences, normalizeOverviewPreferences as normalize, moveOverviewCard } from '../../../utils/overviewPreferences';
 import { cancelStudioThemeTransition, transitionStudioTheme } from '../../../utils/studioThemeTransition';
+import { installStudioBrowserTheme } from '../../../utils/studioBrowserTheme';
 import '../../studio-theme-transition.css';
 export { OVERVIEW_CARDS };
 
@@ -96,6 +97,7 @@ function AccountPreferences({ children, storageKey, token, preview }) {
       if (previousMotion) html.setAttribute('data-studio-motion', previousMotion); else html.removeAttribute('data-studio-motion');
     };
   }, [resolvedTheme, preferences.reduceMotion]);
+  useLayoutEffect(() => installStudioBrowserTheme(document, resolvedTheme), [resolvedTheme]);
   useEffect(() => () => cancelStudioThemeTransition(), []);
   useEffect(() => {
     if (ready && location.pathname === '/admin' && location.state?.studioSignIn === true) navigate(preferences.landingPage, { replace: true, state: null });

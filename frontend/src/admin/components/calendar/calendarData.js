@@ -1,4 +1,4 @@
-import { DEFAULT_STUDIO_TIMEZONE, eventOnStudioDay, formatStudioDate, shiftDayKey, studioDayBounds, studioDayKey } from '../../../utils/studioTime.js';
+import { DEFAULT_STUDIO_TIMEZONE, eventOnStudioDay, hasAllDayRange, formatStudioDate, shiftDayKey, studioDayBounds, studioDayKey } from '../../../utils/studioTime.js';
 
 const validMonth = value => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(value));
 export const calendarMonthKey = (value, timezone = DEFAULT_STUDIO_TIMEZONE) => validMonth(value) ? value : studioDayKey(value, timezone).slice(0, 7);
@@ -29,6 +29,7 @@ export function calendarMonthLoad(events = [], month, timezone = DEFAULT_STUDIO_
   const { start } = studioDayBounds(first, timezone);
   const { start: end } = studioDayBounds(next, timezone);
   const valid = events.filter(event => {
+    if (hasAllDayRange(event)) return event.startDate < next && event.endDateExclusive > first;
     const from = Date.parse(event.start), to = Date.parse(event.end);
     return Number.isFinite(from) && Number.isFinite(to) && to > from && from < Date.parse(end) && to > Date.parse(start);
   });

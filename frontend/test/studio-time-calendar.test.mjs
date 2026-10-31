@@ -49,3 +49,22 @@ test('month workload and selected-day agenda share boundaries for cross-midnight
   assert.deepEqual(calendarMonthLoad([], 'invalid'), { days: [], events: [], activeDays: 0, peak: 0 });
   assert.deepEqual(calendarMonthGrid('2026-13'), []);
 });
+
+test('all-day events stay on authored dates without spilling into another day in any viewing zone', () => {
+  const event = { allDay: true, startDate: '2026-11-05', endDateExclusive: '2026-11-07', start: '2026-11-04T18:30:00Z', end: '2026-11-06T18:30:00Z' };
+  for (const zone of ['Asia/Kolkata', 'America/Los_Angeles', 'Pacific/Auckland']) {
+    assert.equal(eventOnStudioDay(event, '2026-11-04', zone), false);
+    assert.equal(eventOnStudioDay(event, '2026-11-05', zone), true);
+    assert.equal(eventOnStudioDay(event, '2026-11-06', zone), true);
+    assert.equal(eventOnStudioDay(event, '2026-11-07', zone), false);
+    const result = calendarMonthLoad([event], '2026-11', zone);
+    assert.equal(result.activeDays, 2);
+    assert.equal(result.days[4].count, 1);
+    assert.equal(result.days[6].count, 0);
+  }
+});
+test('all-day month boundaries use dates even when instants cross the viewing month', () => {
+  const event = { allDay: true, startDate: '2026-11-01', endDateExclusive: '2026-11-02', start: '2026-10-31T18:30:00Z', end: '2026-11-01T18:30:00Z' };
+  assert.equal(calendarMonthLoad([event], '2026-10', 'America/Los_Angeles').events.length, 0);
+  assert.equal(calendarMonthLoad([event], '2026-11', 'America/Los_Angeles').events.length, 1);
+});

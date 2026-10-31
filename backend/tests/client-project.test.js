@@ -93,6 +93,18 @@ test("client project requires an accepted quote and a valid active capability", 
   assert.equal(filter.status, "Accepted");
   assert.notEqual(filter.shareTokenHash, "a".repeat(64));
 });
+test('project updates accept the complete supported capability and still reject revoked links', async t => {
+  const value = '507f1f77bcf86cd799439011.' + 'b'.repeat(64);
+  let current = { ...quote, status: 'Accepted' };
+  t.mock.method(Quotation, 'findOne', async filter => {
+    assert.equal(filter.status, 'Accepted');
+    assert.equal(filter.shareTokenHash, require('../utils/quoteLifecycle').tokenHash(value));
+    return current;
+  });
+  assert.equal((await acceptedQuote(value))._id, qid);
+  current = { ...current, linkRevokedAt: new Date() };
+  await assert.rejects(() => acceptedQuote(value), { status: 404 });
+});
 test("draft invoice exposes a preparation summary without schedule, bank details or private amounts", async (t) => {
   let filter;
   t.mock.method(Invoice, "findOne", async (value) => {

@@ -6,10 +6,11 @@ import { TEAM_ALPHA_LOGO } from "../../utils/branding";
 import { quotationDefaults, addDocumentDays, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
 import { API_BASE_URL } from '../../utils/apiConfig';
 import { quotationStatus } from '../../utils/quotationStatus';
+import { documentClientLink } from '../../utils/documentClientLink';
 import {useOfflineDraft,OfflineDraftStatus} from '../../offline/OfflineDrafts';
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
-  Save, Send,
+  Save, Send, Mail, Link2,
   Plus,
   ArrowLeft,
   X,
@@ -36,6 +37,7 @@ import {
 import "./quotationWorkspace.css";
 import "./documentWorkspaceRefinements.css";
 import "./quotationList.css";
+import "./documentWorkflowRepair.css";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 const covers = [
   "/assets/banner.jpg",
@@ -140,6 +142,8 @@ function Toggle({ label, checked, onChange, help }) {
 export default function Quotations() {
   const [searchParams, setSearchParams] = useSearchParams(),
     location = useLocation();
+  const mail = useWorkspaceData(['/api/studio/email/status']);
+  const emailConfigured = mail.data[0]?.configured === true;
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/studio/quotations",
     "/api/leads",
@@ -367,9 +371,10 @@ export default function Quotations() {
         loadQuote(result);
         toast.success("Quotation duplicated");
       } else if (action === "share") {
+        const url = documentClientLink(result.url);
         setCurrent(result.quote);
         currentRef.current = result.quote;
-        setShareUrl(`${window.location.origin}/quote/${result.token}`);
+        setShareUrl(url);
         setMode("detail");
         setModal("link");
       } else {
@@ -401,10 +406,7 @@ export default function Quotations() {
     try {
       const result = await workspaceRequest("get", `/api/studio/quotations/${quote._id}/client-link`);
       if (generation !== generationRef.current) return;
-      let url;
-      try { url = new URL(result?.url); } catch { throw new Error("The studio did not return an active smart client link."); }
-      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash || !/^\/quote\/(?:[a-f\d]{24}\.)?[a-f\d]{64}$/i.test(url.pathname)) throw new Error("The studio did not return a valid smart client link.");
-      setShareUrl(url.href);
+      setShareUrl(documentClientLink(result?.url));
       setModal("link");
     } catch (error) {
       if (generation === generationRef.current) setSaveError(error.response ? recordError(error) : error.message);
@@ -442,6 +444,7 @@ export default function Quotations() {
     }
   };
   const send = async (schedule) => {
+    if (!emailConfigured) { setSaveError('Studio email sending is not set up. Use Share client link, or review Email & messages in Settings.'); return; }
     setBusy(true);
     setSaveError("");
     try {
@@ -474,7 +477,7 @@ export default function Quotations() {
     try {
       const result = await workspaceRequest(regenerate ? 'post' : 'delete', `/api/studio/quotations/${current._id}/share${regenerate ? '/regenerate' : ''}`, {});
       if (result.quote) loadQuote(result.quote);
-      if (regenerate) { setShareUrl(`${window.location.origin}/quote/${result.token}`); setModal('link'); }
+      if (regenerate) { setShareUrl(documentClientLink(result.url)); setModal('link'); }
       toast.success(regenerate ? 'New smart client link created with current studio visibility settings. Previous copies no longer work.' : 'Smart client link revoked');
       reload();
     } catch (error) { setSaveError(recordError(error)); }
@@ -883,7 +886,8 @@ export default function Quotations() {
                   </button>
                   <button className="studio-desktop-toolbar-action" onClick={preview}>Preview</button>
                   <StudioButton type="button" icon={Save} onClick={() => saveDraft().catch(() => {})} disabled={busy} loadingLabel="Saving quotation">Save</StudioButton>
-                  <StudioButton type="button" variant="primary" className="qw-primary" icon={Send} disabled={busy} onClick={prepareSend} loadingLabel="Preparing quotation delivery">Send quote</StudioButton>
+                  <StudioButton type="button" icon={Mail} disabled={busy} onClick={prepareSend} loadingLabel="Preparing quotation email">Email quote</StudioButton>
+                  <StudioButton type="button" variant="primary" className="qw-primary" icon={Link2} disabled={busy} onClick={openClientLink} loadingLabel="Preparing client link">Share client link</StudioButton>
                 </>
               ) : (
                 <>
@@ -1298,16 +1302,8 @@ export default function Quotations() {
             </section>
           )}
           {designOpen && (
-            <aside className="qw-design">
-              <header>
-                <h2>Edit design</h2>
-                <button
-                  aria-label="Close design"
-                  onClick={() => setDesignOpen(false)}
-                >
-                  <X size={16} />
-                </button>
-              </header>
+            <OperationsModal title="Quotation design" description="Choose how this document appears to your client." onClose={() => setDesignOpen(false)} footer={<StudioButton type="button" variant="primary" onClick={() => setDesignOpen(false)}>Done</StudioButton>}>
+            <div className="document-design-content">
               <strong>Cover Image</strong>
               <button
                 className="qw-text-button"
@@ -1372,36 +1368,41 @@ export default function Quotations() {
               <button className="qw-primary" onClick={preview}>
                 Preview Quote
               </button>
-            </aside>
+            </div></OperationsModal>
           )}
         </div>
       )}
       {mode === "send" && (
         <div className="qw-fullscreen">
-          <header className="qw-doc-header">
-            <button onClick={() => setMode("editor")}>
-              <X size={16} /> Send quote
+          <header className="qw-doc-header document-send-header">
+            <button type="button" onClick={() => setMode("editor")}>
+              <ArrowLeft size={16} /> Back to quotation
             </button>
           </header>
           <div className="qw-send">
             <section>
+              <div className="document-send-intro"><h1>Share your quotation</h1><p>Your client uses one link to review their quote, invoice, payments and project updates.</p><StudioButton type="button" icon={Link2} disabled={busy} onClick={openClientLink} loadingLabel="Preparing client link">Share client link</StudioButton></div>
+              {!emailConfigured && <div className="document-mail-notice" role="status"><strong>{mail.loading ? 'Checking email sending…' : mail.error ? 'Email status is unavailable' : 'Set up email sending when you’re ready'}</strong><p>{mail.error ? 'You can still share your client link. Retry the email check before sending.' : 'Client links work now. Outgoing email needs its own sender setup; connecting a read-only Gmail inbox does not enable sending.'}</p><Link to="/admin/settings?section=communication">Review email settings <ArrowUpRight size={14} /></Link>{mail.error && <button type="button" className="qw-button" onClick={mail.reload}>Check again</button>}</div>}
               <p>
                 To: <strong>{current.clientName}</strong> · {current.email}
               </p>
-              <input
+              <Field label="Email subject"><input
                 aria-label="Email subject"
+                maxLength={200}
                 value={email.subject}
                 onChange={(e) =>
                   setEmail({ ...email, subject: e.target.value })
                 }
-              />
-              <textarea
+              /></Field>
+              <Field label="Message"><textarea
                 aria-label="Email message"
+                rows={8}
+                maxLength={8000}
                 value={email.message}
                 onChange={(e) =>
                   setEmail({ ...email, message: e.target.value })
                 }
-              />
+              /></Field>
               <button
                 className="qw-text-button"
                 onClick={() =>
@@ -1414,10 +1415,7 @@ export default function Quotations() {
                 Insert email template
               </button>
               <div className="qw-send-footer">
-                <button onClick={() => setModal("schedule")}>Schedule</button>
-                <button onClick={() => setModal("manual")}>
-                  Share smart client link
-                </button>
+                <button disabled={!emailConfigured || busy} onClick={() => setModal("schedule")}>Schedule email</button>
                 <label>
                   <input
                     type="checkbox"
@@ -1428,7 +1426,7 @@ export default function Quotations() {
                   />
                   Send me a copy
                 </label>
-                <StudioButton type="button" variant="primary" className="qw-primary" icon={Send} disabled={busy} onClick={() => send(false)} loadingLabel="Sending quotation">Send</StudioButton>
+                <StudioButton type="button" variant="primary" className="qw-primary" icon={Send} disabled={busy || !emailConfigured} onClick={() => send(false)} loadingLabel="Sending quotation email">Send email</StudioButton>
               </div>
               {saveError && (
                 <p className="qw-error" role="alert">
@@ -1436,7 +1434,7 @@ export default function Quotations() {
                 </p>
               )}
             </section>
-            <section className="qw-email-preview">
+            <details className="document-email-preview-wrap" open><summary>Email preview</summary><section className="qw-email-preview">
               <img src={resolveStudioImage(current?.issuer?.logoUrl || settings.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt="Team Alpha" />
               <div>
                 Your quote is ready for review
@@ -1446,9 +1444,9 @@ export default function Quotations() {
                 )}
               </div>
               <p>{email.message}</p>
-              <button>REVIEW QUOTE</button>
+              <span className="document-email-example-button">REVIEW QUOTE</span>
               <small>{settings.studioName || "TEAM ALPHA"}</small>
-            </section>
+            </section></details>
           </div>
         </div>
       )}
