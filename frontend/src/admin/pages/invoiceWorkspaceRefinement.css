@@ -1,0 +1,236 @@
+/* Invoice editor controls use the workspace theme; client documents keep their design. */
+@media (min-width: 769px) {
+  .studio-app.studio-app .invoice-editor .invoice-action-dropdown > .studio-phone-menu-action {
+    display: none;
+  }
+}
+.studio-app.studio-app .invoice-editor .invoice-payment-plan > h2 {
+  margin: 0 0 18px;
+}
+.studio-app.studio-app .invoice-editor .invoice-payment-plan > .invoice-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0 0 20px;
+}
+.studio-app.studio-app .invoice-editor .invoice-payment-plan > .invoice-option > strong {
+  margin: 0;
+  color: var(--document-ui-text);
+  font-size: 14px;
+}
+.studio-app.studio-app .invoice-editor .invoice-payment-plan > .invoice-option > small {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--document-ui-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.studio-app.studio-app .invoice-editor .invoice-payment-plan .invoice-toggle {
+  min-height: 44px;
+  margin: 0;
+  color: var(--document-ui-text);
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-card {
+  min-width: 0;
+  margin: 0 0 12px;
+  padding: 16px;
+  border: 1px solid var(--document-ui-border);
+  border-radius: 16px;
+  background: var(--document-ui-surface);
+  color: var(--document-ui-text);
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  margin: 0 0 12px;
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-heading > strong {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-heading > small {
+  color: var(--document-ui-muted);
+  font-size: 11px;
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-heading > button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: -6px -6px -6px auto;
+  padding: 0;
+  border-radius: 10px;
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-heading > button:hover:enabled {
+  background: var(--document-ui-subtle);
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.studio-app.studio-app .invoice-editor :is(.invoice-installment-values, .invoice-installment-dates) {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  margin: 0;
+  color: var(--document-ui-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.studio-app.studio-app.studio-personal-workspace .invoice-editor .invoice-installment-field > :is(input, select) {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  height: 46px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--document-ui-border);
+  border-radius: 11px;
+  background: var(--document-ui-surface);
+  color: var(--document-ui-text);
+  -webkit-text-fill-color: var(--document-ui-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  box-shadow: none;
+  color-scheme: light;
+}
+html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspace .invoice-editor .invoice-installment-field > :is(input, select) {
+  color-scheme: dark;
+  background: #18191c;
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-field input::-webkit-date-and-time-value {
+  text-align: left;
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-field > :is(input, select):focus-visible {
+  outline: 2px solid var(--studio-control-accent, #4f7ded);
+  outline-offset: 2px;
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-summary {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-summary > :is(span, small) {
+  color: var(--document-ui-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-summary > strong {
+  color: var(--document-ui-text);
+  font-size: 17px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.studio-app.studio-app .invoice-editor .invoice-schedule > .invoice-text-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 0;
+  font-size: 13px;
+}
+.studio-app.studio-app .invoice-editor .invoice-installment-help {
+  margin: 4px 0 0;
+  color: var(--document-ui-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+@media (max-width: 1100px) {
+  .studio-app.studio-app .invoice-editor .invoice-installment-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .studio-app.studio-app .invoice-editor .invoice-installment-card:last-of-type .invoice-installment-fields {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+@media (max-width: 360px) {
+  .studio-app.studio-app .invoice-editor .invoice-installment-dates {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-editor-toolbar {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 4px 8px;
+    padding: 10px 12px;
+    min-height: 0;
+  }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-editor-toolbar > a {
+    display: grid;
+    place-items: center;
+    grid-row: 1 / 3;
+    min-height: 44px;
+  }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-editor-title {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-editor-title > strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+  }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-editor-toolbar > .invoice-status {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    padding: 5px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+  }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-editor-toolbar > small {
+    grid-column: 2;
+    grid-row: 2;
+    width: auto;
+    padding: 0;
+    font-size: 10px;
+  }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-toolbar-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: 8px;
+    margin: 7px 0 0;
+    width: 100%;
+  }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-toolbar-actions > :is(button, .invoice-menu),
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-menu > button {
+    min-height: 44px;
+    margin: 0;
+    font-size: 13px;
+  }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-toolbar-actions > .invoice-primary {
+    justify-content: center;
+    padding: 10px 12px !important;
+    border-radius: 11px;
+  }
+  .studio-app.studio-app .invoice-editor .invoice-installment-card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+  .studio-app.studio-app.studio-personal-workspace .invoice-editor .invoice-installment-field > :is(input, select) {
+    font-size: 16px;
+    padding-inline: 10px;
+  }
+}

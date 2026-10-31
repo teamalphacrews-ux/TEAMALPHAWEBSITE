@@ -1,0 +1,31 @@
+.studio-app .studio-select{display:inline-block;min-width:0;position:relative;vertical-align:middle;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;min-height:0!important;height:auto}
+.studio-select-native{width:100%;max-width:100%;box-sizing:border-box}
+.studio-select-trigger{display:none}
+.studio-app.studio-select-overlay{position:fixed;inset:0;z-index:1600;display:flex;align-items:flex-end;justify-content:center;min-height:0;padding:12px;background:rgba(0,0,0,.45)!important;backdrop-filter:blur(8px);box-sizing:border-box}
+.studio-select-sheet{width:min(100%,520px);max-height:min(78dvh,var(--studio-visible-height,78dvh));display:flex;flex-direction:column;overflow:hidden;border-radius:24px;border:1px solid var(--studio-border);background:var(--studio-surface);color:var(--studio-text);padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 24px 80px #0004;animation:studio-select-enter .22s ease-out}
+.studio-select-sheet-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 20px 14px}
+.studio-select-sheet-header>div{min-width:0}.studio-select-sheet-header span{font-size:10px;font-weight:650;letter-spacing:.12em;color:var(--studio-muted)}
+.studio-select-sheet-header h2{font-family:inherit;font-weight:600;font-size:19px;line-height:1.35;letter-spacing:-.025em;margin:5px 0 0;overflow-wrap:anywhere;color:var(--studio-text)}
+.studio-select-sheet-header>button{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;border-radius:50%;border:1px solid var(--studio-border);background:var(--studio-canvas);color:var(--studio-text)}
+.studio-select-search{display:flex;align-items:center;gap:10px;margin:0 16px 12px;padding:0 12px;border:1px solid var(--studio-border);border-radius:12px;background:var(--studio-canvas);color:var(--studio-muted)}
+.studio-select-search input{width:100%;min-width:0;min-height:44px;border:0;background:transparent;color:var(--studio-text);font:inherit;font-size:16px;outline:none}
+.studio-select-options{padding:0 10px 12px;overflow:auto;overscroll-behavior:contain}
+.studio-select-options>button{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:16px;width:100%;min-height:48px;padding:12px;border:0;border-radius:12px;background:transparent;color:var(--studio-text);font:inherit;font-size:15px;line-height:1.4}
+.studio-select-options>button>span{min-width:0;overflow-wrap:anywhere}.studio-select-options small{display:block;color:var(--studio-muted);font-size:10px;margin-bottom:3px}
+.studio-select-options>button[aria-selected=true]{background:color-mix(in srgb,#5383ef 18%,var(--studio-surface));color:var(--studio-text)}.studio-select-options>button>svg{flex-shrink:0;color:#5383ef}
+.studio-select-options>button:focus-visible{outline:2px solid #5383ef;outline-offset:-2px}.studio-select-options>button:disabled{opacity:.45}.studio-select-no-results{padding:20px;font-size:14px;color:var(--studio-muted)}
+@keyframes studio-select-enter{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.studio-select-sheet{animation:none}}
+@media(max-width:768px){
+ .studio-app .studio-select{padding:0!important;border:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;height:auto;min-height:0}
+ .studio-app .studio-select-native{display:none!important}
+ .studio-app .studio-select-trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-width:0;min-height:44px;max-width:100%;padding:10px 12px!important;border:1px solid var(--studio-border)!important;border-radius:12px!important;background:var(--studio-surface)!important;color:var(--studio-text)!important;font:inherit;font-size:14px!important;line-height:1.4;text-align:left;box-shadow:none!important}
+ .studio-app .studio-select-value{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+ .studio-app .studio-select-trigger>svg{flex-shrink:0;opacity:.65}
+ .studio-app .studio-select-trigger:focus-visible{outline:2px solid #5383ef;outline-offset:2px}
+ .studio-app .studio-select-trigger:disabled{opacity:.5}
+ .studio-app .studio-field>.studio-select{display:block;width:100%}
+}
+
+html[data-studio-motion=reduced] .studio-select-sheet{animation:none}
+.studio-select-search:focus-within{outline:2px solid #5383ef;outline-offset:2px}

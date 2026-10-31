@@ -1,0 +1,234 @@
+/* Studio OS precision controls. Operational UI only; document artwork is untouched. */
+:is(.studio-app.studio-personal-workspace,.studio-crm-overlay) {
+  --control-accent:#245bd8; --control-accent-hover:#1c4cc0;
+  --control-accent-soft:#edf3ff; --control-accent-ink:#2455bc;
+  --control-danger:#ba3444; --control-danger-hover:#a32939;
+  --control-danger-soft:#fff1f2; --control-focus:#5488ee;
+  --control-border:color-mix(in srgb,var(--studio-text) 18%,transparent);
+  --control-hover:color-mix(in srgb,var(--studio-text) 5%,var(--studio-surface));
+  --control-pressed:color-mix(in srgb,var(--studio-text) 9%,var(--studio-surface));
+  --control-radius:11px; --control-duration:190ms;
+  --control-ease:cubic-bezier(.2,.7,.2,1);
+}
+html[data-studio-appearance=dark] :is(.studio-app.studio-personal-workspace,.studio-crm-overlay) {
+  --control-accent:#3265d7; --control-accent-hover:#3a6bdd;
+  --control-accent-soft:#22314b; --control-accent-ink:#a5c2ff;
+  --control-danger:#d34859; --control-danger-hover:#e05666;
+  --control-danger-soft:#39232a; --control-focus:#99baff;
+  --control-border:color-mix(in srgb,var(--studio-text) 22%,transparent);
+}
+/* Known legacy entry points share the same geometry without changing their handlers. */
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(
+ .studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary,
+ .studio-icon-button,.reference-icon-button,.ops-icon-button,
+ .reference-text-button,.qw-text-button,.invoice-text-action,.settings-back-button,.settings-text-button
+) {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:44px; padding:10px 16px; border-radius:var(--control-radius);
+  border:1px solid var(--control-border); background:var(--studio-surface);
+  color:var(--studio-text); font-family:inherit; font-size:13px; font-weight:600;
+  line-height:1.35; letter-spacing:-.012em; text-transform:none;
+  text-decoration:none; vertical-align:middle; cursor:pointer; position:relative;
+  box-shadow:0 1px 2px #00000005; filter:none;
+  transition:background-color var(--control-duration) var(--control-ease),border-color var(--control-duration) var(--control-ease),color var(--control-duration) var(--control-ease),box-shadow var(--control-duration) var(--control-ease);
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(
+ .studio-button.primary,.reference-button,.qw-primary,.invoice-primary
+):not(.danger) {
+  background:var(--control-accent) !important; border-color:var(--control-accent) !important;
+  color:#fff !important; box-shadow:inset 0 1px 0 #ffffff18,0 1px 3px #152b5018;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button.danger,.studio-control-button[data-variant=destructive]) {
+  background:var(--control-danger) !important; border-color:var(--control-danger) !important;
+  color:#fff !important; box-shadow:inset 0 1px 0 #ffffff12;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.reference-text-button,.qw-text-button,.invoice-text-action,.settings-text-button,.settings-back-button,.studio-control-button[data-variant=ghost]) {
+  background:transparent !important; border-color:transparent !important; box-shadow:none;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-control-button[data-variant=outline] {
+  background:transparent !important; border-color:var(--control-border) !important;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-icon-button,.reference-icon-button,.ops-icon-button,.studio-control-button.is-icon-only) {
+  width:44px; min-width:44px; height:44px; flex:0 0 44px; padding:0; border-radius:12px;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button.small,.studio-control-button[data-size=sm]):not(.is-icon-only) {
+  min-height:36px; padding:7px 12px; font-size:12px; border-radius:9px;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-control-button[data-size=lg] {
+  min-height:48px; padding:12px 20px; font-size:14px;
+}
+.studio-control-button.is-full-width { width:100%; }
+.studio-button-content { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-width:0; }
+.studio-control-button:is(.is-loading,.is-success) > .studio-button-content { visibility:hidden; }
+.studio-button-indicator { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
+.studio-control-button.is-loading { cursor:progress; }
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-control-button.is-loading:disabled { opacity:.8; }
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-control-button.is-success {
+  background:var(--control-accent-soft) !important; color:var(--control-accent-ink) !important; border-color:transparent !important;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary,.studio-icon-button,.reference-icon-button,.ops-icon-button,.reference-text-button,.qw-text-button,.invoice-text-action,.settings-text-button):disabled {
+  opacity:.46; cursor:not-allowed; box-shadow:none; transform:none; scale:1;
+}
+/* SVG geometry is consistent; decorative charts and document SVGs are excluded. */
+.studio-app :is(button,a.studio-button,a.reference-button,.studio-nav-item,.settings-directory-link) > svg.lucide,
+.studio-app .studio-button-content > svg.lucide {
+  flex-shrink:0; width:18px; height:18px; stroke-width:1.75; overflow:visible;
+}
+.studio-icon { display:inline-block; flex-shrink:0; width:var(--studio-icon-size,20px); height:var(--studio-icon-size,20px); stroke-width:1.75; overflow:visible; vertical-align:middle; }
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(button,a) > svg.lucide,
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-symbol-tile {
+  transform:none; translate:none; scale:1; rotate:none; filter:none;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(button,a):active { scale:1; }
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(button,a):focus-visible {
+  outline:2px solid var(--control-focus); outline-offset:3px;
+}
+/* Apple-inspired app destinations: a single softly lit colour surface.
+   Toolbar glyphs and tab-bar symbols stay unboxed. No Apple assets are embedded. */
+.studio-app .studio-symbol-precision { --symbol-top:#8392aa; --symbol-base:#63718a; }
+.studio-app .studio-symbol-precision.tone-blue { --symbol-top:#428df5; --symbol-base:#2469dc; }
+.studio-app .studio-symbol-precision.tone-indigo { --symbol-top:#8179ec; --symbol-base:#6056cd; }
+.studio-app .studio-symbol-precision.tone-violet { --symbol-top:#ac72dc; --symbol-base:#8752bb; }
+.studio-app .studio-symbol-precision.tone-rose { --symbol-top:#ef708c; --symbol-base:#d74c70; }
+.studio-app .studio-symbol-precision.tone-amber { --symbol-top:#dfa143; --symbol-base:#bb7b23; }
+.studio-app .studio-symbol-precision.tone-green { --symbol-top:#3fb38a; --symbol-base:#218364; }
+.studio-app .studio-symbol-precision.tone-cyan { --symbol-top:#37a9c2; --symbol-base:#227e9b; }
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-symbol-precision,
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-nav-item .studio-symbol-precision {
+  background:linear-gradient(160deg,var(--symbol-top),var(--symbol-base)) !important;
+  color:#fff !important; border:0; border-radius:27%; outline:none; overflow:hidden;
+  box-shadow:inset 0 1px 0 #ffffff38,inset 0 -1px 0 #0000000c,0 1px 3px #182b4218 !important;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-symbol-precision::before {
+  display:block; content:''; position:absolute; inset:0; border-radius:inherit;
+  border:1px solid #ffffff18; pointer-events:none; background:none;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-symbol-precision > svg {
+  width:58% !important; height:58% !important;
+  color:inherit !important; stroke:currentColor !important; stroke-width:1.8; filter:none !important;
+}
+html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-symbol-precision {
+  box-shadow:inset 0 1px 0 #ffffff30,inset 0 -1px 0 #00000018,0 1px 3px #0003 !important;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-nav-item {
+  border-radius:12px; font-weight:500; transition:background-color 190ms ease,color 190ms ease;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-nav-item.is-active {
+  background:var(--control-accent-soft); color:var(--studio-text);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--control-accent) 12%,transparent); font-weight:650;
+}
+/* Equal symbol size in every tab state; selection uses the surrounding pill. */
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation .studio-mobile-tab-icon,
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > .is-active .studio-mobile-tab-icon {
+  width:28px !important; height:28px !important; background:transparent !important;
+  border:0 !important; outline:none; box-shadow:none !important; color:var(--studio-muted) !important;
+}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > .is-active .studio-mobile-tab-icon {
+  color:var(--control-accent-ink) !important;
+}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation .studio-mobile-tab-icon::before { display:none; }
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation .studio-mobile-tab-icon > svg,
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > .is-active .studio-mobile-tab-icon > svg {
+  width:22px !important; height:22px !important; color:inherit !important; stroke-width:1.8;
+}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > .is-active {
+  color:var(--control-accent-ink); background:var(--control-accent-soft);
+}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-more-shortcut .studio-symbol-precision {
+  width:38px !important; height:38px !important; flex-basis:38px !important;
+}
+/* Compact glass-like toolbar controls, without layered icon housings or blur. */
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar .studio-icon-button {
+  border-radius:50%; background:color-mix(in srgb,var(--studio-surface) 94%,transparent);
+  border-color:var(--control-border); box-shadow:inset 0 1px 0 #ffffff18,0 1px 2px #00000006;
+  color:var(--studio-text);
+}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar .studio-icon-button::before { display:none; }
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar .studio-icon-button > svg {
+  width:20px; height:20px; stroke-width:1.8;
+}
+@media(hover:hover) and (pointer:fine) {
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary,.studio-icon-button,.reference-icon-button,.ops-icon-button,.reference-text-button,.qw-text-button,.invoice-text-action,.settings-back-button,.settings-text-button):not(:disabled):hover {
+   background:var(--control-hover); border-color:color-mix(in srgb,var(--studio-text) 30%,transparent); box-shadow:0 1px 3px #0000000b;
+ }
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button.primary,.reference-button,.qw-primary,.invoice-primary):not(.danger):not(:disabled):hover {
+   background:var(--control-accent-hover) !important; border-color:var(--control-accent-hover) !important;
+ }
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button.danger,.studio-control-button[data-variant=destructive]):not(:disabled):hover { background:var(--control-danger-hover) !important; border-color:var(--control-danger-hover) !important; }
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-control-button[data-variant=ghost]:not(:disabled):hover { background:var(--control-hover) !important; }
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary,.studio-icon-button,.reference-icon-button,.ops-icon-button):not(:disabled):active { box-shadow:inset 0 1px 3px #00000014; border-color:var(--control-focus); }
+/* Animation is on internal SVG parts, never the entire navigation symbol. */
+.studio-icon-shutter { transform-origin:12px 13.5px; }
+.studio-icon-gear { transform-origin:12px 12px; }
+.studio-icon-gallery-back,.studio-icon-gallery-front,.studio-icon-playhead { transition:transform 210ms var(--control-ease); }
+:is(.studio-app,.studio-crm-overlay) :is(button,a):is(:hover,:focus-visible,:active) .studio-icon[data-icon-motion=interaction] .studio-icon-shutter { animation:studio-shutter 220ms var(--control-ease) both; }
+:is(.studio-app,.studio-crm-overlay) :is(button,a):is(:hover,:focus-visible,:active) .studio-icon[data-icon-motion=interaction] .studio-icon-gallery-back { transform:translate(-.7px,.7px); }
+:is(.studio-app,.studio-crm-overlay) :is(button,a):is(:hover,:focus-visible,:active) .studio-icon[data-icon-motion=interaction] .studio-icon-gallery-front { transform:translate(.4px,-.4px); }
+:is(.studio-app,.studio-crm-overlay) :is(button,a):is(:hover,:focus-visible,:active) .studio-icon[data-icon-motion=interaction] .studio-icon-playhead { transform:translateX(3px); }
+:is(.studio-app,.studio-crm-overlay) :is(button,a):is(:hover,:focus-visible,:active) .studio-icon[data-icon-motion=interaction] .studio-icon-document-line { animation:studio-document-line 220ms var(--control-ease) both; }
+:is(.studio-app,.studio-crm-overlay) :is(button,a):is(:hover,:focus-visible,:active) .studio-icon[data-icon-motion=interaction] .studio-icon-document-line[data-line="2"] { animation-delay:20ms; }
+:is(.studio-app,.studio-crm-overlay) :is(button,a):is(:hover,:focus-visible,:active) .studio-icon[data-icon-motion=interaction] .studio-icon-document-line[data-line="3"] { animation-delay:30ms; }
+:is(.studio-app,.studio-crm-overlay) :is(button,a):is(:hover,:focus-visible,:active) .studio-icon[data-icon-motion=interaction] .studio-icon-gear { animation:studio-gear-turn 220ms var(--control-ease) both; }
+.studio-icon[data-icon-status=loading][data-icon-motion=interaction] .studio-icon-upload-arrow { animation:studio-upload-travel 850ms ease-in-out infinite; }
+.studio-icon[data-icon-status=success][data-icon-motion=interaction] .studio-icon-payment-check { animation:studio-check-draw 220ms var(--control-ease) both; }
+.studio-icon-audio-bar { transition:d 180ms ease; }
+.studio-control-button.is-loading .studio-button-indicator > svg:not([data-icon-kind=upload]) { animation:studio-control-spin 800ms linear infinite; }
+@keyframes studio-shutter { 0%,100%{transform:scale(1)} 45%{transform:scale(.8)} }
+@keyframes studio-document-line { from{stroke-dasharray:1;stroke-dashoffset:1;opacity:.3} to{stroke-dasharray:1;stroke-dashoffset:0;opacity:1} }
+@keyframes studio-gear-turn { from{transform:rotate(0)} to{transform:rotate(24deg)} }
+@keyframes studio-upload-travel { 0%,100%{transform:translateY(0);opacity:1} 50%{transform:translateY(-2px);opacity:.55} }
+@keyframes studio-check-draw { from{stroke-dasharray:1;stroke-dashoffset:1} to{stroke-dasharray:1;stroke-dashoffset:0} }
+@keyframes studio-control-spin { to{transform:rotate(360deg)} }
+@media(max-width:768px) {
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary) { min-height:44px; padding:10px 14px; font-size:13px; border-radius:11px; }
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-icon-button,.reference-icon-button,.ops-icon-button,.studio-control-button.is-icon-only) { width:44px; min-width:44px; height:44px; padding:0; flex-basis:44px; }
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-topbar :is(.studio-icon-button,.studio-profile-button) { min-width:44px; width:44px; height:44px; border-radius:50%; }
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-topbar .studio-profile-button { border-radius:50%; }
+}
+html[data-studio-motion=reduced] .studio-app .studio-icon *,
+html[data-studio-motion=reduced] .studio-app .studio-button-indicator > svg { animation:none !important; transition:none !important; transform:none !important; }
+@media(prefers-reduced-motion:reduce) {
+ .studio-app .studio-icon *,.studio-app .studio-button-indicator > svg { animation:none !important; transition:none !important; transform:none !important; }
+ .studio-app :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary,.studio-icon-button,.reference-icon-button,.ops-icon-button,.studio-nav-item,.studio-symbol-precision) { transition:none !important; }
+}
+
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .overview-hide-card {
+ width:44px; height:44px; display:grid; place-items:center; border-radius:50%;
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .overview-hide-card > svg { width:14px; height:14px; }
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-task-check {
+ width:44px; height:44px; min-width:44px; flex-basis:44px; border-radius:50%; color:var(--studio-muted);
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-task-check .studio-button-content { opacity:0; }
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-task-check:is(:hover,:focus-visible) .studio-button-content { opacity:1; }
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-more-close { width:44px; height:44px; }
+.studio-controls-review { display:grid; gap:24px; max-width:1120px; margin:auto; }
+.studio-controls-review h1 { font-size:clamp(26px,4vw,40px); letter-spacing:-.045em; margin:10px 0; }
+.studio-controls-review h2 { font-size:17px; font-weight:650; margin:0 0 12px; }
+.studio-controls-review .studio-card { padding:24px; }
+.studio-controls-symbols { display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:10px; }
+.studio-controls-symbol { display:flex; flex-direction:column; align-items:center; gap:12px; padding:16px 4px; background:transparent; border:1px solid transparent; border-radius:14px; font:inherit; font-size:12px; color:var(--studio-text); cursor:pointer; }
+.studio-controls-symbol:hover { background:var(--control-hover); }
+.studio-controls-examples { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
+@media(max-width:768px) {
+ .studio-controls-symbols { grid-template-columns:repeat(4,minmax(0,1fr)); }
+ .studio-controls-review .studio-card { padding:18px; }
+}
+html[data-studio-motion=reduced] .studio-app :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary,.studio-icon-button,.reference-icon-button,.ops-icon-button,.studio-nav-item,.studio-symbol-precision) { transition:none !important; }
+
+@media(max-width:600px) {
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-topbar .studio-theme-toggle { display:none; }
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-quick-create > .studio-button { width:44px; min-width:44px !important; padding:0 !important; }
+}
+
+@media(hover:hover) and (pointer:fine) {
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-control-button[data-variant=outline]:not(:disabled):hover { background:var(--control-hover) !important; border-color:color-mix(in srgb,var(--studio-text) 36%,transparent) !important; }
+}
+@media(max-width:768px) {
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-crm-row-actions > .studio-icon-button { width:auto; min-width:0; flex:1 1 auto; padding:10px 12px; }
+}
+
+.studio-app .studio-session-warning { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 22px; background:var(--studio-surface); color:var(--studio-text); border-bottom:1px solid var(--studio-border); font-size:13px; line-height:1.5; }
+@media(max-width:600px) { .studio-app .studio-session-warning { align-items:flex-start; padding:12px 16px; font-size:12px; } }
+

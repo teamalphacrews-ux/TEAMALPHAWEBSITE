@@ -1,0 +1,290 @@
+.lux-hero {
+  isolation: isolate;
+  background: #1d1b17;
+  touch-action: pan-y pinch-zoom;
+}
+.lux-hero-slide {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 800ms ease,
+    visibility 800ms;
+}
+.lux-hero-slide.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+.lux-hero-photograph {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.lux-hero-backdrop {
+  position: absolute;
+  inset: -35px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(25px) brightness(0.66);
+  transform: scale(1.07);
+}
+.lux-hero-slide-portrait .lux-hero-photograph {
+  object-fit: contain;
+  object-position: 71% center;
+}
+.lux-hero-shade {
+  z-index: 1;
+  pointer-events: none;
+}
+.lux-hero-caption {
+  width: 100%;
+  transition:
+    width 500ms ease,
+    left 500ms ease;
+}
+.lux-hero-copy {
+  position: relative;
+  isolation: isolate;
+  animation: lux-hero-copy-appear 1.2s ease-out both;
+  text-shadow: 0 2px 18px #0005;
+}
+.lux-hero-copy::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -48px -60px;
+  background: #0006;
+  filter: blur(35px);
+  pointer-events: none;
+}
+.lux-hero-copy > p {
+  animation: lux-hero-copy-appear 1s 0.3s ease-out both;
+}
+.lux-hero-portrait .lux-hero-caption {
+  position: absolute;
+  left: 5.5vw;
+  width: 32%;
+  text-align: left;
+  padding-inline: 0;
+}
+.lux-hero-portrait .lux-hero-caption h1 {
+  font-size: clamp(36px, 4vw, 60px);
+}
+.lux-hero-portrait .lux-hero-caption p {
+  font-size: 11px;
+  line-height: 2;
+  letter-spacing: 0.24em;
+}
+.lux-hero-controls {
+  position: absolute;
+  z-index: 12;
+  bottom: 33px;
+  left: 5.5vw;
+  right: 5.5vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
+.lux-hero-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 95px;
+  font: 400 10px/1 var(--lux-sans, "Inter", sans-serif);
+  letter-spacing: 0.12em;
+  text-shadow: 0 1px 5px #0008;
+}
+.lux-hero-counter > span {
+  width: 30px;
+  height: 1px;
+  background: #fff9;
+}
+.lux-hero-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.lux-hero .lux-hero-dots button {
+  display: grid;
+  place-items: center;
+  width: 37px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.lux-hero-dots button > span {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border: 1px solid #fff;
+  background: transparent;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px #0008;
+  transition:
+    background 0.3s,
+    width 0.3s,
+    border-radius 0.3s;
+}
+.lux-hero-dots button.is-active > span {
+  width: 22px;
+  border-radius: 4px;
+  background: #fff;
+}
+.lux-hero-arrows {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lux-hero .lux-hero-arrows button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #ffffff85;
+  border-radius: 50%;
+  background: #17151224;
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    transform 0.25s;
+}
+.lux-hero .lux-hero-arrows button:hover {
+  background: #ffffff20;
+  border-color: #fff;
+}
+.lux-hero .lux-hero-arrows button:first-child:hover {
+  transform: translateX(-2px);
+}
+.lux-hero .lux-hero-arrows button:last-child:hover {
+  transform: translateX(2px);
+}
+.lux-hero button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 5px;
+}
+.lux-hero-loading {
+  position: absolute;
+  z-index: 12;
+  bottom: 91px;
+  right: 5.5vw;
+  left: 5.5vw;
+  margin: 0;
+  color: #fff;
+  text-align: right;
+  font: 400 10px/1.7 var(--lux-sans, "Inter", sans-serif);
+  text-shadow: 0 1px 5px #0009;
+}
+.lux-hero-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@keyframes lux-hero-copy-appear {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 1000px) {
+  .lux-hero-slide-portrait .lux-hero-photograph {
+    object-position: center;
+  }
+  .lux-hero-portrait .lux-hero-caption {
+    left: 8%;
+    bottom: 15%;
+    width: 84%;
+    text-align: center;
+  }
+  .lux-hero-portrait .lux-hero-caption h1 {
+    font-size: 48px;
+  }
+  .lux-hero-portrait .lux-hero-caption p {
+    max-width: 550px;
+    margin-inline: auto;
+  }
+}
+@media (max-width: 700px) {
+  .lux-hero {
+    height: 100svh;
+    min-height: 590px;
+  }
+  .lux-hero-slide-landscape .lux-hero-photograph {
+    object-position: 39% center;
+  }
+  .lux-hero-slide-portrait .lux-hero-photograph {
+    object-position: center 38%;
+  }
+  .lux-hero-portrait .lux-hero-caption {
+    left: 6%;
+    bottom: 17%;
+    width: 88%;
+  }
+  .lux-hero-portrait .lux-hero-caption h1 {
+    font-size: 36px;
+  }
+  .lux-hero-portrait .lux-hero-caption p {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+  }
+  .lux-hero-controls {
+    left: 6vw;
+    right: 6vw;
+    bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  .lux-hero-counter {
+    gap: 7px;
+    min-width: 68px;
+    font-size: 9px;
+  }
+  .lux-hero-counter > span {
+    width: 18px;
+  }
+  .lux-hero-dots {
+    gap: 0;
+  }
+  .lux-hero .lux-hero-dots button {
+    width: 29px;
+  }
+  .lux-hero-arrows {
+    gap: 6px;
+  }
+  .lux-hero .lux-hero-arrows button {
+    width: 42px;
+    height: 42px;
+  }
+  .lux-hero-loading {
+    left: 6vw;
+    right: 6vw;
+    bottom: 76px;
+    font-size: 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lux-hero *,
+  .lux-hero *::before,
+  .lux-hero *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react';
 import { numberToIndianWords } from '../../utils/numberToWords';
-import new_logo from "../../../assets/new_logo_original.png";
+import { TEAM_ALPHA_LOGO as new_logo } from "../../../utils/branding";
 
 const EstimatePreview = forwardRef(({ data }, ref) => {
      // A4 proportions: 794 x 1123 px at 96 DPI
@@ -41,7 +41,7 @@ const EstimatePreview = forwardRef(({ data }, ref) => {
                             objectFit: "contain"
                         }}
                     />
-                    <div className="mt-[-15px] text-center">
+                    <div className="mt-2 text-center">
                         <h1 className="text-2xl font-bold tracking-[0.2em] text-[#1A1A1A] font-serif uppercase">TEAM ALPHA</h1>
                         <p className="text-[8px] tracking-[0.6em] text-stone-400 uppercase mt-1 italic">THE WEDDING ARTIST</p>
                     </div>

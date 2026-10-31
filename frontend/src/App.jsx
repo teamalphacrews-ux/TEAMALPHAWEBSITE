@@ -1,180 +1,198 @@
-import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
-import { Suspense, lazy, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Suspense, lazy } from "react";
+import { AnimatePresence } from "framer-motion";
 import { useAuth } from './context/AuthContext';
+import { StudioPreviewStart, StudioPreviewNavigation } from './native/StudioPreview';
+import { SAAS_RELEASE_ENABLED } from './saas/release';
 
-// Website imports (Lazy loaded for performance)
-const Navbar = lazy(() => import('./components/Navbar'));
-const Hero = lazy(() => import('./components/Hero'));
-const About = lazy(() => import('./components/About'));
-const Services = lazy(() => import('./components/Services'));
-const Gallery = lazy(() => import('./components/Gallery'));
-const Testimonials = lazy(() => import('./components/Testimonials'));
-const Contact = lazy(() => import('./components/Contact'));
-const Footer = lazy(() => import('./components/Footer'));
-const GetQuote = lazy(() => import('./components/GetQuote'));
-const AuthPage = lazy(() => import('./components/AuthPage'));
+// Public website pages load independently of internal Studio OS routes.
+const PublicLayout = lazy(() => import("./public/PublicLayout"));
+const LuxuryHome = lazy(() => import("./public/LuxuryHome"));
+const Portfolio = lazy(() => import("./public/Portfolio"));
+const StoryPage = lazy(() => import("./public/StoryPage"));
+const Films = lazy(() => import("./public/Films"));
+const Enquiry = lazy(() => import("./public/Enquiry"));
+const StudioPage = lazy(() =>
+  import("./public/StudioPages").then((module) => ({
+    default: module.StudioPage,
+  })),
+);
+const CollectionsPage = lazy(() =>
+  import("./public/StudioPages").then((module) => ({
+    default: module.CollectionsPage,
+  })),
+);
+const LocationPage = lazy(() =>
+  import("./public/StudioPages").then((module) => ({
+    default: module.LocationPage,
+  })),
+);
+const LegalPage = lazy(() =>
+  import("./public/StudioPages").then((module) => ({
+    default: module.LegalPage,
+  })),
+);
+const PublicNotFound = lazy(() =>
+  import("./public/StudioPages").then((module) => ({
+    default: module.PublicNotFound,
+  })),
+);
+const SharedQuotation = lazy(() => import("./pages/SharedQuotation"));
+const AuthPage = lazy(() => import("./components/AuthPage"));
+const SignupPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/AuthPages').then(module => ({ default: module.SignupPage }))) : null;
+const AcceptInvitationPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/AuthPages').then(module => ({ default: module.AcceptInvitationPage }))) : null;
+const ProductHome = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/ProductHome')) : null;
+const ProductLoginPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/SocialAuth').then(module => ({ default: module.ProductLoginPage }))) : null;
+const SocialCallbackPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/SocialAuth').then(module => ({ default: module.SocialCallbackPage }))) : null;
+const WorkspacePage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/WorkspacePage')) : null;
 
-import ProtectedRoute from './components/ProtectedRoute';
-import Breadcrumbs from './components/common/Breadcrumbs';
-import PageTransition from './components/common/PageTransition';
-
-// Portal imports
-import ClientDashboard from './pages/client/ClientDashboard';
-const ClientGallery = lazy(() => import('./pages/client/Gallery'));
-const Chats = lazy(() => import('./pages/client/Chats'));
-const Cloud = lazy(() => import('./pages/client/Cloud'));
-import ClientHeader from './components/client/Header';
-import ClientFooter from './components/client/Footer';
-import ClientSidebar from './components/client/Sidebar';
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Admin imports
-import AdminLayout from './admin/components/common/Layout';
-const AdminDashboard = lazy(() => import('./admin/pages/Dashboard'));
-const AdminCRM = lazy(() => import('./admin/pages/CRM'));
-const AdminSmartGallery = lazy(() => import('./admin/pages/SmartGallery'));
-const AdminFinance = lazy(() => import('./admin/pages/Finance'));
-const AdminCalendarPage = lazy(() => import('./admin/pages/Calendar'));
-const AdminActivityLog = lazy(() => import('./admin/pages/ActivityLog'));
-const AdminChats = lazy(() => import('./admin/pages/Chats'));
-const AdminDriveGalleryDetail = lazy(() => import('./admin/pages/DriveGalleryDetail'));
-const AdminClientEvents = lazy(() => import('./admin/pages/ClientEvents'));
-const AdminUserManagement = lazy(() => import('./admin/pages/UserManagement'));
+const AdminLayout = lazy(() => import("./admin/components/common/Layout"));
+const ShootDay = lazy(()=>import('./admin/pages/ShootDay'));
+const OfflineDraftsHub = lazy(()=>import('./offline/OfflineDrafts').then(module=>({default:module.OfflineDraftsHub})));
+const AdminDashboard = lazy(() => import("./admin/pages/Dashboard"));
+const AdminContacts = lazy(() => import("./admin/pages/Contacts"));
+const AdminContactDetail = lazy(() => import("./admin/pages/ContactDetail"));
+const AdminStudioProjects = lazy(() => import("./admin/pages/StudioProjects"));
+const AdminStudioProjectDetail = lazy(
+  () => import("./admin/pages/StudioProjectDetail"),
+);
+const AdminQuoteTemplates = lazy(() => import("./admin/pages/QuoteTemplates"));
+const InvoiceWorkspace = lazy(() => import("./admin/pages/InvoiceWorkspace"));
+const PublicInvoice = lazy(() => import("./pages/PublicInvoice"));
+const AdminQuotations = lazy(() => import("./admin/pages/Quotations"));
+const AdminDataManagement = lazy(() => import("./admin/pages/DataManagement"));
+const AdminSettings = lazy(() => import("./admin/pages/Settings"));
+const AdminIntegrations = lazy(() => import("./admin/pages/Integrations"));
+const AdminEmail = lazy(() => import("./admin/pages/GmailInbox"));
+const AdminWhatsApp = lazy(() => import("./admin/pages/WhatsAppInbox"));
+const AdminProjects = lazy(() => import("./admin/pages/Projects"));
+const AdminCrew = lazy(() => import("./admin/pages/Crew"));
+const AdminPostProduction = lazy(() => import("./admin/pages/PostProduction"));
+const AdminCRM = lazy(() => import("./admin/pages/CRM"));
+const AdminFinance = lazy(() => import("./admin/pages/Finance"));
+const AdminCalendarPage = lazy(() => import("./admin/pages/Calendar"));
+const AdminActivityLog = lazy(() => import("./admin/pages/ActivityLog"));
+const AdminChats = lazy(() => import("./admin/pages/ProjectSupport"));
+const AdminUserManagement = lazy(() => import("./admin/pages/UserManagement"));
 
-const PortalLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { user } = useAuth();
-
-  // Subtle warm yellow and red gradient blending into white
-  const clientBackgroundStyle = {
-      background: `
-          radial-gradient(circle at top left, rgba(255, 235, 133, 0.6) 0%, rgba(253, 251, 247, 0) 50%),
-          radial-gradient(circle at top right, rgba(255, 182, 193, 0.5) 0%, rgba(253, 251, 247, 0) 50%),
-          #FDFBF7
-      `,
-      backgroundRepeat: 'no-repeat',
-      backgroundAttachment: 'fixed'
-  };
-
-  return (
-    <div 
-        className="flex h-screen selection:bg-black selection:text-white overflow-hidden font-sans text-stone-900" 
-        style={clientBackgroundStyle}
-    >
-      {/* Sidebar - Hidden on mobile, fixed on desktop */}
-      <div className="hidden lg:block w-[320px] shrink-0 sticky top-0 h-screen">
-        <ClientSidebar />
-      </div>
-
-      {/* Mobile Sidebar Overlay */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[150] lg:hidden animate-in fade-in duration-300"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Mobile Sidebar Content */}
-      <div className={`fixed inset-y-0 left-0 z-[200] lg:hidden transition-transform duration-500 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <ClientSidebar onClose={() => setIsSidebarOpen(false)} />
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-        {/* Mobile Header */}
-        <div className="lg:hidden">
-          <ClientHeader toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        </div>
-
-        <main className="flex-1 w-full max-w-[1200px] px-4 md:px-6 lg:px-8 py-6 lg:py-8 space-y-8 lg:space-y-12 pt-24 lg:pt-8 mx-auto">
-          <div className="mb-8 flex justify-between items-center relative z-50">
-            <Breadcrumbs />
-
-            {/* Top Right Profile Widget */}
-            <div className="hidden sm:flex items-center gap-3 bg-white/30 backdrop-blur-xl px-4 py-2 rounded-[20px] border border-white/20 shadow-[0_4px_15px_rgba(0,0,0,0.03)] hover:bg-white/50 transition-all cursor-default">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-stone-800 to-black text-[#D4AF37] flex items-center justify-center font-serif text-sm border border-stone-700 shadow-inner">
-                  {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0) || ''}
-                </div>
-                <div className="text-left pr-2">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-800 leading-tight">
-                    {user ? `${user.firstName} ${user.lastName}` : "Client User"}
-                  </p>
-                  <p className="text-[7px] uppercase tracking-[0.2em] text-stone-500 font-medium">
-                    {user?.email || "Studio Guest"}
-                  </p>
-                </div>
-            </div>
-          </div>
-          
-          <PageTransition>
-            <Suspense fallback={<div className="flex h-screen w-full items-center justify-center text-xl opacity-50">Loading Portal...</div>}>
-              <Outlet />
-            </Suspense>
-          </PageTransition>
-
-          <div className="pt-20">
-            <ClientFooter />
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-};
-
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from "react-hot-toast";
 
 function App() {
+  const { user } = useAuth();
   const location = useLocation();
+  const isStudioPage = location.pathname.startsWith("/studio-os") || location.pathname === "/auth" || location.pathname === '/signup' || /^\/(?:join|invite)\//.test(location.pathname) || location.pathname === "/admin" || location.pathname.startsWith("/admin/");
 
   return (
-    <div className="font-sans text-[#1C1C1C] bg-[#F7F5F2] min-h-screen selection:bg-black selection:text-white">
-      <Toaster position="top-right" />
-      <Suspense fallback={<div className="flex h-screen w-full items-center justify-center text-xl">Loading...</div>}>
+    <div className={`font-sans text-[#1C1C1C] ${isStudioPage ? "bg-white" : "bg-[#F7F5F2]"} min-h-screen selection:bg-black selection:text-white`}>
+      {import.meta.env.DEV && <StudioPreviewNavigation />}
+      <Toaster position="top-right" toastOptions={{ className: isStudioPage ? "studio-toast" : undefined }} />
+      <Suspense
+        fallback={
+          <div className="flex h-screen w-full items-center justify-center text-xl">
+            Loading...
+          </div>
+        }
+      >
         <AnimatePresence mode="wait">
           <Routes location={location}>
-            {/* Main Website Routes */}
-            <Route path="/" element={
-              <>
-                <Navbar />
-                <Hero />
-                <About />
-                <Services />
-                <Gallery />
-                <Testimonials />
-                <Contact />
-                <Footer />
-              </>
-            } />
-            <Route path="/quote" element={<><Navbar /><GetQuote /><Footer /></>} />
-            <Route path="/auth" element={<AuthPage />} />
-
-            {/* Protected Portal Routes (Clients) */}
-            <Route element={<ProtectedRoute allowedRoles={['client']} />}>
-              <Route path="/portal" element={<PortalLayout />}>
-                <Route index element={<ClientDashboard />} />
-                <Route path="gallery" element={<ClientGallery />} />
-                <Route path="chats" element={<Chats />} />
-                <Route path="cloud" element={<Cloud />} />
-              </Route>
+            <Route path="/quote/:token" element={<SharedQuotation />} />
+            <Route path="/invoice/:token" element={<PublicInvoice />} />
+            <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+              <Route path="/quote-preview/:id" element={<SharedQuotation />} />
             </Route>
+            <Route element={<PublicLayout />}>
+              <Route index element={<LuxuryHome />} />
+              <Route
+                path="portfolio"
+                element={
+                  <main id="public-main" tabIndex={-1}>
+                    <Portfolio />
+                  </main>
+                }
+              />
+              <Route path="stories/:slug" element={<StoryPage />} />
+              <Route
+                path="films"
+                element={
+                  <main id="public-main" tabIndex={-1}>
+                    <Films />
+                  </main>
+                }
+              />
+              <Route path="studio" element={<StudioPage />} />
+              <Route path="collections" element={<CollectionsPage />} />
+              <Route path="locations/:slug" element={<LocationPage />} />
+              <Route path="enquire" element={<Enquiry />} />
+              <Route path="privacy" element={<LegalPage type="privacy" />} />
+              <Route path="terms" element={<LegalPage type="terms" />} />
+              <Route path="*" element={<PublicNotFound />} />
+            </Route>
+            <Route path="/quote" element={<Navigate to="/enquire" replace />} />
+            <Route path="/auth" element={<AuthPage />} />
+            {import.meta.env.DEV && <Route path="/native-preview/start" element={<StudioPreviewStart />} />}
+            {SAAS_RELEASE_ENABLED && <><Route path="/signup" element={<SignupPage />} />
+            <Route path="/studio-os" element={<ProductHome />} />
+            <Route path="/studio-os/login" element={<ProductLoginPage />} />
+            <Route path="/studio-os/auth/callback" element={<SocialCallbackPage />} />
+            <Route path="/join/:token" element={<AcceptInvitationPage />} />
+            <Route path="/invite/:token" element={<AcceptInvitationPage />} /></>}
+            <Route path="/portal/*" element={<Navigate to="/" replace />} />
 
             {/* Protected Admin Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
+                <Route path="shoot-day" element={<ShootDay/>}/><Route path="offline-drafts" element={<OfflineDraftsHub/>}/>
                 <Route path="crm" element={<AdminCRM />} />
-                <Route path="gallery" element={<AdminSmartGallery />} />
-                <Route path="gallery/:id" element={<AdminClientEvents />} />
-                <Route path="gallery/event/:eventId" element={<AdminDriveGalleryDetail />} />
+                <Route path="quotations" element={<AdminQuotations />} />
+                <Route path="contacts" element={<AdminContacts />} />
+                <Route path="contacts/:id" element={<AdminContactDetail />} />
+                <Route
+                  path="studio-projects"
+                  element={<AdminStudioProjects />}
+                />
+                <Route
+                  path="studio-projects/:id"
+                  element={<AdminStudioProjectDetail />}
+                />
+                <Route
+                  path="quote-templates"
+                  element={<AdminQuoteTemplates />}
+                />
+                <Route path="templates" element={<AdminQuoteTemplates />} />
+                <Route path="invoices/new" element={<InvoiceWorkspace />} />
+                <Route path="invoices/:id" element={<InvoiceWorkspace />} />
+                <Route
+                  path="clients"
+                  element={<Navigate to="/admin/contacts" replace />}
+                />
+                <Route path="data" element={<AdminDataManagement />} />
+                <Route path="settings" element={<AdminSettings />} />
+                <Route path="integrations" element={<AdminIntegrations />} />
+                <Route path="email" element={<AdminEmail />} />
+                <Route path="whatsapp" element={<AdminWhatsApp />} />
+                <Route path="projects" element={<AdminProjects />} />
+                <Route path="crew" element={<AdminCrew />} />
+                <Route
+                  path="post-production"
+                  element={<AdminPostProduction />}
+                />
+                <Route
+                  path="gallery/*"
+                  element={<Navigate to="/admin/studio-projects" replace />}
+                />
                 <Route path="finance" element={<AdminFinance />} />
                 <Route path="calendar" element={<AdminCalendarPage />} />
                 <Route path="activity-log" element={<AdminActivityLog />} />
                 <Route path="chats" element={<AdminChats />} />
-                <Route path="users" element={<AdminUserManagement />} />
+                <Route path="users" element={SAAS_RELEASE_ENABLED && user?.workspace ? <WorkspacePage initialTab="team" /> : <AdminUserManagement />} />
+                {SAAS_RELEASE_ENABLED && <><Route path="workspace" element={<WorkspacePage />} />
+                <Route path="subscription" element={<WorkspacePage initialTab="subscription" />} /></>}
               </Route>
             </Route>
-            {/* Catch-All Route for invalid URLs */}
-            <Route path="*" element={<AuthPage />} />
           </Routes>
         </AnimatePresence>
       </Suspense>

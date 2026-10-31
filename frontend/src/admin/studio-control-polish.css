@@ -1,0 +1,58 @@
+/* Shared control finish, scoped to the operational workspace. */
+.studio-app.studio-app.studio-personal-workspace { --studio-control-accent:#245bd8; --studio-control-accent-hover:#194ac1; --studio-control-tint:#edf3ff; --studio-control-ring:#7d9ee8; --studio-dock-shadow:0 10px 36px #182c4520,0 2px 8px #182c4510; }
+html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspace { --studio-control-accent:#3265d7; --studio-control-accent-hover:#2457c7; --studio-control-tint:#25334a; --studio-control-ring:#91b4ff; --studio-dock-shadow:0 12px 40px #0007,inset 0 1px 0 #ffffff09; }
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-symbol-tile { display:inline-grid; place-items:center; width:var(--app-icon-size,40px); height:var(--app-icon-size,40px); flex:0 0 auto; position:relative; overflow:hidden; border-radius:28%; color:#fff; background:linear-gradient(155deg,var(--icon-top),var(--icon-bottom)); box-shadow:inset 0 1px 0 #ffffff50,inset 0 -1px 0 #00000012,0 3px 8px #162d4720; }
+.studio-app.studio-app.studio-personal-workspace .studio-symbol-tile > svg { width:59% !important; height:59% !important; color:#fff !important; stroke:currentColor !important; stroke-width:1.9; filter:drop-shadow(0 1px 1px #0002); }
+.studio-app .studio-symbol-tile.tone-blue { --icon-top:#619bff; --icon-bottom:#2864db; }
+.studio-app .studio-symbol-tile.tone-indigo { --icon-top:#8784f6; --icon-bottom:#5e53c4; }
+.studio-app .studio-symbol-tile.tone-violet { --icon-top:#b57fea; --icon-bottom:#874ac5; }
+.studio-app .studio-symbol-tile.tone-rose { --icon-top:#f78196; --icon-bottom:#d94a6a; }
+.studio-app .studio-symbol-tile.tone-amber { --icon-top:#edb85d; --icon-bottom:#ce862e; }
+.studio-app .studio-symbol-tile.tone-green { --icon-top:#5ac89e; --icon-bottom:#268762; }
+.studio-app .studio-symbol-tile.tone-cyan { --icon-top:#50bdd6; --icon-bottom:#247f9e; }
+.studio-app .studio-symbol-tile.tone-slate { --icon-top:#91a0b8; --icon-bottom:#60718c; }
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-nav-item .studio-symbol-tile { width:30px; height:30px; flex-basis:30px; border-radius:9px; background:linear-gradient(155deg,var(--icon-top),var(--icon-bottom)); color:#fff; transform:none; box-shadow:inset 0 1px 0 #ffffff40,0 2px 5px #00000015; }
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-nav-item { min-height:48px; padding:8px 10px; gap:11px; border-radius:13px; font-size:13px; }
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-nav-item.is-active { background:var(--studio-control-tint); color:var(--studio-text); font-weight:650; box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--studio-control-ring) 20%,transparent); }
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary) { border-radius:12px; font-weight:600; letter-spacing:-.015em; line-height:1.35; gap:8px; text-transform:none; }
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-button:not(.primary):not(.danger),.qw-button:not(.qw-primary)) { background:var(--studio-surface); border:1px solid var(--studio-border); color:var(--studio-text); box-shadow:0 1px 2px #00000006,inset 0 1px 0 #ffffff05; }
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-button.primary,.reference-button,.qw-primary,.invoice-primary):not(.danger) { background:var(--studio-control-accent) !important; border-color:var(--studio-control-accent) !important; color:#fff !important; box-shadow:inset 0 1px 0 #ffffff20,0 4px 10px #245bd81c; }
+.studio-app.studio-app.studio-personal-workspace :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary):disabled { opacity:.45; box-shadow:none; }
+.studio-app.studio-app.studio-personal-workspace :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary):focus-visible { outline:3px solid var(--studio-control-ring); outline-offset:3px; }
+@media(hover:hover) and (pointer:fine) {
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-button.primary,.reference-button,.qw-primary,.invoice-primary):not(.danger):not(:disabled):hover { background:var(--studio-control-accent-hover) !important; border-color:var(--studio-control-accent-hover) !important; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-button:not(.primary):not(.danger),.qw-button:not(.qw-primary)):not(:disabled):hover { background:var(--appearance-subtle); }
+}
+@media(max-width:768px) {
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace { --studio-mobile-bar:calc(96px + env(safe-area-inset-bottom)); }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar { padding:max(8px,env(safe-area-inset-top)) 14px 8px; min-height:66px; background:color-mix(in srgb,var(--studio-canvas) 94%,transparent); border-bottom:1px solid var(--studio-border); }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar-context strong { font-size:16px; font-weight:650; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar :is(.studio-icon-button,.studio-profile-button) { width:42px; height:42px; min-width:42px; border-radius:14px; border:1px solid var(--studio-border); background:var(--studio-surface); color:var(--studio-text); box-shadow:0 2px 6px #00000006; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar .studio-menu-button { width:40px; min-width:40px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar .studio-profile-button { padding:3px; border-radius:50%; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar .studio-avatar { width:32px; height:32px; border:0; font-size:11px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation { inset:auto max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left)); min-height:76px; max-width:560px; margin-inline:auto; padding:6px; gap:3px; border:1px solid var(--studio-border); border-radius:25px; background:color-mix(in srgb,var(--studio-surface) 96%,transparent); box-shadow:var(--studio-dock-shadow); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > :is(a,button) { min-height:62px; padding:4px 1px; gap:4px; border-radius:19px; position:relative; font-size:10px; color:var(--studio-muted); background:transparent; font-weight:550; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation .studio-mobile-tab-icon { width:30px; height:30px; border-radius:10px; box-shadow:none; background:transparent; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation .studio-mobile-tab-icon::before { display:none; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation .studio-mobile-tab-icon > svg { width:22px !important; height:22px !important; color:var(--studio-muted) !important; filter:none; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > .is-active { background:var(--studio-control-tint); color:var(--studio-text); font-weight:650; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > .is-active .studio-mobile-tab-icon { background:linear-gradient(155deg,var(--icon-top),var(--icon-bottom)); box-shadow:inset 0 1px 0 #ffffff40,0 2px 5px #0002; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > .is-active .studio-mobile-tab-icon > svg { color:#fff !important; width:19px !important; height:19px !important; }
+ .studio-mobile-tab-label { max-width:100%; overflow-wrap:anywhere; line-height:1.2; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-sidebar { padding-inline:16px; border-radius:0 26px 26px 0; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-nav-item { min-height:54px; padding:9px 12px; gap:13px; font-size:15px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-nav-item .studio-symbol-tile { width:34px; height:34px; flex-basis:34px; border-radius:11px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary) { min-height:48px; padding:12px 16px; font-size:14px; border-radius:14px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ov-page-toolbar .studio-button { font-size:13px; min-height:46px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.studio-card,.reference-mobile-record,.studio-phone-record-table tbody > tr) { box-shadow:0 4px 16px #00000006; }
+}
+@media(prefers-reduced-motion:no-preference) {
+ html:not([data-studio-motion=reduced]) .studio-mobile-navigation > :is(a,button), html:not([data-studio-motion=reduced]) .studio-mobile-tab-icon { transition:color 180ms ease,background 180ms ease,box-shadow 180ms ease; }
+ html:not([data-studio-motion=reduced]) .studio-app :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary):not(:disabled):active { scale:.97; }
+}
+@media(max-width:360px) {
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation { inset-inline:7px; padding:4px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > :is(a,button) { font-size:9px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-topbar { padding-inline:10px; gap:6px; }
+}

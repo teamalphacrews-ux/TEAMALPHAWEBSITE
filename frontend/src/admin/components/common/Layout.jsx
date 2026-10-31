@@ -1,129 +1,98 @@
-import { useState, useEffect, useRef, Suspense, useMemo } from "react";
-import { Outlet } from "react-router-dom";
-import Sidebar from "./Sidebar";
-import Topbar from "./Topbar";
-import { Menu, X } from "lucide-react";
-import Breadcrumbs from "../../../components/common/Breadcrumbs";
-import PageTransition from "../../../components/common/PageTransition";
+import { useState, useEffect, Suspense, lazy } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import Sidebar from './Sidebar';
+import Topbar from './Topbar';
+import { OfflineDraftsProvider } from '../../../offline/OfflineDrafts';
+import { NativeDeviceBridge } from '../../../native/NativeDeviceSettings';
+import '../../studio.css';
+import '../../studio-motion.css';
+import '../../studio-mobile.css';
+import '../../studio-brand.css';
+import { useAuth } from '../../../context/AuthContext';
+import useStudioDialog from '../studio/useStudioDialog';
+import { StudioPreferencesProvider, useStudioPreferences } from './StudioPreferences';
+import '../../studio-appearance.css';
+import '../../studio-responsive.css';
+import '../../studio-sidebar.css';
+import '../../studio-overview-shell.css';
+import MobileNavigation from './MobileNavigation';
+import useMobileViewport from './useMobileViewport';
+import useIPhoneAppNavigation from './useIPhoneAppNavigation';
+import IPhoneMoreMenu from './IPhoneMoreMenu';
+import '../../studio-phone.css';
+import '../../studio-control-polish.css';
+import '../../studio-compact-phone.css';
+import '../../studio-workflow-upgrade.css';
+import '../../studio-phone-refinement.css';
+import '../../studio-device-refinement.css';
+import '../../studio-drawer-refinement.css';
+import '../../studio-iphone-more.css';
+import '../../studio-precision-controls.css';
+import '../../studio-live-mobile.css';
 
+const StudioControlReview = import.meta.env.DEV ? lazy(() => import('./StudioControlReview')) : null;
 
-export default function Layout() {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isFocusMode, setIsFocusMode] = useState(false);
-    
-    // Header Scroll Visibility Logic (Matches Topbar)
-    const [isVisible, setIsVisible] = useState(true);
-    const lastScrollY = useRef(0);
-
-    useEffect(() => {
-        let ticking = false;
-        const handleScroll = () => {
-            if (!ticking) {
-                window.requestAnimationFrame(() => {
-                    const currentScrollY = window.scrollY;
-                    
-                    if (currentScrollY < 10) {
-                        setIsVisible(true);
-                    } else if (currentScrollY > lastScrollY.current) {
-                        setIsVisible(false);
-                    } else if (currentScrollY < lastScrollY.current - 5) {
-                        setIsVisible(true);
-                    }
-                    
-                    lastScrollY.current = currentScrollY;
-                    ticking = false;
-                });
-                ticking = true;
-            }
-        };
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    const backgroundStyle = useMemo(() => ({
-        background: `
-            radial-gradient(circle at top left, #CFE8D5 0%, transparent 40%),
-            radial-gradient(circle at top right, #F6E6B4 0%, transparent 40%),
-            radial-gradient(circle at bottom left, #D9CDEB 0%, transparent 40%),
-            #FFFFFF
-        `,
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed'
-    }), []);
-
-    return (
-        <div 
-            className="flex min-h-screen font-sans selection:bg-mutedbrown/20 relative"
-            style={backgroundStyle}
-        >
-            <style>
-                {`
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(-10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .floating-card-animation {
-                    animation: fadeIn 0.4s ease forwards;
-                }
-                `}
-            </style>
-
-            {/* Desktop Sidebar Container (Floating) */}
-            {!isFocusMode && (
-                <div className="hidden lg:block fixed left-0 top-0 h-screen z-50 p-5 pointer-events-none">
-                    <div className="h-full pointer-events-auto floating-card-animation">
-                        <Sidebar />
-                    </div>
-                </div>
-            )}
-
-            {/* Mobile Sidebar Overlay */}
-            {isSidebarOpen && !isFocusMode && (
-                <div
-                    className="lg:hidden fixed inset-0 bg-charcoal/40 backdrop-blur-sm z-[90] animate-in fade-in duration-300"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
-
-            {/* Mobile Sidebar Content */}
-            {!isFocusMode && (
-                <div className={`
-                    lg:hidden fixed left-0 top-0 h-screen z-[100] transition-transform duration-500 ease-in-out
-                    ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-                `}>
-                    <div className="h-full floating-card-animation">
-                        <Sidebar onClose={() => setIsSidebarOpen(false)} />
-                    </div>
-                </div>
-            )}
-
-            {/* Main Content Area */}
-            <div className={`flex-1 transition-all duration-500 flex flex-col min-w-0 ${!isFocusMode ? "lg:ml-[280px]" : "ml-0"}`}>
-                <div className={`sticky top-0 z-40 transition-all duration-500 pt-4 md:pt-8 px-4 md:px-10 pb-4 flex flex-col-reverse md:flex-row md:items-center justify-between gap-4 ${isFocusMode || !isVisible ? "opacity-0 -translate-y-full pointer-events-none" : "opacity-100 translate-y-0"}`}>
-                    <div className={`floating-card-animation transition-all duration-700 flex justify-center md:justify-start w-full md:w-auto ${isVisible ? "opacity-100 translate-y-[6px]" : "opacity-0 -translate-y-10 pointer-events-none"}`}>
-                        {!isFocusMode && <Breadcrumbs />}
-                    </div>
-                    <div className="floating-card-animation w-full md:w-auto flex justify-center md:justify-end">
-                        <Topbar onMenuClick={() => setIsSidebarOpen(true)} isVisibleProp={isVisible} />
-                    </div>
-                </div>
-
-                <main className={`w-full mx-auto transition-all duration-500 ${isFocusMode ? "p-0 max-w-none h-screen flex flex-col justify-center" : "px-4 pt-24 md:px-10 lg:px-12 max-w-[1600px] animate-in fade-in slide-in-from-top-4 duration-1000"}`}>
-                    <PageTransition>
-                        <Suspense fallback={<div className="flex h-64 w-full items-center justify-center text-xl opacity-50">Loading Dashboard...</div>}>
-                            <Outlet context={{ setIsFocusMode }} />
-                        </Suspense>
-                    </PageTransition>
-                </main>
-
-                {!isFocusMode && (
-                    <footer className="mt-auto p-8 border-t border-[#e6e3df] text-center">
-                        <p className="text-[10px] uppercase tracking-[0.3em] text-warmgray font-bold">
-                            Team Alpha Photography © 2026 • Luxury Studio Management
-                        </p>
-                    </footer>
-                )}
-            </div>
-        </div>
-    );
+function IPhoneNavigation() {
+  const [open, setOpen] = useState(false);
+  return <div className={'studio-iphone-navigation' + (open ? ' is-more-open' : '')}>
+    <MobileNavigation appMenu menuOpen={open} onMenuClick={() => setOpen(true)} controlsId="studio-iphone-more" />
+    {open && <IPhoneMoreMenu onClose={() => setOpen(false)} />}
+  </div>;
 }
+
+function StudioLayout() {
+  useMobileViewport();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const location = useLocation();
+  const { user, sessionError } = useAuth();
+  const iPhoneNavigation = useIPhoneAppNavigation(user);
+  const sidebarKey = 'teamalpha-sidebar-compact:' + (user?._id || user?.id || user?.email || 'current');
+  const [isSidebarCompact, setIsSidebarCompact] = useState(() => {
+    try { return localStorage.getItem(sidebarKey) === 'true'; } catch { return false; }
+  });
+  const [isDrawerLayout, setIsDrawerLayout] = useState(() => window.matchMedia('(max-width: 1100px)').matches);
+  const { preferences } = useStudioPreferences();
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1100px)');
+    const resize = () => { setIsDrawerLayout(media.matches); setIsSidebarOpen(false); };
+    media.addEventListener('change', resize);
+    return () => media.removeEventListener('change', resize);
+  }, []);
+  const toggleSidebar = () => {
+    const next = !isSidebarCompact;
+    setIsSidebarCompact(next);
+    try { localStorage.setItem(sidebarKey, String(next)); } catch { /* Still usable without storage. */ }
+  };
+  useEffect(() => {
+    const previous = document.title;
+    document.title = (user?.workspace?.name || 'Team Alpha') + ' — Studio OS';
+    return () => { document.title = previous; };
+  }, [user?.workspace?.name]);
+  const drawerOpen = !iPhoneNavigation && isDrawerLayout && isSidebarOpen;
+  const compact = isSidebarCompact && !isDrawerLayout;
+  const drawerRef = useStudioDialog(() => setIsSidebarOpen(false), { enabled: drawerOpen });
+
+  return <div data-studio-text-size={preferences.textSize} data-studio-theme={preferences.theme} className={'studio-app studio-personal-workspace' + (iPhoneNavigation ? ' studio-native-phone' : '') + (location.pathname.replace(/\/$/, '') === '/admin' ? ' studio-overview-shell' : '') + (compact ? ' studio-sidebar-compact' : '') + (isFocusMode ? ' studio-focus-mode' : '')}>
+    <NativeDeviceBridge />
+    <a className="studio-skip-link" href="#studio-main">Skip to content</a>
+    {!isFocusMode && !iPhoneNavigation && <>
+      {drawerOpen && <button className="studio-sidebar-scrim" data-studio-dismiss-for="studio-navigation-drawer" aria-label="Close navigation" onClick={() => setIsSidebarOpen(false)} tabIndex={-1} />}
+      <div id="studio-navigation-drawer" className={'studio-sidebar-container' + (drawerOpen ? ' is-open' : '')} ref={drawerRef} role={drawerOpen ? "dialog" : undefined} aria-modal={drawerOpen || undefined} aria-label={drawerOpen ? "Studio navigation drawer" : undefined} inert={isDrawerLayout && !drawerOpen} aria-hidden={isDrawerLayout && !drawerOpen ? true : undefined} tabIndex={-1}><Sidebar compact={compact} onToggleCompact={isDrawerLayout ? undefined : toggleSidebar} onClose={() => setIsSidebarOpen(false)} /></div>
+    </>}
+    {/* The dialog hook owns background isolation, including its cleanup. */}
+    <div className="studio-workspace">
+      {!isFocusMode && <Topbar onMenuClick={() => setIsSidebarOpen(true)} />}
+      {sessionError && <div className="studio-session-warning" role="status"><span>{sessionError}</span><button className="studio-button small" type="button" onClick={() => window.location.reload()}>Retry connection</button></div>}
+      <div className="studio-preview-label" hidden={!user?.isPreview}>DESIGN PREVIEW · SAMPLE DATA · Changes in this local preview are temporary.</div>
+        <main id="studio-main" className={"studio-main" + (["/admin/users", "/admin/activity-log"].includes(location.pathname) ? " studio-legacy-page" : "")} tabIndex={-1}>
+        <Suspense fallback={<div className="studio-loading" role="status"><span className="studio-loader" /> Opening your workspace…</div>}>
+          {StudioControlReview && new URLSearchParams(location.search).get('controls') === 'review' ? <StudioControlReview /> : <Outlet context={{ setIsFocusMode }} />}
+        </Suspense>
+      </main>
+      {!isFocusMode && <footer className="studio-footer"><span>{user?.workspace?.name || 'TEAM ALPHA'} <span className="studio-footer-dot">·</span> STUDIO OS</span><span>Made for the stories you create.</span></footer>}
+    </div>
+    {!isFocusMode && (iPhoneNavigation ? <IPhoneNavigation key={location.key} /> : <MobileNavigation menuOpen={drawerOpen} onMenuClick={() => setIsSidebarOpen(true)} />)}
+  </div>;
+}
+export default function Layout() { return <StudioPreferencesProvider><OfflineDraftsProvider><StudioLayout /></OfflineDraftsProvider></StudioPreferencesProvider>; }

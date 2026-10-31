@@ -6,70 +6,54 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
+const { createLeadHandler } = require('../utils/createLead');
+const pipeline = require('../services/enquiryPipeline');
 
 const router = express.Router();
 
-router.get('/', auth, async (req, res) => {
-    const leads = await Lead.find().populate('tasks');
-    res.json(leads);
-});
+router.use(auth, requireAdmin);
 
-router.post('/', auth, async (req, res) => {
+// Webhook receipts and database operators cannot be set through CRM mass assignment.
+const editableLeadFields = new Set(['name', 'email', 'phone', 'status', 'remarks', 'eventType',
+    'eventDate', 'eventTime', 'eventLocation', 'followUpDate', 'notes', 'tasks', 'people',
+    'paymentStatus', 'totalAmount', 'depositAmount', 'galleryTag', 'cloudLink', 'cloudPassword']);
+const allowedLeadFields = data => Object.fromEntries(Object.entries(data).filter(([key]) => editableLeadFields.has(key)));
+
+router.get('/', async (req, res) => {
     try {
-        const { createAccount, firstName, lastName, accountEmail, password, ...leadData } = req.body;
-
-        // Save lead
-        const lead = new Lead(leadData);
-        await lead.save();
-
-        // Create User Account if requested
-        if (createAccount && firstName && lastName && password) {
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
-
-            const newUser = new User({
-                firstName,
-                lastName,
-                email: accountEmail || req.body.email,
-                password: hashedPassword,
-                role: 'client',
-                galleryTag: leadData.galleryTag,
-                cloudLink: leadData.cloudLink,
-                cloudPassword: leadData.cloudPassword,
-                leadId: lead._id
-            });
-            await newUser.save();
-        }
-
-        await Notification.create({
-            title: "New Lead Acquired",
-            description: `${lead.name} has been added to the registry as a new ${lead.status} lead.`,
-            type: "Lead"
-        });
-
-        res.json(lead);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
+        const warnings = await pipeline.reconcile();
+        if (warnings.length) res.set('X-Studio-Link-Warnings', String(warnings.length));
+        const leads = await Lead.find().populate('tasks').sort({ createdAt: -1 });
+        res.json(leads);
+    } catch { res.status(503).json({ error: 'Enquiries are unavailable. Please retry.' }); }
 });
+
+router.post('/', createLeadHandler({ Lead, User, Notification, bcrypt, allowedLeadFields }));
 
 // Task specific management
-router.post('/:id/tasks', auth, async (req, res) => {
-    const task = new Task({ ...req.body, lead: req.params.id });
-    await task.save();
-    await Lead.findByIdAndUpdate(req.params.id, { $push: { tasks: task._id } });
-    res.json(task);
+router.post('/:id/tasks', async (req, res) => {
+    try {
+        const { taskValues, validateTaskLinks } = require('../utils/productionTask');
+        const values = taskValues({ ...req.body, lead: req.params.id });
+        await validateTaskLinks(values);
+        const task = await Task.create(values);
+        await Lead.updateOne({ _id: req.params.id }, { $addToSet: { tasks: task._id } });
+        res.json(task);
+    } catch (error) { res.status(error.status || 503).json({ error: error.status ? error.message : 'The production task could not be saved.' }); }
 });
 
 // PATCH Lead
-router.patch('/:id', auth, async (req, res) => {
+router.patch('/:id', async (req, res) => {
     try {
         const { status } = req.body;
         const oldLead = await Lead.findById(req.params.id);
         if (!oldLead) return res.status(404).json({ error: "Lead not found" });
 
-        const updatedLead = await Lead.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updatedLead = await Lead.findByIdAndUpdate(req.params.id, allowedLeadFields(req.body), { new: true, runValidators: true });
+        await pipeline.syncFromEnquiry(updatedLead, req.body);
+        if (status === 'Converted' && oldLead.status !== 'Converted')
+            await require('../services/productionTemplates').applyDefaultProduction(updatedLead._id);
 
         // Update corresponding User if linked or email matches
         if (updatedLead) {
@@ -93,7 +77,7 @@ router.patch('/:id', auth, async (req, res) => {
             });
         }
 
-        res.json(updatedLead);
+        res.json(await Lead.findById(req.params.id).populate('tasks'));
     } catch (err) {
         console.error(`[LEAD_PATCH_ERROR] ID: ${req.params.id}, Body:`, req.body, err);
         res.status(500).json({ error: "Failed to update lead: " + err.message });
@@ -101,7 +85,7 @@ router.patch('/:id', auth, async (req, res) => {
 });
 
 // POST Remind Photographer
-router.post('/:id/remind/:photographerName', auth, async (req, res) => {
+router.post('/:id/remind/:photographerName', async (req, res) => {
     try {
         const lead = await Lead.findById(req.params.id);
         const photographer = await Photographer.findOne({ name: req.params.photographerName });
@@ -117,12 +101,20 @@ router.post('/:id/remind/:photographerName', auth, async (req, res) => {
 });
 
 // DELETE Lead
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
-        await Lead.findByIdAndDelete(req.params.id);
+        await require('../services/studioSecurity').assertPermission(req.user.id, 'deletion');
+        const lead = await Lead.findById(req.params.id);
+        if (!lead) return res.status(404).json({ error: 'Enquiry not found' });
+        if (lead.studioProjectId) {
+            const archived = await Lead.findByIdAndUpdate(lead._id, { $set: { status: 'Archived' } }, { new: true });
+            await pipeline.syncFromEnquiry(archived, { status: 'Archived' });
+            return res.json({ archived: true });
+        }
+        await require('../services/studioRecovery').recoverableDelete({ Model: Lead, filter: { _id: req.params.id }, actorId: req.user.id });
         res.json({ message: "Lead deleted successfully" });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(err.status || 500).json({ error: err.status ? err.message : 'The enquiry could not be removed.' });
     }
 });
 

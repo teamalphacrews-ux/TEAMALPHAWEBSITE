@@ -6,6 +6,7 @@ const fs = require('fs');
 const Media = require('../models/Media');
 const GoogleDriveService = require('../services/googleDriveService');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
 
 // Multer storage for temporary local upload
 const storage = multer.diskStorage({
@@ -28,7 +29,7 @@ const upload = multer({ storage: storage });
  * @desc    Upload file to Google Drive and save metadata
  * @access  Private/Admin
  */
-router.post('/upload', auth, upload.single('file'), async (req, res) => {
+router.post('/upload', auth, requireAdmin, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: "No file provided" });
@@ -75,7 +76,7 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
  * @desc    Get all media files
  * @access  Private
  */
-router.get('/files', auth, async (req, res) => {
+router.get('/files', auth, requireAdmin, async (req, res) => {
     try {
         const files = await Media.find().sort({ createdTime: -1 });
         res.json(files);
@@ -92,6 +93,9 @@ router.get('/files', auth, async (req, res) => {
 router.get('/files/:clientId', auth, async (req, res) => {
     try {
         const { clientId } = req.params;
+        if (req.user.role !== 'admin' && String(clientId) !== String(req.user.id)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
         const files = await Media.find({ clientId: clientId }).sort({ createdTime: -1 });
         res.json(files);
     } catch (error) {
@@ -104,7 +108,7 @@ router.get('/files/:clientId', auth, async (req, res) => {
  * @desc    Delete file from Drive and DB
  * @access  Private/Admin
  */
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, requireAdmin, require('../services/studioSecurity').requirePermission('deletion'), async (req, res) => {
     try {
         const media = await Media.findById(req.params.id);
         if (!media) {
@@ -127,7 +131,7 @@ router.delete('/:id', auth, async (req, res) => {
  * @route   POST /api/media/drive-collection
  * @desc    Add a Google Drive folder as a collection
  */
-router.post('/drive-collection', auth, async (req, res) => {
+router.post('/drive-collection', auth, requireAdmin, async (req, res) => {
     try {
         const { driveLink, clientId } = req.body;
         if (!driveLink || !clientId) {
@@ -160,7 +164,7 @@ router.post('/drive-collection', auth, async (req, res) => {
  * @route   GET /api/media/folder/:folderId
  * @desc    Fetch contents of a Drive folder
  */
-router.get('/folder/:folderId', auth, async (req, res) => {
+router.get('/folder/:folderId', auth, requireAdmin, async (req, res) => {
     try {
         const { folderId } = req.params;
         const contents = await GoogleDriveService.getFolderContents(folderId);

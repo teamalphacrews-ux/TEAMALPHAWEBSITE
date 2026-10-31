@@ -1,0 +1,344 @@
+import { useState } from "react";
+import { Plus, Pencil, HardDrive, Archive, ShieldCheck } from "lucide-react";
+import toast from "react-hot-toast";
+import {
+  WorkspaceHeader,
+  WorkspaceMetrics,
+  WorkspaceError,
+  WorkspaceSearch,
+  WorkspaceEmpty,
+  WorkspaceDialog,
+  WorkspaceField,
+} from "../components/operations/WorkspaceUI";
+import {
+  useWorkspaceData,
+  workspaceRequest,
+  recordError,
+  recordDate,
+} from "../components/operations/workspaceData";
+const blank = {
+  label: "",
+  lead: "",
+  mediaType: "Photos",
+  storageLocation: "",
+  sizeGb: 0,
+  backupLocation: "",
+  backupStatus: "Pending",
+  checksum: "",
+  notes: "",
+};
+export default function DataManagement() {
+  const { data, loading, error, reload } = useWorkspaceData([
+    "/api/studio/assets",
+    "/api/leads",
+  ]);
+  const [assets = [], leads = []] = data;
+  const [query, setQuery] = useState(""),
+    [filter, setFilter] = useState("all"),
+    [editing, setEditing] = useState(undefined),
+    [form, setForm] = useState(blank),
+    [busy, setBusy] = useState(false),
+    [saveError, setSaveError] = useState(""),
+    [archiving, setArchiving] = useState(null);
+  const open = (record) => {
+    setEditing(record || null);
+    setForm(
+      record
+        ? { ...blank, ...record, lead: record.lead?._id || record.lead || "" }
+        : blank,
+    );
+    setSaveError("");
+  };
+  const change = (name, value) =>
+    setForm((current) => ({ ...current, [name]: value }));
+  const save = async (event) => {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setSaveError("");
+    try {
+      await workspaceRequest(
+        editing ? "put" : "post",
+        "/api/studio/assets" + (editing ? "/" + editing._id : ""),
+        { ...form, sizeGb: Number(form.sizeGb) },
+      );
+      setEditing(undefined);
+      toast.success("Storage record saved");
+      reload();
+    } catch (err) {
+      setSaveError(recordError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const archive = async (event) => {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setSaveError("");
+    try {
+      await workspaceRequest("delete", "/api/studio/assets/" + archiving._id);
+      setArchiving(null);
+      toast.success("Metadata archived");
+      reload();
+    } catch (err) {
+      setSaveError(recordError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const visible = assets.filter(
+    (record) =>
+      (filter === "all" || record.backupStatus === filter) &&
+      [
+        record.label,
+        record.lead?.name,
+        record.storageLocation,
+        record.mediaType,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query.toLowerCase().trim()),
+  );
+  return (
+    <div className="studio-ops ops-data-workspace">
+      <WorkspaceHeader
+        eyebrow="CARE FOR EVERY FRAME"
+        title="Data & backups"
+        description="Know where your footage lives and when its backup was checked."
+      >
+        <button className="studio-button primary" onClick={() => open(null)}>
+          <Plus size={14} />
+          Add storage record
+        </button>
+      </WorkspaceHeader>
+      <WorkspaceMetrics
+        loading={loading || (!!error && !data.length)}
+        items={[
+          {
+            label: "Storage records",
+            value: assets.length,
+            note: "Manually catalogued folders",
+          },
+          {
+            label: "Recorded size",
+            value:
+              assets
+                .reduce((sum, r) => sum + (Number(r.sizeGb) || 0), 0)
+                .toLocaleString("en-IN") + " GB",
+            note: "Based on entered metadata",
+          },
+          {
+            label: "Backups marked verified",
+            value: assets.filter((r) => r.backupStatus === "Verified").length,
+            note: "Checked by your studio team",
+          },
+          {
+            label: "Awaiting a check",
+            value: assets.filter((r) => r.backupStatus !== "Verified").length,
+            note: "Pending or needs attention",
+          },
+        ]}
+      />
+      <WorkspaceError error={error} retry={reload} />
+      <div className="workspace-info">
+        <ShieldCheck size={16} />
+        <p>
+          Backup status is a manual studio record. This workspace does not scan
+          your NAS or move files. Record folder locations without passwords.
+        </p>
+      </div>
+      <section className="studio-card">
+        <div className="studio-toolbar">
+          <WorkspaceSearch
+            value={query}
+            onChange={setQuery}
+            placeholder="Search project, folder or location…"
+          />
+          <select
+            aria-label="Filter backup status"
+            className="studio-input workspace-select"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            {["all", "Pending", "Verified", "Needs attention"].map((v) => (
+              <option value={v} key={v}>
+                {v === "all" ? "All backup states" : v}
+              </option>
+            ))}
+          </select>
+        </div>
+        {error && !data.length ? (
+          <WorkspaceEmpty
+            title="Storage catalogue unavailable"
+            description="Use Retry above to reconnect to your studio records."
+          />
+        ) : loading || !visible.length ? (
+          <WorkspaceEmpty
+            loading={loading}
+            title={assets.length ? "No storage records match" : "Every frame deserves a safe home"}
+            description={assets.length ? "Try another folder, project or backup status." : "Catalogue a shoot folder, its primary location and backup."}
+          >
+            {!loading && (assets.length ? <button type="button" className="studio-button" onClick={() => { setQuery(""); setFilter("all"); }}>Clear filters</button> : <button type="button" className="studio-button" onClick={() => open(null)}><Plus size={15} /> Add your first record</button>)}
+          </WorkspaceEmpty>
+        ) : (
+          <div className="studio-table-wrap">
+            <table role="table" aria-label="Studio data records" className="studio-table studio-phone-record-table">
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th role="columnheader">Record / project</th>
+                  <th role="columnheader">Primary location</th>
+                  <th role="columnheader">Size</th>
+                  <th role="columnheader">Backup check</th>
+                  <th role="columnheader">Actions</th>
+                </tr>
+              </thead>
+              <tbody role="rowgroup">
+                {visible.map((record) => (
+                  <tr role="row" key={record._id}>
+                    <td role="cell" data-label="Record">
+                      <strong>{record.label}</strong>
+                      <small>
+                        {record.lead?.name || "Studio files"} ·{" "}
+                        {record.mediaType}
+                      </small>
+                    </td>
+                    <td role="cell" data-label="Primary location">
+                      <span className="workspace-path">
+                        <HardDrive size={13} />
+                        {record.storageLocation}
+                      </span>
+                      {record.backupLocation && (
+                        <small>Backup: {record.backupLocation}</small>
+                      )}
+                    </td>
+                    <td role="cell" data-label="Size">{record.sizeGb} GB</td>
+                    <td role="cell" data-label="Backup check">
+                      <span
+                        className={
+                          "studio-badge " +
+                          (record.backupStatus === "Verified"
+                            ? "green"
+                            : record.backupStatus === "Needs attention"
+                              ? "rose"
+                              : "gold")
+                        }
+                      >
+                        {record.backupStatus}
+                      </span>
+                      <small>
+                        {record.verifiedAt
+                          ? "Recorded " + recordDate(record.verifiedAt)
+                          : "Not yet verified"}
+                      </small>
+                    </td>
+                    <td role="cell" data-label="Actions">
+                      <button
+                        className="studio-icon-button"
+                        aria-label={"Edit storage " + record.label}
+                        onClick={() => open(record)}
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        className="studio-icon-button"
+                        aria-label={"Archive metadata " + record.label}
+                        onClick={() => {
+                          setArchiving(record);
+                          setSaveError("");
+                        }}
+                      >
+                        <Archive size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+      {!loading && !error && <p className="ops-result-count" aria-live="polite">Showing {visible.length} of {assets.length} storage records</p>}
+      {editing !== undefined && (
+        <WorkspaceDialog
+          title={editing ? "Storage & backup record" : "Catalogue your footage"}
+          onClose={() => setEditing(undefined)}
+          onSubmit={save}
+          busy={busy}
+          error={saveError}
+        >
+          <div className="studio-form-grid">
+            {[
+              { label: "Record name", name: "label", required: true },
+              {
+                label: "Project",
+                name: "lead",
+                options: [
+                  { value: "", label: "Studio files" },
+                  ...leads.map((l) => ({ value: l._id, label: l.name })),
+                ],
+              },
+              {
+                label: "Media type",
+                name: "mediaType",
+                options: ["Photos", "Video", "Audio", "Project files", "Other"],
+              },
+              {
+                label: "Size in GB",
+                name: "sizeGb",
+                type: "number",
+                min: 0,
+                step: "0.01",
+              },
+              {
+                label: "Primary folder location",
+                name: "storageLocation",
+                wide: true,
+                required: true,
+              },
+              {
+                label: "Backup folder location",
+                name: "backupLocation",
+                wide: true,
+                required: form.backupStatus === "Verified",
+              },
+              {
+                label: "Backup check status",
+                name: "backupStatus",
+                options: ["Pending", "Verified", "Needs attention"],
+              },
+              { label: "Checksum / manifest reference", name: "checksum" },
+              { label: "Notes", name: "notes", type: "textarea", wide: true },
+            ].map((field) => (
+              <WorkspaceField
+                key={field.name}
+                {...field}
+                value={form[field.name]}
+                onChange={change}
+              />
+            ))}
+          </div>
+          <p className="studio-muted">
+            Choose Verified only after your team has checked the backup. A
+            backup location is required.
+          </p>
+        </WorkspaceDialog>
+      )}
+      {archiving && (
+        <WorkspaceDialog
+          title="Archive storage metadata?"
+          onClose={() => setArchiving(null)}
+          onSubmit={archive}
+          busy={busy}
+          error={saveError}
+          submitLabel="Archive record"
+        >
+          <p>
+            This removes {archiving.label} from the active catalogue. The
+            metadata is retained; files in storage are untouched.
+          </p>
+        </WorkspaceDialog>
+      )}
+    </div>
+  );
+}

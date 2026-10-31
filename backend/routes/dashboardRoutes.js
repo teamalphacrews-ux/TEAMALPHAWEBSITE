@@ -6,10 +6,63 @@ const User = require('../models/User');
 const Task = require('../models/Task');
 const Finance = require('../models/Finance');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
+const Event = require('../models/Event');
+const Photographer = require('../models/Photographer');
+const StudioConfig = require('../models/StudioConfig');
+const { buildStudioOverview } = require('../utils/studioOverview');
+const { studioDayStart } = require('../utils/studioDay');
+const { overviewTimezone, overviewInsightWindow, overviewActivityPipeline, buildOverviewInsights } = require('../utils/studioOverviewInsights');
 
 const router = express.Router();
 
-router.get('/stats', auth, async (req, res) => {
+router.use(auth, requireAdmin);
+
+router.get('/studio-overview', async (req, res) => {
+    try {
+        await require('../services/enquiryPipeline').reconcile();
+        const now = new Date();
+        const studio = await StudioConfig.findOne({ key: 'studio' }).select('timezone').lean();
+        const timezone = req.query?.timezone === undefined ? overviewTimezone(studio?.timezone) : overviewTimezone(req.query.timezone, true);
+        const todayStart = studioDayStart(now, timezone);
+        const insightWindow = overviewInsightWindow(now, timezone);
+        const throughNow = new Date(now.getTime() + 1);
+        const [leadCounts, upcomingEventCount, pendingTaskCount, overdueTaskCount,
+            activeCrew, clientCollections, events, datedTasks, undatedTasks, recentLeads,
+            leadActivity, eventActivity, taskActivity, taskDueActivity, completedTaskCount] = await Promise.all([
+            Lead.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+            Event.countDocuments({ end: { $gte: now } }),
+            Task.countDocuments({ status: 'pending' }),
+            Task.countDocuments({ status: 'pending', dueDate: { $lt: todayStart, $ne: null } }),
+            Photographer.countDocuments({ status: 'Active' }),
+            DriveGallery.countDocuments(),
+            Event.find({ end: { $gte: now } }).sort({ start: 1 }).limit(6)
+                .select('title start end type location teamMembers lead').lean(),
+            Task.find({ status: 'pending', dueDate: { $ne: null } }).sort({ dueDate: 1 }).limit(8)
+                .select('title status dueDate lead').populate('lead', 'name eventDate').lean(),
+            Task.find({ status: 'pending', dueDate: null }).sort({ createdAt: -1 }).limit(8)
+                .select('title status dueDate lead').populate('lead', 'name eventDate').lean(),
+            Lead.find().sort({ createdAt: -1 }).limit(6)
+                .select('name eventType eventDate status followUpDate createdAt').lean(),
+            Lead.aggregate(overviewActivityPipeline('createdAt', insightWindow.previousStart, throughNow, timezone)),
+            Event.aggregate(overviewActivityPipeline('start', insightWindow.start, insightWindow.end, timezone)),
+            Task.aggregate(overviewActivityPipeline('createdAt', insightWindow.start, throughNow, timezone)),
+            Task.aggregate(overviewActivityPipeline('dueDate', insightWindow.start, insightWindow.end, timezone, true)),
+            Task.countDocuments({ status: 'completed' }),
+        ]);
+        res.json(buildStudioOverview({
+            leadCounts, upcomingEventCount, pendingTaskCount, overdueTaskCount,
+            activeCrew, clientCollections, events, datedTasks, undatedTasks, recentLeads,
+            insights: buildOverviewInsights({ leadCounts, leadActivity, eventActivity, taskActivity,
+                taskDueActivity, completedTaskCount, pendingTaskCount }, now, timezone),
+        }, now));
+    } catch (err) {
+        console.error('Studio overview error:', err.message);
+        res.status(err.status === 400 ? 400 : 500).json({ error: err.status === 400 ? err.message : 'Unable to load the studio overview' });
+    }
+});
+
+router.get('/stats', async (req, res) => {
     try {
         // Compute Total Clients and Published/Uploaded Drives
         const totalClients = await User.countDocuments({ role: 'client' });
@@ -19,38 +72,25 @@ router.get('/stats', auth, async (req, res) => {
         // But semantically now represents clients and drives count
         const totalPhotos = `${totalClients} Clients / ${totalDrives} Drives`;
 
-        const leadsCount = await Lead.countDocuments();
-
         // Calculate actual storage used by summing the size of all gallery items
         const storageStats = await Gallery.aggregate([
             { $group: { _id: null, totalSizeBytes: { $sum: "$size" } } }
         ]);
 
         const actualSizeBytes = storageStats[0]?.totalSizeBytes || 0;
-        const avgPhotoSizeMB = 15; // Assumption for legacy items without size field
         const photosWithoutSize = await Gallery.countDocuments({ $or: [{ size: 0 }, { size: { $exists: false } }] });
-        
-        const totalUsedMB = (actualSizeBytes / (1024 * 1024)) + (photosWithoutSize * avgPhotoSizeMB);
-        const totalStorageLimitMB = 1048576; // 1 TB
-        const usedPercentage = ((totalUsedMB / totalStorageLimitMB) * 100).toFixed(2);
-
-        const storageUsage = `${usedPercentage}%`;
 
         // Count non-completed tasks as pending approvals/actions
         const pendingApprovals = await Task.countDocuments({ status: 'pending' });
 
-        // Simulate organic traffic based on engagement (leads and total photos)
-        // This provides a "live" feel to the dashboard metrics
-        const baseTraffic = (leadsCount * 50) + (totalClients * 10);
-        const randomFluctuation = Math.floor(Math.random() * 20); // Add a small random factor
-        const organicTraffic = baseTraffic + randomFluctuation;
-        const traffic = organicTraffic >= 1000 ? `${(organicTraffic / 1000).toFixed(1)}K` : organicTraffic.toString();
-
         res.json({
             totalPhotos,
-            storageUsage,
+            storageUsage: null,
+            storageBytes: actualSizeBytes,
+            storageUnknownItems: photosWithoutSize,
             pendingApprovals,
-            traffic
+            traffic: null,
+            trafficAvailable: false
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -59,7 +99,7 @@ router.get('/stats', auth, async (req, res) => {
 
 const GalleryEvent = require('../models/GalleryEvent');
 
-router.get('/recent-activity', auth, async (req, res) => {
+router.get('/recent-activity', async (req, res) => {
     try {
         // Fetch 5 most recent leads
         const leads = await Lead.find().sort({ updatedAt: -1 }).limit(5);
@@ -165,7 +205,7 @@ router.get('/recent-activity', auth, async (req, res) => {
     }
 });
 
-router.get('/upcoming-events', auth, async (req, res) => {
+router.get('/upcoming-events', async (req, res) => {
     try {
         const today = new Date();
         const events = await Lead.find({

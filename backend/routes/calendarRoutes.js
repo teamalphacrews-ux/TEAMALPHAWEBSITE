@@ -2,46 +2,33 @@ const express = require('express');
 const Event = require('../models/Event');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
 const { sendEventNotification } = require('../services/ReminderService');
 const { syncToGoogle, pollGoogleCalendar } = require('../services/googleCalendarService');
+const { calendarConnection, createCalendarSyncHandler } = require('../utils/calendarConnection');
 
+const { eventFields,crewOverlap } = require('../utils/studioCalendar');
 const router = express.Router();
 
+router.use(auth, requireAdmin);
+
 // Get Google Calendar sync status
-router.get('/sync-status', auth, async (req, res) => {
+router.get('/sync-status', async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        const isSynced = !!user.googleAccessToken;
-        res.json({ 
-            isSynced, 
-            email: isSynced ? user.googleEmail : user.email,
-            lastSyncAt: user.googleLastSyncAt,
-            syncError: user.googleSyncError
-        });
+        res.json(calendarConnection(user));
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
 // Manually trigger Google Calendar sync
-router.get('/sync-now', auth, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user || !user.googleAccessToken) {
-            return res.status(400).json({ message: "Google Calendar not connected" });
-        }
-        await pollGoogleCalendar(user, req.io);
-        res.json({ success: true, message: "Calendar synced" });
-    } catch (error) {
-        console.error("Manual sync error:", error);
-        res.status(500).json({ message: "Failed to sync calendar" });
-    }
-});
+router.get('/sync-now', createCalendarSyncHandler({ User, pollGoogleCalendar }));
 
 // Disconnect Google Calendar and delete synced events
-router.post('/disconnect-google', auth, async (req, res) => {
+router.post('/disconnect-google', async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: "User not found" });
@@ -69,7 +56,7 @@ router.post('/disconnect-google', auth, async (req, res) => {
 
         // Emit socket update to refresh everyone's view
         if (req.io) {
-            req.io.emit('calendar_update', { action: 'DISCONNECT', email: user.email });
+            req.io.to('admin').emit('calendar_update', { action: 'DISCONNECT', email: user.email });
         }
 
         res.json({ success: true, message: "Disconnected successfully" });
@@ -81,7 +68,7 @@ router.post('/disconnect-google', auth, async (req, res) => {
 
 
 // Get all events
-router.get('/', auth, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const query = {}; // Shared Studio Calendar visibility for everyone
         const events = await Event.find(query).sort({ start: 1 });
@@ -92,19 +79,14 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Create new event
-router.post('/', auth, async (req, res) => {
+router.post('/', async (req, res) => {
     try {
-        const { start, end, location } = req.body;
-
-        // Check for overlapping events at the same location or same time
-        // Overlap restriction removed to allow multiple events per day.
-        // The business layer now permits overlapping bookings for comprehensive studio mapping.
-
-        const event = new Event({
-            ...req.body,
-            userId: req.user.id, // Associate event with user
-            origin: 'local'      // Explicitly mark as born on website
-        });
+        const values=eventFields(req.body);
+        await require("./quoteWorkflowRoutes").references({contactId:values.contactId,studioProjectId:values.studioProjectId});
+        const candidates=values.teamMembers.length?await Event.find({start:{$lt:values.end},end:{$gt:values.start}}).select('title start end teamMembers').lean():[];
+        const conflict=crewOverlap(values,candidates);
+        if(conflict)return res.status(409).json({message:'Assigned crew overlap with '+conflict.title});
+        const event = new Event({ ...values, ...( /^[a-f\d]{24}$/i.test(req.user.id)?{userId:req.user.id}:{} ), origin:'local' });
         await event.save();
 
         // Trigger Google Calendar Sync (Awaited for real status)
@@ -128,7 +110,7 @@ router.post('/', auth, async (req, res) => {
         }
 
         // Trigger Socket.IO broadcast for instant UI update across all clients
-        req.io.emit('calendar_update', { action: 'CREATE', eventId: event._id });
+        req.io.to('admin').emit('calendar_update', { action: 'CREATE', eventId: event._id });
 
         res.status(201).json(event);
     } catch (error) {
@@ -137,30 +119,17 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Update event
-router.patch('/:id', auth, async (req, res) => {
+router.patch('/:id', async (req, res) => {
     try {
-        const { start, end } = req.body;
-
-        if (start || end) {
-            const currentEvent = await Event.findById(req.params.id);
-            const newStart = start ? new Date(start) : currentEvent.start;
-            const newEnd = end ? new Date(end) : currentEvent.end;
-
-            const overlapping = await Event.findOne({
-                _id: { $ne: req.params.id },
-                start: { $lt: newEnd },
-                end: { $gt: newStart }
-            });
-
-            if (overlapping) {
-                return res.status(400).json({ 
-                    message: "Scheduling Conflict: Update would overlap with another event.",
-                    conflictingEvent: overlapping.title
-                });
-            }
-        }
-
-        const event = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const current=await Event.findById(req.params.id);
+        if(!current)return res.status(404).json({message:'Event not found'});
+        if(current.isReadOnly)return res.status(403).json({message:'This Google-managed event is read only'});
+        const values=eventFields(req.body,current.toObject());
+        await require("./quoteWorkflowRoutes").references({contactId:values.contactId,studioProjectId:values.studioProjectId});
+        const candidates=values.teamMembers.length?await Event.find({_id:{$ne:req.params.id},start:{$lt:values.end},end:{$gt:values.start}}).select('title start end teamMembers').lean():[];
+        const conflict=crewOverlap(values,candidates);
+        if(conflict)return res.status(409).json({message:'Assigned crew overlap with '+conflict.title});
+        const event=await Event.findByIdAndUpdate(req.params.id,{$set:values},{new:true,runValidators:true});
 
         // Trigger Google Calendar Sync (Awaited for real status)
         if (event) {
@@ -181,7 +150,7 @@ router.patch('/:id', auth, async (req, res) => {
         }
 
         // Trigger Socket.IO broadcast for instant UI update across all clients
-        req.io.emit('calendar_update', { action: 'UPDATE', eventId: event._id });
+        req.io.to('admin').emit('calendar_update', { action: 'UPDATE', eventId: event._id });
 
         res.json(event);
     } catch (error) {
@@ -190,25 +159,30 @@ router.patch('/:id', auth, async (req, res) => {
 });
 
 // Delete event
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
+        await require('../services/studioSecurity').assertPermission(req.user.id, 'deletion');
         const event = await Event.findById(req.params.id);
-        if (event && event.googleEventId) {
+        if (!event) return res.status(404).json({message:'Event not found'});
+        if (event.isReadOnly) return res.status(403).json({message:'This Google-managed event is read only'});
+        const removed = await require('../services/studioRecovery').recoverableDelete({ Model: Event, filter: { _id: event._id }, actorId: req.user.id });
+        if (!removed) return res.status(409).json({ message: 'This event changed before deletion.' });
+        let syncWarning = '';
+        if (event.googleEventId) {
             try {
                 await syncToGoogle(event, 'DELETE', req.user.id);
             } catch (syncError) {
                 console.error("Failed to delete event from Google:", syncError.message);
-                // We still proceed with local deletion
+                syncWarning = 'The studio event was removed, but Google Calendar could not be updated. Reconnect and check the Google event.';
             }
         }
-        await Event.findByIdAndDelete(req.params.id);
 
         // Trigger Socket.IO broadcast for instant UI update across all clients
-        req.io.emit('calendar_update', { action: 'DELETE', eventId: req.params.id });
+        req.io.to('admin').emit('calendar_update', { action: 'DELETE', eventId: req.params.id });
 
-        res.json({ message: 'Event deleted' });
+        res.json({ message: 'Event moved to recovery.', ...(syncWarning ? { warning: syncWarning } : {}) });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(error.status || 500).json({ message: error.status ? error.message : 'The calendar event could not be removed.' });
     }
 });
 

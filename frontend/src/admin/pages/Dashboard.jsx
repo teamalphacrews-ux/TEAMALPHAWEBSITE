@@ -1,419 +1,186 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
-import StatCard from "../components/dashboard/StatCard";
-import { TrendingUp, Users, ImageIcon, PieChart, ArrowUpRight, Clock, MapPin, MoreVertical, Trash2, Edit3, X } from "lucide-react";
-import toast from "react-hot-toast";
-import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import StudioButton from '../components/common/StudioButton';
+import { Fragment, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { Plus, ArrowUpRight, CalendarDays, MessageSquare, Folder, Clapperboard, Check, RefreshCw, ArrowRight, CircleCheck, FileText, Wallet, ChevronRight, GripVertical, X, Sparkles } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import StudioAppIcon from '../components/common/StudioAppIcon';
+import { useStudioPreferences } from '../components/common/StudioPreferences';
+import OverviewCustomizer from '../components/common/OverviewCustomizer';
+import OverviewFinanceCard from '../components/finance/OverviewFinanceCard';
+import { useStudioIdentity } from '../../utils/studioIdentity';
+import { formatWorkspaceDate, formatWorkspaceTime, formatWorkspaceNumber, resolveWorkspaceTimezone } from '../../utils/workspaceLocale';
+import { studioText } from '../../utils/studioTranslations';
+import { dashboardWork, taskIsOverdue } from '../../utils/dashboardData';
+import { recordDestination } from '../../utils/studioNavigation';
+import { OverviewWelcome, BookingInsight, RhythmInsight, ActivityInsight, PipelineRings, WeekStrip } from '../components/overview/OverviewInsights';
+import OverviewDaySchedule from '../components/overview/OverviewDaySchedule';
+import './overviewDashboard.css';
+import './overviewReference.css';
+import './overviewPhone.css';
+
+const API = import.meta.env.VITE_API_URL || '';
+const statusClass = status => status === 'Converted' ? 'green' : ['Meeting', 'Negotiation'].includes(status) ? 'gold' : '';
+const initials = name => name?.split(/\s+/).filter(part => /[a-zA-Z0-9]/.test(part)).slice(0, 2).map(part => part[0]).join('') || 'TA';
 
 export default function Dashboard() {
-  const { logout } = useAuth(); // Destructure logout from context
-  const token = localStorage.getItem('token');
-  const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
-  const API = import.meta.env.VITE_API_URL || '';
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalPhotos: 0,
-    storageUsage: '0%',
-    pendingApprovals: 0,
-    traffic: '0'
-  });
-  const [recentActivity, setRecentActivity] = useState([]);
-  const [upcomingEvents, setUpcomingEvents] = useState([]);
-  const [isSystemOnline, setIsSystemOnline] = useState(true);
-  const [menuOpenId, setMenuOpenId] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedDelivery, setSelectedDelivery] = useState(null);
-  const [editFormData, setEditFormData] = useState({
-    name: "",
-    eventDate: "",
-    eventType: ""
-  });
-
+  const { user, logout } = useAuth();
+  const { preferences, toggleCard, resetCards, update } = useStudioPreferences();
+  const { identity } = useStudioIdentity();
+  const timezone = resolveWorkspaceTimezone(preferences, identity?.timezone);
+  const t = text => studioText(preferences.language, text);
+  const dateFormat = (value, options) => formatWorkspaceDate(value, preferences, identity?.timezone, options);
+  const timeFormat = value => formatWorkspaceTime(value, preferences, identity?.timezone);
+  const [customizing, setCustomizing] = useState(false);
+  const remove = (id, label) => <button type="button" className="overview-hide-card" aria-label={'Hide ' + label + ' card'} title="Hide card" onClick={() => toggleCard(id)}><X size={13} /></button>;
+  const [overview, setOverview] = useState(null);
+  const [error, setError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [ideaRevision, setIdeaRevision] = useState(0);
+  const refreshOverview = () => { setRefreshKey(value => value + 1); setIdeaRevision(value => value + 1); };
+  const [completing, setCompleting] = useState(null);
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchData = async () => {
+    const controller = new AbortController();
+    const load = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return navigate('/auth');
-        
-        const currentAuthHeader = { headers: { Authorization: `Bearer ${token}` } };
-        
-        const [statsRes, activityRes, eventsRes] = await Promise.all([
-          axios.get(`${API}/api/dashboard/stats`, currentAuthHeader),
-          axios.get(`${API}/api/dashboard/recent-activity`, currentAuthHeader),
-          axios.get(`${API}/api/dashboard/upcoming-events`, currentAuthHeader)
-        ]);
-
-        if (isMounted) {
-          setStats(statsRes.data);
-          setRecentActivity(activityRes.data);
-          setUpcomingEvents(eventsRes.data);
-          setIsSystemOnline(true);
-          setLoading(false);
+        const result = await axios.get(API + '/api/dashboard/studio-overview', {
+          headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }, signal: controller.signal, params: { timezone },
+        });
+        // Keep an already-running sample server usable without resetting its temporary records.
+        // Production insights always come from the workspace-scoped backend aggregates.
+        if (import.meta.env.DEV && user?.isPreview && !result.data.insights) {
+          try {
+            const headers = { Authorization: 'Bearer ' + localStorage.getItem('token') };
+            const [leads, tasks, events, { buildPreviewOverviewInsights }] = await Promise.all([
+              axios.get(API + '/api/leads', { headers, signal: controller.signal }),
+              axios.get(API + '/api/tasks', { headers, signal: controller.signal }),
+              axios.get(API + '/api/calendar', { headers, signal: controller.signal }),
+              import('../../utils/previewOverviewInsights.js'),
+            ]);
+            const now = new Date();
+            result.data.insights = buildPreviewOverviewInsights({ leads: leads.data, tasks: tasks.data, events: events.data, now, timezone });
+            if (Array.isArray(tasks.data)) result.data.summary.overdueTasks = tasks.data.filter(task => task.status === 'pending' && taskIsOverdue(task, now, timezone)).length;
+          } catch (previewError) {
+            if (axios.isCancel(previewError)) return;
+            // An unavailable sample list must not turn a working overview into an error.
+          }
         }
+        setOverview(result.data); setError('');
       } catch (err) {
-        console.error("Dashboard error:", err);
-        if (err.response?.status === 401) {
-          logout(); // Use centralized logout to clear both Context and localStorage
-          return;
-        }
-        if (isMounted) {
-          setIsSystemOnline(false);
-          setLoading(false); // Force show structure even on error
-        }
+        if (axios.isCancel(err)) return;
+        if (err.response?.status === 401) { logout(); return; }
+        setError('Your studio data could not be loaded. Check the connection and try again.');
       }
     };
+    load();
+    const timer = setInterval(load, 60000);
+    return () => { controller.abort(); clearInterval(timer); };
+  }, [refreshKey, logout, timezone, user?.isPreview]);
 
-    fetchData(); 
-    const intervalId = setInterval(fetchData, 8000); // Efficient polling
-
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
-    };
-  }, [navigate, API]);
-
-  // DELETE FEATURE
-  const handleDelete = async (id) => {
+  const completeTask = async task => {
+    setCompleting(task._id);
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API}/api/leads/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setRecentActivity(prev => prev.filter(item => item._id !== id));
-      toast.success("Delivery deleted successfully");
-      setShowDeleteModal(false);
-    } catch (err) {
-      console.error("Delete error:", err);
-      toast.error("Failed to delete delivery");
-    }
+      await axios.patch(API + '/api/tasks/' + task._id, { status: 'completed' }, { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
+      setRefreshKey(value => value + 1);
+      toast.success('Task completed');
+    } catch { toast.error('Could not complete the task. Please try again.'); }
+    finally { setCompleting(null); }
+  };
+  const summary = overview?.summary || {};
+  const today = new Date();
+  const hour = Number(new Intl.DateTimeFormat('en-IN', { timeZone: timezone, hour: 'numeric', hourCycle: 'h23' }).format(today));
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const metrics = [
+    { id: 'openEnquiries', title: 'Open enquiries', value: summary.openEnquiries, icon: MessageSquare, tone: 'blue', note: 'In your active pipeline', path: '/admin/crm' },
+    { id: 'bookedProjects', title: 'Booked projects', value: summary.bookedProjects, icon: Folder, tone: 'indigo', note: 'Confirmed client projects', path: '/admin/studio-projects' },
+    { id: 'upcomingEvents', title: 'Upcoming events', value: summary.upcomingEvents, icon: CalendarDays, tone: 'rose', note: 'Shoots, meetings and more', path: '/admin/calendar' },
+    { id: 'pendingTasks', title: 'Pending tasks', value: summary.pendingTasks, icon: Clapperboard, tone: 'amber', note: summary.overdueTasks ? summary.overdueTasks + ' overdue' : 'No overdue tasks', alert: summary.overdueTasks > 0, path: '/admin/post-production' },
+  ];
+  const pipeline = overview?.pipeline || [];
+  const total = pipeline.reduce((sum, item) => sum + Math.max(0, Number(item.count) || 0), 0);
+  const bookedEnquiries = Math.max(0, Number(pipeline.find(item => item.status === 'Converted')?.count) || 0);
+  const conversion = total > 0 ? Math.round(bookedEnquiries / total * 100) : null;
+  const work = dashboardWork(overview?.upcomingEvents, overview?.actionQueue, today, timezone);
+  const tasks = work.tasks;
+  const enquiries = overview?.recentEnquiries || [];
+  const emptyLabel = error ? 'Studio data is temporarily unavailable.' : 'Loading your studio…';
+  const quickActions = [
+    { title: 'Quotations', note: 'Prepare and manage proposals', icon: FileText, tone: 'amber', path: '/admin/quotations' },
+    { title: 'Finance', note: 'Invoices, payments and expenses', icon: Wallet, tone: 'green', path: '/admin/finance' },
+    { title: 'Production', note: 'Plan your next delivery', icon: Clapperboard, tone: 'violet', path: '/admin/projects' },
+  ];
+
+  const cardContent = {
+    ...Object.fromEntries(metrics.map(metric => [metric.id, <div className="studio-metric overview-stat" data-overview-card={metric.id}><Link to={metric.path} className="overview-stat-content">
+            <div className="studio-metric-top"><span lang={preferences.language} dir="auto">{t(metric.title)}</span><StudioAppIcon icon={metric.icon} tone={metric.tone} size={40} /></div>
+            <strong className="studio-metric-value">{formatWorkspaceNumber(metric.value, preferences)}</strong>
+            <div className={'studio-metric-foot' + (metric.alert ? ' studio-metric-alert' : '')}><span>{overview ? metric.note : 'Awaiting studio data'}</span><ArrowUpRight size={14} /></div>
+          </Link>{remove(metric.id, metric.title)}</div>])),
+    bookingMomentum: <BookingInsight insights={overview?.insights} loading={!overview && !error} conversion={conversion} total={total} booked={bookedEnquiries} remove={remove('bookingMomentum', 'Booking momentum')} />,
+    productionPulse: <RhythmInsight insights={overview?.insights} loading={!overview && !error} remove={remove('productionPulse', 'Studio rhythm')} />,
+    activityMap: <ActivityInsight insights={overview?.insights} loading={!overview && !error} remove={remove('activityMap', 'Activity map')} />,
+    upcomingSchedule: <OverviewDaySchedule timezone={timezone} preferences={preferences} refreshKey={refreshKey} remove={remove('upcomingSchedule', 'Upcoming schedule')} />,
+    actionQueue: (<section className="studio-card studio-action-card overview-workspace-card" aria-labelledby="overview-tasks-title" data-overview-card="actionQueue">{remove('actionQueue', 'Action queue')}
+          <div className="studio-card-heading"><div><h3 id="overview-tasks-title" lang={preferences.language} dir="auto">{t('Action queue')}<span className="studio-inline-count">{summary.pendingTasks ?? '—'}</span></h3><p className="studio-card-subtitle">{work.overdueTasks ? work.overdueTasks + ' overdue. Start with the earliest deadline.' : 'Your next tasks, ordered by deadline.'}</p></div><Link to="/admin/post-production">View all<ArrowUpRight size={14} /></Link></div>
+
+          <div className="studio-task-list">
+            {tasks.length ? tasks.slice(0, 4).map(task => {
+              const overdue = taskIsOverdue(task, today, timezone);
+              return (
+                <div className="studio-task-row" key={task._id}>
+                  <StudioButton type="button" variant="icon" className="studio-task-check" icon={Check} label={'Complete task: ' + task.title} loading={completing === task._id} loadingLabel={'Completing task: ' + task.title} onClick={() => completeTask(task)} />
+                  <div><h3><Link to={task.lead?._id ? recordDestination('enquiry', task.lead._id) : '/admin/post-production'}>{task.title}</Link></h3><p>{task.lead?.name || 'Studio task'}</p></div>
+                  <span className={'studio-task-due' + (overdue ? ' overdue' : '')}>{overdue ? 'Overdue' : task.dueDate ? dateFormat(task.dueDate, { day: 'numeric', month: 'short' }) : 'No due date'}</span>
+                </div>
+              );
+            }) : <div className="studio-empty"><CircleCheck size={26} /><span>{overview && !error ? 'You’re all caught up. No pending tasks.' : emptyLabel}</span></div>}
+          </div>
+        </section>),
+    enquiryPipeline: <PipelineRings pipeline={pipeline} loading={!overview} remove={remove('enquiryPipeline', 'Pipeline performance')} />,
+    recentEnquiries: (<section className="studio-card studio-recent-card overview-workspace-card" aria-labelledby="overview-enquiries-title" data-overview-card="recentEnquiries">{remove('recentEnquiries', 'Recent enquiries')}
+          <div className="studio-card-heading"><div><h3 id="overview-enquiries-title" lang={preferences.language} dir="auto">{t('Recent enquiries')}</h3><p className="studio-card-subtitle">The latest conversations with your studio.</p></div><Link to="/admin/crm">View all<ArrowUpRight size={14} /></Link></div>
+          {enquiries.length ? (
+            <ul className="overview-enquiry-list">
+              {enquiries.slice(0, 4).map(lead => (
+                <li key={lead._id}><Link to={recordDestination('enquiry', lead._id)} className="overview-enquiry-row">
+                  <span className="studio-client-initials" aria-hidden="true">{initials(lead.name)}</span>
+                  <span className="overview-enquiry-person"><strong>{lead.name}</strong><small>{lead.eventType || 'To be discussed'} · {dateFormat(lead.eventDate)}</small><small className="overview-enquiry-added">Added {dateFormat(lead.createdAt, { day: 'numeric', month: 'short' })}</small></span>
+                  <span className={'studio-badge ' + statusClass(lead.status)}>{lead.status === 'Converted' ? 'Booked' : lead.status}</span>
+                  <ChevronRight size={15} aria-hidden="true" />
+                </Link></li>
+              ))}
+            </ul>
+          ) : <div className="studio-empty"><MessageSquare size={26} /><span>{overview && !error ? 'Your next enquiry will appear here.' : emptyLabel}</span>{overview && !error && <Link to="/admin/crm?new=1" className="studio-button small"><Plus size={14} />{t('New enquiry')}</Link>}</div>}
+        </section>),
+    quickActions: (<div className="overview-quick-wrapper" data-overview-card="quickActions">{remove('quickActions', 'Quick access')}<nav className="studio-quick-actions" aria-label="Quick access">
+        {quickActions.map(action => <Link to={action.path} className="studio-quick-action" key={action.path}><StudioAppIcon icon={action.icon} tone={action.tone} size={40} /><span><strong>{t(action.title)}</strong><small>{action.note}</small></span><ArrowUpRight size={16} aria-hidden="true" /></Link>)}
+      </nav></div>),
+    financePulse: (<OverviewFinanceCard refreshKey={refreshKey} motionActive={true} remove={remove('financePulse', 'Finance pulse')} />),
   };
 
-  // EDIT FEATURE
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem('token');
-      await axios.patch(`${API}/api/leads/${selectedDelivery._id}`, editFormData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // Update local state for immediate feedback
-      setRecentActivity(prev => prev.map(item => 
-        item._id === selectedDelivery._id 
-          ? { 
-              ...item, 
-              name: `${editFormData.eventType || 'Event'} of ${editFormData.name}`,
-              rawName: editFormData.name,
-              rawType: editFormData.eventType,
-              rawDate: editFormData.eventDate,
-              date: new Date(editFormData.eventDate).toLocaleDateString()
-            } 
-          : item
-      ));
-      
-      toast.success("Delivery updated successfully");
-      setShowEditModal(false);
-    } catch (err) {
-      console.error("Edit error:", err);
-      toast.error("Failed to update delivery");
-    }
-  };
-
-  const openEditModal = (delivery) => {
-    setSelectedDelivery(delivery);
-    setEditFormData({
-      name: delivery.rawName || "",
-      eventDate: delivery.rawDate ? new Date(delivery.rawDate).toISOString().split('T')[0] : "",
-      eventType: delivery.rawType || ""
-    });
-    setShowEditModal(true);
-    setMenuOpenId(null);
-  };
-
-  const openDeleteModal = (delivery) => {
-    setSelectedDelivery(delivery);
-    setShowDeleteModal(true);
-    setMenuOpenId(null);
-  };
-
+  const savedOrder = preferences.cardOrder.filter(id => preferences.visibleCards.includes(id) && cardContent[id]);
+  const todayMode = preferences.overviewMode === 'today';
+  const overviewContext = todayMode && overview
+    ? `${work.todayEvents} ${work.todayEvents === 1 ? 'event' : 'events'} today · ${work.overdueTasks} overdue ${work.overdueTasks === 1 ? 'task' : 'tasks'}`
+    : dateFormat(today, { weekday: 'long', day: 'numeric', month: 'short' });
+  const visibleOrder = todayMode ? ['upcomingSchedule','actionQueue','financePulse','recentEnquiries','quickActions'].filter(id=>savedOrder.includes(id)) : savedOrder;
+  const displayOrder=todayMode?['upcomingSchedule','actionQueue','financePulse','recentEnquiries','inspiration','quickActions'].filter(id=>id==='inspiration'?preferences.showInspiration:visibleOrder.includes(id)):[...(preferences.showInspiration?['inspiration']:[]),...visibleOrder];
+  const welcome=<div className={'ov-welcome-slot' + (visibleOrder[0] === 'upcomingSchedule' ? '' : ' is-wide')}><OverviewWelcome key={ideaRevision} name={user?.firstName || identity?.name || 'your studio'} greeting={greeting} date={dateFormat(today, { day: 'numeric', month: 'short', year: 'numeric' })} todayCount={overview ? work.todayEvents : null} pending={summary.pendingTasks} /></div>;
+  const lastInsight = visibleOrder.filter(id => ['bookingMomentum', 'productionPulse', 'activityMap', 'enquiryPipeline'].includes(id)).at(-1);
   return (
-    <div className="space-y-6 md:space-y-10 w-full animate-fade-up">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-        <div>
-          <h1 className="font-luxury text-4xl md:text-5xl text-[#2d2d2d] tracking-tight">Registry Overview</h1>
-          <p className="text-[11px] md:text-[13px] text-[#7a7a7a] mt-3 font-medium uppercase tracking-[1px]">Team Alpha Luxury Photography Studio</p>
-        </div>
-        <div className={`flex items-center gap-3 bg-white/55 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/40 text-[10px] font-bold uppercase tracking-widest ${isSystemOnline ? 'text-[#7a7a7a]' : 'text-red-500'} shadow-sm transition-colors`}>
-          <div className={`w-2 h-2 rounded-full ${isSystemOnline ? 'bg-[#CFE8D5] shadow-[0_0_8px_#CFE8D5]' : 'bg-red-500'} `}></div>
-          {isSystemOnline ? 'Studio System Online' : 'System Offline (Check Server)'}
-        </div>
+    <div className="studio-overview studio-overview-modern overview-organized studio-overview-reference overview-phone-refined">
+      <div className="ov-page-toolbar"><div><span className="ov-page-eyebrow">YOUR CREATIVE WORKSPACE</span><h1>Studio overview</h1><p className="ov-page-context">{overviewContext}</p></div></div>
+      {error && <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={() => setRefreshKey(value => value + 1)}><RefreshCw size={14} />Retry</button></div>}
+      <div className="ov-view-controls"><div role="group" aria-label="Overview view"><button type="button" aria-pressed={todayMode} onClick={()=>update({overviewMode:'today'})}>Today</button><button type="button" aria-pressed={!todayMode} onClick={()=>update({overviewMode:'insights'})}>Insights</button></div><div className="ov-view-tools"><Link className="studio-button ov-shoot-day-link" to="/admin/shoot-day" aria-label="Open Shoot day" title="Shoot day"><CalendarDays size={15}/><span>Shoot day</span></Link><button type="button" className="studio-button ov-customize-button" aria-label="Customize overview" title="Customize overview" onClick={() => setCustomizing(true)}><GripVertical size={17}/><span>Customize</span></button></div></div>
+      <div className={'ov-reference-grid'+(todayMode?' is-today':'')}>
+        {displayOrder.map(id => id==='inspiration'?<Fragment key={id}>{welcome}</Fragment>:<Fragment key={id}><div className={'ov-reference-slot ov-slot-' + id}>{cardContent[id]}</div>{!todayMode && preferences.showActivityStreak && id === lastInsight && <div className="ov-week-slot"><WeekStrip insights={overview?.insights} /></div>}</Fragment>)}
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <StatCard
-          title="Clients & Smart Drives"
-          value={stats.totalPhotos}
-          icon={<Users size={20} />}
-          delayClass="animate-stagger-1"
-        />
-        <StatCard
-          title="Cloud Storage"
-          value={stats.storageUsage}
-          icon={<PieChart size={20} />}
-          delayClass="animate-stagger-2"
-        />
-        <StatCard
-          title="Pending Approvals"
-          value={stats.pendingApprovals}
-          icon={<Clock size={20} />}
-          delayClass="animate-stagger-3"
-        />
-        <StatCard
-          title="Website Traffic"
-          value={stats.traffic}
-          icon={<Users size={20} />}
-          delayClass="animate-stagger-4"
-        />
-      </div>
+      {!visibleOrder.length && <div className="studio-card overview-empty"><Sparkles size={24} /><h2>{preferences.visibleCards.length ? 'Choose your daily workspace.' : 'Make room for what matters.'}</h2><p>{preferences.visibleCards.length ? 'Your saved cards are in Insights. Add a schedule or action queue for Today.' : 'Add the cards you need, or restore the default layout.'}</p><div><button type="button" className="studio-button" onClick={() => setCustomizing(true)}>Choose cards</button>{preferences.visibleCards.length ? <button type="button" className="studio-button primary" onClick={() => update({ overviewMode: 'insights' })}>View Insights</button> : <button type="button" className="studio-button primary" onClick={resetCards}>Reset to default</button>}</div></div>}
+      {customizing && <OverviewCustomizer onClose={() => setCustomizing(false)} />}
 
-      {/* Main Content Sections */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Latest Deliveries - Glass List */}
-        <div className="xl:col-span-2 bg-white/55 backdrop-blur-[14px] rounded-[24px] p-6 md:p-10 border border-white/40 shadow-[0_10px_30px_rgba(0,0,0,0.06)] animate-fade-up animate-stagger-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
-            <h2 className="font-luxury text-2xl md:text-3xl text-[#2d2d2d]">Latest Deliveries</h2>
-            <Link
-              to="/admin/crm"
-              className="text-[11px] font-bold uppercase tracking-widest text-[#7a7a7a] hover:text-[#2d2d2d] transition-all px-4 py-2 bg-white/40 rounded-full hover:bg-white/60"
-            >
-              All Registry Assets
-            </Link>
-          </div>
-
-          <div className="space-y-4">
-            {recentActivity.length > 0 ? recentActivity.map((session, i) => (
-              <Link
-                key={session._id || i}
-                to="/admin/gallery"
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-[14px] hover:bg-white/50 transition-all duration-300 cursor-pointer hover:translate-x-1 group/item border border-transparent hover:border-white/50 block"
-              >
-                <div className="flex items-center gap-5">
-                  <div className="w-12 h-12 bg-white/60 rounded-[12px] flex items-center justify-center text-[#6b6b6b] shadow-sm ring-1 ring-white/50">
-                    <ImageIcon size={22} strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-[#2d2d2d]">{session.name}</h4>
-                    <p className="text-[11px] text-[#8c8c8c] mt-0.5 font-medium uppercase tracking-wider">{session.date} • {session.count}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                  <span className={`text-[11px] font-medium px-4 py-1.5 rounded-full ${session.status === 'Delivered' ? 'bg-[#f3e5c8] text-[#9c7a2a]' : 'bg-[#D9CDEB]/30 text-[#2d2d2d]'}`}>
-                    {session.status}
-                  </span>
-                  
-                  {/* EDIT & DELETE MENU */}
-                  <div className="relative">
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setMenuOpenId(menuOpenId === session._id ? null : session._id);
-                      }}
-                      className="w-9 h-9 flex items-center justify-center bg-white/40 rounded-full text-[#5f5f5f] hover:bg-white hover:text-[#2d2d2d] hover:shadow-md transition-all"
-                    >
-                      <MoreVertical size={18} />
-                    </button>
-
-                    {menuOpenId === session._id && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-xl border border-white/40 rounded-[16px] shadow-xl z-[100] overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            openEditModal(session);
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-[12px] font-semibold text-[#2d2d2d] hover:bg-[#F7F5F2] transition-colors border-b border-[#F7F5F2]"
-                        >
-                          <Edit3 size={16} className="text-[#9c7a2a]" />
-                          Edit Delivery
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            openDeleteModal(session);
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-[12px] font-semibold text-red-500 hover:bg-red-50/50 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                          Delete Delivery
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="w-9 h-9 flex items-center justify-center bg-white/40 rounded-full text-[#5f5f5f] hover:bg-white hover:text-[#2d2d2d] hover:shadow-md transition-all">
-                    <ArrowUpRight size={18} />
-                  </div>
-                </div>
-              </Link>
-            )) : (
-              <p className="text-center text-[#8c8c8c] text-sm italic py-10">No recent activity found.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Weekly Registry - Pastel Glass Panel */}
-        <div className="bg-white/55 backdrop-blur-[16px] rounded-[24px] p-6 md:p-10 border border-white/40 shadow-[0_10px_30px_rgba(0,0,0,0.06)] flex flex-col h-full animate-fade-up animate-stagger-5">
-          <h3 className="font-luxury text-2xl md:text-3xl text-[#2d2d2d] mb-10">Weekly Registry</h3>
-          
-          <div className="space-y-8 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            {upcomingEvents.length > 0 ? upcomingEvents.map((event, i) => (
-              <div key={i} className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#F6E6B4] shadow-[0_0_8px_#F6E6B4]"></div>
-                  <span className="text-[11px] uppercase tracking-[1px] font-medium text-[#8c8c8c]">
-                    {new Date(event.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-                <Link
-                  to="/admin/calendar"
-                  className="bg-white/40 backdrop-blur-md rounded-[20px] p-5 border border-white/40 hover:bg-white/60 transition-all duration-500 cursor-pointer active:scale-[0.98] group block"
-                >
-                  <h4 className="text-sm font-semibold text-[#2d2d2d] group-hover:text-black">
-                    {event.name}
-                  </h4>
-                  <div className="flex flex-col gap-2 mt-4 text-[11px] text-[#7a7a7a] font-medium">
-                    <div className="flex items-center gap-2.5">
-                      <Clock size={12} className="opacity-60" />
-                      {event.eventTime || 'Time TBD'}
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <MapPin size={12} className="opacity-60" />
-                      <span className="truncate">{event.eventLocation || 'Location TBD'}</span>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            )) : (
-              <p className="text-[#8c8c8c] text-sm italic">No upcoming events this week.</p>
-            )}
-          </div>
-
-          <Link
-            to="/admin/calendar"
-            className="w-full mt-10 py-4 bg-gradient-to-br from-[#f6e6b4] to-[#e8d8ff] text-[#2d2d2d] rounded-full text-[12px] font-semibold uppercase tracking-[1px] hover:-translate-y-1 hover:scale-[1.03] transition-all shadow-md active:scale-95 text-center flex items-center justify-center"
-          >
-            Studio Full Calendar
-          </Link>
-        </div>
-      </div>
-
-      {/* DELETE CONFIRMATION MODAL */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white/95 backdrop-blur-xl rounded-[28px] p-8 max-w-md w-full border border-white/40 shadow-2xl animate-in zoom-in duration-300">
-            <h3 className="font-luxury text-2xl text-[#2d2d2d] mb-4">Delete Delivery?</h3>
-            <p className="text-sm text-[#7a7a7a] mb-8 leading-relaxed">
-              Are you sure you want to delete <span className="font-bold text-[#2d2d2d]">"{selectedDelivery?.name}"</span>? 
-              This action cannot be undone and will remove all associated data.
-            </p>
-            <div className="flex gap-4">
-              <button 
-                onClick={() => setShowDeleteModal(false)}
-                className="flex-1 py-3.5 bg-white/50 hover:bg-white rounded-full text-[11px] font-bold uppercase tracking-widest text-[#7a7a7a] border border-[#eee] transition-all"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => handleDelete(selectedDelivery._id)}
-                className="flex-1 py-3.5 bg-red-500 hover:bg-red-600 rounded-full text-[11px] font-bold uppercase tracking-widest text-white shadow-lg shadow-red-200 transition-all"
-              >
-                Delete Now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* EDIT DELIVERY MODAL */}
-      {showEditModal && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white/95 backdrop-blur-xl rounded-[32px] p-8 md:p-10 max-w-lg w-full border border-white/40 shadow-2xl animate-in slide-in-from-bottom-8 duration-500">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="font-luxury text-3xl text-[#2d2d2d]">Edit Delivery</h3>
-              <button onClick={() => setShowEditModal(false)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#F7F5F2] transition-colors uppercase">
-                <X size={20} className="text-[#8c8c8c]" />
-              </button>
-            </div>
-
-            <form onSubmit={handleEditSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[1px] text-[#8c8c8c] ml-1">Delivery Name</label>
-                <input 
-                  type="text"
-                  required
-                  value={editFormData.name}
-                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                  className="w-full bg-white/50 border border-[#eee] rounded-[16px] px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#f3e5c8]/50 transition-all"
-                  placeholder="Client/Delivery Name"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-[1px] text-[#8c8c8c] ml-1">Event Date</label>
-                  <input 
-                    type="date"
-                    required
-                    value={editFormData.eventDate}
-                    onChange={(e) => setEditFormData({...editFormData, eventDate: e.target.value})}
-                    className="w-full bg-white/50 border border-[#eee] rounded-[16px] px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#f3e5c8]/50 transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-[1px] text-[#8c8c8c] ml-1">Type</label>
-                  <select 
-                    value={editFormData.eventType}
-                    onChange={(e) => setEditFormData({...editFormData, eventType: e.target.value})}
-                    className="w-full bg-white/50 border border-[#eee] rounded-[16px] px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#f3e5c8]/50 transition-all appearance-none"
-                  >
-                    <option value="Wedding">Wedding</option>
-                    <option value="Engagement">Engagement</option>
-                    <option value="Event">Event</option>
-                    <option value="Portrait">Portrait</option>
-                    <option value="Photos">Photos</option>
-                    <option value="Videos">Videos</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="pt-4 flex gap-4">
-                <button 
-                  type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="flex-1 py-4 bg-white/50 hover:bg-white rounded-full text-[11px] font-bold uppercase tracking-widest text-[#7a7a7a] border border-[#eee] transition-all"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="flex-1 py-4 bg-gradient-to-r from-[#2d2d2d] to-black hover:to-[#444] rounded-full text-[11px] font-bold uppercase tracking-widest text-white shadow-xl hover:-translate-y-0.5 transition-all active:scale-95"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <div className="studio-data-note"><span className={'studio-status-dot' + (error ? ' offline' : '')} />{error ? 'Connection interrupted' : overview ? 'Connected to your studio' : 'Connecting to your studio'}{overview && <span>Last updated {timeFormat(overview.generatedAt)} {timezone}</span>}<StudioButton type="button" variant="icon" icon={RefreshCw} label="Refresh studio overview" onClick={refreshOverview} /></div>
     </div>
   );
 }
