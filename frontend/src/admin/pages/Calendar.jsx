@@ -22,7 +22,7 @@ import { deriveCrewSchedule } from "../components/operations/crewSchedule";
 import { operationAPI } from "../components/operations/operationsUtils";
 import { useAuth } from "../../context/AuthContext";
 import { useStudioIdentity } from "../../utils/studioIdentity";
-import { eventOnStudioDay, studioDayKey, studioDateTimeToISO } from "../../utils/studioTime";
+import { eventOnStudioDay, eventStartDay, studioDayKey, studioDateTimeToISO } from "../../utils/studioTime";
 import { useStudioPreferences } from '../components/common/StudioPreferences';
 import { formatWorkspaceDate, formatWorkspaceTime, resolveWorkspaceTimezone } from '../../utils/workspaceLocale';
 import '../components/calendar/calendarRefinements.css';
@@ -64,7 +64,7 @@ export default function Calendar() {
   const [events = [], crew = [], leads = []] = data;
   const eventId = sessionParams.get('event');
   const linkedEvent = events.find(event => String(event._id) === eventId);
-  const linkedDay = linkedEvent ? studioDayKey(linkedEvent.start, timezone) : '';
+  const linkedDay = linkedEvent ? eventStartDay(linkedEvent, timezone) : '';
   const connection = useWorkspaceData(["/api/calendar/sync-status"]);
   const sync = connection.data[0] || {};
   const [monthState, setMonth] = useState(null),
@@ -212,7 +212,7 @@ export default function Calendar() {
     }
   };
   return (
-    <div>
+    <div className="studio-calendar-page">
       <WorkspaceHeader
         eyebrow="MAKE ROOM FOR EVERY STORY"
         title="Studio calendar"
@@ -220,7 +220,7 @@ export default function Calendar() {
       >
         <button
           className="studio-button"
-          onClick={sync.isSynced ? syncNow : connect}
+          onClick={sync.isSynced && !sync.syncError ? syncNow : connect}
           disabled={isPreview || syncBusy || connection.loading || sync.configured === false}
           aria-describedby={setupMessage ? "google-calendar-setup" : undefined}
         >
@@ -228,10 +228,9 @@ export default function Calendar() {
           {syncBusy
             ? sync.isSynced ? "Syncing…" : "Connecting…"
             : sync.isSynced
-              ? "Sync Google"
+              ? sync.syncError ? "Reconnect Google" : "Sync Google"
               : "Connect Google"}
         </button>
-        {sync.isSynced && sync.syncError && <button className="studio-button" onClick={connect} disabled={isPreview || syncBusy}>Reconnect Google</button>}
         <button className="studio-button primary" onClick={openNew} disabled={identityLoading}>
           <Plus size={14} />
           Schedule event
@@ -451,9 +450,9 @@ export default function Calendar() {
                 >
                   <span className="workspace-date-tile">
                     <small>
-                      {dateLabel(event.start, { month: "short" })}
+                      {dateLabel(eventStartDay(event, timezone), { month: "short" })}
                     </small>
-                    <strong>{dateLabel(event.start, { day: "numeric" })}</strong>
+                    <strong>{dateLabel(eventStartDay(event, timezone), { day: "numeric" })}</strong>
                   </span>
                   <span>
                     <strong>{event.title}</strong>
@@ -546,7 +545,7 @@ export default function Calendar() {
           <div className="workspace-event-detail">
             <p>
               <CalendarDays size={16} />
-              {dateLabel(detail.start)} · {eventTime(detail)}
+              {dateLabel(eventStartDay(detail, timezone))} · {eventTime(detail)}
             </p>
             <p>
               <MapPin size={16} />

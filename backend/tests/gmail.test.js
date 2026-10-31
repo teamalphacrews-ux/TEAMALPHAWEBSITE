@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { google } = require('googleapis');
 const { createOAuthStateService } = require('../utils/oauthState');
 const { createGmailOAuthHandlers } = require('../utils/gmailOAuth');
-const { GMAIL_SCOPE, gmailConfiguration, sealTokens, openTokens, listOptions, messageDetail, createGmailService, safeGmailError } = require('../services/gmailService');
+const { GMAIL_SCOPE, gmailConfiguration, gmailSetupChecks, sealTokens, openTokens, listOptions, messageDetail, createGmailService, safeGmailError } = require('../services/gmailService');
 
 const id = '507f1f77bcf86cd799439011', other = '507f1f77bcf86cd799439012';
 const env = { NODE_ENV: 'production', GOOGLE_CLIENT_ID: 'test-id', GOOGLE_CLIENT_SECRET: 'private-client-secret', GMAIL_REDIRECT_URI: 'https://api.example.test/api/integrations/gmail/callback', FRONTEND_URL: 'https://studio.example.test', VAULT_SECRET: '12345678901234567890123456789012' };
@@ -77,6 +77,26 @@ test('Gmail credentials use authenticated encryption bound to the administrator'
   assert.throws(() => openTokens(sealed, other, env));
   const parts = sealed.split('.'); parts[3] = (parts[3][0] === 'A' ? 'B' : 'A') + parts[3].slice(1);
   assert.throws(() => openTokens(parts.join('.'), id, env));
+});
+
+test('Gmail setup diagnostics show readiness without exposing credentials', () => {
+  assert.ok(gmailSetupChecks(env).every(check => check.ready));
+  const incomplete = gmailSetupChecks({ ...env, GMAIL_REDIRECT_URI: '', VAULT_SECRET: '' });
+  assert.equal(incomplete.find(check => check.id === 'callback').ready, false);
+  assert.equal(incomplete.find(check => check.id === 'encryption').ready, false);
+  assert.doesNotMatch(JSON.stringify(incomplete), /private-client-secret|12345678901234567890123456789012|test-id/);
+});
+
+test('expired Gmail access is reported as reconnect needed while retaining account identity', async () => {
+  const f = fixture();
+  f.connections.set(id, { userId: id, email: 'owner@example.test', lastErrorCode: 'GMAIL_RECONNECT', lastError: 'Reconnect Gmail.' });
+  const status = await createGmailService({ Connection: f.Connection, env }).status(id);
+  assert.equal(status.connected, false);
+  assert.equal(status.needsReconnect, true);
+  assert.equal(status.hasConnection, true);
+  assert.equal(status.email, 'owner@example.test');
+  f.connections.get(id).lastErrorCode = 'GMAIL_RATE_LIMIT';
+  assert.equal((await createGmailService({ Connection: f.Connection, env }).status(id)).connected, true);
 });
 
 test('Gmail consent is read-only and uses its own bound cookie with PKCE', async () => {

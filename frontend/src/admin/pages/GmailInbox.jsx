@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowUpRight, ChevronLeft, ChevronRight, Inbox, Mail, Paperc
 import { useAuth } from '../../context/AuthContext';
 import { WorkspaceDialog, WorkspaceError, WorkspaceHeader } from '../components/operations/WorkspaceUI';
 import { gmailRequest, gmailError, gmailHandoff } from '../components/integrations/gmailApi';
+import GmailSetupPanel from '../components/integrations/GmailSetupPanel';
 import './integrations.css';
 
 const folders = [{ id: 'inbox', label: 'Inbox' }, { id: 'sent', label: 'Sent' }, { id: 'all', label: 'All mail' }];
@@ -85,7 +86,7 @@ export default function GmailInbox() {
     <WorkspaceError error={error || listError || callbackError} retry={error || listError ? () => { setError(''); loadStatus(); setRefresh(value => value + 1); } : undefined} />
     {status?.lastError && <WorkspaceError error={status.lastError} />}
     {preview ? <p className="workspace-info">Gmail connects from the live Studio OS with your saved administrator account. This sample preview cannot access email.</p>
-      : !statusLoading && !status?.configured && <p className="workspace-info">{status?.setupMessage || 'Gmail setup is incomplete. Ask your studio administrator to finish the backend connection settings.'}</p>}
+      : !statusLoading && status && !status.configured && <GmailSetupPanel status={status} />}
     {params.get('gmail') === 'connected' && status?.connected && <p className="workspace-info" role="status">Gmail is connected. Your mailbox is visible only to your administrator account.</p>}
     {status?.connected ? <section className="studio-card studio-email-workspace">
       <div className="studio-email-toolbar"><div className="studio-email-account"><Mail size={18} /><div><strong>{status.email}</strong><small>Read access · Emails remain in Gmail</small></div></div><button className="studio-icon-button" aria-label="Refresh email" onClick={() => setRefresh(value => value + 1)} disabled={loading}><RefreshCw size={16} /></button></div>

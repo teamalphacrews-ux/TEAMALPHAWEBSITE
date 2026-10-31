@@ -161,8 +161,9 @@ router.get(
 router.post(
   "/quotations/:id/share",
   wrap(async (req, res) => {
+    const origin = require("../services/studioMailer").frontendOrigin();
     const result = await workflow.shareQuote(req.params.id);
-    res.json({ token: result.token, quote: workflow.safeQuote(result.quote) });
+    res.json({ token: result.token, url: `${origin}/quote/${result.token}`, quote: workflow.safeQuote(result.quote) });
   }),
 );
 router.get(
@@ -183,13 +184,14 @@ router.delete('/quotations/:id/share', wrap(async (req, res) => {
   res.json({ quote: workflow.safeQuote(quote), message: 'Client link revoked. Existing copies can no longer open this project.' });
 }));
 router.post('/quotations/:id/share/regenerate', wrap(async (req, res) => {
+  const origin = require('../services/studioMailer').frontendOrigin();
   const q = await getQuote(req.params.id);
   if (!['Sent', 'Accepted'].includes(q.status)) throw fail('Share an open quotation before regenerating its client link.', 409);
   const token = require('../saas/publicTokens').createShareToken();
   const options = require('../utils/documentDefaults').clientLinkOptions(await StudioConfig.findOne({ key: 'studio' }) || {});
   const quote = await Quotation.findOneAndUpdate({ _id: q._id, revision: q.revision, status: q.status }, { $set: { shareToken: token, shareTokenHash: require('../utils/quoteLifecycle').tokenHash(token), clientLinkOptions: options, sharedAt: new Date(), ...(options.linkExpiryDays ? { linkExpiresAt: new Date(Date.now() + options.linkExpiryDays * 86400000) } : {}) }, $unset: { linkRevokedAt: 1, ...(options.linkExpiryDays ? {} : { linkExpiresAt: 1 }) } }, { new: true });
   if (!quote) throw fail('Quotation changed. Refresh before regenerating its link.', 409);
-  res.json({ token, quote: workflow.safeQuote(quote) });
+  res.json({ token, url: `${origin}/quote/${token}`, quote: workflow.safeQuote(quote) });
 }));
 router.post(
   "/quotations/:id/email",

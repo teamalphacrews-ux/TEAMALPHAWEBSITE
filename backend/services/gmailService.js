@@ -29,6 +29,27 @@ function gmailConfiguration(env = process.env) {
     cookie: { httpOnly: true, secure, sameSite: 'lax', path: '/', maxAge: 10 * 60 * 1000 } };
 }
 
+function gmailSetupChecks(env = process.env) {
+  const dedicated = Boolean(env.GMAIL_CLIENT_ID || env.GMAIL_CLIENT_SECRET);
+  const secureAddress = (value, callback = false) => {
+    try {
+      const url = new URL(value);
+      const local = env.NODE_ENV !== 'production' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+      return !url.username && !url.password && !url.search && !url.hash &&
+        (url.protocol === 'https:' || (local && url.protocol === 'http:')) &&
+        (!callback || url.pathname === '/api/integrations/gmail/callback');
+    } catch { return false; }
+  };
+  let encryptionReady = false;
+  try { vaultKey(env); encryptionReady = true; } catch { /* Return readiness only, never credentials. */ }
+  return [
+    { id: 'oauth', label: 'Google app credentials', ready: Boolean(dedicated ? env.GMAIL_CLIENT_ID && env.GMAIL_CLIENT_SECRET : env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET), help: 'Save a complete Google OAuth client in the backend’s private settings.' },
+    { id: 'callback', label: 'Gmail return address', ready: secureAddress(env.GMAIL_REDIRECT_URI, true), help: 'Register the backend’s /api/integrations/gmail/callback address in Google Cloud and in its private settings.' },
+    { id: 'website', label: 'Secure studio website', ready: secureAddress(env.FRONTEND_URL), help: 'Use the current HTTPS Studio OS address for the return to your workspace.' },
+    { id: 'encryption', label: 'Private connection storage', ready: encryptionReady, help: 'The backend needs its existing vault key to protect saved Google connections. Keep that key unchanged.' },
+  ];
+}
+
 function sealTokens(tokens, userId, env = process.env) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', vaultKey(env), iv);
@@ -123,8 +144,11 @@ function createGmailService({ Connection = require('../models/GmailConnection'),
     let configured = false;
     try { gmailConfiguration(env); configured = true; } catch { /* Configuration details never leave the server. */ }
     const record = await Connection.findOne({ userId });
-    return { configured, connected: Boolean(configured && record?.email), hasConnection: Boolean(record?.email), email: record?.email || '', connectedAt: record?.connectedAt || null,
-      lastError: record?.lastError || '', setupMessage: configured ? '' : 'Gmail setup is incomplete. Enable the Gmail API and configure its OAuth callback on the backend.' };
+    const needsReconnect = ['GMAIL_RECONNECT', 'GMAIL_PERMISSION'].includes(record?.lastErrorCode);
+    return { configured, connected: Boolean(configured && record?.email && !needsReconnect), needsReconnect,
+      hasConnection: Boolean(record?.email), email: record?.email || '', connectedAt: record?.connectedAt || null,
+      lastError: record?.lastError || '', setupChecks: gmailSetupChecks(env),
+      setupMessage: configured ? '' : 'Gmail needs a one-time server setup before you can connect your inbox.' };
   }
   async function withMailbox(userId, read) {
     const config = gmailConfiguration(env);
@@ -138,11 +162,11 @@ function createGmailService({ Connection = require('../models/GmailConnection'),
       const result = await read(gmail, record.email);
       const fresh = { ...tokens, ...oauth.credentials };
       const changed = fresh.access_token !== tokens.access_token || fresh.refresh_token !== tokens.refresh_token || fresh.expiry_date !== tokens.expiry_date;
-      await Connection.updateOne({ _id: record._id, userId, tokenEnvelope: record.tokenEnvelope }, { $set: { lastError: '', ...(changed ? { tokenEnvelope: sealTokens(fresh, userId, env) } : {}) } });
+      await Connection.updateOne({ _id: record._id, userId, tokenEnvelope: record.tokenEnvelope }, { $set: { lastError: '', lastErrorCode: '', ...(changed ? { tokenEnvelope: sealTokens(fresh, userId, env) } : {}) } });
       return result;
     } catch (error) {
       const safe = safeGmailError(error);
-      await Connection.updateOne({ _id: record._id, userId, tokenEnvelope: record.tokenEnvelope }, { $set: { lastError: safe.message } }).catch(() => {});
+      await Connection.updateOne({ _id: record._id, userId, tokenEnvelope: record.tokenEnvelope }, { $set: { lastError: safe.message, lastErrorCode: safe.code } }).catch(() => {});
       throw safe;
     }
   }
@@ -169,4 +193,4 @@ function createGmailService({ Connection = require('../models/GmailConnection'),
   return { status, list, detail, connectionFor, oauthClient };
 }
 
-module.exports = { GMAIL_SCOPE, gmailConfiguration, sealTokens, openTokens, safeGmailError, listOptions, messageSummary, messageDetail, createGmailService, publicError };
+module.exports = { GMAIL_SCOPE, gmailConfiguration, gmailSetupChecks, sealTokens, openTokens, safeGmailError, listOptions, messageSummary, messageDetail, createGmailService, publicError };

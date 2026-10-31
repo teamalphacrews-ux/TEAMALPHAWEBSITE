@@ -28,6 +28,7 @@ import '../../studio-device-refinement.css';
 import '../../studio-drawer-refinement.css';
 import '../../studio-iphone-more.css';
 import '../../studio-precision-controls.css';
+import '../../studio-live-mobile.css';
 
 const StudioControlReview = import.meta.env.DEV ? lazy(() => import('./StudioControlReview')) : null;
 
@@ -44,7 +45,7 @@ function StudioLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, sessionError } = useAuth();
   const iPhoneNavigation = useIPhoneAppNavigation(user);
   const sidebarKey = 'teamalpha-sidebar-compact:' + (user?._id || user?.id || user?.email || 'current');
   const [isSidebarCompact, setIsSidebarCompact] = useState(() => {
@@ -82,6 +83,7 @@ function StudioLayout() {
     {/* The dialog hook owns background isolation, including its cleanup. */}
     <div className="studio-workspace">
       {!isFocusMode && <Topbar onMenuClick={() => setIsSidebarOpen(true)} />}
+      {sessionError && <div className="studio-session-warning" role="status"><span>{sessionError}</span><button className="studio-button small" type="button" onClick={() => window.location.reload()}>Retry connection</button></div>}
       <div className="studio-preview-label" hidden={!user?.isPreview}>DESIGN PREVIEW · SAMPLE DATA · Changes in this local preview are temporary.</div>
         <main id="studio-main" className={"studio-main" + (["/admin/users", "/admin/activity-log"].includes(location.pathname) ? " studio-legacy-page" : "")} tabIndex={-1}>
         <Suspense fallback={<div className="studio-loading" role="status"><span className="studio-loader" /> Opening your workspace…</div>}>

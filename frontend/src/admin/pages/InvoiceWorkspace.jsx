@@ -2,8 +2,9 @@ import StudioButton from '../components/common/StudioButton';
 import DocumentSettingsPanel from '../components/common/DocumentSettingsPanel';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../../utils/branding";
-import { invoiceDefaults, defaultPaymentSchedule, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
+import { invoiceDefaults, defaultPaymentSchedule, invoiceScheduleToggle, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
 import { API_BASE_URL } from '../../utils/apiConfig';
+import { documentClientLink } from '../../utils/documentClientLink';
 import {
   Link,
   useNavigate,
@@ -36,6 +37,7 @@ import "./documentWorkspaceRefinements.css";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 import "./studioOperations.css";
 import "./invoiceWorkspaceRefinement.css";
+import "./documentWorkflowRepair.css";
 const addressOf = (c) =>
   [
     c?.addressLine1,
@@ -375,7 +377,7 @@ export default function InvoiceWorkspace() {
     version.current++;
     dirty.current = true;
     setSaveState("Unsaved changes");
-    setDraft((d) => ({ ...d, [key]: value, ...(key === 'paymentSchedule' ? { _useDefaultPaymentSchedule: false } : {}) }));
+    setDraft((d) => key === 'paymentScheduleEnabled' ? invoiceScheduleToggle(d, value) : ({ ...d, [key]: value, ...(key === 'paymentSchedule' ? { _useDefaultPaymentSchedule: false } : {}) }));
   };
   const subtotal = draft.items.reduce(
     (s, i) => s + Number(i.quantity || 0) * Number(i.unitPricePaise || 0),
@@ -524,7 +526,7 @@ export default function InvoiceWorkspace() {
         "post",
         `/api/invoices/${savedId.current}/share`,
       );
-      setLink(r.url);
+      setLink(documentClientLink(r.url, 'invoice'));
       const updated = await workspaceRequest(
         "get",
         `/api/invoices/${savedId.current}`,
@@ -607,7 +609,7 @@ export default function InvoiceWorkspace() {
       }
       if (name === 'regenerate') {
         const result = await workspaceRequest('post', `/api/invoices/${invoice._id}/share/regenerate`, {});
-        setLink(result.url);
+        setLink(documentClientLink(result.url, 'invoice'));
         setDraft(previous => ({ ...previous, sharedAt: new Date().toISOString(), linkRevokedAt: undefined }));
         setModal('link');
         setNotice('A new link is ready with current studio visibility settings. The previous invoice link no longer works.');
@@ -1163,14 +1165,12 @@ export default function InvoiceWorkspace() {
             <Toggle
               label="Use installments"
               checked={draft.paymentScheduleEnabled}
-              onChange={(v) => {
-                change("paymentScheduleEnabled", v);
-                if (v && !draft.paymentSchedule.length) splitSchedule(2);
-              }}
+              onChange={(v) => change("paymentScheduleEnabled", v)}
               description="Use a payment schedule to collect deposits or retainers, or set up installments."
             />
             {draft.paymentScheduleEnabled && (
               <div className="invoice-schedule">
+                {!schedule.length && <p role="status">Enter an item price and choose a due date after the invoice date to prepare installments.</p>}
                 {schedule.map((p, index) => (
                   <article className="invoice-installment-card" key={index} aria-label={`Payment ${index + 1} of ${schedule.length}`}>
                     <header className="invoice-installment-heading">
@@ -1326,7 +1326,7 @@ export default function InvoiceWorkspace() {
                 <button
                   className="invoice-text-action"
                   onClick={() => splitSchedule(schedule.length + 1)}
-                  disabled={schedule.length >= 20}
+                  disabled={schedule.length < 2 || schedule.length >= 20 || totalPaise <= 0}
                 >
                   <Plus size={15} /> Add another payment
                 </button>
@@ -1855,8 +1855,10 @@ export default function InvoiceWorkspace() {
         <div className="invoice-send-overlay">
           <section className="invoice-send-composer">
             <button className="invoice-send-close" onClick={() => setModal("")}>
-              <X size={20} /> Send invoice
+              <X size={20} /> Email invoice
             </button>
+            <div className="document-send-intro"><h1>Share your invoice</h1><p>Issue the invoice and share its secure link, or send it using your studio email service.</p><StudioButton type="button" icon={Link2} disabled={busy} onClick={() => setModal('confirm-link')}>Share invoice link</StudioButton></div>
+            {!context.emailConfigured && <div className="document-mail-notice" role="status"><strong>Outgoing email needs setup</strong><p>Share the invoice link now. Gmail inbox sync is read-only and does not enable email sending.</p><Link to="/admin/settings?section=communication">Review email settings <ExternalLink size={14} /></Link></div>}
             <p>
               To: <strong>{draft.clientName}</strong>
               <br />
@@ -1899,6 +1901,7 @@ export default function InvoiceWorkspace() {
             {error && <p role="alert">{error}</p>}
             <div className="invoice-send-actions">
               <button
+                disabled={busy || !context.emailConfigured}
                 onClick={() =>
                   setCompose((c) => ({
                     ...c,
@@ -1916,9 +1919,6 @@ export default function InvoiceWorkspace() {
               >
                 Schedule
               </button>
-              <button onClick={() => setModal("confirm-link")}>
-                Send via link
-              </button>
               <label>
                 <input
                   type="checkbox"
@@ -1929,16 +1929,10 @@ export default function InvoiceWorkspace() {
                 />
                 Send me a copy
               </label>
-              <StudioButton type="button" variant="primary" className="invoice-primary" icon={Send} disabled={busy || !draft.clientEmail || !context.emailConfigured} onClick={send} loadingLabel={compose.scheduledAt ? "Scheduling invoice email" : "Sending invoice"}>{compose.scheduledAt ? "Schedule email" : "Send"}</StudioButton>
+              <StudioButton type="button" variant="primary" className="invoice-primary" icon={Send} disabled={busy || !draft.clientEmail || !context.emailConfigured} onClick={send} loadingLabel={compose.scheduledAt ? "Scheduling invoice email" : "Sending invoice"}>{compose.scheduledAt ? "Schedule email" : "Send email"}</StudioButton>
             </div>
-            {!context.emailConfigured && (
-              <small>
-                Email delivery is not configured. Use Send via link to share
-                manually.
-              </small>
-            )}
           </section>
-          <section className="invoice-email-preview">
+          <details className="document-email-preview-wrap" open><summary>Email preview</summary><section className="invoice-email-preview">
             <img
               src={resolveStudioImage(draft.issuer?.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)}
               alt={draft.issuer?.name || "Team Alpha"}
@@ -1949,13 +1943,13 @@ export default function InvoiceWorkspace() {
               <p>Due by {draft.dueDate}</p>
             </div>
             <p>{compose.message}</p>
-            <button>VIEW INVOICE</button>
+            <span className="document-email-example-button">VIEW INVOICE</span>
             <small>
               {draft.issuer?.name || "TEAM ALPHA"}
               <br />
               Questions? Reply to this email.
             </small>
-          </section>
+          </section></details>
         </div>
       )}
     </div>

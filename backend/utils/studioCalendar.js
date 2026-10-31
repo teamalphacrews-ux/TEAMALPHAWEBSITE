@@ -1,3 +1,4 @@
+const { validDay, validTimezone, dateStart } = require('./calendarDateRange');
 function eventError(message) {
   throw Object.assign(new Error(message), { status: 400 });
 }
@@ -8,8 +9,14 @@ function eventFields(body, current = {}) {
   const title = typeof value.title === "string" ? value.title.trim() : "";
   if (!title || title.length > 200)
     eventError("An event title is required (maximum 200 characters)");
-  const start = new Date(value.start),
-    end = new Date(value.end);
+  if (value.allDay !== undefined && typeof value.allDay !== 'boolean') eventError('Choose a valid all-day setting');
+  let start = new Date(value.start), end = new Date(value.end);
+  if (value.allDay === true) {
+    if (!validDay(value.startDate) || !validDay(value.endDateExclusive) || value.endDateExclusive <= value.startDate) eventError('Choose a valid all-day date range');
+    if (!validTimezone(value.dateTimezone)) eventError('Choose a valid calendar timezone');
+    try { start = dateStart(value.startDate, value.dateTimezone); end = dateStart(value.endDateExclusive, value.dateTimezone); }
+    catch { eventError('Choose calendar dates that exist in the selected timezone'); }
+  }
   if (
     Number.isNaN(start.getTime()) ||
     Number.isNaN(end.getTime()) ||
@@ -39,6 +46,10 @@ function eventFields(body, current = {}) {
     title,
     start,
     end,
+    allDay: value.allDay === true,
+    startDate: value.allDay === true ? value.startDate : '',
+    endDateExclusive: value.allDay === true ? value.endDateExclusive : '',
+    dateTimezone: value.allDay === true ? value.dateTimezone : '',
     type: value.type || "Wedding",
     teamMembers: [
       ...new Set((value.teamMembers || []).map((name) => name.trim())),

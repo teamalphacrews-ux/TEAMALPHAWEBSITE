@@ -229,3 +229,6 @@ html[data-studio-motion=reduced] .studio-app :is(.studio-button,.reference-butto
  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-crm-row-actions > .studio-icon-button { width:auto; min-width:0; flex:1 1 auto; padding:10px 12px; }
 }
 
+.studio-app .studio-session-warning { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 22px; background:var(--studio-surface); color:var(--studio-text); border-bottom:1px solid var(--studio-border); font-size:13px; line-height:1.5; }
+@media(max-width:600px) { .studio-app .studio-session-warning { align-items:flex-start; padding:12px 16px; font-size:12px; } }
+

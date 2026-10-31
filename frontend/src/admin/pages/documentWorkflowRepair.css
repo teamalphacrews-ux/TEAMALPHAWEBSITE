@@ -1,0 +1,186 @@
+/* Working document controls inherit the workspace; email samples stay readable on paper. */
+.studio-app.studio-app.studio-personal-workspace :is(.qw-fullscreen, .invoice-send-overlay) {
+  background: var(--studio-canvas);
+  color: var(--studio-text);
+}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-send > section:first-child, .invoice-send-composer) {
+  background: var(--studio-surface);
+  color: var(--studio-text);
+  padding: 28px;
+  min-width: 0;
+  gap: 18px;
+}
+.studio-app.studio-app.studio-personal-workspace .qw-send {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+  align-items: start;
+  min-height: 0;
+  background: var(--studio-canvas);
+}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-send, .invoice-send-composer) > p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.document-send-intro { display: grid; justify-items: start; gap: 12px; }
+.studio-app.studio-app.studio-personal-workspace .qw-doc-header.document-send-header { display:flex; align-items:center; min-height:60px; }
+.studio-app.studio-app.studio-personal-workspace .document-send-header>button { display:inline-flex; align-items:center; gap:8px; min-height:44px; white-space:nowrap; padding:10px 12px; }
+.studio-app.studio-app .document-send-intro h1 { font-size: 23px; line-height: 1.2; margin: 0; }
+.studio-app.studio-app .document-send-intro p { margin: 0; color: var(--studio-muted); font-size: 13px; line-height: 1.65; }
+.document-mail-notice {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  border: 1px solid var(--studio-border);
+  border-radius: 14px;
+  background: var(--appearance-subtle);
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.document-mail-notice p { margin: 0; color: var(--studio-muted); }
+.document-mail-notice a { display: inline-flex; align-items: center; gap: 5px; text-decoration: underline; text-underline-offset: 3px; color: var(--studio-text); }
+.studio-app.studio-app.studio-personal-workspace :is(.qw-send, .invoice-send-composer) :is(.qw-field, .invoice-field) {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-send, .invoice-send-composer) :is(.qw-field, .invoice-field) > :is(input, textarea) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--studio-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--studio-canvas);
+  color: var(--studio-text);
+  -webkit-text-fill-color: var(--studio-text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-send, .invoice-send-composer) textarea {
+  min-height: 190px;
+  resize: vertical;
+}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-send-footer, .invoice-send-actions) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--studio-border);
+}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-send-footer, .invoice-send-actions) > label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto 0 0;
+  font-size: 12px;
+  min-height: 44px;
+}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-send-footer, .invoice-send-actions) > button {
+  min-height: 44px;
+  font-size: 13px;
+}
+.document-email-preview-wrap { align-self: start; min-width: 0; margin: 24px; }
+.document-email-preview-wrap > summary {
+  cursor: pointer;
+  padding: 12px 0;
+  color: var(--studio-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.studio-app.studio-app.studio-personal-workspace .document-email-preview-wrap :is(.qw-email-preview, .invoice-email-preview) {
+  --studio-text: #202124;
+  --studio-muted: #62646b;
+  --brand-ink: #202124;
+  --brand-paper: #f4f3ef;
+  color-scheme: light;
+  background: #fff;
+  color: #202124;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 530px;
+  min-height: 0;
+  border: 1px solid #e4e5e8;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 10px 35px #00000008;
+  overflow-wrap: anywhere;
+}
+.studio-app.studio-app .document-email-preview-wrap :is(.qw-email-preview, .invoice-email-preview) :is(h3, strong, p, span) {
+  color: #202124;
+}
+.studio-app.studio-app .document-email-preview-wrap .document-email-example-button {
+  display: block;
+  width: fit-content;
+  margin: 24px auto;
+  border-radius: 8px;
+  padding: 13px 20px;
+  color: #fff;
+  background: #202124;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: .06em;
+}
+.studio-app.studio-app .document-email-preview-wrap :is(.qw-email-preview, .invoice-email-preview) > small { color: #62646b; }
+.document-design-content { display: grid; gap: 18px; min-width: 0; color: var(--studio-text); }
+.document-design-content > p { margin: 0; color: var(--studio-muted); font-size: 13px; line-height: 1.7; }
+.document-design-content .qw-field { margin: 0; }
+.document-design-content .qw-cover-grid { margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.document-design-content .qw-cover-grid button { border-radius: 10px; overflow: hidden; padding: 3px; }
+.document-design-content .qw-cover-grid img { aspect-ratio: 1.4; width: 100%; height: auto; object-fit: cover; display: block; border-radius: 6px; }
+.document-design-content input[type=color] { height: 46px; width: 100%; border: 1px solid var(--studio-border); background: var(--studio-surface); padding: 6px; border-radius: 10px; }
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools, .invoice-item-actions) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools, .invoice-item-actions) > button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  border: 1px solid var(--studio-border);
+  border-radius: 10px;
+  background: var(--studio-surface);
+  color: var(--studio-text);
+  padding: 0;
+}
+@media (max-width: 900px) {
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-send, .invoice-send-overlay) { display: block; }
+  .document-email-preview-wrap { margin: 18px; }
+}
+@media (max-width: 768px) {
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-send > section:first-child, .invoice-send-composer) { padding: 18px 16px 24px; gap: 16px; }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-send, .invoice-send-composer) :is(.qw-field, .invoice-field) > :is(input, textarea) { font-size: 16px; }
+  .studio-app.studio-app.studio-personal-workspace .qw-doc-header {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    min-height: 0;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .studio-app.studio-app.studio-personal-workspace .qw-doc-header > div:not(.qw-header-actions) { min-width: 0; }
+  .studio-app.studio-app.studio-personal-workspace .qw-doc-header > div > strong { font-size: 13px; }
+  .studio-app.studio-app.studio-personal-workspace .qw-doc-header .qw-badge { padding: 5px 7px; font-size: 10px; }
+  .studio-app.studio-app.studio-personal-workspace .qw-header-actions { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; margin: 0; }
+  .studio-app.studio-app.studio-personal-workspace .qw-header-actions > :is(button, .qw-menu) { min-width: 0; min-height: 44px; margin: 0; }
+  .studio-app.studio-app.studio-personal-workspace .qw-header-actions > .qw-primary { grid-column: 1 / -1; justify-content: center; }
+  .studio-app.studio-app.studio-personal-workspace .qw-header-actions .studio-desktop-toolbar-action { display: none; }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools, .invoice-item-actions) { justify-self: end; position: static; padding: 0; margin: 0; }
+  .studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools, .invoice-item-actions) > button { min-width: 44px; width: 44px; min-height: 44px; height: 44px; }
+  .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 12px; padding: 18px 0; }
+  .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-description { grid-column: 1; padding: 0; }
+  .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-open { position: static; grid-column: 2; grid-row: 1; width: 44px; height: 44px; align-self: start; }
+  .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-metadata { grid-column: 1 / -1; margin: 0; gap: 12px 20px; }
+  .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-list-status-filter { align-items: center; }
+  .document-design-content .qw-cover-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

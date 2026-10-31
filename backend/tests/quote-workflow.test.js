@@ -97,6 +97,33 @@ test("concurrent Share requests converge on a single client token", async t => {
   assert.equal(claims,1);
   assert.equal(workflow.safeQuote(stored).shareToken,undefined);
 });
+test("manual sharing works without email and returns the canonical client link", async t => {
+  const previous = process.env.FRONTEND_URL;
+  process.env.FRONTEND_URL = 'https://teamalpha.example.test';
+  t.after(() => { if (previous === undefined) delete process.env.FRONTEND_URL; else process.env.FRONTEND_URL = previous; });
+  let stored = { ...quote, status: 'Draft' };
+  t.mock.method(mailer, 'mailerReady', () => false);
+  t.mock.method(mailer, 'sendStudioMail', () => { throw Error('Manual sharing must not send email'); });
+  t.mock.method(QuoteDelivery, 'findOneAndUpdate', () => { throw Error('Manual sharing must not queue email'); });
+  t.mock.method(Quotation, 'findById', () => ({ select: async () => ({ ...stored }) }));
+  t.mock.method(Quotation, 'findOneAndUpdate', async (_filter, update) => (stored = { ...stored, ...update.$set }));
+  const result = await dispatch(routes, 'POST', `/quotations/${id}/share`);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.quote.status, 'Sent');
+  assert.equal(result.body.url, `https://teamalpha.example.test/quote/${result.body.token}`);
+  assert.equal(result.body.quote.shareToken, undefined);
+  assert.equal(result.body.quote.shareTokenHash, undefined);
+  assert.equal(stored.shareTokenHash, require('../utils/quoteLifecycle').tokenHash(result.body.token));
+});
+test("an invalid public website configuration cannot mark a quote as shared", async t => {
+  const previous = process.env.FRONTEND_URL;
+  process.env.FRONTEND_URL = 'https://user:password@example.test';
+  t.after(() => { if (previous === undefined) delete process.env.FRONTEND_URL; else process.env.FRONTEND_URL = previous; });
+  t.mock.method(workflow, 'shareQuote', () => { throw Error('Do not mutate a quotation before validating its public origin'); });
+  const result = await dispatch(routes, 'POST', `/quotations/${id}/share`);
+  assert.equal(result.status, 503);
+  assert.equal(result.body.token, undefined);
+});
 test("email validation rejects header injection; missing configuration does not create a sent record", async t => {
   assert.throws(() => workflow.emailValues({subject:"Hello\r\nBcc:someone@example.com"}),{status:400});
   t.mock.method(mailer,"mailerReady", () => false);

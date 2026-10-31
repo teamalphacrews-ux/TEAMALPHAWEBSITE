@@ -2,6 +2,7 @@ const { google } = require('googleapis');
 const { v4: uuidv4 } = require('uuid');
 const User = require('../models/User');
 const Event = require('../models/Event');
+const { googleDateRange, googleEventTimes } = require('../utils/calendarDateRange');
 
 // Concurrent sync lock - prevents race conditions
 const syncingUsers = new Set();
@@ -102,14 +103,7 @@ async function syncToGoogle(event, action, userId) {
             summary: event.title,
             description: event.description || '',
             location: event.location || '',
-            start: { 
-                dateTime: new Date(event.start).toISOString(),
-                timeZone: 'UTC'
-            },
-            end: { 
-                dateTime: new Date(event.end).toISOString(),
-                timeZone: 'UTC'
-            },
+            ...googleEventTimes(event),
         };
 
         console.log("📤 Creating Google Event Payload:", JSON.stringify(googleEventResource, null, 2));
@@ -172,6 +166,7 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
         const timeMax = new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString();
 
         let googleEvents = [];
+        let calendarTimezone = 'Asia/Kolkata';
         let pageToken = null;
         let hasChanges = false;
 
@@ -190,6 +185,7 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
                 maxResults: 250
             });
 
+            if (response.data.timeZone) calendarTimezone = response.data.timeZone;
             if (response.data.items) {
                 googleEvents = googleEvents.concat(response.data.items);
             }
@@ -208,7 +204,7 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
 
             // Deduplication Fallback
             if (!localEvent && gEvent.status !== 'cancelled') {
-                const gStart = new Date(gEvent.start.dateTime || gEvent.start.date);
+                const gStart = googleDateRange(gEvent, calendarTimezone).start;
                 localEvent = await Event.findOne({
                     title: gEvent.summary || 'Untitled Event',
                     start: gStart,
@@ -241,8 +237,7 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
             const eventData = {
                 title: gEvent.summary || 'Untitled Event',
                 description: gEvent.description || '',
-                start: new Date(gEvent.start.dateTime || gEvent.start.date),
-                end: new Date(gEvent.end.dateTime || gEvent.end.date),
+                ...googleDateRange(gEvent, calendarTimezone),
                 location: gEvent.location || '',
                 userId: user._id,
                 googleEventId: gEvent.id,
@@ -254,8 +249,14 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
 
             if (localEvent) {
                 const gUpdated = new Date(gEvent.updated);
+                const missingDateMetadata = !Object.hasOwn(localEvent.toObject(), 'allDay')
+                    || (Boolean(gEvent.start?.date) && (!localEvent.allDay || !localEvent.startDate || !localEvent.endDateExclusive));
                 if (localEvent.updatedAt < gUpdated) {
                     await Event.findByIdAndUpdate(localEvent._id, eventData);
+                    hasChanges = true;
+                } else if (missingDateMetadata && localEvent.lastUpdatedFrom === 'google' && gEvent.start?.date) {
+                    // Backfill date-only semantics without overwriting newer local titles or crew.
+                    await Event.findByIdAndUpdate(localEvent._id, googleDateRange(gEvent, calendarTimezone));
                     hasChanges = true;
                 }
             } else {

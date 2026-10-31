@@ -47,7 +47,7 @@ function frontendOrigin() {
 async function sendStudioMail({ to, subject, text, html, cc, messageId }) {
   if (!mailerReady())
     throw failure(
-      "Email delivery is not configured. Configure SMTP or EMAIL_USER and EMAIL_PASS.",
+      "Studio email sending is not set up yet. Share the document link or finish outgoing email setup in Settings → Email & messages.",
     );
   const user = process.env.SMTP_USER || process.env.EMAIL_USER;
   const studio = await require('../models/StudioConfig').findOne({ key: 'studio' }) || {};

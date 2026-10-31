@@ -23,14 +23,15 @@ export default function UserManagement() {
       setUsers(result.data.filter(member => member.role === 'admin')); setError('');
     }).catch(failure => { if (!axios.isCancel(failure)) setError(errorMessage(failure, 'The studio team could not be loaded. Please retry.')); })
     .finally(() => { if (!signal?.aborted) setLoading(false); }), [request]);
+  const loadAccess = useCallback(signal => request('get', '/api/studio/security/access', undefined, signal)
+    .then(result => { if (typeof result.data?.owner !== 'boolean') throw new Error(); setAccess(result.data); setAccessError(''); })
+    .catch(failure => { if (!axios.isCancel(failure)) setAccessError('Account permissions could not be checked. Retry to restore team controls.'); }), [request]);
   useEffect(() => {
     const controller = new AbortController();
     load(controller.signal);
-    if (!preview) request('get', '/api/studio/security/access', undefined, controller.signal)
-      .then(result => { if (typeof result.data?.owner !== 'boolean') throw new Error(); setAccess(result.data); setAccessError(''); })
-      .catch(failure => { if (!axios.isCancel(failure)) setAccessError('Account permissions could not be checked. Team changes are unavailable until this connection is restored.'); });
+    if (!preview) loadAccess(controller.signal);
     return () => controller.abort();
-  }, [load, preview, request]);
+  }, [load, loadAccess, preview]);
   const open = (type, member) => {
     setForm(member ? { firstName: member.firstName || '', lastName: member.lastName || '', email: member.email || '', password: '' } : blankMember());
     setDialog({ type, member }); setFormError('');
@@ -56,10 +57,10 @@ export default function UserManagement() {
   const filtered = users.filter(member => [member.firstName, member.lastName, member.email].join(' ').toLowerCase().includes(search.trim().toLowerCase()));
   return <div className="studio-team-page">
     <WorkspaceHeader title="Team & access" description="The people who keep your studio moving.">
-      <button type="button" className="studio-button primary" onClick={() => open('create')} disabled={!owner || preview}><UserPlus size={16} />Add team member</button>
+      {(owner || preview) && <button type="button" className="studio-button primary" onClick={() => open('create')} disabled={preview}><UserPlus size={16} />Add team member</button>}
     </WorkspaceHeader>
-    <WorkspaceError error={error} retry={() => load()} /><WorkspaceError error={accessError} />
-    {preview ? <p className="workspace-info">You’re viewing a sample team. Account changes are available in your connected Studio OS.</p> : access && !owner ? <p className="workspace-info"><ShieldCheck size={16} />Only the studio owner can add or change team access.</p> : null}
+    <WorkspaceError error={error} retry={() => load()} /><WorkspaceError error={accessError} retry={() => loadAccess()} />
+    {preview ? <p className="workspace-info">You’re viewing a sample team. Account changes are available in your connected Studio OS.</p> : access && !owner ? <div className="workspace-info" role="status"><ShieldCheck size={16} /><div><strong>Administrator · view-only team directory</strong><p>You can view your studio team here. Adding, editing or removing sign-in accounts requires the studio owner’s account. Ask the owner to make those changes, or sign out and use the owner account.</p></div></div> : !access && !accessError ? <p className="workspace-info" role="status">Checking account permissions…</p> : null}
     <section className="studio-card studio-team-directory">
       <div className="studio-card-heading"><div><h2>Studio team <span className="studio-inline-count">{users.length}</span></h2><p className="studio-card-subtitle">Administrator accounts with access to the studio workspace.</p></div><WorkspaceSearch value={search} onChange={setSearch} placeholder="Search team members…" /></div>
       {loading ? <WorkspaceEmpty loading /> : filtered.length ? <div className="studio-team-list">{filtered.map(member => {
