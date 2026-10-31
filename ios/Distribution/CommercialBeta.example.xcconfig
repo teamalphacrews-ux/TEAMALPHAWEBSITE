@@ -1,0 +1,10 @@
+// Copy outside version control. No secrets belong in this file.
+// Set verification true only after docs/IOS_BETA_RELEASE.md acceptance.
+STUDIO_WEB_URL = https:/$()/unconfigured.invalid
+STUDIO_API_URL = https:/$()/unconfigured.invalid
+STUDIO_START_PATH = /studio-os/login
+STUDIO_RELEASE_CHANNEL = beta
+STUDIO_COMMERCIAL_BACKEND_VERIFIED = false
+// DEVELOPMENT_TEAM = YOURTEAMID
+// PRODUCT_BUNDLE_IDENTIFIER = your.registered.beta.identifier
+// CURRENT_PROJECT_VERSION = 2

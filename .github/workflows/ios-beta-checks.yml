@@ -1,0 +1,40 @@
+name: iOS commercial beta checks
+on:
+  pull_request:
+    paths: ['ios/**', '.github/workflows/ios-beta-checks.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Bridge and release policy regressions
+        run: node --test ios/Validation/*.test.cjs
+      - name: Execute native configuration policy
+        run: bash ios/scripts/validate-native-config.sh
+      - name: Validate property lists
+        run: plutil -lint ios/Config/Info.plist ios/Config/Info-Debug.plist ios/StudioOS/Resources/PrivacyInfo.xcprivacy
+      - name: Compile actual unsigned release app
+        run: |
+          xcodebuild -project ios/StudioOS.xcodeproj -scheme StudioOS -configuration Release -destination 'generic/platform=iOS' -derivedDataPath Build/DerivedData CODE_SIGNING_ALLOWED=NO build > Build/ios-build.log 2>&1 || { tail -100 Build/ios-build.log; exit 1; }
+      - name: Check unconfigured release is blocked
+        run: |
+          if node ios/scripts/release-preflight.cjs --app-info Build/DerivedData/Build/Products/Release-iphoneos/StudioOS.app/Info.plist > Build/release-gate.log 2>&1; then
+            echo 'Unconfigured beta unexpectedly passed'
+            exit 1
+          fi
+          grep -q 'Commercial backend verification' Build/release-gate.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-beta-build-evidence
+          path: |
+            Build/ios-build.log
+            Build/release-gate.log
+          retention-days: 14

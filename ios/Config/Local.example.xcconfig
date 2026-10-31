@@ -1,0 +1,5 @@
+// Debug only. No secrets. Use disposable sample data.
+STUDIO_API_URL = http:/$()/127.0.0.1:5001
+STUDIO_WEB_URL = http:/$()/127.0.0.1:5177
+STUDIO_START_PATH = /native-preview/start
+// On iPhone substitute approved LAN preview origins. Release rejects HTTP.
