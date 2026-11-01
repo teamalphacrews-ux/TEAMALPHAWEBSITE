@@ -1,3 +1,4 @@
+import StudioSelect from '../components/common/StudioSelect';
 import StudioButton from '../components/common/StudioButton';
 import DocumentSettingsPanel from '../components/common/DocumentSettingsPanel';
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -1282,7 +1283,7 @@ export default function InvoiceWorkspace() {
                           }
                         /></label>
                         <label className="invoice-installment-field"><span>Quick date</span>
-                        <select
+                        <StudioSelect
                           aria-label={`Payment ${index + 1} due preset`}
                           value=""
                           onChange={(event) =>
@@ -1317,7 +1318,7 @@ export default function InvoiceWorkspace() {
                               {label}
                             </option>
                           ))}
-                        </select></label>
+                        </StudioSelect></label>
                       </div>
                     )}
                     </div>
@@ -1376,14 +1377,14 @@ export default function InvoiceWorkspace() {
             />
             <div className="invoice-fields">
               <Field label="Payment status">
-                <select
+                <StudioSelect aria-label="Payment status"
                   value={draft.status}
                   onChange={(e) => change("status", e.target.value)}
                 >
                   {["Pending", "Paid", "Cancelled"].map((s) => (
                     <option key={s}>{s}</option>
                   ))}
-                </select>
+                </StudioSelect>
               </Field>
               <Field
                 label="Payments received (₹)"

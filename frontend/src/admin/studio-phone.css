@@ -160,7 +160,7 @@
   .studio-app.studio-app.studio-personal-workspace .studio-phone-detail-table td:last-child::before { display: block; }
   .studio-app.studio-app.studio-personal-workspace .studio-phone-detail-table td[colspan] { grid-column: 1/-1; }
   .studio-app.studio-app.studio-personal-workspace :is(.invoice-toolbar-actions,.qw-header-actions) .studio-phone-menu-action { display: flex; }
-  .studio-app.studio-app.studio-personal-workspace :is(.invoice-toolbar-actions,.qw-header-actions) > .studio-desktop-toolbar-action { display: none; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace :is(.invoice-toolbar-actions,.qw-header-actions) > .studio-desktop-toolbar-action { display: none; }
   .studio-app.studio-app.studio-personal-workspace :is(.invoice-toolbar-actions,.qw-header-actions) { gap: 8px; flex-wrap: wrap; }
   .studio-app.studio-app.studio-personal-workspace :is(.invoice-toolbar-actions,.qw-header-actions) > :is(button,.invoice-menu,.qw-menu) { flex: 1 1 auto; min-height: 44px; }
   .studio-app.studio-app.studio-personal-workspace :is(.invoice-toolbar-actions,.qw-header-actions) > :is(.invoice-primary,.qw-primary) { flex: 1 1 100%; }

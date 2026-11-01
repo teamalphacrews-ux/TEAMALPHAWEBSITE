@@ -1841,9 +1841,9 @@ export function QuoteReadDocument({ quote, settings = {} }) {
                 <strong>{i.title}</strong>
                 <p>{i.description}</p>
               </td>
-              <td>{i.quantity}</td>
-              <td>{rupees(i.unitPricePaise / 100)}</td>
-              <td>{rupees((i.unitPricePaise * i.quantity) / 100)}</td>
+              <td data-label="Quantity">{i.quantity}</td>
+              <td data-label="Unit price">{rupees(i.unitPricePaise / 100)}</td>
+              <td data-label="Amount">{rupees((i.unitPricePaise * i.quantity) / 100)}</td>
             </tr>
           ))}
         </tbody>

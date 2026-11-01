@@ -1,5 +1,5 @@
-import { useState, useEffect, Suspense, lazy } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { useState, useRef, useEffect, useLayoutEffect, Suspense, lazy } from 'react';
+import { Outlet, useLocation, useNavigationType } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import { OfflineDraftsProvider } from '../../../offline/OfflineDrafts';
@@ -45,6 +45,15 @@ function StudioLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const location = useLocation();
+  const navigationType = useNavigationType();
+  const previousPath = useRef(location.pathname);
+  // New pages start below the header; tabs and browser Back retain their scroll position.
+  useLayoutEffect(() => {
+    if (previousPath.current !== location.pathname && navigationType !== 'POP') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+    previousPath.current = location.pathname;
+  }, [location.pathname, navigationType]);
   const { user, sessionError } = useAuth();
   const iPhoneNavigation = useIPhoneAppNavigation(user);
   const sidebarKey = 'teamalpha-sidebar-compact:' + (user?._id || user?.id || user?.email || 'current');

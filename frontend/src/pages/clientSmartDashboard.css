@@ -248,7 +248,7 @@
     --cp-button: #ededf1; --cp-button-ink: #202124; --cp-shadow: 0 8px 28px #0000000d;
     color-scheme: dark;
   }
-  .client-project.cp-dashboard .cp-topbar { position: sticky; top: 0; z-index: 25; min-height: 79px; background: var(--cp-paper); }
+  .client-project.cp-dashboard .cp-topbar { position: relative; top: auto; z-index: 1; min-height: 79px; background: var(--cp-paper); }
   .client-project.cp-dashboard .cp-topbar span { font-weight: 600; letter-spacing: .045em; }
   .client-project.cp-dashboard .cp-topbar-tools { display: flex; align-items: center; justify-content: flex-end; gap: 11px; margin-left: auto; flex-shrink: 0; }
   .client-project.cp-dashboard .cp-theme-toggle { display: grid; place-items: center; flex-shrink: 0; width: 42px; height: 42px; padding: 0; border: 1px solid var(--cp-line); border-radius: 50%; background: var(--cp-paper); color: var(--cp-ink); }
@@ -288,7 +288,7 @@
   .client-project.cp-dashboard .cp-step-label, .client-project.cp-dashboard .cp-journey .current .cp-step-label { color: var(--cp-ink); }
   .client-project.cp-dashboard .cp-journey .current .cp-step-marker { color: var(--cp-button-ink); background: var(--cp-button); border-color: var(--cp-button); }
   .client-project.cp-dashboard .cp-workspace-heading h2 { color: var(--cp-ink); font-size: 26px; }
-  .client-project.cp-dashboard .cp-main > section[id] { scroll-margin-top: 103px; }
+  .client-project.cp-dashboard .cp-main > section[id] { scroll-margin-top: 24px; }
   .client-project.cp-dashboard .cp-card { background: var(--cp-paper); border-radius: 23px; box-shadow: var(--cp-shadow); }
   .client-project.cp-dashboard .cp-card > .cp-accordion-heading > button { min-height: 90px; padding: 21px 26px; border-radius: 23px; color: var(--cp-ink); }
   .client-project.cp-dashboard .cp-accordion-heading > button:hover { background: var(--cp-subtle); }
@@ -326,6 +326,7 @@
   .client-project.cp-dashboard .cp-footer { background: var(--cp-paper); border-color: var(--cp-line); color: var(--cp-muted); padding: 27px 24px; }
   .client-project.cp-dashboard .cp-footer a { color: var(--cp-ink); }
 
+  .client-project.cp-dashboard .cp-chat-launcher-label { display: none; }
   .client-project.cp-dashboard .cp-chat-launcher { width: 57px; height: 57px; border-radius: 20px; border: 1px solid var(--cp-line); background: var(--cp-button); color: var(--cp-button-ink); box-shadow: 0 9px 27px #11182729; }
   .client-project.cp-dashboard .cp-chat-popup { color: var(--cp-ink); background: var(--cp-paper); border-color: var(--cp-line); border-radius: 23px; box-shadow: 0 20px 70px #13192324; }
   .client-project.cp-dashboard .cp-chat-heading { background: var(--cp-paper); border-bottom: 1px solid var(--cp-line); color: var(--cp-ink); }
@@ -469,17 +470,40 @@
   .client-project.cp-dashboard .cp-welcome-content { width: 100%; max-width: 100%; padding: 25px 23px 22px; }
   .client-project.cp-dashboard .cp-cover-image,
   .client-project.cp-dashboard[data-theme="dark"] .cp-cover-image { display: none; }
-  .client-project.cp-dashboard .cp-welcome h1 { max-width: 100%; font-size: clamp(31px, 8vw, 38px); }
+  .client-project.cp-dashboard .cp-welcome h1 { max-width: 100%; font-size: clamp(27px, 7vw, 34px); }
   .client-project.cp-dashboard .cp-welcome p { max-width: 100%; font-size: 12px; }
-  .client-project.cp-dashboard .cp-feature-card { min-height: 222px; padding: 17px 14px; border-radius: 22px; }
-  .client-project.cp-dashboard .cp-feature-value { font-size: clamp(23px, 6.3vw, 30px); }
-  .client-project.cp-dashboard .cp-feature-status { font-size: 9px; padding: 2px 7px; margin-top: 19px; }
-  .client-project.cp-dashboard .cp-feature-detail { font-size: 10px; padding-bottom: 16px; line-height: 1.7; }
-  .client-project.cp-dashboard .cp-feature-footer { font-size: 9px; padding-top: 10px; }
+  .client-project.cp-dashboard .cp-feature-card { min-height: 210px; padding: 18px; border-radius: 22px; }
+  .client-project.cp-dashboard .cp-feature-value { font-size: 30px; }
+  .client-project.cp-dashboard .cp-feature-status { font-size: 10px; padding: 2px 7px; margin-top: 16px; }
+  .client-project.cp-dashboard .cp-feature-detail { font-size: 12px; padding-bottom: 16px; line-height: 1.6; }
+  .client-project.cp-dashboard .cp-feature-footer { font-size: 11px; padding-top: 12px; }
+  .client-project.cp-dashboard .cp-feature-icon { width: 28px; height: 28px; }
+  .client-project.cp-dashboard .cp-card > .cp-accordion-heading > button {
+    grid-template-columns: 16px minmax(0, 1fr) 28px;
+    grid-template-rows: auto auto;
+    column-gap: 10px;
+    row-gap: 5px;
+    padding: 18px 16px;
+    min-height: 0;
+  }
+  .client-project.cp-dashboard .cp-card > .cp-accordion-heading .cp-section-index { grid-column: 1; grid-row: 1 / 3; }
+  .client-project.cp-dashboard .cp-card > .cp-accordion-heading .cp-accordion-label { grid-column: 2; grid-row: 1; }
+  .client-project.cp-dashboard .cp-card > .cp-accordion-heading .cp-accordion-label > span { font-size: 14px; line-height: 1.45; }
+  .client-project.cp-dashboard .cp-card > .cp-accordion-heading .cp-accordion-label > small { font-size: 11px; line-height: 1.6; }
+  .client-project.cp-dashboard .cp-card > .cp-accordion-heading .cp-badge { grid-column: 2; grid-row: 2; justify-self: start; max-width: 100%; white-space: normal; }
+  .client-project.cp-dashboard .cp-card > .cp-accordion-heading .cp-accordion-chevron { grid-column: 3; grid-row: 1 / 3; align-self: center; }
+  .client-project.cp-dashboard .cp-chat-launcher { position: static; display: flex; align-items: center; justify-content: center; gap: 10px; width: calc(100% - 32px); height: 48px; margin: 0 16px 24px; border-radius: 14px; box-shadow: none; }
+  .client-project.cp-dashboard .cp-chat-launcher-label { display: inline; font-size: 13px; font-weight: 550; }
+  .client-project.cp-dashboard .cp-footer { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
   .client-project.cp-dashboard .cp-motion-production i:nth-child(1) { right: -100px; }
   .client-project.cp-dashboard .cp-motion-production i:nth-child(2) { right: -63px; }
   .client-project.cp-dashboard .cp-motion-production i:nth-child(3) { right: -25px; }
   .client-project.cp-dashboard .cp-motion-production > span { right: -54px; }
+}
+@media screen and (max-width: 480px) {
+  .client-project.cp-dashboard .cp-feature-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .client-project.cp-dashboard .cp-feature-card { min-height: 220px; }
+  .client-project.cp-dashboard .cp-feature-top { font-size: 13px; }
 }
 @media screen and (prefers-reduced-motion: no-preference) {
   .client-project.cp-dashboard .cp-feature-card { transition: transform .25s ease, box-shadow .25s ease, border-color .2s ease; }
