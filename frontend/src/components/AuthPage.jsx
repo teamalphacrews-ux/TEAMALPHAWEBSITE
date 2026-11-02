@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Eye, EyeOff, ArrowUpRight } from 'lucide-react';
 import { TEAM_ALPHA_LOGO } from '../utils/branding';
 import { useAuth } from '../context/AuthContext';
 import API_BASE_URL from '../utils/apiConfig';
 import { SAAS_RELEASE_ENABLED } from '../saas/release';
+import { installStudioBrowserTheme } from '../utils/studioBrowserTheme';
+import { requestStudioLogin } from '../utils/studioLogin';
 import '../admin/studio.css';
 import '../admin/studio-mobile.css';
 import './auth.css';
@@ -18,18 +20,20 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const request = useRef(null);
+  useLayoutEffect(() => installStudioBrowserTheme(document, 'auth'), []);
+  useEffect(() => () => request.current?.abort(), []);
   if (user?.role === 'admin' && token && !loading) return <Navigate to="/admin" replace />;
   const submit = async event => {
-    event.preventDefault(); if (submitting || loading) return; setSubmitting(true); setError('');
+    event.preventDefault(); if (request.current || submitting || loading) return;
+    const controller = new AbortController(); request.current = controller;
+    setSubmitting(true); setError('');
     try {
-      const result = await fetch(API_BASE_URL + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim(), password, role: 'admin' }) });
-      const data = await result.json().catch(() => ({}));
-      if (!result.ok) throw new Error(data.msg || 'Please check your email and password.');
-      if (data.user?.role !== 'admin') throw new Error('This sign-in is for the studio team.');
-      if (typeof data.token !== 'string' || !data.token.trim()) throw new Error('Sign-in could not be completed. Please try again.');
+      const data = await requestStudioLogin(API_BASE_URL, { email, password }, { signal: controller.signal });
+      if (controller.signal.aborted) return;
       await login(data.user, data.token);
-    } catch (err) { setError(err.message === 'Failed to fetch' ? 'We couldn’t connect to your studio. Please try again shortly.' : err.message); }
-    finally { setSubmitting(false); }
+    } catch (err) { if (!controller.signal.aborted) setError(err.message === 'Failed to fetch' ? 'We couldn’t connect to your studio. Please try again shortly.' : err.message); }
+    finally { if (request.current === controller) request.current = null; if (!controller.signal.aborted) setSubmitting(false); }
   };
   return <div className="studio-app studio-auth">
     <section className="studio-auth-form-panel">

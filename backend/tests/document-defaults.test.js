@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { quoteDefaults, invoiceWithDefaults, paymentSchedule, communicationValues, linkIsActive } = require('../utils/documentDefaults');
 const { invoiceFromQuote } = require('../utils/quoteLifecycle');
 const invoiceValues = require('../utils/invoiceValues');
-const { invoiceIssuer, validImage } = require('../utils/invoiceBranding');
+const { invoiceIssuer, validImage, publicBrandImage } = require('../utils/invoiceBranding');
 const { nextDocumentNumber, financialYear } = require('../services/documentNumbering');
 const Counter = require('../models/DocumentCounter');
 const studio = { studioName: 'Team Alpha', legalName: 'Team Alpha Photography', gstin: '29ABCDE1234F1Z5', quotationValidityDays: 7, address: 'Bengaluru', billingDefaults: { quotationPrefix: 'ALPHA-Q', invoicePrefix: 'ALPHA-I', numberingMode: 'sequence', includeFinancialYear: true, defaultTaxPercent: 18, defaultDiscountType: 'percent', defaultDiscountValue: 10, invoiceDueDays: 21, paymentScheduleEnabled: true, paymentMilestones: [{ label: 'Booking', percent: 30, offsetDays: 0 }, { label: 'Before event', percent: 40, offsetDays: 7 }, { label: 'Balance', percent: 30, offsetDays: 21 }] }, automation: { autoCreateInvoice: false, invoiceRemindersEnabled: true, invoiceReminderDays: [2, 8], quoteRemindersEnabled: true, quoteReminderDays: [2, 5] } };
@@ -56,4 +56,14 @@ test('communication supports documented placeholders and links expire or revoke 
   assert.equal(linkIsActive({ linkRevokedAt: new Date() }), false);
   assert.equal(validImage('/api/studio/profile-images/507f1f77bcf86cd799439022'), true);
   assert.equal(validImage('/api/studio/profile-images/../secret'), false);
+});
+test('workspace profile images remain valid document logos and resolve to the public API', t => {
+  const scoped = '/api/studio/profile-images/507f1f77bcf86cd799439022.607f1f77bcf86cd799439011';
+  const previous = process.env.API_PUBLIC_URL;
+  process.env.API_PUBLIC_URL = 'https://api.example';
+  t.after(() => { if (previous === undefined) delete process.env.API_PUBLIC_URL; else process.env.API_PUBLIC_URL = previous; });
+  assert.equal(validImage(scoped), true);
+  assert.equal(publicBrandImage(scoped), 'https://api.example' + scoped);
+  assert.equal(invoiceIssuer({ logoUrl: scoped }).logoUrl, 'https://api.example' + scoped);
+  assert.equal(validImage(scoped + '/secret'), false);
 });

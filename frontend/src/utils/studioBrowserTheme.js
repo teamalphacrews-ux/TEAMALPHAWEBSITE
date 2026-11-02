@@ -1,4 +1,4 @@
-const colors = { dark: '#131416', light: '#f2f3f0' };
+const colors = { dark: '#131416', light: '#f2f3f0', auth: '#ffffff' };
 
 /** Match browser chrome and safe-area canvas to the workspace; restore public-page branding on exit. */
 export function installStudioBrowserTheme(document, theme) {
@@ -15,7 +15,7 @@ export function installStudioBrowserTheme(document, theme) {
   meta.setAttribute('content', color);
   root.style.setProperty('--studio-browser-canvas', color);
   root.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
-  root.setAttribute('data-studio-browser-theme', theme === 'dark' ? 'dark' : 'light');
+  root.setAttribute('data-studio-browser-theme', Object.hasOwn(colors, theme) ? theme : 'light');
   return () => {
     if (created) meta.remove();
     else if (previous.color === null) meta.removeAttribute('content');

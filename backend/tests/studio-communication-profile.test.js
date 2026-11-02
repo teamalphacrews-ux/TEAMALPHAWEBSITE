@@ -39,6 +39,28 @@ test('profile images persist only validated image bytes and return a public bran
   assert.equal(asset.headers['X-Content-Type-Options'], 'nosniff'); assert.equal(asset.headers['Content-Type'], 'image/jpeg'); assert.deepEqual(asset.body, bytes);
   assert.equal((await request(profile, '/profile-images/not-an-id', { method: 'GET', role: null })).status, 404);
 });
+test('a saved profile image is publicly readable through the production preferences/profile mounting order', async t => {
+  const router = require('express').Router();
+  router.use(require('../routes/studioPreferencesRoutes'));
+  router.use(profile);
+  const bytes = Buffer.from([255, 216, 255, 224, 0, 16, 255, 217]);
+  t.mock.method(Image, 'findById', () => ({ select: async () => ({ mimeType: 'image/jpeg', data: bytes }) }));
+  const asset = await request(router, '/profile-images/' + admin, { method: 'GET', role: null });
+  assert.equal(asset.status, 200);
+  assert.deepEqual(asset.body, bytes);
+  assert.equal(asset.headers['Content-Type'], 'image/jpeg');
+  assert.equal(asset.headers['Cache-Control'], 'public, max-age=86400, immutable');
+  assert.equal((await request(router, '/preferences', { method: 'GET', role: null })).status, 401);
+  assert.equal((await request(router, '/profile-images', { role: null })).status, 401);
+  assert.equal((await request(router, '/profile-images', { role: 'client' })).status, 403);
+});
+test('workspace profile image read failures return 503 without leaving the public request pending', async t => {
+  const workspaceId = '507f1f77bcf86cd79943fd03';
+  t.mock.method(require('../saas/models').Workspace, 'findOne', async () => ({ _id: workspaceId, state: 'active', databaseName: 'studio_' + workspaceId }));
+  t.mock.method(Image, 'findById', () => ({ select: async () => { throw new Error('image storage unavailable'); } }));
+  const asset = await request(profile, '/profile-images/' + workspaceId + '.' + admin, { method: 'GET', role: null });
+  assert.equal(asset.status, 503);
+});
 test('test email cannot target another recipient and uses a persisted per-account cooldown', async t => {
   let recipient, lease;
   t.mock.method(mailer, 'mailerReady', () => true);

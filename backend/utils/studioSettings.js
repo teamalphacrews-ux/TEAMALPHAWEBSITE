@@ -34,7 +34,7 @@ function choice(value, name, values) { if (!values.includes(value)) fail('Invali
 function email(value, name) { const result = text(value, name, 254).toLowerCase(); if (result && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(result)) fail('Enter a valid ' + name); return result; }
 function image(value, name) {
   const result = text(value, name, 2000);
-  if (!result || (/^\/assets\/[\w./-]+$/.test(result) && !result.includes('..')) || /^\/api\/studio\/profile-images\/[a-f\d]{24}$/i.test(result)) return result;
+  if (!result || (/^\/assets\/[\w./-]+$/.test(result) && !result.includes('..')) || /^\/api\/studio\/profile-images\/(?:[a-f\d]{24}\.)?[a-f\d]{24}$/i.test(result)) return result;
   return https(result, name);
 }
 function https(value, name, domains) {

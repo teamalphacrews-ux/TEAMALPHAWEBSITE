@@ -21,3 +21,14 @@ test('browser chrome tracks dark and light workspace themes and restores the pub
   restoreLight();
   assert.equal(doc.documentElement.style.getPropertyValue('--studio-browser-canvas'), '');
 });
+test('sign-in uses a white safe-area canvas rather than the public ivory theme, then restores it', () => {
+  const doc = fakeDocument();
+  const restore = installStudioBrowserTheme(doc, 'auth');
+  assert.equal(doc.meta.getAttribute('content'), '#ffffff');
+  assert.equal(doc.documentElement.style.getPropertyValue('--studio-browser-canvas'), '#ffffff');
+  assert.equal(doc.documentElement.style.colorScheme, 'light');
+  assert.equal(doc.attr.get('data-studio-browser-theme'), 'auth');
+  restore();
+  assert.equal(doc.meta.getAttribute('content'), '#F6F3ED');
+  assert.equal(doc.attr.has('data-studio-browser-theme'), false);
+});

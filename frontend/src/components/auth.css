@@ -1,3 +1,4 @@
+html[data-studio-browser-theme=auth], html[data-studio-browser-theme=auth] body { background:#fff; color-scheme:light; }
 .studio-auth { display:grid; grid-template-columns:minmax(0,1fr); min-height:100dvh; background:#fff; }
 .studio-auth-form-panel { display:flex; flex-direction:column; padding:39px 55px 26px; min-width:0; min-height:100dvh; }
 .studio-auth-brand { display:flex; gap:12px; align-items:center; color:var(--brand-accent); width:max-content; }

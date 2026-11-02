@@ -6,10 +6,12 @@ import { Upload, Plus, Trash2, ExternalLink, Instagram, Facebook, MessageCircle,
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { WorkspaceField, WorkspaceError } from '../operations/WorkspaceUI';
-import { workspaceRequest, recordError } from '../operations/workspaceData';
+import { recordError } from '../operations/workspaceData';
+import { operationAuth } from '../operations/operationsUtils';
 import StudioAppIcon from '../common/StudioAppIcon';
 import API from '../../../utils/apiConfig';
-import { studioImageUrl, whatsappContactUrl } from '../../../utils/studioIdentity';
+import { studioImageUrl, studioImageFallback, whatsappContactUrl } from '../../../utils/studioIdentity';
+import { confirmProfileImage, isStudioProfileImagePath, profilePhotoRemoval } from '../../../utils/studioProfileImage';
 import { useAuth } from '../../../context/AuthContext';
 import { SettingsGroup } from './SettingsDisclosures';
 
@@ -24,7 +26,7 @@ function BrandPreview({ values }) {
   return <aside className="settings-brand-preview" aria-label="Document brand preview" style={{ '--settings-preview-accent': accent }}>
     <div className="settings-brand-preview-label"><span>Live preview</span><small>New document style</small></div>
     <div className="settings-brand-preview-sheet">
-      <div className="settings-brand-preview-identity"><img src={studioImageUrl(logo)} alt="Document logo" /><div><strong style={{ fontFamily: fonts[values.fontTheme] || fonts.modern }}>{values.studioName || 'Your studio'}</strong><p>{values.legalName || 'Photography & cinematography'}</p></div></div>
+      <div className="settings-brand-preview-identity"><img src={studioImageUrl(logo)} onError={studioImageFallback} alt="Document logo" /><div><strong style={{ fontFamily: fonts[values.fontTheme] || fonts.modern }}>{values.studioName || 'Your studio'}</strong><p>{values.legalName || 'Photography & cinematography'}</p></div></div>
       <p className="settings-brand-preview-address">{values.address || 'Your studio address'}</p>
       <div className="settings-brand-preview-rule" />
       <h4 style={{ fontFamily: fonts[values.fontTheme] || fonts.modern }}>A story, beautifully told.</h4>
@@ -39,44 +41,63 @@ const newId = () => 'tpl-' + Array.from(crypto.getRandomValues(new Uint8Array(10
 function ReminderDays({ label, value, onChange }) {
   return <div className="settings-reminder-days"><strong>{label}</strong><div>{value.map((day, index) => <label key={index}>Day<input className="studio-input" type="number" min="1" max="365" value={day} aria-label={label + ' ' + (index + 1)} onChange={event => onChange(value.map((v, i) => i === index ? Number(event.target.value) : v))} /><button type="button" className="studio-icon-button" disabled={value.length <= 1} aria-label={'Remove ' + label + ' ' + (index + 1)} onClick={() => onChange(value.filter((_, i) => i !== index))}><Trash2 size={13} /></button></label>)}<button type="button" className="studio-button small" disabled={value.length >= 12} onClick={() => onChange([...value, Math.min(365, Math.max(...value) + 7)])}><Plus size={13} />Add day</button></div></div>;
 }
-function ProfilePhoto({ values, change }) {
+function ProfilePhoto({ values, change, beginProfilePhotoUpload, saving }) {
   const input = useRef(null);
-  const [busy, setBusy] = useState(false), [useAsLogo, setUseAsLogo] = useState(true);
+  const [busy, setBusy] = useState(false), [useAsLogo, setUseAsLogo] = useState(true), [error, setError] = useState('');
+  const uploadLock = useRef(false);
+  const pendingUpload = useRef(null);
+  useEffect(() => () => {
+    pendingUpload.current?.controller.abort();
+    pendingUpload.current?.release();
+    pendingUpload.current = null;
+  }, []);
+  const usedAsLogo = values.profilePhotoUrl && values.logoUrl === values.profilePhotoUrl;
+  const remove = () => Object.entries(profilePhotoRemoval(values)).forEach(([key, value]) => change(key, value));
   const upload = async event => {
     const file = event.target.files?.[0]; event.target.value = '';
-    if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) { toast.error('Choose a JPEG, PNG or WebP image no larger than 2 MB.'); return; }
-    setBusy(true);
+    if (!file || uploadLock.current) return;
+    setError('');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) { setError('Choose a JPEG, PNG or WebP image no larger than 2 MB.'); return; }
+    const release = beginProfilePhotoUpload?.();
+    if (!release) { setError('Wait for your settings to finish saving before uploading a photo.'); return; }
+    const controller = new AbortController();
+    pendingUpload.current = { controller, release };
+    uploadLock.current = true; setBusy(true);
     try {
       const form = new FormData(); form.append('image', file);
-      const result = await workspaceRequest('post', '/api/studio/profile-images', form);
-      if (typeof result.url !== 'string' || !/^\/api\/studio\/profile-images\/[a-f\d]{24}$/i.test(result.url)) throw new Error('Photo upload is unavailable in this preview. Please use the connected Studio OS backend.');
+      const { data: result } = await axios.post(API + '/api/studio/profile-images', form, { ...operationAuth(), timeout: 30000, signal: controller.signal });
+      if (!isStudioProfileImagePath(result.url)) throw new Error('The studio could not confirm your photo upload. Please retry.');
+      await confirmProfileImage(studioImageUrl(result.url), { signal: controller.signal });
+      if (controller.signal.aborted) return;
       change('profilePhotoUrl', result.url); if (useAsLogo) change('logoUrl', result.url);
       toast.success('Photo uploaded. Save settings to apply it.');
-    } catch (error) { toast.error(recordError(error)); }
-    finally { setBusy(false); }
+    } catch (failure) { if (!controller.signal.aborted) setError(['ECONNABORTED', 'ETIMEDOUT'].includes(failure.code) ? 'The upload timed out before the studio confirmed it. Your current photo is unchanged. Please retry.' : failure?.response ? recordError(failure) : failure.message || 'Your studio photo could not be uploaded. Please retry.'); }
+    finally { release(); uploadLock.current = false; if (!controller.signal.aborted) setBusy(false); if (pendingUpload.current?.controller === controller) pendingUpload.current = null; }
   };
-  return <div className="settings-profile-photo"><img src={studioImageUrl(values.profilePhotoUrl || values.logoUrl)} alt="Studio profile" /><div><strong>Studio profile photo</strong><p>JPEG, PNG or WebP · up to 2 MB. Uploaded photos are public brand images.</p><div className="settings-inline-actions"><StudioButton type="button" size="sm" icon={Upload} loadingIcon={Upload} loading={busy} loadingLabel="Uploading studio photo" onClick={() => input.current?.click()}>Update photo</StudioButton>{values.profilePhotoUrl && <button type="button" className="studio-button small" onClick={() => change('profilePhotoUrl', '')}>Remove photo</button>}</div><label className="settings-check"><input type="checkbox" checked={useAsLogo} onChange={event => setUseAsLogo(event.target.checked)} />Use uploaded photo as the logo on new documents</label><input ref={input} type="file" accept="image/jpeg,image/png,image/webp" onChange={upload} hidden /></div></div>;
+  return <div className="settings-profile-photo"><img src={studioImageUrl(values.profilePhotoUrl || values.logoUrl)} onError={studioImageFallback} alt="Studio profile" /><div><strong>Studio profile photo</strong><p>JPEG, PNG or WebP · up to 2 MB. Uploaded photos are public brand images.</p><div className="settings-inline-actions"><StudioButton type="button" size="sm" icon={Upload} loadingIcon={Upload} loading={busy} disabled={saving} loadingLabel="Uploading studio photo" onClick={() => input.current?.click()}>Update photo</StudioButton>{values.profilePhotoUrl && <button type="button" className="studio-button small" disabled={busy || saving} onClick={remove}>Remove photo</button>}</div><label className="settings-check"><input type="checkbox" checked={useAsLogo} disabled={busy || saving} onChange={event => setUseAsLogo(event.target.checked)} />Use uploaded photo as the logo on new documents</label>{usedAsLogo && <p className="settings-profile-photo-note">Removing this photo also resets your default document logo. Existing documents keep their saved logo.</p>}<input ref={input} type="file" accept="image/jpeg,image/png,image/webp" disabled={saving} onChange={upload} hidden /><WorkspaceError error={error} /></div></div>;
 }
 function EmailStatus() {
   const { user } = useAuth();
   const preview = user?.isPreview === true;
   const [status, setStatus] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false);
+  const testLock = useRef(false);
   useEffect(() => {
     if (preview) return;
     const controller = new AbortController();
-    axios.get(API + '/api/studio/email/status', { signal: controller.signal, headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } }).then(result => setStatus(result.data)).catch(failure => { if (!axios.isCancel(failure)) setError('Email connection status is unavailable.'); });
+    axios.get(API + '/api/studio/email/status', { signal: controller.signal, timeout: 15000, ...operationAuth() }).then(result => setStatus(result.data)).catch(failure => { if (!axios.isCancel(failure)) setError('Email connection status is unavailable.'); });
     return () => controller.abort();
   }, [preview]);
   const test = async () => {
+    if (testLock.current) return;
+    testLock.current = true;
     setBusy(true); setError('');
-    try { const result = await workspaceRequest('post', '/api/studio/email/test', {}); if (typeof result?.message !== 'string') throw new Error('The mail service did not confirm this test.'); toast.success(result.message); }
-    catch (failure) { setError(recordError(failure)); }
-    finally { setBusy(false); }
+    try { const { data: result } = await axios.post(API + '/api/studio/email/test', {}, { ...operationAuth(), timeout: 20000 }); if (typeof result?.message !== 'string') throw new Error('The mail service did not confirm this test.'); toast.success(result.message); }
+    catch (failure) { setError(['ECONNABORTED', 'ETIMEDOUT'].includes(failure.code) ? 'The mail server did not confirm the test in time. It may still arrive; check your inbox before retrying.' : recordError(failure)); }
+    finally { testLock.current = false; setBusy(false); }
   };
   return <><div className="settings-mail-status"><StudioAppIcon icon={Mail} tone="rose" size={38} /><div><strong>{preview ? 'Email delivery preview' : status ? status.configured ? 'Email delivery configured' : 'Email delivery needs setup' : error ? 'Email delivery unavailable' : 'Checking email delivery…'}</strong><p>{preview ? 'Connect your studio mail service in the live workspace to send a test.' : status?.sender || 'Uses your studio’s secure mail service.'}</p></div><StudioButton type="button" size="sm" icon={Mail} disabled={preview || !status?.configured} loading={busy} onClick={test} loadingLabel="Sending test email">Send test to my email</StudioButton></div><WorkspaceError error={error} /></>;
 }
-export default function SettingsEditor({ tab, values, change, changeNested }) {
+export default function SettingsEditor({ tab, values, change, changeNested, beginProfilePhotoUpload, saving = false }) {
   const field = (label, name, options = {}, group) => <WorkspaceField key={(group || '') + name} label={label} name={name} value={group ? values[group]?.[name] : values[name]} onChange={(key, value) => { const next = options.type === 'number' ? Number(value) : value; if (group) changeNested(group, key, next); else change(key, next); }} {...options} />;
   const fields = (items, group) => <div className="studio-form-grid">{items.map(([label, name, options]) => field(label, name, options || {}, group))}</div>;
   const toggle = (group, key, label, description) => <SettingsToggle key={key} label={label} description={description} value={values[group][key]} onChange={value => changeNested(group, key, value)} />;
@@ -96,7 +117,7 @@ export default function SettingsEditor({ tab, values, change, changeNested }) {
   const updateStage = (template, index, patch) => updateTemplate(template.id, { stages: template.stages.map((stage, i) => i === index ? { ...stage, ...patch } : stage) });
   if (tab === 'profile') return <>
     <SettingsGroup defaultOpen title="Studio identity" description="The name and business details your clients recognise.">
-      <ProfilePhoto values={values} change={change} />
+      <ProfilePhoto values={values} change={change} beginProfilePhotoUpload={beginProfilePhotoUpload} saving={saving} />
       {fields([['Studio name', 'studioName', { required: true }], ['Legal business name', 'legalName'], ['GSTIN', 'gstin', { help: 'Optional. Your 15-character GST identification number.' }]])}
     </SettingsGroup>
     <SettingsGroup title="Contact details" description="Keep your studio’s primary contact information in one place.">

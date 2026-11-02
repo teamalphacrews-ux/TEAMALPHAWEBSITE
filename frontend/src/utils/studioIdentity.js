@@ -3,8 +3,12 @@ import axios from 'axios';
 import API from './apiConfig';
 import { TEAM_ALPHA_LOGO } from './branding';
 import { useAuth } from '../context/AuthContext';
+import { resolveProfileImage } from './studioProfileImage';
 
-export const studioImageUrl = value => /^\/api\/studio\/profile-images\/(?:[a-f\d]{24}\.)?[a-f\d]{24}$/i.test(value || '') ? API + value : value || TEAM_ALPHA_LOGO;
+export const studioImageUrl = value => resolveProfileImage(value, API) || TEAM_ALPHA_LOGO;
+export const studioImageFallback = event => {
+  if (event.currentTarget.getAttribute('src') !== TEAM_ALPHA_LOGO) event.currentTarget.src = TEAM_ALPHA_LOGO;
+};
 export const whatsappContactUrl = (number, message = '') => {
   const digits = String(number || '').replace(/\D/g, '');
   return /^[1-9]\d{6,14}$/.test(digits) ? `https://wa.me/${digits}${message ? '?text=' + encodeURIComponent(message) : ''}` : '';

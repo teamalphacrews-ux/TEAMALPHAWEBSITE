@@ -1,4 +1,5 @@
 import defaults from '../admin/studio-settings-defaults.json' with { type: 'json' };
+import { resolveProfileImage } from './studioProfileImage.js';
 
 const day = value => new Date(value).toISOString().slice(0, 10);
 function studioDay(studio, value) {
@@ -70,5 +71,5 @@ export function documentCommunication(studio = {}, kind, document = {}) {
   };
 }
 export function resolveStudioImage(url, apiOrigin = '') {
-  return /^\/api\/studio\/profile-images\/[a-f\d]{24}$/i.test(url || '') ? apiOrigin.replace(/\/$/, '') + url : url;
+  return resolveProfileImage(url, apiOrigin);
 }
