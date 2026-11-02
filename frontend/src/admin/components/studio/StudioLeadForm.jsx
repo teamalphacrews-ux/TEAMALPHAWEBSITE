@@ -1,3 +1,4 @@
+import StudioSelect from "../common/StudioSelect";
 import StudioButton from '../common/StudioButton';
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -39,16 +40,19 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
     delete payload.__v;
     ["createAccount", "firstName", "lastName", "accountEmail", "password", "galleryTag"].forEach((key) => delete payload[key]);
     try {
+      const requestOptions = { ...studioAuth(), timeout: 30000 };
       const response = editing
-        ? await axios.patch(`${studioApi}/api/leads/${initialData._id}`, payload, studioAuth())
-        : await axios.post(`${studioApi}/api/leads`, payload, studioAuth());
+        ? await axios.patch(`${studioApi}/api/leads/${initialData._id}`, payload, requestOptions)
+        : await axios.post(`${studioApi}/api/leads`, payload, requestOptions);
       if(!editing)await draft.clear().catch(()=>toast('Enquiry saved. Review local drafts before resubmitting.'));
-      onSaved(response.data);
       toast.success(editing ? "Enquiry updated" : "Enquiry created");
       onClose();
+      onSaved(response.data);
     } catch (err) {
       if(!editing&&(!err.response||err.response.status>=500))await draft.markUncertain();
-      setError(err.response?.data?.error || "We couldn’t save this enquiry. Please try again.");
+      setError(err.response?.data?.error || (err.code === 'ECONNABORTED'
+        ? 'Saving timed out. Your details are still here. Check the enquiry list before submitting again.'
+        : "We couldn’t confirm this enquiry was saved. Check the enquiry list before trying again."));
     } finally { setSaving(false); inFlight.current = false; }
   };
 
@@ -65,7 +69,7 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
             <label className="studio-field">Full name<input data-autofocus required className="studio-input" value={data.name} onChange={set("name")} autoComplete="name" placeholder="Client or couple’s name" /></label>
             <label className="studio-field">Email address<input required type="email" className="studio-input" value={data.email} onChange={set("email")} autoComplete="email" placeholder="name@example.com" /></label>
             <label className="studio-field">Phone number<input type="tel" className="studio-input" value={data.phone} onChange={set("phone")} autoComplete="tel" placeholder="+91" /></label>
-            <label className="studio-field">Enquiry stage<select className="studio-input" value={data.status} onChange={set("status")}>{LEAD_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></label>
+            <label className="studio-field">Enquiry stage<StudioSelect title="Enquiry stage" className="studio-input" value={data.status} onChange={set("status")}>{LEAD_STATUSES.map((status) => <option key={status}>{status}</option>)}</StudioSelect></label>
           </div></div>
           <div className="studio-crm-form-section"><h3>The occasion</h3><div className="studio-form-grid">
             <label className="studio-field">Event type<input className="studio-input" list="studio-event-types" value={data.eventType} onChange={set("eventType")} placeholder="Wedding, engagement…" /><datalist id="studio-event-types"><option>Wedding</option><option>Engagement</option><option>Pre-wedding</option><option>Bespoke</option></datalist></label>
@@ -77,7 +81,7 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
           <div className="studio-crm-form-section"><h3>Payment & delivery</h3><div className="studio-form-grid">
             <label className="studio-field">Project value (₹)<input type="number" min="0" className="studio-input" value={data.totalAmount} onChange={set("totalAmount")} /></label>
             <label className="studio-field">Deposit received (₹)<input type="number" min="0" className="studio-input" value={data.depositAmount} onChange={set("depositAmount")} /></label>
-            <label className="studio-field">Payment status<select className="studio-input" value={data.paymentStatus} onChange={set("paymentStatus")}>{PAYMENT_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></label>
+            <label className="studio-field">Payment status<StudioSelect title="Payment status" className="studio-input" value={data.paymentStatus} onChange={set("paymentStatus")}>{PAYMENT_STATUSES.map((status) => <option key={status}>{status}</option>)}</StudioSelect></label>
             <label className="studio-field">Cloud folder link<input type="url" className="studio-input" value={data.cloudLink} onChange={set("cloudLink")} placeholder="https://" /></label>
             <label className="studio-field">Cloud folder password<input className="studio-input" value={data.cloudPassword} onChange={set("cloudPassword")} autoComplete="off" /></label>
           </div></div>

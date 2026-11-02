@@ -85,4 +85,20 @@ function crewOverlap(event, candidates) {
       ),
   );
 }
-module.exports = { eventFields, crewOverlap };
+async function linkedEventFields(body, current = {}, resolve = require('../routes/quoteWorkflowRoutes').references) {
+  const values = eventFields(body, current);
+  const recordId = value => String(value?._id || value || '');
+  // Changing an enquiry in a partial PATCH also changes its inferred context.
+  // Explicit client/project fields are still checked below rather than ignored.
+  if (Object.hasOwn(body, 'lead') && recordId(values.lead) !== recordId(current.lead)) {
+    for (const key of ['contactId', 'studioProjectId']) if (!Object.hasOwn(body, key)) values[key] = null;
+  }
+  const requested = { lead: values.lead, contactId: values.contactId, studioProjectId: values.studioProjectId };
+  await resolve(values);
+  for (const key of ['lead', 'contactId', 'studioProjectId']) {
+    if (requested[key] && recordId(values[key]) !== recordId(requested[key]))
+      eventError('The selected enquiry, contact and project do not belong together.');
+  }
+  return values;
+}
+module.exports = { eventFields, linkedEventFields, crewOverlap };

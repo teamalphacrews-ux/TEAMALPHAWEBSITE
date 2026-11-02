@@ -289,3 +289,39 @@ html[data-studio-appearance=dark] .studio-settings-page .settings-invalid-total{
 
 .studio-settings-page,.settings-section-heading{scroll-margin-top:100px}
 .settings-template[hidden]{display:none!important}
+
+/* Content-sized settings controls: native iOS fields must stay inside their grid. */
+.studio-settings-page :is(.settings-content,.settings-group-content,.settings-profile-photo)>*{min-width:0}
+.studio-settings-page :is(.settings-editor,.settings-pref-panel) input.studio-input{box-sizing:border-box;width:100%;min-width:0;max-width:100%;min-inline-size:0}
+.studio-settings-page .settings-reminder-days>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px;align-items:center}
+.studio-settings-page .settings-reminder-days label{display:grid;grid-template-columns:auto minmax(0,1fr) 44px;gap:8px;padding:6px 8px 6px 12px;border:1px solid var(--studio-border);border-radius:12px;background:var(--appearance-subtle,var(--studio-canvas));min-width:0}
+.studio-settings-page .settings-reminder-days input.studio-input{width:100%;min-width:0;max-width:100%;margin:0;min-height:44px;font-variant-numeric:tabular-nums}
+.studio-settings-page .settings-reminder-days label .studio-icon-button{width:44px;min-width:44px;height:44px;margin:0}
+.studio-settings-page .settings-reminder-days>div>.studio-button{min-height:56px;justify-content:center;margin:0}
+.studio-settings-page .settings-profile-photo>div{min-width:0;flex:1}
+.studio-settings-page .settings-profile-photo .settings-check{align-items:flex-start}
+.studio-settings-page .settings-profile-photo .settings-check input{margin-block-start:2px}
+.studio-settings-page .settings-profile-photo .studio-error{margin-top:12px}
+@media(max-width:600px){
+ .studio-settings-page .settings-profile-photo{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px 12px;align-items:center}
+ .studio-settings-page .settings-profile-photo>img{grid-column:1;grid-row:1/3;width:52px;height:52px;border-radius:13px}
+ .studio-settings-page .settings-profile-photo>div{display:contents}
+ .studio-settings-page .settings-profile-photo strong{grid-column:2;align-self:end}
+ .studio-settings-page .settings-profile-photo p{grid-column:2;margin:0;align-self:start}
+ .studio-settings-page .settings-profile-photo :is(.settings-inline-actions,.settings-check,.studio-error,.settings-profile-photo-note){grid-column:1/-1}
+ .studio-settings-page .settings-profile-photo .settings-inline-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,130px),1fr));gap:8px;margin-top:6px}
+ .studio-settings-page .settings-profile-photo .settings-inline-actions .studio-button{min-height:44px;justify-content:center;width:100%}
+ .studio-settings-page .settings-profile-photo .settings-check{margin-top:4px}
+ .studio-settings-page .settings-reminder-days>div{grid-template-columns:minmax(0,1fr)}
+ .studio-settings-page .settings-reminder-days>strong{display:block;line-height:1.6}
+ .studio-settings-page .settings-reminder-days>div>.studio-button{min-height:44px}
+ .studio-settings-page .settings-toggle{display:grid;grid-template-columns:minmax(0,1fr) auto 51px;gap:8px;align-items:center}
+ .studio-settings-page .settings-toggle>span:first-child{grid-column:1;grid-row:1;line-height:1.5}
+ .studio-settings-page .settings-toggle>.studio-switch-state{grid-column:2;grid-row:1;font-size:11px}
+ .studio-settings-page .settings-toggle>.studio-switch-track{grid-column:3;grid-row:1}
+ .studio-settings-page .settings-toggle>input{grid-column:3;grid-row:1;right:0}
+ .studio-settings-page .settings-detail-toolbar{gap:10px}
+ .studio-settings-page .settings-scope-note{max-width:45%;font-size:11px;line-height:1.5;text-align:end}
+ .studio-settings-page .settings-save-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:8px}
+ .studio-settings-page .settings-save-actions .studio-button{white-space:normal;line-height:1.4;text-align:center}
+}

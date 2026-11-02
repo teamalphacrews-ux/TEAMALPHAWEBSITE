@@ -1,11 +1,14 @@
 import StudioButton from '../components/common/StudioButton';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Save, Search, X, ArrowLeft, ChevronRight, RotateCcw, SlidersHorizontal, Building2, Palette, Wallet, Bell, Mail, Workflow, Eye, ShieldCheck, Database, Plug, Languages, Volume2, Moon, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 import { WorkspaceError, WorkspaceEmpty } from '../components/operations/WorkspaceUI';
 import { OperationsModal } from '../components/operations/OperationsUI';
-import { useWorkspaceData, workspaceRequest, recordError } from '../components/operations/workspaceData';
+import { useWorkspaceData, recordError } from '../components/operations/workspaceData';
+import { operationAuth } from '../components/operations/operationsUtils';
+import API from '../../utils/apiConfig';
 import { useAuth } from '../../context/AuthContext';
 import StudioAppIcon from '../components/common/StudioAppIcon';
 import SettingsEditor from '../components/settings/SettingsEditor';
@@ -16,10 +19,11 @@ import NotificationPreferences from '../components/settings/NotificationPreferen
 import { useStudioPreferences } from '../components/common/StudioPreferences';
 import { studioText } from '../../utils/studioTranslations';
 import { formatWorkspaceTime } from '../../utils/workspaceLocale';
-import { studioImageUrl } from '../../utils/studioIdentity';
+import { studioImageUrl, studioImageFallback } from '../../utils/studioIdentity';
 import NativeDeviceSettings from '../../native/NativeDeviceSettings';
 import SecurityRecoveryPanel from '../components/settings/SecurityRecoveryPanel';
 import { settingsWithDefaults, changedSettingsSections, settingsSectionKeys, restoreSettingsSection } from '../../utils/settingsEditorState';
+import { createSettingsActionGate } from '../../utils/settingsActionGate';
 import './studioSettings.css';
 import './settingsGrouped.css';
 
@@ -48,8 +52,20 @@ export default function Settings() {
   const [params, setParams] = useSearchParams(), navigate = useNavigate();
   const [form, setForm] = useState(null), [baseline, setBaseline] = useState(null);
   const [busy, setBusy] = useState(false), [saveError, setSaveError] = useState('');
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [query, setQuery] = useState(''), [confirmation, setConfirmation] = useState(null), [savedAt, setSavedAt] = useState(null);
   const saveLock = useRef(false), heading = useRef(null), pageTop = useRef(null);
+  const actionGate = useRef(createSettingsActionGate());
+  const beginProfilePhotoUpload = useCallback(() => {
+    const release = actionGate.current.begin('photo');
+    if (!release) return null;
+    setPhotoUploading(true);
+    return () => {
+      if (!actionGate.current.pending('photo')) return;
+      release();
+      if (!actionGate.current.pending('photo')) setPhotoUploading(false);
+    };
+  }, []);
   const saved = data[0], original = baseline || (saved ? settingsWithDefaults(saved) : null), values = form || original;
   const changed = values && original ? changedSettingsSections(values, original) : [];
   const dirty = changed.length > 0;
@@ -85,24 +101,27 @@ export default function Settings() {
   }, [dirty]);
   const saveSettings = async event => {
     event?.preventDefault();
-    if (saveLock.current || !values) return false;
+    if (saveLock.current || actionGate.current.pending() || !values) return false;
     if (!dirty) return values;
+    const release = actionGate.current.begin('save');
+    if (!release) return false;
     saveLock.current = true; setBusy(true); setSaveError('');
     try {
       const payload = { ...values, quotationValidityDays: Number(values.quotationValidityDays) };
       // Never silently drop edited policies. The server authorizes protected groups.
       for (const group of ['security', 'backups']) if (!changed.includes(group)) delete payload[group];
-      const result = await workspaceRequest('put', '/api/studio/settings', payload);
+      const { data: result } = await axios.put(API + '/api/studio/settings', payload, { ...operationAuth(), timeout: 30000 });
       if (typeof result?.studioName !== 'string') throw new Error('The studio did not confirm your settings. Please retry.');
       const normalized = settingsWithDefaults(result);
       setForm(normalized); setBaseline(normalized); setSavedAt(new Date());
       window.dispatchEvent(new CustomEvent('studio-settings-updated', { detail: result }));
       toast.success(user?.isPreview ? 'Saved in this sample session' : 'Studio settings saved');
       return result;
-    } catch (failure) { setSaveError(recordError(failure)); throw failure; }
-    finally { saveLock.current = false; setBusy(false); }
+    } catch (failure) { setSaveError(['ECONNABORTED', 'ETIMEDOUT'].includes(failure.code) ? 'The studio did not confirm your save in time. Reload settings to check whether it was saved before retrying.' : recordError(failure)); throw failure; }
+    finally { release(); saveLock.current = false; setBusy(false); }
   };
   const discard = () => {
+    if (actionGate.current.pending()) return;
     if (confirmation.kind === 'section') setForm(restoreSettingsSection(values, original, confirmation.section));
     else { setForm(original); if (confirmation.kind === 'leave') navigate(confirmation.destination); }
     setSaveError(''); setConfirmation(null);
@@ -129,7 +148,7 @@ export default function Settings() {
   return <div className={'studio-settings-page settings-grouped' + (browsing ? ' is-browsing' : ' is-editing')} ref={pageTop}>
     <header className="settings-page-title"><h1>{t("Settings")}</h1><p>Your studio. Your way.</p></header>
     {values && !current && !query.trim() && <button type="button" className="settings-profile-tile" onClick={() => selectSection('profile')}>
-      <img src={studioImageUrl(values.profilePhotoUrl || values.logoUrl)} alt="" />
+      <img src={studioImageUrl(values.profilePhotoUrl || values.logoUrl)} onError={studioImageFallback} alt="" />
       <span><strong>{values.studioName || 'Your studio'}</strong><small>{accountName || 'Studio account'} · Studio profile</small></span><ChevronRight size={21} aria-hidden="true" />
     </button>}
     <div className="settings-search-row"><label className="settings-search"><Search size={20} aria-hidden="true" /><input type="search" aria-label="Find a setting" placeholder="Search settings" value={query} onChange={event => setQuery(event.target.value)} />{query && <button type="button" aria-label="Clear settings search" onClick={() => setQuery('')}><X size={18} /></button>}</label></div>
@@ -156,14 +175,14 @@ export default function Settings() {
           <div className="settings-content">
             <header className="settings-section-heading"><StudioAppIcon icon={current.icon} tone={current.tone} size={40} /><div><span className="settings-section-eyebrow">{t(current.group)}</span><h2 tabIndex={-1} ref={heading} lang={preferences.language} dir="auto">{t(current.title)}</h2><p>{current.description}</p></div></header>
             <SettingsDisclosures key={tab}>
-              {tab === 'device' ? <NativeDeviceSettings /> : tab === 'workspace' ? <WorkspacePreferences /> : tab === 'language' ? <LocalePreferences studioTimezone={values.timezone} /> : tab === 'notifications' ? <NotificationPreferences /> : ['security', 'backups'].includes(tab) ? <fieldset className="settings-edit-fields" disabled={busy}><SecurityRecoveryPanel mode={tab} settings={values} onChange={changeNested} /></fieldset> : <form id="studio-settings-form" onSubmit={event => { saveSettings(event).catch(() => {}); }} className="settings-editor"><fieldset className="settings-edit-fields" disabled={busy}><SettingsEditor tab={tab} values={values} change={change} changeNested={changeNested} /></fieldset></form>}
+              {tab === 'device' ? <NativeDeviceSettings /> : tab === 'workspace' ? <WorkspacePreferences /> : tab === 'language' ? <LocalePreferences studioTimezone={values.timezone} /> : tab === 'notifications' ? <NotificationPreferences /> : ['security', 'backups'].includes(tab) ? <fieldset className="settings-edit-fields" disabled={busy}><SecurityRecoveryPanel mode={tab} settings={values} onChange={changeNested} /></fieldset> : <form id="studio-settings-form" onSubmit={event => { saveSettings(event).catch(() => {}); }} className="settings-editor"><fieldset className="settings-edit-fields" disabled={busy}><SettingsEditor tab={tab} values={values} change={change} changeNested={changeNested} beginProfilePhotoUpload={beginProfilePhotoUpload} saving={busy} /></fieldset></form>}
             </SettingsDisclosures>
-            {settingsSectionKeys[tab] && <div className="settings-section-tools"><span>{changed.includes(tab) ? 'This section has unsaved changes.' : savedAt ? 'Saved at ' + formatWorkspaceTime(savedAt, preferences, values.timezone) : 'Changes apply after saving.'}</span><button type="button" className="settings-text-button" disabled={busy || !changed.includes(tab)} onClick={() => setConfirmation({ kind: 'section', section: tab })}><RotateCcw size={13} />Revert section</button></div>}
+            {settingsSectionKeys[tab] && <div className="settings-section-tools"><span>{changed.includes(tab) ? 'This section has unsaved changes.' : savedAt ? 'Saved at ' + formatWorkspaceTime(savedAt, preferences, values.timezone) : 'Changes apply after saving.'}</span><button type="button" className="settings-text-button" disabled={busy || photoUploading || !changed.includes(tab)} onClick={() => setConfirmation({ kind: 'section', section: tab })}><RotateCcw size={13} />Revert section</button></div>}
           </div>
         </div>
       </>}
       <WorkspaceError error={saveError} />
-      {dirty && <footer className="settings-save-bar has-changes"><div role="status"><span className="settings-save-symbol"><span className="settings-unsaved-dot" /></span><span><strong>{busy ? 'Saving changes…' : changed.length + (changed.length === 1 ? ' section' : ' sections') + ' with unsaved changes'}</strong><small>{changed.map(id => sections.find(section => section.id === id)?.title).join(' · ')}</small></span></div><div className="settings-save-actions"><button type="button" className="studio-button" disabled={busy} onClick={() => setConfirmation({ kind: 'all' })}>{t("Discard")}</button><StudioButton type="button" variant="primary" icon={Save} loading={busy} onClick={saveAll} loadingLabel="Saving all studio settings">Save all changes</StudioButton></div></footer>}
+      {dirty && <footer className="settings-save-bar has-changes"><div role="status"><span className="settings-save-symbol"><span className="settings-unsaved-dot" /></span><span><strong>{busy ? 'Saving changes…' : photoUploading ? 'Wait for your photo to finish uploading…' : changed.length + (changed.length === 1 ? ' section' : ' sections') + ' with unsaved changes'}</strong><small>{changed.map(id => sections.find(section => section.id === id)?.title).join(' · ')}</small></span></div><div className="settings-save-actions"><button type="button" className="studio-button" disabled={busy || photoUploading} onClick={() => setConfirmation({ kind: 'all' })}>{t("Discard")}</button><StudioButton type="button" variant="primary" icon={Save} loading={busy} disabled={photoUploading} onClick={saveAll} loadingLabel="Saving all studio settings">Save all changes</StudioButton></div></footer>}
     </>}
     {confirmation && <OperationsModal title={confirmation.kind === 'leave' ? 'Leave without saving?' : confirmation.kind === 'section' ? 'Revert this section?' : 'Discard unsaved changes?'} onClose={() => setConfirmation(null)} footer={<><button type="button" className="studio-button" onClick={() => setConfirmation(null)}>Keep editing</button><button type="button" className="studio-button primary" onClick={discard}>{confirmation.kind === 'leave' ? 'Discard & leave' : 'Discard changes'}</button></>}><p className="studio-muted">{confirmation.kind === 'section' ? 'Restore ' + (sections.find(section => section.id === confirmation.section)?.title || 'this section').toLowerCase() + ' to its last saved values. Changes in other sections will stay.' : 'Only unsaved studio settings will be discarded. Your saved settings, personal preferences and project records will stay.'}</p></OperationsModal>}
   </div>;

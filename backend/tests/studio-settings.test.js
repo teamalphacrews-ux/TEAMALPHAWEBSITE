@@ -9,6 +9,9 @@ test('frontend and backend settings defaults stay aligned', () => {
 test('studio profile validates GSTIN, social domains, WhatsApp and safe image references', () => {
   const values = parseAdvancedSettings({ legalName: 'Team Alpha', gstin: '29abcde1234f1z5', whatsappNumber: '+91 (98765) 43210', instagramUrl: 'https://www.instagram.com/teamalpha', facebookUrl: 'https://facebook.com/teamalpha', profilePhotoUrl: '/api/studio/profile-images/607f1f77bcf86cd799439011' });
   assert.equal(values.gstin, '29ABCDE1234F1Z5'); assert.equal(values.whatsappNumber, '919876543210');
+  const scoped = '/api/studio/profile-images/507f1f77bcf86cd799439022.607f1f77bcf86cd799439011';
+  assert.equal(parseAdvancedSettings({ profilePhotoUrl: scoped, logoUrl: scoped }).profilePhotoUrl, scoped);
+  assert.throws(() => parseAdvancedSettings({ profilePhotoUrl: scoped + '/secret' }), error => error.status === 400);
   for (const body of [{ gstin: '1234' }, { whatsappNumber: '0123' }, { instagramUrl: 'https://instagram.com.attacker.test/x' }, { facebookUrl: 'javascript:alert(1)' }, { logoUrl: 'https://user:secret@example.test/pic.png' }, { profilePhotoUrl: '/api/studio/profile-images/../settings' }]) assert.throws(() => parseAdvancedSettings(body), error => error.status === 400);
 });
 test('payment defaults reject under-allocation, excessive precision and impossible deadlines', () => {

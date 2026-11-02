@@ -19,14 +19,16 @@
         "googleapis": "^171.4.0",
         "jsonwebtoken": "^9.0.2",
         "mongoose": "^8.0.3",
-        "multer": "^1.4.5-lts.1",
-        "multer-storage-cloudinary": "^4.0.0",
+        "multer": "^2.5.0",
         "node-cron": "^4.2.1",
-        "nodemailer": "^8.0.1",
+        "nodemailer": "^10.3.1",
         "socket.io": "^4.8.3",
         "uuid": "^13.0.0"
     },
     "devDependencies": {
         "nodemon": "^3.0.2"
+    },
+    "engines": {
+        "node": ">=22.22.0 <27"
     }
 }

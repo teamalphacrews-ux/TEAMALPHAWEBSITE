@@ -1,8 +1,9 @@
 const router = require('express').Router();
 const User = require('../models/User');
 const { defaults, parsePreferences } = require('../utils/studioPreferences');
-router.use(require('../middleware/auth'), require('../middleware/requireAdmin'));
-router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+// This router shares /api/studio with public brand images. Only preferences
+// belong behind this gate; an <img> cannot send the administrator's JWT header.
+router.use('/preferences', require('../middleware/auth'), require('../middleware/requireAdmin'), (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 router.get('/preferences', async (req, res) => {
   try { const user = await User.findById(req.user.id).select('studioPreferences'); if (!user) return res.sendStatus(404); res.json({ preferences: { ...defaults(), ...(user.studioPreferences?.toObject?.() || user.studioPreferences || {}) } }); }
   catch { res.status(503).json({ error: 'Your preferences could not be loaded.' }); }

@@ -1,5 +1,5 @@
 import StudioSelect from '../components/common/StudioSelect';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { Plus, Search, ArrowUpRight, Users, RefreshCw, CalendarDays, ChevronDown } from "lucide-react";
@@ -12,6 +12,7 @@ import "../studio-crm.css";
 import { safeStudioReturn } from '../../utils/studioNavigation';
 import {WorkspaceActionMenu} from '../components/operations/WorkspaceActionMenu';
 import { quotationStatus } from '../../utils/quotationStatus';
+import { enquiryProjectId, enquiryQuoteId, enquiryProjectDestination, enquiryQuoteDestination } from '../../utils/enquiryWorkflow';
 
 function ProjectCell({ lead }) {
   const id = lead.studioProjectId?._id || lead.studioProjectId;
@@ -66,6 +67,9 @@ export default function CRM() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedLead, setSelectedLead] = useState(null);
+  const [workflowBusy, setWorkflowBusy] = useState('');
+  const [workflowError, setWorkflowError] = useState('');
+  const workflowInFlight = useRef(false);
   const requestedLeadId = searchParams.get('lead');
   const activeLead = requestedLeadId ? leads.find(lead => lead._id === requestedLeadId) || (selectedLead?._id === requestedLeadId ? selectedLead : null) : null;
   const returnTo = searchParams.get('returnTo');
@@ -90,7 +94,14 @@ export default function CRM() {
     setLeads((previous) => previous.map((lead) => lead._id === next._id ? mergeLead(lead, next) : lead));
     setSelectedLead((previous) => previous?._id === next._id ? mergeLead(previous, next) : previous);
   };
-  const createLead = (lead) => setLeads((previous) => [lead, ...previous]);
+  const createLead = (lead) => {
+    setLeads(previous => [lead, ...previous.filter(item => item._id !== lead._id)]);
+    setSelectedLead(lead);
+    setWorkflowError('');
+    const next = new URLSearchParams(searchParams);
+    next.delete('new'); next.set('lead', lead._id);
+    setSearchParams(next, { replace: true });
+  };
   const closeLeadForm = () => { setShowLeadForm(false); if (searchParams.has("new")) { const next = new URLSearchParams(searchParams); next.delete("new"); setSearchParams(next, { replace: true }); } };
   const deleteLead = async (lead) => {
     if (lead.studioProjectId) {
@@ -106,8 +117,30 @@ export default function CRM() {
     catch { toast.error("Couldn’t delete the enquiry"); }
   };
   const openInvoice = lead => navigate(invoiceDestination(invoices, lead));
+  const continueEnquiry = async (lead, action) => {
+    if (workflowInFlight.current) return;
+    setWorkflowError('');
+    if (action === 'project' && enquiryProjectId(lead)) {
+      navigate(enquiryProjectDestination(enquiryProjectId(lead))); return;
+    }
+    if (action === 'quote' && enquiryQuoteId(lead)) {
+      navigate(enquiryQuoteDestination({ lead })); return;
+    }
+    workflowInFlight.current = true;
+    setWorkflowBusy(action);
+    try {
+      const { data } = await axios.post(`${studioApi}/api/leads/${encodeURIComponent(lead._id)}/project`, {}, { ...studioAuth(), timeout: 30000 });
+      updateLead(data.lead);
+      navigate(action === 'quote' ? enquiryQuoteDestination(data) : enquiryProjectDestination(data.project));
+    } catch (error) {
+      setWorkflowError(error.response?.data?.error || error.response?.data?.msg || (error.code === 'ECONNABORTED'
+        ? 'This request timed out. Retry to safely reopen the same project.'
+        : 'The next step could not be opened. Please check your connection and retry.'));
+    } finally { setWorkflowBusy(''); workflowInFlight.current = false; }
+  };
   const selectLead = lead => {
     setSelectedLead(lead);
+    setWorkflowError('');
     const next = new URLSearchParams(searchParams);
     next.set('lead', lead._id);
     setSearchParams(next);
@@ -124,6 +157,6 @@ export default function CRM() {
     {requestedLeadId && !loading && !error && !activeLead && <div className="studio-error" role="status"><span>This enquiry is unavailable or has been removed.</span><Link className="studio-button small" to={safeStudioReturn(returnTo)}>Back to overview</Link></div>}
     <EnquiriesView leads={leads} loading={loading} error={error} query={searchQuery} onQuery={setSearchQuery} status={filterStatus} onStatus={setFilterStatus} sort={sortBy} onSort={setSortBy} onSelect={selectLead} onCreate={() => setShowLeadForm(true)} onDelete={deleteLead} onRefresh={() => { setLoading(true); setError(""); fetchLeads(); }} />
     {showLeadForm && <StudioLeadForm onClose={closeLeadForm} onSaved={createLead} />}
-    {activeLead && <StudioLeadDetails lead={activeLead} onClose={closeLead} onUpdate={updateLead} onGenerateInvoice={openInvoice} existingInvoice={invoiceForLead(invoices, activeLead)} />}
+    {activeLead && <StudioLeadDetails key={activeLead._id} lead={activeLead} onClose={closeLead} onUpdate={updateLead} onGenerateInvoice={openInvoice} existingInvoice={invoiceForLead(invoices, activeLead)} onOpenProject={lead => continueEnquiry(lead, 'project')} onPrepareQuote={lead => continueEnquiry(lead, 'quote')} workflowBusy={workflowBusy} workflowError={workflowError} />}
   </div>;
 }

@@ -696,7 +696,7 @@ export default function InvoiceWorkspace() {
           )}
         </div>
         <span className="invoice-status">
-          {draft.documentStatus.toUpperCase()}
+          {draft.documentStatus === "Sent" ? "ISSUED" : draft.documentStatus.toUpperCase()}
         </span>
         <small role="status">{saveState}</small>
         <div className="invoice-toolbar-actions">
@@ -801,7 +801,7 @@ export default function InvoiceWorkspace() {
               min={draft.invoiceDate}
               onChange={(v) => change("dueDate", v)}
             />
-            <select
+            <StudioSelect
               aria-label="Payment due preset"
               value=""
               onChange={(e) =>
@@ -826,13 +826,13 @@ export default function InvoiceWorkspace() {
                   {label}
                 </option>
               ))}
-            </select>
+            </StudioSelect>
           </div>
 
           <Field label="Currency">
-            <select value="INR" onChange={() => {}}>
+            <StudioSelect value="INR" disabled aria-label="Currency (INR only)">
               <option value="INR">INR - Indian Rupees</option>
-            </select>
+            </StudioSelect>
           </Field>
           <Toggle
             label="Payment Reminders"
@@ -927,7 +927,7 @@ export default function InvoiceWorkspace() {
             <h1>Invoice details</h1>
             <div className="invoice-fields">
               <Field label="Contact">
-                <select
+                <StudioSelect aria-label="Contact"
                   value={draft.contactId || ""}
                   onChange={(e) => {
                     const c = context.contacts.find(
@@ -955,10 +955,10 @@ export default function InvoiceWorkspace() {
                       {c.firstName} {c.lastName}
                     </option>
                   ))}
-                </select>
+                </StudioSelect>
               </Field>
               <Field label="Project">
-                <select
+                <StudioSelect aria-label="Project"
                   value={draft.studioProjectId || ""}
                   onChange={(e) => change("studioProjectId", e.target.value)}
                 >
@@ -975,7 +975,7 @@ export default function InvoiceWorkspace() {
                         {p.name}
                       </option>
                     ))}
-                </select>
+                </StudioSelect>
               </Field>
               <Field
                 label="Client name"
@@ -1743,7 +1743,7 @@ export default function InvoiceWorkspace() {
                 }
               />
               <Field label="Font theme">
-                <select
+                <StudioSelect aria-label="Font theme"
                   value={draft.design.fontFamily}
                   onChange={(e) =>
                     change("design", {
@@ -1755,7 +1755,7 @@ export default function InvoiceWorkspace() {
                   {["modern", "classic", "editorial"].map((font) => (
                     <option key={font}>{font}</option>
                   ))}
-                </select>
+                </StudioSelect>
               </Field>
               <label className="invoice-checkboxes">
                 <input

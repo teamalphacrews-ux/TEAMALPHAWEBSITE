@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { googleDateRange, googleEventTimes, dateStart } = require('../utils/calendarDateRange');
 const { eventFields } = require('../utils/studioCalendar');
+const { linkedEventFields } = require('../utils/studioCalendar');
 
 test('Google date-only events preserve exclusive calendar dates and studio midnight', () => {
   const value = googleDateRange({ start: { date: '2026-11-05' }, end: { date: '2026-11-07' } }, 'Asia/Kolkata');
@@ -34,4 +35,36 @@ test('calendar writes validate all-day metadata and clear it when changing to ti
   const timed = eventFields({ allDay: false }, value);
   assert.equal(timed.startDate, '');
   assert.equal(timed.endDateExclusive, '');
+});
+
+const eventIds = { first: '507f1f77bcf86cd799439011', second: '507f1f77bcf86cd799439012', contact: '507f1f77bcf86cd799439013', project: '507f1f77bcf86cd799439014' };
+const timedEvent = { title: 'Wedding', start: '2028-01-20T03:30:00.000Z', end: '2028-01-20T06:30:00.000Z', teamMembers: [] };
+test('calendar enquiry selection persists the resolved client and project alongside the same event', async () => {
+  const value = await linkedEventFields({ ...timedEvent, lead: eventIds.first }, {}, async links => {
+    assert.equal(links.lead, eventIds.first);
+    links.contactId = eventIds.contact; links.studioProjectId = eventIds.project;
+  });
+  assert.equal(value.contactId, eventIds.contact); assert.equal(value.studioProjectId, eventIds.project);
+  assert.equal(value.lead, eventIds.first); assert.equal(value.title, timedEvent.title);
+});
+test('changing or clearing an enquiry in partial calendar edits drops stale inferred associations without changing dates', async () => {
+  const current = { ...timedEvent, lead: eventIds.first, contactId: eventIds.contact, studioProjectId: eventIds.project };
+  const changed = await linkedEventFields({ lead: eventIds.second }, current, async links => {
+    assert.equal(links.contactId, null); assert.equal(links.studioProjectId, null);
+    links.contactId = eventIds.second; links.studioProjectId = eventIds.first;
+  });
+  assert.equal(changed.lead, eventIds.second); assert.equal(changed.start.toISOString(), current.start);
+  assert.equal(changed.end.toISOString(), current.end); assert.equal(changed.title, current.title);
+  const cleared = await linkedEventFields({ lead: null }, current, async () => {});
+  assert.equal(cleared.lead, null); assert.equal(cleared.contactId, null); assert.equal(cleared.studioProjectId, null);
+  const description = await linkedEventFields({ description: 'New notes' }, current, async () => {});
+  assert.equal(description.lead, eventIds.first); assert.equal(description.studioProjectId, eventIds.project);
+});
+test('calendar rejects contradictory explicit enquiry and contact choices rather than silently replacing them', async () => {
+  await assert.rejects(() => linkedEventFields({ ...timedEvent, lead: eventIds.first, contactId: eventIds.second }, {}, async links => {
+    links.contactId = eventIds.contact; links.studioProjectId = eventIds.project;
+  }), { status: 400 });
+  await assert.rejects(() => linkedEventFields({ ...timedEvent, lead: eventIds.first, studioProjectId: eventIds.project }, {}, async links => {
+    links.lead = eventIds.second;
+  }), { status: 400 });
 });

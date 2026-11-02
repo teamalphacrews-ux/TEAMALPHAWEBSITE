@@ -1,4 +1,4 @@
-.studio-app .studio-select{display:inline-block;min-width:0;position:relative;vertical-align:middle;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;min-height:0!important;height:auto}
+:is(.studio-app,.studio-crm-overlay) .studio-select{display:inline-block;min-width:0;position:relative;vertical-align:middle;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;min-height:0!important;height:auto}
 .studio-select-native{width:100%;max-width:100%;box-sizing:border-box}
 .studio-select-trigger{display:none}
 .studio-app.studio-select-overlay{position:fixed;inset:0;z-index:1600;display:flex;align-items:flex-end;justify-content:center;min-height:0;padding:12px;background:rgba(0,0,0,.45)!important;backdrop-filter:blur(8px);box-sizing:border-box}
@@ -17,14 +17,14 @@
 @keyframes studio-select-enter{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.studio-select-sheet{animation:none}}
 @media(max-width:768px){
- .studio-app .studio-select{padding:0!important;border:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;height:auto;min-height:0}
- .studio-app .studio-select-native{display:none!important}
- .studio-app .studio-select-trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-width:0;min-height:44px;max-width:100%;padding:10px 12px!important;border:1px solid var(--studio-border)!important;border-radius:12px!important;background:var(--studio-surface)!important;color:var(--studio-text)!important;font:inherit;font-size:14px!important;line-height:1.4;text-align:left;box-shadow:none!important}
- .studio-app .studio-select-value{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
- .studio-app .studio-select-trigger>svg{flex-shrink:0;opacity:.65}
- .studio-app .studio-select-trigger:focus-visible{outline:2px solid #5383ef;outline-offset:2px}
- .studio-app .studio-select-trigger:disabled{opacity:.5}
- .studio-app .studio-field>.studio-select{display:block;width:100%}
+ :is(.studio-app,.studio-crm-overlay) .studio-select{padding:0!important;border:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;height:auto;min-height:0}
+ :is(.studio-app,.studio-crm-overlay) .studio-select-native{display:none!important}
+ :is(.studio-app,.studio-crm-overlay) .studio-select-trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-width:0;min-height:44px;max-width:100%;padding:10px 12px!important;border:1px solid var(--studio-border)!important;border-radius:12px!important;background:var(--studio-surface)!important;color:var(--studio-text)!important;font:inherit;font-size:14px!important;line-height:1.4;text-align:left;box-shadow:none!important}
+ :is(.studio-app,.studio-crm-overlay) .studio-select-value{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+ :is(.studio-app,.studio-crm-overlay) .studio-select-trigger>svg{flex-shrink:0;opacity:.65}
+ :is(.studio-app,.studio-crm-overlay) .studio-select-trigger:focus-visible{outline:2px solid #5383ef;outline-offset:2px}
+ :is(.studio-app,.studio-crm-overlay) .studio-select-trigger:disabled{opacity:.5}
+ :is(.studio-app,.studio-crm-overlay) .studio-field>.studio-select{display:block;width:100%}
 }
 
 html[data-studio-motion=reduced] .studio-select-sheet{animation:none}

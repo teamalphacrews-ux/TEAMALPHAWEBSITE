@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Pencil } from "lucide-react";
+import StudioSelect from "../components/common/StudioSelect";
 import toast from "react-hot-toast";
 import {
   useWorkspaceData,
@@ -109,8 +110,8 @@ export default function ContactDetail() {
     }
   };
   return (
-    <div className="reference-workspace">
-      <div className="reference-heading">
+    <div className="reference-workspace contact-detail-workspace">
+      <div className="reference-heading reference-contact-heading">
         <Link
           to="/admin/contacts"
           className="reference-back"
@@ -118,8 +119,9 @@ export default function ContactDetail() {
         >
           <ArrowLeft size={18} />
         </Link>
-        <h1>{name}</h1>
-        <select
+        <div className="reference-contact-title">
+          <h1>{name}</h1>
+        <StudioSelect
           className={`reference-status-select ${contact.contactType.toLowerCase()}`}
           aria-label="Contact type"
           disabled={busy}
@@ -129,8 +131,9 @@ export default function ContactDetail() {
           {["Client", "Lead", "Other"].map((type) => (
             <option key={type}>{type}</option>
           ))}
-        </select>
-        <div className="reference-heading-spacer" />
+        </StudioSelect>
+        </div>
+        <div className="reference-contact-actions">
         <WorkspaceActionMenu label="More">
             <button onClick={() => setEditing(true)}>Edit contact</button>
             <button onClick={archive}>
@@ -146,6 +149,7 @@ export default function ContactDetail() {
             onDocument={openDocument}
           />
         )}
+        </div>
       </div>
       <WorkspaceError error={error} retry={reload} />
       <div className="reference-detail-grid">
@@ -235,7 +239,7 @@ export default function ContactDetail() {
             </ReferenceSection>
           )}
         </main>
-        <aside>
+        <aside className="reference-contact-sidebar">
           <ReferenceSection title="Contact Info">
             <button
               className="reference-info-edit reference-icon-button"

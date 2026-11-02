@@ -1045,3 +1045,18 @@
     min-width: 0;
   }
 }
+
+/* Each quotation action stays within a deliberate row, including accepted quotes. */
+.qw-quote-identity { min-width: 0; }
+.qw-quote-identity > strong { overflow-wrap: anywhere; }
+@media screen and (max-width: 768px) {
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-header-actions.qw-quotation-toolbar { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; width: 100%; margin: 0; align-items: stretch; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-header-actions.qw-quotation-toolbar > :is(button,a,.qw-menu) { box-sizing: border-box; min-width: 0; min-height: 44px; margin: 0; justify-content: center; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-header-actions.qw-quotation-toolbar > :is(button,a), .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-header-actions.qw-quotation-toolbar > .qw-menu > button { font-size: 12px; line-height: 1.35; padding: 10px 8px; border-radius: 11px; text-align: center; white-space: normal; }
+  .qw-quotation-toolbar > .qw-menu > button { width: 100%; justify-content: center; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-header-actions.qw-quotation-toolbar > .qw-primary { grid-column: 1/-1; display: inline-flex; align-items: center; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-header-actions.qw-quotation-toolbar[data-layout="with-invoice"] { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-header-actions.qw-quotation-toolbar[data-layout="with-invoice"] > .qw-primary { grid-column: auto; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-header-actions.qw-quotation-toolbar > .qw-button { display: inline-flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--document-ui-border); background: var(--document-ui-subtle); color: var(--document-ui-text); }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .qw-doc-header .qw-quote-identity { min-width: 0; }
+}

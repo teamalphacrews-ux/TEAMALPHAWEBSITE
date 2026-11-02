@@ -10,8 +10,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const cloudinary = require('cloudinary').v2;
-const CloudinaryStorageModule = require('multer-storage-cloudinary');
-const CloudinaryStorage = CloudinaryStorageModule.CloudinaryStorage || CloudinaryStorageModule;
+const { CloudinaryStorage } = require('../storage/cloudinaryStorage');
 
 const User = require('../models/User');
 const Lead = require('../models/Lead');

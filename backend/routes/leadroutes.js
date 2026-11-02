@@ -31,6 +31,16 @@ router.get('/', async (req, res) => {
 
 router.post('/', createLeadHandler({ Lead, User, Notification, bcrypt, allowedLeadFields }));
 
+// Existing admin/workspace permissions above also apply to this mutation.
+router.post('/:id/project', async (req, res) => {
+    try {
+        const id = require('../utils/contactRecords').identifier(req.params.id, 'Enquiry');
+        res.json(await require('../services/enquiryProject').projectForEnquiry(id));
+    } catch (error) {
+        res.status(error.status || 503).json({ error: error.status ? error.message : 'The enquiry project could not be prepared. Please retry.' });
+    }
+});
+
 // Task specific management
 router.post('/:id/tasks', async (req, res) => {
     try {
@@ -79,8 +89,18 @@ router.patch('/:id', async (req, res) => {
 
         res.json(await Lead.findById(req.params.id).populate('tasks'));
     } catch (err) {
-        console.error(`[LEAD_PATCH_ERROR] ID: ${req.params.id}, Body:`, req.body, err);
-        res.status(500).json({ error: "Failed to update lead: " + err.message });
+        // Database errors can contain document values, including private notes
+        // and delivery passwords. Keep both diagnostics and responses value-free.
+        const invalid = ['ValidationError', 'CastError'].includes(err.name);
+        const conflict = err.status === 409;
+        const code = invalid ? 'ENQUIRY_UPDATE_INVALID' : conflict ? 'ENQUIRY_UPDATE_CONFLICT' : 'ENQUIRY_UPDATE_FAILED';
+        console.error('[LEAD_PATCH_ERROR]', { code });
+        res.status(invalid ? 400 : conflict ? 409 : 503).json({
+            code,
+            error: invalid ? 'Check the enquiry details and try again.' : conflict
+                ? 'The enquiry connection changed. Refresh and review its linked records.'
+                : 'The enquiry update could not be confirmed. Refresh before trying again.',
+        });
     }
 });
 
@@ -94,9 +114,9 @@ router.post('/:id/remind/:photographerName', async (req, res) => {
             return res.status(404).json({ message: "Lead or Photographer not found" });
         }
 
-        res.json({ message: "Reminder mocked (Email service invalid)" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(503).json({ code: 'CREW_REMINDER_UNAVAILABLE', error: 'Crew reminders are not available from this action. No reminder was sent.' });
+    } catch {
+        res.status(503).json({ code: 'CREW_REMINDER_UNAVAILABLE', error: 'The reminder could not be prepared. No reminder was sent.' });
     }
 });
 

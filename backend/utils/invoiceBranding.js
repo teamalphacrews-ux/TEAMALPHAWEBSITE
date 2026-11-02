@@ -16,12 +16,12 @@ function invoiceIssuer(studio = {}, custom = {}) {
 }
 function validImage(url) {
   if (typeof url !== "string" || url.length > 2000) return false;
-  if (/^\/api\/studio\/profile-images\/[a-f\d]{24}$/i.test(url)) return true;
+  if (/^\/api\/studio\/profile-images\/(?:[a-f\d]{24}\.)?[a-f\d]{24}$/i.test(url)) return true;
   if (url === "/team-alpha-logo.png" || (/^\/assets\/[\w./-]+$/.test(url) && !url.includes(".."))) return true;
   try { const u = new URL(url); return u.protocol === "https:" && !u.username && !u.password; } catch { return false; }
 }
 function publicBrandImage(url) {
-  if (!/^\/api\/studio\/profile-images\/[a-f\d]{24}$/i.test(url || "")) return url;
+  if (!/^\/api\/studio\/profile-images\/(?:[a-f\d]{24}\.)?[a-f\d]{24}$/i.test(url || "")) return url;
   try {
     const origin = new URL(process.env.API_PUBLIC_URL || process.env.GOOGLE_REDIRECT_URI).origin;
     if (origin.startsWith("https://") || (process.env.NODE_ENV !== "production" && /^http:\/\/(localhost|127\.0\.0\.1)(:|$)/.test(origin))) return origin + url;
