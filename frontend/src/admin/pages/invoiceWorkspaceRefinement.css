@@ -97,7 +97,6 @@
 .studio-app.studio-app.studio-personal-workspace .invoice-editor .invoice-installment-field > :is(input, select),
 .studio-app.studio-app.studio-personal-workspace .invoice-editor .invoice-installment-field > .studio-select > :is(select, button) {
   box-sizing: border-box;
-  display: block;
   width: 100%;
   min-width: 0;
   max-width: 100%;
