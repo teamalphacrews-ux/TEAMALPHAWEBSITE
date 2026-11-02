@@ -1,4 +1,4 @@
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { CloudinaryStorage } = require('./storage/cloudinaryStorage');
 const cloudinary = require('cloudinary').v2;
 
 console.log('CloudinaryStorage Type:', typeof CloudinaryStorage);

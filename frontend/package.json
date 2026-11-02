@@ -30,7 +30,7 @@
     "html-to-image": "^1.11.13",
     "jspdf": "^4.0.0",
     "lucide-react": "^0.563.0",
-    "multer": "^2.1.1",
+    "multer": "^2.5.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.6.0",
@@ -53,8 +53,11 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "postcss": "^8.5.6",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "tailwindcss": "^3.4.17",
     "vite": "^7.2.4"
+  },
+  "engines": {
+    "node": ">=22.22.0 <27"
   }
 }
