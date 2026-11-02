@@ -40,16 +40,19 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
     delete payload.__v;
     ["createAccount", "firstName", "lastName", "accountEmail", "password", "galleryTag"].forEach((key) => delete payload[key]);
     try {
+      const requestOptions = { ...studioAuth(), timeout: 30000 };
       const response = editing
-        ? await axios.patch(`${studioApi}/api/leads/${initialData._id}`, payload, studioAuth())
-        : await axios.post(`${studioApi}/api/leads`, payload, studioAuth());
+        ? await axios.patch(`${studioApi}/api/leads/${initialData._id}`, payload, requestOptions)
+        : await axios.post(`${studioApi}/api/leads`, payload, requestOptions);
       if(!editing)await draft.clear().catch(()=>toast('Enquiry saved. Review local drafts before resubmitting.'));
       toast.success(editing ? "Enquiry updated" : "Enquiry created");
       onClose();
       onSaved(response.data);
     } catch (err) {
       if(!editing&&(!err.response||err.response.status>=500))await draft.markUncertain();
-      setError(err.response?.data?.error || "We couldn’t save this enquiry. Please try again.");
+      setError(err.response?.data?.error || (err.code === 'ECONNABORTED'
+        ? 'Saving timed out. Your details are still here. Check the enquiry list before submitting again.'
+        : "We couldn’t confirm this enquiry was saved. Check the enquiry list before trying again."));
     } finally { setSaving(false); inFlight.current = false; }
   };
 
