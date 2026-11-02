@@ -5,7 +5,7 @@ html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-refere
 .studio-app.studio-app .studio-overview-reference .ov-page-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .studio-app.studio-app .studio-overview-reference .ov-page-eyebrow { font-size: 9px; font-weight: 550; letter-spacing: .1em; color: var(--studio-muted); }
 .studio-app.studio-app .studio-overview-reference .ov-page-toolbar h1 { font: 600 23px/1.3 var(--studio-font); letter-spacing: -.045em; margin: 3px 0 0; }
-.studio-app.studio-app .studio-overview-reference .ov-page-toolbar > div:last-child { display: flex; gap: 8px; }
+.studio-app.studio-app .studio-overview-reference .ov-page-toolbar > div { min-width: 0; }
 .studio-app.studio-app .studio-overview-reference .ov-page-toolbar .studio-button { min-height: 38px; padding: 8px 13px; font-size: 11px; background: var(--studio-surface); }
 .studio-app.studio-app .studio-overview-reference .studio-button.primary { background: #17191c !important; border-color: #17191c !important; color: #fff !important; }
 .studio-app.studio-app .studio-overview-reference .ov-reference-grid { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: var(--ov-gap); align-items: stretch; }
@@ -151,3 +151,51 @@ html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-refere
 }
 @media(prefers-reduced-motion:reduce) { .studio-overview-reference *, .studio-overview-reference *::before { animation: none !important; transition: none !important; } }
 html[data-studio-motion=reduced] .studio-overview-reference *, html[data-studio-motion=reduced] .studio-overview-reference *::before { animation: none !important; transition: none !important; }
+
+/* Dashboard controls reserve their actual hit areas; card content owns its padding. */
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .ov-page-toolbar > div{display:block;min-width:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat{padding:0!important;min-height:0;border:1px solid var(--studio-border)!important;overflow:hidden}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat-content{box-sizing:border-box;padding:20px;min-height:152px;height:100%;display:flex;flex-direction:column;gap:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat .studio-metric-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-right:32px;font-size:12px;line-height:1.4}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat .studio-app-icon{display:inline-flex;width:30px;height:30px;flex:0 0 30px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat .studio-metric-value{display:block;margin:12px 0 8px;font:600 30px/1.2 var(--studio-font);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat .studio-metric-foot{margin-top:auto;font-size:11px;line-height:1.5}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat>.overview-hide-card{top:4px;right:4px;width:44px;height:44px;min-height:44px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-card-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;padding-right:0;margin-bottom:12px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-card-actions{display:flex;align-items:center;flex-wrap:nowrap;gap:4px;min-width:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-card-actions>a{display:inline-flex;align-items:center;gap:5px;min-height:44px;font-size:12px;color:var(--studio-muted);white-space:nowrap}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-card-actions>.overview-hide-card{position:static;flex:0 0 44px;width:44px;height:44px;min-height:44px;margin:-3px -10px 0 0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:8px 12px;min-height:72px;padding:12px 0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-row>div{min-width:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-row h3{font-size:13px;line-height:1.5;margin:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-row p{margin:3px 0 0;font-size:11px;line-height:1.5}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-check{position:relative;grid-row:auto;display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0!important;margin:0;border:0!important;border-radius:50%;background:transparent!important;box-shadow:none!important;color:var(--studio-muted)}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-check::before{content:'';position:absolute;inset:11px;border:1.5px solid var(--studio-muted);border-radius:50%;background:var(--studio-surface);pointer-events:none}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-check .studio-button-content{position:relative;z-index:1;opacity:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-check .studio-button-content>svg{width:13px;height:13px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-check:is(:hover,:focus-visible) .studio-button-content{opacity:1}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-check:is(:hover,:focus-visible)::before{border-color:var(--control-accent);background:var(--control-accent-soft)}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-check.is-loading::before{opacity:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-due{font-size:10px;line-height:1.4;white-space:nowrap;margin:0;justify-self:end}
+@container overview-card (max-width:440px){
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-row{grid-template-columns:44px minmax(0,1fr);gap:0 10px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-check{grid-row:1/3}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-due{grid-column:2;justify-self:start;margin-top:5px}
+}
+@media(max-width:768px){
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat-content{padding:16px;min-height:138px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat .studio-metric-top{padding-right:0;font-size:11px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat .studio-app-icon{display:none}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat .studio-metric-value{font-size:27px;margin:9px 0 7px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-stat .studio-metric-foot{font-size:10px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-card-heading{gap:8px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .overview-card-actions>.overview-hide-card{display:none}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-row{grid-template-columns:44px minmax(0,1fr);gap:0 8px;min-height:0;padding:10px 0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-check{grid-row:1/3}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .studio-task-due{grid-column:2;justify-self:start;margin-top:5px}
+}
+
+/* White surfaces retain a quiet boundary against the white workspace. */
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized :is(.overview-workspace-card,.overview-feature-card){
+  border:1px solid var(--studio-border);
+}

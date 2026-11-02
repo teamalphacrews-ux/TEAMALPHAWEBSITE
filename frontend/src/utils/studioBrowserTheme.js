@@ -1,4 +1,4 @@
-const colors = { dark: '#131416', light: '#f2f3f0', auth: '#ffffff' };
+const colors = { dark: '#131416', light: '#ffffff', auth: '#ffffff' };
 
 /** Match browser chrome and safe-area canvas to the workspace; restore public-page branding on exit. */
 export function installStudioBrowserTheme(document, theme) {

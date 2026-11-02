@@ -88,7 +88,7 @@ function App() {
   return (
     <div className={`font-sans text-[#1C1C1C] ${isStudioPage ? "bg-white" : "bg-[#F7F5F2]"} min-h-screen selection:bg-black selection:text-white`}>
       {import.meta.env.DEV && <StudioPreviewNavigation />}
-      <Toaster position="top-right" toastOptions={{ className: isStudioPage ? "studio-toast" : undefined }} />
+      <Toaster position="top-right" containerStyle={isStudioPage ? { top: 'calc(80px + env(safe-area-inset-top, 0px))' } : undefined} toastOptions={{ className: isStudioPage ? "studio-toast" : undefined }} />
       <Suspense
         fallback={
           <div className="flex h-screen w-full items-center justify-center text-xl">

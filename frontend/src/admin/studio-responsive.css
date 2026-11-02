@@ -114,3 +114,31 @@
 @media(max-width:380px) {
   .studio-app.studio-app.studio-personal-workspace .studio-topbar-actions {gap:2px}
 }
+
+/* Operational dialogs keep actions visible while only their fields scroll. */
+.studio-app.studio-app.studio-personal-workspace.studio-ops.studio-modal-overlay .studio-modal.ops-modal{
+ display:flex;flex-direction:column;min-height:0;max-height:calc(100dvh - 44px);overflow:hidden;padding:0;
+}
+.studio-app.studio-app.studio-personal-workspace.studio-ops.studio-modal-overlay .studio-modal-header{
+ flex:0 0 auto;align-items:flex-start;gap:16px;padding:22px 24px;margin:0;
+}
+.studio-app.studio-app.studio-personal-workspace.studio-ops.studio-modal-overlay .studio-modal-header>div{min-width:0}
+.studio-app.studio-app.studio-personal-workspace.studio-ops.studio-modal-overlay .ops-modal-body{
+ flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:22px 24px;
+}
+.studio-app.studio-app.studio-personal-workspace.studio-ops.studio-modal-overlay .studio-modal-footer{
+ flex:0 0 auto;display:flex;justify-content:flex-end;gap:10px;margin:0;padding:16px 24px;border-top:1px solid var(--studio-border);
+}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-controls{align-items:flex-end}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-controls>.studio-field{margin:0}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-controls>.studio-field input{min-height:44px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .workspace-calendar .studio-toolbar>.studio-select{width:220px;max-width:100%;flex:0 1 220px}
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .workspace-calendar .studio-toolbar>.studio-search{flex:1 1 260px;max-width:none}
+@media(max-width:768px){
+ .studio-app.studio-app.studio-personal-workspace.studio-ops.studio-modal-overlay .studio-modal.ops-modal{max-height:calc(var(--studio-visible-height,100dvh) - 24px - env(safe-area-inset-bottom,0px))}
+ .studio-app.studio-app.studio-personal-workspace.studio-ops.studio-modal-overlay .studio-modal-header{padding:16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-ops.studio-modal-overlay .ops-modal-body{padding:16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-ops.studio-modal-overlay .studio-modal-footer{padding:12px 16px}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .workspace-calendar .studio-toolbar>.studio-select{width:100%;flex:1 1 100%}
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .shoot-day-controls{align-items:center}
+}

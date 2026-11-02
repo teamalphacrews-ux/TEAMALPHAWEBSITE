@@ -12,7 +12,7 @@ html[data-studio-appearance=dark] :is(.studio-app.studio-app,.studio-crm-overlay
 html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspace .studio-nav-item.is-active{border-color:#74757b;box-shadow:none}
 html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspace .studio-nav-item:hover{border-color:#74757b}
 html[data-studio-appearance=dark] :is(.studio-app.studio-app,.studio-crm-overlay.studio-crm-overlay) :is(.studio-nav-group-toggle:hover,.studio-portfolio-link:hover,.studio-icon-button:hover,.overview-hide-card:hover){background:var(--appearance-subtle);color:var(--studio-text)}
-:is(.studio-app.studio-personal-workspace,.studio-crm-overlay,.studio-crm-invoice-dialog){--studio-canvas:#f2f3f0;--studio-surface:#fff;--studio-text:#22281f;--studio-muted:#687166;--studio-border:#e1e5df;--appearance-subtle:#e9ece6;--appearance-active:#dfff78;--appearance-link:#486536;--appearance-shadow:0 7px 26px #26311e05}
+:is(.studio-app.studio-personal-workspace,.studio-crm-overlay,.studio-crm-invoice-dialog){--studio-canvas:#fff;--studio-surface:#fff;--studio-text:#20242b;--studio-muted:#69717d;--studio-border:#e3e7ed;--appearance-subtle:#f5f6f8;--appearance-active:#dfff78;--appearance-link:#486536;--appearance-shadow:0 7px 26px #26311e05}
 .studio-app.studio-app.studio-personal-workspace{background:var(--studio-canvas)}
 .studio-app.studio-app.studio-personal-workspace :is(.studio-workspace,.studio-main,.studio-sidebar){background:var(--studio-canvas)}
 .studio-app.studio-app.studio-personal-workspace .studio-sidebar{padding:28px 16px 0;border-right:0}

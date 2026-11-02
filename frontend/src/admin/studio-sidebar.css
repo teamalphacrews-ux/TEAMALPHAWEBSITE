@@ -1,7 +1,7 @@
 /* Navigation shell. Keep page and document styling independent. */
 .studio-app.studio-app.studio-personal-workspace {
   --studio-nav-width: 256px;
-  --studio-nav-surface: #fafbfc;
+  --studio-nav-surface: #fff;
   --studio-nav-hover: #eef0f3;
   --studio-nav-active: #e9eef8;
   --studio-nav-accent: #365d9e;

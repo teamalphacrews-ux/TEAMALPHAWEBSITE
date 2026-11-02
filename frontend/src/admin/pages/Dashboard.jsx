@@ -121,8 +121,8 @@ export default function Dashboard() {
     productionPulse: <RhythmInsight insights={overview?.insights} loading={!overview && !error} remove={remove('productionPulse', 'Studio rhythm')} />,
     activityMap: <ActivityInsight insights={overview?.insights} loading={!overview && !error} remove={remove('activityMap', 'Activity map')} />,
     upcomingSchedule: <OverviewDaySchedule timezone={timezone} preferences={preferences} refreshKey={refreshKey} remove={remove('upcomingSchedule', 'Upcoming schedule')} />,
-    actionQueue: (<section className="studio-card studio-action-card overview-workspace-card" aria-labelledby="overview-tasks-title" data-overview-card="actionQueue">{remove('actionQueue', 'Action queue')}
-          <div className="studio-card-heading"><div><h3 id="overview-tasks-title" lang={preferences.language} dir="auto">{t('Action queue')}<span className="studio-inline-count">{summary.pendingTasks ?? '—'}</span></h3><p className="studio-card-subtitle">{work.overdueTasks ? work.overdueTasks + ' overdue. Start with the earliest deadline.' : 'Your next tasks, ordered by deadline.'}</p></div><Link to="/admin/post-production">View all<ArrowUpRight size={14} /></Link></div>
+    actionQueue: (<section className="studio-card studio-action-card overview-workspace-card" aria-labelledby="overview-tasks-title" data-overview-card="actionQueue">
+          <div className="studio-card-heading"><div><h3 id="overview-tasks-title" lang={preferences.language} dir="auto">{t('Action queue')}<span className="studio-inline-count">{summary.pendingTasks ?? '—'}</span></h3><p className="studio-card-subtitle">{work.overdueTasks ? work.overdueTasks + ' overdue. Start with the earliest deadline.' : 'Your next tasks, ordered by deadline.'}</p></div><div className="overview-card-actions"><Link to="/admin/post-production">View all<ArrowUpRight size={14} /></Link>{remove('actionQueue', 'Action queue')}</div></div>
 
           <div className="studio-task-list">
             {tasks.length ? tasks.slice(0, 4).map(task => {
@@ -138,8 +138,8 @@ export default function Dashboard() {
           </div>
         </section>),
     enquiryPipeline: <PipelineRings pipeline={pipeline} loading={!overview} remove={remove('enquiryPipeline', 'Pipeline performance')} />,
-    recentEnquiries: (<section className="studio-card studio-recent-card overview-workspace-card" aria-labelledby="overview-enquiries-title" data-overview-card="recentEnquiries">{remove('recentEnquiries', 'Recent enquiries')}
-          <div className="studio-card-heading"><div><h3 id="overview-enquiries-title" lang={preferences.language} dir="auto">{t('Recent enquiries')}</h3><p className="studio-card-subtitle">The latest conversations with your studio.</p></div><Link to="/admin/crm">View all<ArrowUpRight size={14} /></Link></div>
+    recentEnquiries: (<section className="studio-card studio-recent-card overview-workspace-card" aria-labelledby="overview-enquiries-title" data-overview-card="recentEnquiries">
+          <div className="studio-card-heading"><div><h3 id="overview-enquiries-title" lang={preferences.language} dir="auto">{t('Recent enquiries')}</h3><p className="studio-card-subtitle">The latest conversations with your studio.</p></div><div className="overview-card-actions"><Link to="/admin/crm">View all<ArrowUpRight size={14} /></Link>{remove('recentEnquiries', 'Recent enquiries')}</div></div>
           {enquiries.length ? (
             <ul className="overview-enquiry-list">
               {enquiries.slice(0, 4).map(lead => (

@@ -184,3 +184,37 @@
   .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-list-status-filter { align-items: center; }
   .document-design-content .qw-cover-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Keep item tools in flow and give grouped copy a single focus boundary. */
+.studio-app.studio-app.studio-personal-workspace :is(.qw-paper,.invoice-editor-content){container:document-editor / inline-size}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item){min-width:0;grid-template-columns:minmax(0,1fr) 72px 118px 112px;gap:14px;padding:18px;margin:12px 0 18px;border:1px solid var(--studio-border);background:var(--studio-surface);align-items:start}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-labels,.invoice-item-heading){grid-template-columns:minmax(0,1fr) 72px 118px 112px;gap:14px;margin:0 0 8px;padding-inline:18px}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-labels,.invoice-item-heading)>span:last-child{text-align:right}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-copy,.invoice-item-copy){min-width:0;border:1px solid var(--studio-border);border-radius:12px;background:var(--studio-surface);overflow:hidden}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-copy,.invoice-item-copy):focus-within{border-color:#5383ef;box-shadow:0 0 0 3px #5383ef24}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-copy,.invoice-item-copy)>:is(input,textarea){display:block;box-sizing:border-box;width:100%;min-width:0;margin:0;padding:12px 14px;border:0!important;border-radius:0!important;background:transparent;color:var(--studio-text);-webkit-text-fill-color:var(--studio-text);font:inherit;font-size:14px;line-height:1.6;outline:none!important;box-shadow:none!important}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-copy,.invoice-item-copy)>input{min-height:46px;font-weight:600}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-copy,.invoice-item-copy)>textarea{min-height:100px;padding-top:0;resize:vertical}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item)>.studio-document-number-field{display:grid;gap:7px;min-width:0;margin:0}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item)>.studio-document-number-field>:is(input,.invoice-price-input){box-sizing:border-box;width:100%;min-width:0;min-height:46px;height:46px;margin:0;padding:10px 12px;border:1px solid var(--studio-border);border-radius:11px;background:var(--studio-surface);color:var(--studio-text);font:inherit;font-size:14px;line-height:1.4}
+.studio-app.studio-app.studio-personal-workspace .invoice-price-input input{min-width:0;min-height:0;height:auto;margin:0;padding:0;border:0;background:transparent;font:inherit}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item)>strong{min-width:0;padding:12px 0;font-size:14px;line-height:1.5;font-variant-numeric:tabular-nums;white-space:normal;overflow-wrap:anywhere}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools,.invoice-item-actions){position:static;grid-column:1/-1;justify-self:end;opacity:1;padding:0;margin:0;overflow:visible}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools,.invoice-item-actions)>button{width:40px;min-width:40px;height:40px;min-height:40px;padding:0!important}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools,.invoice-item-actions)>button>svg{width:16px;height:16px}
+@container document-editor (max-width:620px){
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-labels,.invoice-item-heading){display:none}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item){grid-template-columns:repeat(2,minmax(0,1fr))}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-copy,.invoice-item-copy){grid-column:1/-1}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item) .studio-phone-field-label{display:block;margin:0;color:var(--studio-muted);font-size:12px;font-weight:500}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item)>strong{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--studio-border)}
+}
+@media(max-width:768px){
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-labels,.invoice-item-heading){display:none}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item){grid-template-columns:repeat(2,minmax(0,1fr));padding:14px}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-copy,.invoice-item-copy){grid-column:1/-1}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item) .studio-phone-field-label{display:block;margin:0;color:var(--studio-muted);font-size:12px;font-weight:500}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item)>strong{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--studio-border)}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-copy,.invoice-item-copy)>:is(input,textarea),.studio-app.studio-app.studio-personal-workspace :is(.qw-item,.invoice-edit-item)>.studio-document-number-field>:is(input,.invoice-price-input){font-size:16px}
+.studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools,.invoice-item-actions)>button{width:44px;min-width:44px;height:44px;min-height:44px}
+}
