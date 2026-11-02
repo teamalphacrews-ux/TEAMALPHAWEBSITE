@@ -26,7 +26,9 @@ export default function EventForm({
     lastDate: initialData?.endDateExclusive ? shiftDayKey(initialData.endDateExclusive, -1) : studioDayKey(initialData?.start, timezone),
     lead: initialData?.lead?._id || initialData?.lead || "",
   }));
-  const change = (name, value) => setForm((c) => ({ ...c, [name]: value }));
+  const change = (name, value) => setForm((c) => ({ ...c, [name]: value,
+    ...(name === 'lead' && value !== c.lead ? { contactId: '', studioProjectId: '' } : {}),
+  }));
   const submit = (event) => {
     event.preventDefault();
     if (busy) return;

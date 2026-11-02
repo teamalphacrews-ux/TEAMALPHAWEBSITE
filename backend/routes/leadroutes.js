@@ -31,6 +31,16 @@ router.get('/', async (req, res) => {
 
 router.post('/', createLeadHandler({ Lead, User, Notification, bcrypt, allowedLeadFields }));
 
+// Existing admin/workspace permissions above also apply to this mutation.
+router.post('/:id/project', async (req, res) => {
+    try {
+        const id = require('../utils/contactRecords').identifier(req.params.id, 'Enquiry');
+        res.json(await require('../services/enquiryProject').projectForEnquiry(id));
+    } catch (error) {
+        res.status(error.status || 503).json({ error: error.status ? error.message : 'The enquiry project could not be prepared. Please retry.' });
+    }
+});
+
 // Task specific management
 router.post('/:id/tasks', async (req, res) => {
     try {
