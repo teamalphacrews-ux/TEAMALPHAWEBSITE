@@ -895,6 +895,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
         ) : (
           <MessageSquare size={24} aria-hidden="true" />
         )}
+        <span className="cp-chat-launcher-label">{chatOpen ? "Close support" : "Message studio"}</span>
       </button></>}
       <footer className="cp-footer">
         {quote.studio.name} ·{" "}

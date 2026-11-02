@@ -81,6 +81,9 @@
   gap: 10px;
   min-width: 0;
 }
+.studio-app.studio-app .invoice-editor .invoice-installment-dates {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+}
 .studio-app.studio-app .invoice-editor .invoice-installment-field {
   display: flex;
   flex-direction: column;
@@ -91,11 +94,14 @@
   font-size: 12px;
   font-weight: 500;
 }
-.studio-app.studio-app.studio-personal-workspace .invoice-editor .invoice-installment-field > :is(input, select) {
+.studio-app.studio-app.studio-personal-workspace .invoice-editor .invoice-installment-field > :is(input, select),
+.studio-app.studio-app.studio-personal-workspace .invoice-editor .invoice-installment-field > .studio-select > :is(select, button) {
   box-sizing: border-box;
   display: block;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
+  min-inline-size: 0;
   min-height: 46px;
   height: 46px;
   margin: 0;
@@ -123,6 +129,7 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
   outline: 2px solid var(--studio-control-accent, #4f7ded);
   outline-offset: 2px;
 }
+.invoice-editor :is(.invoice-field, .invoice-installment-field) > .studio-select { display: block; width: 100%; }
 .studio-app.studio-app .invoice-editor .invoice-installment-summary {
   display: grid;
   gap: 6px;
@@ -161,11 +168,6 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
   }
   .studio-app.studio-app .invoice-editor .invoice-installment-card:last-of-type .invoice-installment-fields {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
-@media (max-width: 360px) {
-  .studio-app.studio-app .invoice-editor .invoice-installment-dates {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 768px) {
@@ -209,18 +211,21 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
   .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-toolbar-actions {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     margin: 7px 0 0;
     width: 100%;
   }
   .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-toolbar-actions > :is(button, .invoice-menu),
   .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-menu > button {
+    min-width: 0;
+    width: 100%;
     min-height: 44px;
     margin: 0;
     font-size: 13px;
   }
   .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .invoice-toolbar-actions > .invoice-primary {
+    grid-column: 1 / -1;
     justify-content: center;
     padding: 10px 12px !important;
     border-radius: 11px;
