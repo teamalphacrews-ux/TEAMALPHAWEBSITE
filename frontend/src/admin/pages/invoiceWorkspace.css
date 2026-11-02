@@ -1449,3 +1449,9 @@
     height: 60px;
   }
 }
+
+/* Choice sheets keep the same field geometry as native desktop selects. */
+.invoice-editor .invoice-field > .studio-select,
+.invoice-editor .invoice-date-control > .studio-select,
+.invoice-editor .invoice-installment-date > .studio-select { display:block; width:100%; min-width:0; }
+.invoice-editor-settings .invoice-date-control > .studio-select { margin-top:10px; }

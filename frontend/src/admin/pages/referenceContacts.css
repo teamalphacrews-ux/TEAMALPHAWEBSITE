@@ -920,3 +920,52 @@
     font-size: 18px;
   }
 }
+
+/* Contact details keep the person, actions and related records in separate groups. */
+.contact-detail-workspace .reference-contact-heading { align-items: center; }
+.reference-contact-title { display: flex; flex: 1; align-items: center; flex-wrap: wrap; gap: 12px; min-width: 0; }
+.reference-contact-title h1 { min-width: 0; overflow-wrap: anywhere; }
+.reference-contact-title > .studio-select { flex: 0 0 auto; width: auto; min-width: 100px; max-width: 150px; background: transparent; padding: 0; border: 0; }
+.reference-contact-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 0; }
+.reference-contact-actions > :is(.reference-more,.reference-create-menu) { margin: 0; }
+.contact-detail-workspace .reference-list { display: grid; gap: 10px; min-width: 0; }
+.contact-detail-workspace .reference-list-row { box-sizing: border-box; min-width: 0; min-height: 64px; padding: 14px 16px; border: 1px solid var(--studio-border); border-radius: 14px; align-items: flex-start; gap: 12px; }
+.contact-detail-workspace .reference-list-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.contact-detail-workspace .reference-list-row strong { color: var(--studio-text); line-height: 1.45; }
+.contact-detail-workspace .reference-list-row small { line-height: 1.65; }
+.contact-detail-workspace .reference-list-row > .reference-status { flex-shrink: 0; max-width: 38%; white-space: normal; line-height: 1.5; }
+.contact-detail-workspace .reference-list-row:focus-visible { outline-color: var(--studio-focus, #4b7be8); outline-offset: 3px; }
+@media (hover:hover) {
+  .contact-detail-workspace .reference-list-row:hover { background: var(--appearance-subtle); border-color: var(--studio-muted); }
+}
+.contact-detail-workspace .reference-contact-sidebar .reference-section-heading { min-height: 44px; box-sizing: border-box; padding-right: 54px; align-items: center; }
+.contact-detail-workspace .reference-info-edit { top: 0; right: 0; width: 44px; height: 44px; border: 1px solid var(--studio-border); border-radius: 12px; color: var(--studio-text); }
+.contact-detail-workspace .reference-contact-identity > div { min-width: 0; }
+.contact-detail-workspace .reference-contact-identity :is(strong,small) { overflow-wrap: anywhere; word-break: normal; }
+@media screen and (max-width: 760px) {
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .contact-detail-workspace .reference-contact-heading { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 14px 8px; align-items: start; margin: 0 0 18px; }
+  .contact-detail-workspace .reference-contact-heading > .reference-back { min-height: 36px; justify-content: center; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-title { display: grid; gap: 10px; justify-items: start; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-title h1 { font-size: 22px !important; line-height: 1.3; width: 100%; }
+  .reference-contact-title > .studio-select { max-width: 140px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-title .reference-status-select { font-size: 12px; min-height: 40px; padding: 8px 12px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-actions { grid-column: 1/-1; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; width: 100%; }
+  .reference-contact-actions > :is(.reference-more,.reference-create-menu) { width: 100%; min-width: 0; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .reference-contact-actions > :is(.reference-more,.reference-create-menu) > button { width: 100%; min-height: 44px; justify-content: center; border: 1px solid var(--studio-border); border-radius: 12px; font-size: 13px; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .contact-detail-workspace .reference-detail-grid { gap: 0; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .contact-detail-workspace .reference-section { box-sizing: border-box; min-width: 0; margin: 0 0 16px; padding: 16px; border: 1px solid var(--studio-border); border-radius: 18px; background: var(--studio-surface); color: var(--studio-text); }
+  .contact-detail-workspace .reference-section-heading { min-height: 36px; gap: 12px; padding-bottom: 12px; margin-bottom: 14px; align-items: center; border-color: var(--studio-border); }
+  .contact-detail-workspace .reference-section-heading > h2 { min-width: 0; overflow-wrap: anywhere; font-size: 17px !important; }
+  .contact-detail-workspace .reference-section-heading > button { min-width: 44px; min-height: 44px; justify-content: center; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .contact-detail-workspace .reference-contact-sidebar { border: 0; padding: 0; }
+  .contact-detail-workspace .reference-contact-sidebar .reference-section { padding-top: 16px; }
+  .contact-detail-workspace .reference-contact-sidebar .reference-info-edit { top: 16px; right: 16px; }
+  .contact-detail-workspace .reference-contact-sidebar .reference-section-heading { min-height: 44px; }
+  .contact-detail-workspace .reference-contact-identity { margin: 16px 0; align-items: flex-start; gap: 12px; }
+  .contact-detail-workspace .reference-details { grid-template-columns: minmax(65px, .45fr) minmax(0,1fr); gap: 14px 12px; margin-bottom: 0; font-size: 13px; }
+  .contact-detail-workspace .reference-empty { padding: 8px 0; font-size: 13px; }
+  .contact-detail-workspace .reference-tabs { gap: 4px !important; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border: 1px solid var(--studio-border); border-radius: 14px; padding: 4px; background: var(--appearance-subtle); overflow: visible; }
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .contact-detail-workspace .reference-tabs button { min-width: 0; min-height: 44px; padding: 8px 2px; font-size: 11px; border-radius: 10px; white-space: nowrap; }
+  .contact-detail-workspace .reference-tabs button.active { background: var(--studio-surface); color: var(--studio-text); }
+  .contact-detail-workspace .reference-tabs button.active:after { display: none; }
+}

@@ -1,5 +1,23 @@
 /* Repairs from production phone testing; scoped away from public client documents. */
 html[data-studio-browser-theme], html[data-studio-browser-theme] body { background:var(--studio-browser-canvas); }
+/* Native WebKit date/time controls must shrink to their field, including inside portals. */
+:is(.studio-app.studio-personal-workspace,.studio-crm-overlay) :is(.studio-field,.settings-field,.studio-form-grid,.settings-grid) { min-width:0; }
+:is(.studio-app.studio-personal-workspace,.studio-crm-overlay) :is(.studio-field,.settings-field) > input:is([type=date],[type=time],[type=datetime-local]),
+.studio-crm-overlay.studio-crm-overlay .studio-crm-task-form input[type=date] {
+  box-sizing:border-box; min-width:0; min-inline-size:0; max-width:100%; width:100%;
+  -webkit-appearance:none; appearance:none; text-align:left;
+}
+:is(.studio-app.studio-personal-workspace,.studio-crm-overlay) input:is([type=date],[type=time],[type=datetime-local])::-webkit-date-and-time-value { min-width:0; text-align:left; }
+:is(.studio-app.studio-personal-workspace,.studio-crm-overlay) input:is([type=date],[type=time],[type=datetime-local])::-webkit-datetime-edit { min-width:0; padding:0; }
+.studio-crm-next-steps { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:20px; margin-bottom:20px; border:1px solid var(--studio-border); border-radius:16px; background:var(--studio-surface); }
+.studio-crm-next-steps > div:first-child { flex:1 1 240px; min-width:0; }
+.studio-crm-next-steps h3 { font:600 17px/1.4 var(--studio-font,system-ui); color:var(--studio-text); margin:0; }
+.studio-crm-next-steps p { margin:5px 0 0; }
+.studio-crm-workflow-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.studio-crm-task-form { align-items:end; }
+.studio-crm-task-date { flex:0 1 150px; min-width:0; }
+.studio-crm-task-edit .studio-crm-task-date { flex:0 1 150px; }
+.studio-crm-next-steps > .studio-error { flex:1 0 100%; margin:0; }
 .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-input-icon { display:flex; align-items:center; gap:10px; padding-inline:12px; min-height:44px; border:1px solid var(--studio-border); border-radius:11px; background:var(--studio-surface); }
 .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-input-icon>svg { position:static; width:16px; height:16px; flex:0 0 16px; color:var(--studio-muted); }
 .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-input-icon>.studio-input { flex:1; min-width:0; width:100%; border:0; padding:10px 0; background:transparent; box-shadow:none; border-radius:0; outline:none; }
@@ -8,6 +26,25 @@ html[data-studio-browser-theme], html[data-studio-browser-theme] body { backgrou
 .calendar-all-day { display:flex; align-items:center; gap:10px; min-height:44px; grid-column:1/-1; color:var(--studio-text); font-size:13px; }
 .calendar-all-day>input { width:18px; height:18px; accent-color:var(--control-accent,#245bd8); }
 @media(max-width:768px) {
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-header { position:relative; display:grid; grid-template-columns:minmax(0,1fr); gap:12px; padding:18px 16px 14px; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-identity { grid-column:1/-1; width:100%; min-width:0; padding-right:48px; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-actions { grid-column:1/-1; display:flex; justify-content:flex-start; width:100%; min-width:0; gap:8px; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-actions .studio-button { width:auto; min-width:0; min-height:44px; padding:10px 12px; gap:8px; font-size:13px; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-header .studio-crm-detail-actions .studio-icon-button.studio-icon-button { position:absolute; inset:12px 12px auto auto; width:44px; min-width:44px; height:44px; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-tabs { gap:4px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); padding:4px 12px; margin:0; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-tabs button { padding:10px 4px; min-height:44px; border-radius:10px; font-size:13px; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-detail-tabs button.active { background:var(--appearance-subtle); }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-card-footer { display:flex; align-items:center; gap:8px; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-card-footer > :is(button,a) { flex:1 1 auto; min-width:0; font-size:13px; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-task-form { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-task-form > input:first-child { grid-column:1/-1; min-width:0; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-task-form > input[type=date] { min-width:0; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-task-date { width:100%; min-width:0; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-task-date > span { font-size:12px; line-height:1.4; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-task-form > button { min-width:0; white-space:normal; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-next-steps { padding:16px; gap:12px; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-workflow-actions { display:grid; width:100%; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+ .studio-crm-overlay.studio-crm-overlay .studio-crm-workflow-actions > button { width:100%; padding:10px 8px; white-space:normal; min-width:0; }
  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-input-icon>.studio-input { font-size:16px; min-height:44px; padding:10px 0; }
  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-roster { overflow:hidden; }
  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .ops-crew-table tbody { padding:0 12px; gap:10px; }

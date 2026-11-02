@@ -846,7 +846,7 @@ export default function Quotations() {
             <button aria-label="Back to quotes" onClick={close}>
               <ArrowLeft size={18} />
             </button>
-            <div>
+            <div className="qw-quote-identity">
               <strong>Quote #{quoteNumber(current || {})}</strong>
               <button
                 aria-label="Edit quote number"
@@ -874,7 +874,7 @@ export default function Quotations() {
               {status(current || { status: "Draft" })}
             </span>
             <span className="qw-save-state">{busy ? "Saving…" : savedAt}</span>
-            <div className="qw-header-actions">
+            <div className="qw-header-actions qw-quotation-toolbar" data-layout={mode === "detail" && current?.invoiceId ? "with-invoice" : mode}>
               <WorkspaceActionMenu label="Actions" className="qw-menu" menuClassName="qw-dropdown" open={actionMenu} onOpenChange={setActionMenu} disabled={busy}>
                 {mode === "editor" && <><button className="studio-phone-menu-action" onClick={() => { setActionMenu(false); setDesignOpen(!designOpen); }}>Edit design</button><button className="studio-phone-menu-action" onClick={() => { setActionMenu(false); preview(); }}>Preview</button></>}
                 {actionItems()}
