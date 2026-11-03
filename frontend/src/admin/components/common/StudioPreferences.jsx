@@ -25,7 +25,7 @@ function preferencePatch(value) {
 
 export function StudioPreferencesProvider({ children }) {
   const { user, token } = useAuth();
-  const storageKey = 'teamalpha-studio-preferences:' + (user?._id || user?.id || user?.email || 'current');
+  const storageKey = 'teamalpha-studio-preferences:' + (user?._id || user?.id || user?.email || 'current') + (user?.workspaceDataVersion > 0 ? ':epoch-' + user.workspaceDataVersion : '');
   // Remount all request state when the account/session changes. An old response can
   // never update another administrator's preference cache or queued writes.
   return <AccountPreferences key={storageKey + ':' + (token || '')} storageKey={storageKey} token={token} user={user} preview={user?.isPreview === true}>{children}</AccountPreferences>;

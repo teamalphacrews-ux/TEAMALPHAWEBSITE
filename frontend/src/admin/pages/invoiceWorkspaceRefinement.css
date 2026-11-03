@@ -238,3 +238,12 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
     padding-inline: 10px;
   }
 }
+
+/* Advanced options use the same label/control rhythm as the payment plan. */
+.invoice-editor .invoice-editor-section>.invoice-option:has(>.invoice-toggle){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 16px;margin:24px 0}
+.invoice-editor .invoice-editor-section>.invoice-option:has(>.invoice-toggle)>strong{margin:0}
+.invoice-editor .invoice-editor-section>.invoice-option:has(>.invoice-toggle)>small{grid-column:1/-1;margin:0}
+.invoice-editor .invoice-toggle{min-height:44px}
+.invoice-editor .invoice-checkboxes{gap:8px 20px;margin:8px 0 12px}
+.invoice-editor .invoice-checkboxes>label{min-height:44px;gap:9px}
+.invoice-editor .invoice-checkboxes>label>input{width:18px;height:18px;flex:0 0 18px;margin:0}

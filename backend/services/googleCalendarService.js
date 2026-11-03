@@ -331,8 +331,8 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
 }
 
 module.exports = {
-    syncToGoogle,
-    pollGoogleCalendar,
-    getCalendarClient,
-    setupGoogleWebhook
+    syncToGoogle: (...args) => require('./studioArchiveGate').withShared(() => syncToGoogle(...args), { integrations: true, rejectPaused: true }),
+    pollGoogleCalendar: (...args) => require('./studioArchiveGate').withShared(() => pollGoogleCalendar(...args), { integrations: true, rejectPaused: true }),
+    getCalendarClient: (...args) => require('./studioArchiveGate').withShared(() => getCalendarClient(...args), { integrations: true, rejectPaused: true }),
+    setupGoogleWebhook: (...args) => require('./studioArchiveGate').withShared(() => setupGoogleWebhook(...args), { integrations: true, rejectPaused: true })
 };

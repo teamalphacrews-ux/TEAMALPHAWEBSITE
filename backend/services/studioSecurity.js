@@ -7,9 +7,9 @@ async function securityConfig() {
   return { ...DEFAULTS.security, ...config?.security, permissions: { ...DEFAULTS.security.permissions, ...config?.security?.permissions } };
 }
 async function isOwner(userId) {
-  const user = await require('../models/User').findById(userId).select('role email studioOwner');
+  const user = await require('../models/User').findById(userId).select('role email studioOwner accountDisabled');
   const scoped = require('../saas/tenantContext').currentWorkspace();
-  return !!(user?.role === 'admin' && (user.studioOwner === true || (!scoped && process.env.ADMIN_EMAIL && user.email?.trim().toLowerCase() === process.env.ADMIN_EMAIL.trim().toLowerCase())));
+  return !!(user?.role === 'admin' && !user.accountDisabled && (user.studioOwner === true || (!scoped && process.env.ADMIN_EMAIL && user.email?.trim().toLowerCase() === process.env.ADMIN_EMAIL.trim().toLowerCase())));
 }
 async function assertOwner(userId) { if (!await isOwner(userId)) throw fail('Only the studio owner can change security, accounts or recovery settings.'); }
 async function assertPermission(userId, action) {
@@ -26,6 +26,7 @@ function sessionExpired(row, config, now = Date.now()) {
 }
 function createSessionVerifier({ Session = require('../models/AdminSession'), getConfig = () => module.exports.securityConfig(), now = Date.now } = {}) {
   return async function verifySession({ token, decoded, user, userAgent = '', touch = true }) {
+    if (user.accountDisabled) throw fail('This account is disabled. Ask the studio owner to set a new password.', 401);
     if (user.role !== 'admin') return null;
     const config = await getConfig(), stamp = now(), hash = tokenHash(token);
     let row = await Session.findOne({ tokenHash: hash });
@@ -46,7 +47,7 @@ function createSessionVerifier({ Session = require('../models/AdminSession'), ge
 async function openSession(user, req, sign, secret) {
   const Session = require('../models/AdminSession'), mongoose = require('mongoose');
   const saved = await require('../models/User').findById(user._id || user.id).select('+sessionVersion');
-  if (!saved || saved.role !== 'admin' || saved.password !== user.password) throw fail('Account access has changed. Sign in again.', 401);
+  if (!saved || saved.accountDisabled || saved.role !== 'admin' || saved.password !== user.password) throw fail('Account access has changed. Sign in again.', 401);
   const config = await securityConfig(), now = new Date(), id = new mongoose.Types.ObjectId();
   const token = sign({ user: { id: String(user._id || user.id), role: user.role }, sid: String(id) }, secret, { expiresIn: config.absoluteSessionHours * 3600 });
   await Session.create({ _id: id, tokenHash: tokenHash(token), user: user._id || user.id, version: saved.sessionVersion || 0, userAgent: String(req.headers?.['user-agent'] || 'Unknown browser').slice(0, 300), createdAt: now, lastSeenAt: now, expiresAt: new Date(now.getTime() + config.absoluteSessionHours * 3600000) });

@@ -1,3 +1,4 @@
+require('node:test').beforeEach(t => t.mock.method(require('../services/studioArchiveGate'), 'withShared', work => work()));
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { calendarConnection, createCalendarSyncHandler } = require('../utils/calendarConnection');

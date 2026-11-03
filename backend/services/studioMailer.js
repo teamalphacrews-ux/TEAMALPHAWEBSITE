@@ -44,7 +44,7 @@ function frontendOrigin() {
     throw failure("FRONTEND_URL must use HTTPS.");
   return parsed.origin;
 }
-async function sendStudioMail({ to, subject, text, html, cc, messageId }) {
+async function sendStudioMailUnlocked({ to, subject, text, html, cc, messageId }) {
   if (!mailerReady())
     throw failure(
       "Studio email sending is not set up yet. Share the document link or finish outgoing email setup in Settings → Email & messages.",
@@ -93,5 +93,8 @@ async function sendStudioMail({ to, subject, text, html, cc, messageId }) {
   } finally {
     transport.close();
   }
+}
+function sendStudioMail(values) {
+  return require('./studioArchiveGate').withShared(() => sendStudioMailUnlocked(values), { integrations: true, rejectPaused: true });
 }
 module.exports = { mailerReady, frontendOrigin, sendStudioMail, escapeHtml };

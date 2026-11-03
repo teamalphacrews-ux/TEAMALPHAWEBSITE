@@ -1,7 +1,7 @@
 const { currentWorkspace } = require('./tenantContext');
 
 const installations = new WeakMap();
-const GLOBAL_MODELS = new Set(['SaaSAccount', 'SaaSWorkspace', 'SaaSMembership', 'SaaSInvitation', 'SaaSBillingEvent', 'SaaSOAuthFlow', 'StudioPushDevice']);
+const GLOBAL_MODELS = new Set(['SaaSAccount', 'SaaSWorkspace', 'SaaSMembership', 'SaaSInvitation', 'SaaSBillingEvent', 'SaaSOAuthFlow', 'StudioPushDevice', 'StudioArchiveState']);
 
 /**
  * Queries and documents use a real Mongoose connection for their workspace.

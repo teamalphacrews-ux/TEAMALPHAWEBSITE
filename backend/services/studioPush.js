@@ -41,7 +41,7 @@ function quietNow(prefs,now,studioZone='Asia/Kolkata'){
  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(now),m=Number(parts.find(p=>p.type==='hour').value)*60+Number(parts.find(p=>p.type==='minute').value);return start<end?m>=start&&m<end:m>=start||m<end;
 }
 function payloadFor(note,device,prefs={}){return{aps:{alert:{title:'Studio OS',body:'You have new studio activity. Open the app to view it.'},category:'STUDIO_ACTIVITY',...(prefs.notificationSound===true&&prefs.notificationVolume!==0?{sound:'default'}:{})},studio:{path:pushDestination(note.link),workspaceKey:device.workspaceKey,userId:device.userId,notificationId:String(note._id)}};}
-async function deliverNotification(note){
+async function deliverNotificationUnlocked(note){
  if(!pushConfigured()||!note?._id||note.isRead)return;
  const Device=require('../models/StudioPushDevice'),{currentWorkspace}=require('../saas/tenantContext'),workspace=currentWorkspace(),workspaceKey=workspace?String(workspace._id):'legacy',db=note.constructor.db;
  const User=db.model('User'),Session=db.model('AdminSession'),Config=db.model('StudioConfig');
@@ -49,8 +49,8 @@ async function deliverNotification(note){
  const devices=await Device.find({workspaceKey,enabled:true,expiresAt:{$gt:now},lastNotificationId:{$ne:String(note._id)}}).select('+encryptedToken').limit(100);
  for(const device of devices){
   try{
-   const[user,session]=await Promise.all([User.findById(device.userId).select('role email studioOwner moduleAccess studioPreferences +sessionVersion'),Session.findById(device.sessionId)]);
-   if(!user||!require('../utils/moduleAccess').hasFullAccess(user)||!session||String(session.user)!==device.userId||session.version!==(user.sessionVersion||0)||require('./studioSecurity').sessionExpired(session,security,now.getTime())){await Device.updateOne({_id:device._id,sessionId:device.sessionId},{$set:{enabled:false}});continue;}
+   const[user,session]=await Promise.all([User.findById(device.userId).select('role email studioOwner moduleAccess accountDisabled studioPreferences +sessionVersion'),Session.findById(device.sessionId)]);
+   if(!user||user.accountDisabled||!require('../utils/moduleAccess').hasFullAccess(user)||!session||String(session.user)!==device.userId||session.version!==(user.sessionVersion||0)||require('./studioSecurity').sessionExpired(session,security,now.getTime())){await Device.updateOne({_id:device._id,sessionId:device.sessionId},{$set:{enabled:false}});continue;}
    if(workspace){const registry=require('../saas/models');const member=await registry.Membership.findOne({workspaceId:workspace._id,localUserId:device.userId,state:'active'});if(!member||!await registry.Account.exists({_id:member.accountId,state:'active'}))continue;}
    const prefs=user.studioPreferences||{};if((Array.isArray(prefs.notificationCategories)&&!prefs.notificationCategories.includes(notificationCategory(note)))||quietNow(prefs,now,config?.timezone))continue;
    const claimed=await Device.updateOne({_id:device._id,enabled:true,sessionId:device.sessionId,lastNotificationId:{$ne:String(note._id)}},{$set:{lastNotificationId:String(note._id)}});if(!claimed.modifiedCount)continue;
@@ -58,5 +58,9 @@ async function deliverNotification(note){
    if(result.invalid)await Device.updateOne({_id:device._id,sessionId:device.sessionId},{$set:{enabled:false}});
   }catch{/* Saved in-app activity remains available if push delivery fails. */}
  }
+}
+function deliverNotification(note) {
+ if(!pushConfigured()||!note?._id||note.isRead)return Promise.resolve();
+ return require('./studioArchiveGate').withShared(()=>deliverNotificationUnlocked(note),{integrations:true});
 }
 module.exports={pushConfigured,configuration,sealToken,unsealToken,providerToken,sendAPNs,notificationCategory,quietNow,payloadFor,deliverNotification};

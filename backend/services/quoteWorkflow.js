@@ -399,7 +399,7 @@ async function runQuoteDeliveryJobs() {
 }
 function startQuoteWorker() {
   const tick = () =>
-    require('../saas/workers').forEachWorkspace(() => runQuoteDeliveryJobs()).catch(() =>
+    require('../saas/workers').forEachWorkspace(() => require('./studioArchiveGate').withShared(() => runQuoteDeliveryJobs(), { integrations: true })).catch(() =>
       console.error("Quotation delivery worker is temporarily unavailable."),
     );
   tick();

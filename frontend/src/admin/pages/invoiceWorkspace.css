@@ -1030,7 +1030,7 @@
   }
 }
 @media print {
-  body > * {
+  body:has(.invoice-public) > * {
     visibility: hidden;
   }
   .invoice-public,

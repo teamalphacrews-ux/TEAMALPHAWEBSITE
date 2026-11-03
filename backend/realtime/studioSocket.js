@@ -14,16 +14,16 @@ function createSocketAuth({ User, getSecret = () => process.env.JWT_SECRET, veri
             if (decoded.workspaceId) return next(new Error('Use your studio workspace connection'));
             if (!decoded.user || typeof decoded.user.id !== 'string') return next(new Error('Invalid authentication'));
             if (!validRoomId(decoded.user.id)) return next(new Error('Invalid authentication'));
-            const user = await User.findById(decoded.user.id).select('_id role email studioOwner moduleAccess +sessionVersion');
-            if (!user) return next(new Error('Invalid authentication'));
+            const user = await User.findById(decoded.user.id).select('_id role email studioOwner moduleAccess accountDisabled +sessionVersion');
+            if (!user || user.accountDisabled) return next(new Error('Invalid authentication'));
             if (user.role === 'admin' && !require('../utils/moduleAccess').hasFullAccess(user)) return next(new Error('Realtime is unavailable for restricted accounts'));
             const session = await verifySession({ token, decoded, user, touch: false });
             if (session) socket.sessionId = String(session._id);
             // Read the current database role so revoked access takes effect on reconnect.
             socket.user = { id: String(user._id), role: user.role };
             socket.revalidateSession = async () => {
-                const current = await User.findById(decoded.user.id).select('_id role email studioOwner moduleAccess +sessionVersion');
-                if (!current || current.role !== socket.user.role || (current.role === 'admin' && !require('../utils/moduleAccess').hasFullAccess(current))) throw new Error('Access changed');
+                const current = await User.findById(decoded.user.id).select('_id role email studioOwner moduleAccess accountDisabled +sessionVersion');
+                if (!current || current.accountDisabled || current.role !== socket.user.role || (current.role === 'admin' && !require('../utils/moduleAccess').hasFullAccess(current))) throw new Error('Access changed');
                 await verifySession({ token, decoded, user: current, touch: false });
             };
             return next();
@@ -33,7 +33,7 @@ function createSocketAuth({ User, getSecret = () => process.env.JWT_SECRET, veri
     };
 }
 
-function registerStudioSockets(io, { User, Message, ChatRoom, onlineUsers }) {
+function registerStudioSockets(io, { User, Message, ChatRoom, onlineUsers, archiveGate = require('../services/studioArchiveGate') }) {
     io.use(createSocketAuth({ User }));
     const adminIds = async () => ['admin', 'hardcoded-admin-id', ...(await User.find({ role: 'admin' }, '_id')).map(user => String(user._id))];
     const emitRoomUpdate = (roomId, room) => io.to('admin').to(roomId).emit('room_updated', {
@@ -69,7 +69,7 @@ function registerStudioSockets(io, { User, Message, ChatRoom, onlineUsers }) {
             });
         }
 
-        socket.on('message_delivered', async (data = {}) => {
+        socket.on('message_delivered', (data = {}) => archiveGate.withShared(async () => {
             try {
                 if (!validRoomId(data.messageId)) return;
                 const message = await Message.findById(data.messageId);
@@ -81,9 +81,9 @@ function registerStudioSockets(io, { User, Message, ChatRoom, onlineUsers }) {
                     { $set: { status: 'delivered' } }, { new: true });
                 if (updated) io.to(String(message.sender)).emit('message_status_update', { messageId: message._id, status: 'delivered' });
             } catch (error) { console.error('Socket delivery update failed:', error.name); }
-        });
+        }).catch(() => socket.disconnect?.(true)));
 
-        socket.on('mark_read', async (data = {}) => {
+        socket.on('mark_read', (data = {}) => archiveGate.withShared(async () => {
             try {
                 const roomId = isAdmin(user) ? data.roomId : user.id;
                 if (!canJoinRoom(user, roomId) || roomId === 'admin') return;
@@ -98,7 +98,7 @@ function registerStudioSockets(io, { User, Message, ChatRoom, onlineUsers }) {
                 emitRoomUpdate(roomId, room);
                 socket.to(roomId).to('admin').emit('chat_seen', { chatId: roomId });
             } catch (error) { console.error('Socket read update failed:', error.name); }
-        });
+        }).catch(() => socket.disconnect?.(true)));
 
         socket.on('chat_seen', data => {
             const roomId = typeof data === 'string' ? data : data?.chatId;

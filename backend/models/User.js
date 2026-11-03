@@ -20,6 +20,8 @@ const UserSchema = new mongoose.Schema({
     studioOwner: { type: Boolean, default: false },
     moduleAccess: { type: [String], enum: require('../utils/moduleAccess').MODULE_IDS, default: null, validate: value => value === null || (Array.isArray(value) && new Set(value).size === value.length) },
     sessionVersion: { type: Number, default: 0, select: false },
+    accountDisabled: { type: Boolean, default: false },
+    workspaceDataVersion: { type: Number, default: 0, min: 0 },
     studioPreferences: {
       type: new mongoose.Schema({ layoutVersion: { type: Number, default: 1, min: 1, max: 3 }, theme: { type: String, enum: ['light', 'dark', 'system'], default: 'light' }, reduceMotion: { type: Boolean, default: false }, landingPage: { type: String, enum: preferences.LANDING_PAGES, default: '/admin' }, visibleCards: { type: [String], default: () => [...preferences.CARD_IDS] }, cardOrder: { type: [String], default: () => [...preferences.DEFAULT_CARD_ORDER] }, ...personalPreferenceFields }, { _id: false }),
       default: () => require('../utils/studioPreferences').defaults(),

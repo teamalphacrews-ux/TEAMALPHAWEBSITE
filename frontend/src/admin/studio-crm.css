@@ -114,7 +114,9 @@
 .studio-crm-crew-list { display: flex; flex-direction: column; gap: 12px; }
 .studio-crm-crew-member { display: flex; align-items: center; gap: 10px; }
 .studio-crm-crew-member strong { font-size: 12px; font-weight: 400; flex: 1; color: var(--studio-text); }
-.studio-crm-assign { display: flex; gap: 8px; margin-top: 20px; }
+.studio-crm-assign { display: flex; align-items:center; gap: 8px; margin-top: 20px; }
+.studio-crm-assign>.studio-select{flex:1;min-width:0}
+.studio-crm-assign>.studio-button{min-height:44px;flex-shrink:0;margin:0}
 .studio-crm-assign select { min-width: 0; }
 .studio-crm-card-footer { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 15px; margin-top: 14px; }
 .studio-crm-payment-value { font-family: Georgia, 'Times New Roman', serif; font-size: 30px; color: var(--brand-ink); margin-top: 20px; }

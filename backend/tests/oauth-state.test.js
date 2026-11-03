@@ -174,6 +174,7 @@ test("opaque handoffs expire and can be exchanged once, with no raw tokens store
   assert.match(ticket, /^[a-f0-9]{64}$/);
   assert.notEqual([...f.records.keys()][0], ticket);
   const flow = await f.service.begin(ticket);
+  assert.equal(flow.userId, adminId);
   await assert.rejects(f.service.begin(ticket), { status: 400 });
   assert.match(flow.state, /^[a-f0-9]{64}$/);
   assert.notEqual(flow.state, flow.browser);
