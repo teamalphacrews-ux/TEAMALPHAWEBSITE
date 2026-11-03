@@ -1,10 +1,10 @@
-import { LayoutDashboard, UsersRound, Wallet, CalendarDays, MessageSquare, Bell, Folder, Clapperboard, Webhook, FileText, HardDrive, UserRound, Mail, MessageCircle, Layers3 } from 'lucide-react';
+import { LayoutDashboard, UsersRound, Wallet, CalendarDays, MessageSquare, Bell, Folder, Clapperboard, Webhook, FileText, ReceiptText, HardDrive, UserRound, Mail, MessageCircle, Layers3 } from 'lucide-react';
 import { SAAS_RELEASE_ENABLED } from '../../../saas/release';
 
 export const workspaceIconTones = {
   '/admin': 'blue', '/admin/crm': 'cyan', '/admin/studio-projects': 'indigo',
   '/admin/quotations': 'amber', '/admin/contacts': 'slate', '/admin/calendar': 'rose',
-  '/admin/finance': 'green', '/admin/quote-templates': 'amber', '/admin/projects': 'indigo',
+  '/admin/finance': 'green', '/admin/invoices': 'green', '/admin/quote-templates': 'amber', '/admin/projects': 'indigo',
   '/admin/crew': 'cyan', '/admin/post-production': 'violet', '/admin/data': 'slate',
   '/admin/chats': 'blue', '/admin/activity-log': 'rose', '/admin/integrations': 'violet',
   '/admin/settings': 'slate', '/admin/users': 'cyan',
@@ -16,6 +16,7 @@ export const workspacePrimaryItems = [
   { name: "Enquiries", path: "/admin/crm", icon: MessageSquare },
   { name: "Projects", path: "/admin/studio-projects", icon: Folder },
   { name: "Quotations", path: "/admin/quotations", icon: FileText },
+  { name: "Invoices", path: "/admin/invoices", icon: ReceiptText },
   { name: "Contacts", path: "/admin/contacts", icon: UserRound },
   { name: "Calendar", path: "/admin/calendar", icon: CalendarDays },
   { name: "Shoot day", path: "/admin/shoot-day", icon: CalendarDays },

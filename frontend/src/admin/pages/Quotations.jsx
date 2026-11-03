@@ -1,3 +1,5 @@
+import { useAuth } from '../../context/AuthContext';
+import { hasModuleAccess, hasFullModuleAccess } from '../../utils/moduleAccess';
 import StudioButton from '../components/common/StudioButton';
 import StudioSelect from '../components/common/StudioSelect';
 import DocumentSettingsPanel from '../components/common/DocumentSettingsPanel';
@@ -140,17 +142,19 @@ function Toggle({ label, checked, onChange, help }) {
   );
 }
 export default function Quotations() {
+  const { user } = useAuth();
+  const fullAccess = hasFullModuleAccess(user);
   const [searchParams, setSearchParams] = useSearchParams(),
     location = useLocation();
-  const mail = useWorkspaceData(['/api/studio/email/status']);
+  const mail = useWorkspaceData([hasModuleAccess(user, 'email') ? '/api/studio/email/status' : null]);
   const emailConfigured = mail.data[0]?.configured === true;
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/studio/quotations",
-    "/api/leads",
+    hasModuleAccess(user, 'enquiries') ? '/api/leads' : null,
     "/api/studio/settings",
     "/api/studio/quote-templates",
-    "/api/contacts",
-    "/api/studio-projects",
+    hasModuleAccess(user, 'contacts') ? '/api/contacts' : null,
+    hasModuleAccess(user, 'projects') ? '/api/studio-projects' : null,
   ]);
   const [
     quotes = [],
@@ -252,7 +256,7 @@ export default function Quotations() {
       try {
         const result = await workspaceRequest(record ? "put" : "post",
           `/api/studio/quotations${record ? "/" + record._id : ""}`,
-          { ...snapshot, status: snapshot.status === "Sent" ? "Draft" : snapshot.status, revision: record?.revision });
+          { ...snapshot, autoCreateInvoice: hasModuleAccess(user, 'invoices') && snapshot.autoCreateInvoice, status: snapshot.status === "Sent" ? "Draft" : snapshot.status, revision: record?.revision });
         if (generation !== generationRef.current) throw stale();
         lastSavedVersion.current = version;
         if (!record) {
@@ -300,6 +304,7 @@ export default function Quotations() {
       }, 1100);
   };
   const setDraft = (value) => {
+    if (!hasModuleAccess(user, 'invoices')) value = { ...value, autoCreateInvoice: false };
     setBusy(false);
     versionRef.current++;
     lastSavedVersion.current = -1;
@@ -353,6 +358,7 @@ export default function Quotations() {
     change("items", a);
   };
   const act = async (action) => {
+    if (action === 'share' && !fullAccess) return;
     const generation = generationRef.current;
     setBusy(true);
     setSaveError("");
@@ -394,6 +400,7 @@ export default function Quotations() {
     }
   };
   const openClientLink = async () => {
+    if (!fullAccess) return;
     if (busy) return;
     const quote = currentRef.current;
     if (!quote?.acceptedAt && quote?.status !== "Accepted") {
@@ -426,6 +433,7 @@ export default function Quotations() {
     }
   };
   const prepareSend = async () => {
+    if (!fullAccess) return;
     const generation = generationRef.current;
     try {
       const q =
@@ -444,6 +452,7 @@ export default function Quotations() {
     }
   };
   const send = async (schedule) => {
+    if (!fullAccess) return;
     if (!emailConfigured) { setSaveError('Studio email sending is not set up. Use Share client link, or review Email & messages in Settings.'); return; }
     setBusy(true);
     setSaveError("");
@@ -471,6 +480,7 @@ export default function Quotations() {
     }
   };
   const manageClientLink = async regenerate => {
+    if (!fullAccess) return;
     if (!current?._id || busy) return;
     if (dirty) { setSaveError('Save and share the revised quote before managing its smart client link.'); return; }
     setBusy(true);
@@ -483,7 +493,7 @@ export default function Quotations() {
     } catch (error) { setSaveError(recordError(error)); }
     finally { setBusy(false); setActionMenu(false); }
   };
-  const actionItems = () => (
+  const actionItems = () => fullAccess && (
     <>
       {!current?.acceptedAt && current?.status !== "Accepted" && (
         <button
@@ -515,7 +525,7 @@ export default function Quotations() {
         Link to project
       </button>
       <button onClick={() => act("duplicate")}>Duplicate</button>
-      {['Sent', 'Accepted'].includes(current?.status) && <>
+      {fullAccess && ['Sent', 'Accepted'].includes(current?.status) && <>
         <button onClick={() => manageClientLink(false)}>Revoke smart client link</button>
         <button onClick={() => manageClientLink(true)}>Regenerate smart client link</button>
       </>}
@@ -875,10 +885,10 @@ export default function Quotations() {
             </span>
             <span className="qw-save-state">{busy ? "Saving…" : savedAt}</span>
             <div className="qw-header-actions qw-quotation-toolbar" data-layout={mode === "detail" && current?.invoiceId ? "with-invoice" : mode}>
-              <WorkspaceActionMenu label="Actions" className="qw-menu" menuClassName="qw-dropdown" open={actionMenu} onOpenChange={setActionMenu} disabled={busy}>
+              {fullAccess && <WorkspaceActionMenu label="Actions" className="qw-menu" menuClassName="qw-dropdown" open={actionMenu} onOpenChange={setActionMenu} disabled={busy}>
                 {mode === "editor" && <><button className="studio-phone-menu-action" onClick={() => { setActionMenu(false); setDesignOpen(!designOpen); }}>Edit design</button><button className="studio-phone-menu-action" onClick={() => { setActionMenu(false); preview(); }}>Preview</button></>}
                 {actionItems()}
-              </WorkspaceActionMenu>
+              </WorkspaceActionMenu>}
               {mode === "editor" ? (
                 <>
                   <button className="studio-desktop-toolbar-action" onClick={() => setDesignOpen(!designOpen)}>
@@ -886,8 +896,8 @@ export default function Quotations() {
                   </button>
                   <button className="studio-desktop-toolbar-action" onClick={preview}>Preview</button>
                   <StudioButton type="button" icon={Save} onClick={() => saveDraft().catch(() => {})} disabled={busy} loadingLabel="Saving quotation">Save</StudioButton>
-                  <StudioButton type="button" icon={Mail} disabled={busy} onClick={prepareSend} loadingLabel="Preparing quotation email">Email quote</StudioButton>
-                  <StudioButton type="button" variant="primary" className="qw-primary" icon={Link2} disabled={busy} onClick={openClientLink} loadingLabel="Preparing client link">Share client link</StudioButton>
+                  {fullAccess && <StudioButton type="button" icon={Mail} disabled={busy} onClick={prepareSend} loadingLabel="Preparing quotation email">Email quote</StudioButton>}
+                  {fullAccess && <StudioButton type="button" variant="primary" className="qw-primary" icon={Link2} disabled={busy} onClick={openClientLink} loadingLabel="Preparing client link">Share client link</StudioButton>}
                 </>
               ) : (
                 <>
@@ -903,7 +913,7 @@ export default function Quotations() {
                     </button>
                   )}
                   <button onClick={preview}>View quote</button>
-                  {current?.invoiceId && (
+                  {hasModuleAccess(user, 'invoices') && current?.invoiceId && (
                     <Link
                       className="qw-primary"
                       to={`/admin/invoices/${current.invoiceId}`}
@@ -911,9 +921,9 @@ export default function Quotations() {
                       View invoice
                     </Link>
                   )}
-                  <button className={current?.invoiceId ? "qw-button" : "qw-primary"} disabled={busy} onClick={openClientLink}>
+                  {fullAccess && <button className={current?.invoiceId ? "qw-button" : "qw-primary"} disabled={busy} onClick={openClientLink}>
                     Smart client link
-                  </button>
+                  </button>}
                 </>
               )}
             </div>
@@ -945,12 +955,12 @@ export default function Quotations() {
                   </button>
                 </div>
                 <h3>Settings</h3>
-                <Toggle
+{hasModuleAccess(user, 'invoices') && <Toggle
                   label="Auto create invoice"
                   checked={form.autoCreateInvoice}
                   onChange={(v) => change("autoCreateInvoice", v)}
                   help="Automatically generate a draft invoice once the quote is accepted."
-                />
+                />}
                 <Toggle
                   label="Document Expiry"
                   checked={form.expiryEnabled}

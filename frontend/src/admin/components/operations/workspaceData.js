@@ -5,7 +5,7 @@ export const workspaceRequest = async (method, path, data) =>
   (await axios({ method, url: operationAPI + path, data, ...operationAuth() }))
     .data;
 export function useWorkspaceData(paths) {
-  const key = paths.join("|");
+  const key = paths.map(path => path || "").join("|");
   const [data, setData] = useState([]),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
@@ -13,7 +13,7 @@ export function useWorkspaceData(paths) {
   const fetchData = useCallback(() => {
     const id = ++sequence.current;
     return Promise.all(
-      key.split("|").map((path) => workspaceRequest("get", path)),
+      key.split("|").map((path) => path ? workspaceRequest("get", path) : Promise.resolve([])),
     )
       .then((result) => {
         if (id === sequence.current) {

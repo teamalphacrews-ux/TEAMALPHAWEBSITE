@@ -1,3 +1,5 @@
+import { useAuth } from '../../context/AuthContext';
+import { hasModuleAccess } from '../../utils/moduleAccess';
 import StudioSelect from '../components/common/StudioSelect';
 import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -43,14 +45,16 @@ import {useStudioIdentity} from '../../utils/studioIdentity';
 import {formatWorkspaceDate} from '../../utils/workspaceLocale';
 export default function StudioProjectDetail(){const {id}=useParams();return <StudioProjectWorkspace key={id} id={id}/>;}
 function StudioProjectWorkspace({id}){
+ const { user } = useAuth();
  const navigate=useNavigate(),[sectionParams,setSectionParams]=useSearchParams();
- const tab=['documents','payments','crew','delivery'].includes(sectionParams.get('tab'))?sectionParams.get('tab'):'overview';
+ const tabs=[['overview','Overview'], ...(hasModuleAccess(user,'quotations') || hasModuleAccess(user,'invoices') || hasModuleAccess(user,'contacts') ? [['documents','Documents']] : []), ...(hasModuleAccess(user,'finance') && hasModuleAccess(user,'invoices') ? [['payments','Payments']] : []), ...(hasModuleAccess(user,'crew') ? [['crew','Crew']] : []), ...(hasModuleAccess(user,'production') ? [['delivery','Delivery']] : [])];
+ const tab=tabs.some(([value])=>value===sectionParams.get('tab'))?sectionParams.get('tab'):'overview';
  const setTab=value=>setSectionParams(previous=>{const next=new URLSearchParams(previous);if(value==='overview')next.delete('tab');else next.set('tab',value);return next;},{replace:true});
  const {preferences}=useStudioPreferences(),{identity}=useStudioIdentity();
  const recordDate=value=>formatWorkspaceDate(value,preferences,identity?.timezone);
   const { data, loading, error, reload } = useWorkspaceData([
       "/api/studio-projects/" + id,
-      "/api/contacts",
+      hasModuleAccess(user, 'contacts') ? '/api/contacts' : null,
     ]),
     [detail, contacts = []] = data;
   const [editing, setEditing] = useState(false),
@@ -81,7 +85,7 @@ function StudioProjectWorkspace({id}){
       sessions = [],
       documents = [],
     } = detail,
-    contact = project.contactId;
+    contact = project.contactId || { _id: '', firstName: 'Client', lastName: '' };
   if (!contact)
     return (
       <WorkspaceError
@@ -136,6 +140,7 @@ function StudioProjectWorkspace({id}){
       setBusy(false);
     }
   };
+  const actionModules = { Invoice: 'invoices', Contract: 'contacts', Questionnaire: 'contacts', Quote: 'quotations' };
   const actions = [
     {
       label: "Invoice",
@@ -166,7 +171,7 @@ function StudioProjectWorkspace({id}){
     <div className="reference-workspace project-hub">
       <div className="reference-heading">
         <Link
-          to={`/admin/contacts/${contact._id}`}
+          to={hasModuleAccess(user, 'contacts') && contact._id ? `/admin/contacts/${contact._id}` : '/admin/studio-projects'}
           className="reference-back"
           aria-label="Back to client"
         >
@@ -207,7 +212,7 @@ function StudioProjectWorkspace({id}){
         /></div>
       </div>
       <WorkspaceError error={error} retry={reload} />
-      <nav className="project-hub-tabs" aria-label="Project sections">{[['overview','Overview'],['documents','Documents'],['payments','Payments'],['crew','Crew'],['delivery','Delivery']].map(([value,label])=><button type="button" key={value} aria-pressed={tab===value} onClick={()=>setTab(value)}>{label}</button>)}</nav>
+      <nav className="project-hub-tabs" aria-label="Project sections">{tabs.map(([value,label])=><button type="button" key={value} aria-pressed={tab===value} onClick={()=>setTab(value)}>{label}</button>)}</nav>
       <div className={'reference-detail-grid project'+(tab==='overview'?'':' project-hub-wide')}>
         <main>
           {tab==='overview'&&<ProjectOverview detail={detail} onTab={setTab}/>}
@@ -222,7 +227,7 @@ function StudioProjectWorkspace({id}){
             )}
             <p className="reference-group-label">Send documents</p>
             <div className="reference-action-list">
-              {actions.map((option) => {
+              {actions.filter(option => hasModuleAccess(user, actionModules[option.label])).map((option) => {
                 const Icon = option.icon;
                 return (
                   <button key={option.label} onClick={option.action}>
@@ -237,7 +242,7 @@ function StudioProjectWorkspace({id}){
                 );
               })}
             </div>
-            <p className="reference-group-label">Schedule sessions</p>
+            {hasModuleAccess(user,'calendar') && <><p className="reference-group-label">Schedule sessions</p>
             <div className="reference-action-list">
               <button onClick={() => navigate("/admin/calendar?" + query)}>
                 <span className="reference-action-icon">
@@ -249,8 +254,8 @@ function StudioProjectWorkspace({id}){
                 </span>
               </button>
             </div>
-            {sessions.length > 0 && <ContactSessions sessions={sessions} />}
-            <p className="reference-group-label">Conversations</p>
+            {sessions.length > 0 && <ContactSessions sessions={sessions} />}</>}
+            {hasModuleAccess(user,'contacts') && <><p className="reference-group-label">Conversations</p>
             <div className="reference-action-list">
               <button onClick={() => openDocument("Message")}>
                 <span className="reference-action-icon">
@@ -267,7 +272,7 @@ function StudioProjectWorkspace({id}){
                 documents={documents}
                 onDraft={openDocument}
               />
-            )}
+            )}</>}
           </ReferenceSection>}
           {tab==='payments'&&<ReferenceSection title="Payments">
             <ContactPaymentSummary invoices={invoices}/><ContactPayments invoices={invoices}/>
@@ -288,7 +293,7 @@ function StudioProjectWorkspace({id}){
               <dt>Primary Client</dt>
               <dd>
                 <Link
-                  to={`/admin/contacts/${contact._id}`}
+                  to={hasModuleAccess(user, 'contacts') && contact._id ? `/admin/contacts/${contact._id}` : '/admin/studio-projects'}
                   className="reference-green-link"
                 >
                   {contact.firstName} {contact.lastName}
@@ -303,7 +308,7 @@ function StudioProjectWorkspace({id}){
                       <Link
                         className="reference-green-link reference-address-line"
                         key={client._id}
-                        to={`/admin/contacts/${client._id}`}
+                        to={hasModuleAccess(user, 'contacts') ? `/admin/contacts/${client._id}` : '/admin/studio-projects'}
                       >
                         {client.firstName} {client.lastName}
                       </Link>

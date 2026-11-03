@@ -10,6 +10,7 @@ const Invoice = require("../models/Invoice");
 const auth = require("../middleware/auth");
 const requireAdmin = require("../middleware/requireAdmin");
 const validate = require("../utils/studioRecords");
+const modules = require('../utils/moduleAccess');
 const router = express.Router();
 router.use(auth, requireAdmin);
 const wrap = (fn) => async (req, res) => {
@@ -69,13 +70,13 @@ router.get(
   "/finance",
   wrap(async (req, res) => {
     const [leads, invoices, entries] = await Promise.all([
-      Lead.find()
+      modules.hasModule(req.user,'enquiries') ? Lead.find()
         .select("name status totalAmount depositAmount paymentStatus eventDate")
-        .lean(),
-      Invoice.find()
+        .lean() : [],
+      modules.hasModule(req.user,'invoices') ? Invoice.find()
         .select("clientName invoiceDate total advancePaid status documentStatus dueDate paymentScheduleEnabled paymentSchedule currency")
         .sort({ invoiceDate: -1 })
-        .lean(),
+        .lean() : [],
       Finance.find().sort({ date: -1 }).lean(),
     ]);
     res.json({ leads, invoices, entries });
@@ -129,9 +130,18 @@ router.put(
   wrap(async (req, res) => {
     if (req.body?.security !== undefined || req.body?.backups !== undefined)
       await require('../services/studioSecurity').assertOwner(req.user.id);
+    const modules = require('../utils/moduleAccess');
+    let values;
+    if (!modules.hasFullAccess(req.user)) {
+      const allowed = new Set(['studioName','legalName','gstin','profilePhotoUrl','logoUrl','whatsappNumber','whatsappMessage','instagramUrl','facebookUrl','email','phone','website','address','coverImage','colorTheme','fontTheme']);
+      if (!req.body || Object.keys(req.body).some(key => !allowed.has(key))) return res.status(403).json({ error: 'Scoped settings access can change studio profile and branding only.' });
+      const existing = await StudioConfig.findOne({ key: 'studio' }) || new StudioConfig();
+      const parsed = validate.settings({ ...(existing.toObject?.() || existing), ...req.body });
+      values = Object.fromEntries(Object.entries(parsed).filter(([key]) => Object.hasOwn(req.body, key)));
+    } else values = validate.settings(req.body);
     res.json(await StudioConfig.findOneAndUpdate(
         { key: "studio" },
-        { $set: validate.settings(req.body) },
+        { $set: values },
         { upsert: true, new: true, runValidators: true },
       ));
   }),
@@ -215,6 +225,7 @@ router.post(
         ),
         { status: 400 },
       );
+    if (!require('../utils/moduleAccess').hasModule(req.user, 'invoices')) values.autoCreateInvoice = false;
     await require("./quoteWorkflowRoutes").references(values);
     const documentNumber = values.documentNumber || await require("../services/documentNumbering").nextDocumentNumber("quotation", studio, values.issueDate, Quotation);
     const quote = await Quotation.create({
@@ -248,6 +259,7 @@ router.put(
         ),
         { status: 400 },
       );
+    if (!require('../utils/moduleAccess').hasModule(req.user, 'invoices')) values.autoCreateInvoice = false;
     await require("./quoteWorkflowRoutes").references(values);
     // Atomic revision guard prevents one editor from overwriting another's saved proposal.
     if (!Number.isSafeInteger(req.body.revision))

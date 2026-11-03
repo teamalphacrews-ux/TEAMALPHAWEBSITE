@@ -6,6 +6,20 @@ const id = '507f1f77bcf86cd799439011';
 const session = { token: 'synthetic-session', user: { id, role: 'admin', firstName: 'Old name', workspace: { id: 'workspace-a' } } };
 const response = (status, profile) => ({ status, ok: status >= 200 && status < 300, json: async () => profile });
 
+test('verified module grants replace stale cached access and owner flags', async () => {
+  const cached = { ...session, user: { ...session.user, moduleAccess: null, studioOwner: true, owner: true, canManageTeam: true } };
+  const grants = ['projects'];
+  const result = await verifyStoredSession(cached, { fetcher: async () => response(200, { _id: id, role: 'admin', moduleAccess: grants, studioOwner: false, canManageTeam: false }) });
+  assert.deepEqual(result.user.moduleAccess, ['projects']);
+  assert.notEqual(result.user.moduleAccess, grants);
+  assert.equal(result.user.studioOwner, false);
+  assert.equal(result.user.owner, undefined);
+  assert.equal(result.user.canManageTeam, false);
+  assert.equal(cached.user.studioOwner, true);
+  const malformed = await verifyStoredSession(session, { fetcher: async () => response(200, { _id: id, role: 'admin', moduleAccess: 'finance' }) });
+  assert.deepEqual(malformed.user.moduleAccess, []);
+});
+
 test('session verification preserves workspace context and stores only verified public identity fields', async () => {
   let sent;
   const result = await verifyStoredSession(session, { api: 'https://api.example.test', fetcher: async (url, options) => {

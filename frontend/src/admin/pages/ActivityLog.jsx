@@ -4,6 +4,8 @@ import { Bell, Check, CheckCheck, Clock, RefreshCw, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns';
 import { WorkspaceDialog, WorkspaceEmpty, WorkspaceError, WorkspaceHeader } from '../components/operations/WorkspaceUI';
 import API from '../../utils/apiConfig';
+import { useAuth } from '../../context/AuthContext';
+import { hasFullModuleAccess } from '../../utils/moduleAccess';
 import './studioSettings.css';
 
 const timeLabel = value => {
@@ -11,6 +13,10 @@ const timeLabel = value => {
   return Number.isNaN(date.getTime()) ? 'Time unavailable' : formatDistanceToNow(date, { addSuffix: true });
 };
 export default function ActivityLog() {
+  const { user } = useAuth();
+  return hasFullModuleAccess(user) ? <FullActivityLog /> : <div><WorkspaceHeader title="Studio activity" description="Studio-wide activity is available to full workspace administrators." /><section className="studio-card"><p className="studio-muted">Open your assigned modules for their current records and updates.</p></section></div>;
+}
+function FullActivityLog() {
   const [notifications, setNotifications] = useState([]), [loading, setLoading] = useState(true), [error, setError] = useState(''), [busy, setBusy] = useState(''), [confirmClear, setConfirmClear] = useState(false);
   const request = useCallback((method, path, data, signal) => axios({ method, url: API + '/api/notifications' + path, data, signal, headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } }), []);
   const load = useCallback(signal => request('get', '', undefined, signal)

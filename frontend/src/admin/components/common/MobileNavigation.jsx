@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { canAccessStudioPath } from '../../../utils/moduleAccess';
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, MessageSquare, CalendarDays, Wallet, Folder, Grid2X2 } from 'lucide-react';
 import { useStudioPreferences } from './StudioPreferences';
@@ -13,11 +15,12 @@ const baseTabs = [
 
 export default function MobileNavigation({ onMenuClick, menuOpen, onNavigate, appMenu = false, controlsId = 'studio-navigation-drawer' }) {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const { preferences } = useStudioPreferences();
-  const tabs = preferences.mobileTab === 'finance' ? baseTabs.map(tab => tab.label === 'Projects' ? {label:'Finance',path:'/admin/finance',icon:Wallet,tone:'green'} : tab) : baseTabs;
+  const tabs = (preferences.mobileTab === 'finance' && canAccessStudioPath(user, '/admin/finance') ? baseTabs.map(tab => tab.label === 'Projects' ? {label:'Finance',path:'/admin/finance',icon:Wallet,tone:'green'} : tab) : baseTabs).filter(tab => canAccessStudioPath(user, tab.path));
   const t = label => studioText(preferences.language, label);
   const otherPage = !tabs.some(tab => tab.end ? pathname === tab.path : pathname === tab.path || pathname.startsWith(tab.path + '/'));
-  return <nav className="studio-mobile-navigation" aria-label="Main workspace navigation">
+  return <nav className="studio-mobile-navigation" style={{ gridTemplateColumns: "repeat(" + (tabs.length + 1) + ",minmax(0,1fr))" }} aria-label="Main workspace navigation">
     {tabs.map(({ label, path, icon, tone, end }) => <NavLink key={path} to={path} end={end} onClick={onNavigate} className={({ isActive }) => isActive && !(appMenu && menuOpen) ? 'is-active' : ''}>
       <StudioAppIcon icon={icon} tone={tone} size={30} className="studio-mobile-tab-icon" /><span className="studio-mobile-tab-label" lang={preferences.language}>{t(label)}</span>
     </NavLink>)}

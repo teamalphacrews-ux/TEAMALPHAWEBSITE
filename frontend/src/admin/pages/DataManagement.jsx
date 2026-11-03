@@ -1,3 +1,5 @@
+import { useAuth } from '../../context/AuthContext';
+import { hasModuleAccess } from '../../utils/moduleAccess';
 import { useState } from "react";
 import { Plus, Pencil, HardDrive, Archive, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
@@ -28,9 +30,10 @@ const blank = {
   notes: "",
 };
 export default function DataManagement() {
+  const { user } = useAuth();
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/studio/assets",
-    "/api/leads",
+    hasModuleAccess(user, 'enquiries') ? '/api/leads' : null,
   ]);
   const [assets = [], leads = []] = data;
   const [query, setQuery] = useState(""),

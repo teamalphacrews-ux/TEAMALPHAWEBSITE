@@ -1,3 +1,5 @@
+import { useAuth } from '../../context/AuthContext';
+import { hasModuleAccess, hasFullModuleAccess } from '../../utils/moduleAccess';
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -17,6 +19,7 @@ import { messageRequestId } from "../../utils/clientProjectData";
 import "./projectSupport.css";
 
 export default function ProjectSupport() {
+  const { user } = useAuth();
   const [search, setSearch] = useSearchParams();
   const [threads, setThreads] = useState([]),
     [query, setQuery] = useState("");
@@ -315,12 +318,12 @@ export default function ProjectSupport() {
                   <p>{current?.quote.title}</p>
                 </div>
                 <div className="support-context-links">
-                  {current?.quote.invoiceId && (
+                  {hasModuleAccess(user, 'invoices') && current?.quote.invoiceId && (
                     <Link to={"/admin/invoices/" + current.quote.invoiceId}>
                       Invoice <ArrowUpRight size={13} />
                     </Link>
                   )}
-                  {current?.clientUrl && (
+                  {hasFullModuleAccess(user) && current?.clientUrl && (
                     <a
                       href={current.clientUrl}
                       target="_blank"

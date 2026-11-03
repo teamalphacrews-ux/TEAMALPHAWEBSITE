@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { hasModuleAccess } from '../../../utils/moduleAccess';
 import StudioSelect from "../common/StudioSelect";
 import StudioButton from '../common/StudioButton';
 import { useRef, useState } from "react";
@@ -12,6 +14,8 @@ import useStudioDialog from "./useStudioDialog";
 const emptyLead = { name: "", email: "", phone: "", status: "New", eventType: "Wedding", eventDate: "", eventTime: "", eventLocation: "", followUpDate: "", remarks: "", notes: "", totalAmount: "", depositAmount: "", paymentStatus: "Unpaid", cloudLink: "", cloudPassword: "",  };
 
 export default function StudioLeadForm({ initialData, onClose, onSaved }) {
+  const { user } = useAuth();
+  const finance = hasModuleAccess(user, 'finance'), galleries = hasModuleAccess(user, 'galleries');
   const [data, setData] = useState({ ...emptyLead, ...initialData, eventDate: dateInput(initialData?.eventDate), followUpDate: dateInput(initialData?.followUpDate) });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -19,8 +23,9 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
   const dialogRef = useStudioDialog(onClose, { canClose: !saving });
   const editing = !!initialData?._id;
   const [changed,setChanged]=useState(false);
+  const [passwordChanged,setPasswordChanged]=useState(false);
   const draft=useOfflineDraft({kind:'enquiry',value:data,dirty:changed,enabled:!editing,onRestore:value=>{setData({...emptyLead,...value});setChanged(true);}});
-  const set = (field) => (event) => {setChanged(true);setData((previous) => ({ ...previous, [field]: event.target.value }));};
+  const set = (field) => (event) => {setChanged(true);if(field==='cloudPassword')setPasswordChanged(true);setData((previous) => ({ ...previous, [field]: event.target.value }));};
 
   const submit = async (event) => {
     event.preventDefault();
@@ -28,11 +33,14 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
     if(draft.candidate){setError('Restore or discard your saved draft before submitting.');return;}
     if(!editing&&!navigator.onLine){if(await draft.saveNow())setError('Saved on this device. Reconnect and submit this enquiry.');else setError('Local storage is unavailable. Keep this page open.');return;}
     if (!data.name.trim() || !data.email.trim()) { setError("Please complete the required client details."); return; }
-    if (Number(data.depositAmount) > Number(data.totalAmount)) { setError("The deposit cannot be greater than the project value."); return; }
+    if (finance && Number(data.depositAmount) > Number(data.totalAmount)) { setError("The deposit cannot be greater than the project value."); return; }
     inFlight.current = true;
     setSaving(true);
     setError("");
     const payload = { ...data, name: data.name.trim(), email: data.email.trim(), totalAmount: Number(data.totalAmount) || 0, depositAmount: Number(data.depositAmount) || 0, eventDate: data.eventDate || null, followUpDate: data.followUpDate || null };
+    const writable = ['name','email','phone','status','eventType','eventDate','eventTime','eventLocation','followUpDate','remarks','notes', ...(finance ? ['totalAmount','depositAmount','paymentStatus'] : []), ...(galleries ? ['cloudLink','cloudPassword'] : [])];
+    Object.keys(payload).forEach(key => { if (!writable.includes(key)) delete payload[key]; });
+    if (editing && !passwordChanged) delete payload.cloudPassword;
     delete payload._id;
     delete payload.tasks;
     delete payload.createdAt;
@@ -78,13 +86,14 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
             <label className="studio-field">Venue / location<input className="studio-input" value={data.eventLocation} onChange={set("eventLocation")} placeholder="Venue and city" /></label>
             <label className="studio-field">Next follow-up<input type="date" className="studio-input" value={data.followUpDate} onChange={set("followUpDate")} /></label>
           </div><label className="studio-field studio-crm-wide-field">Creative brief<textarea rows={3} className="studio-input" value={data.remarks} onChange={set("remarks")} placeholder="What are they looking for?" /></label></div>
-          <div className="studio-crm-form-section"><h3>Payment & delivery</h3><div className="studio-form-grid">
+          {(finance || galleries) && <div className="studio-crm-form-section"><h3>Payment & delivery</h3><div className="studio-form-grid">
+            {finance && <>
             <label className="studio-field">Project value (₹)<input type="number" min="0" className="studio-input" value={data.totalAmount} onChange={set("totalAmount")} /></label>
             <label className="studio-field">Deposit received (₹)<input type="number" min="0" className="studio-input" value={data.depositAmount} onChange={set("depositAmount")} /></label>
             <label className="studio-field">Payment status<StudioSelect title="Payment status" className="studio-input" value={data.paymentStatus} onChange={set("paymentStatus")}>{PAYMENT_STATUSES.map((status) => <option key={status}>{status}</option>)}</StudioSelect></label>
-            <label className="studio-field">Cloud folder link<input type="url" className="studio-input" value={data.cloudLink} onChange={set("cloudLink")} placeholder="https://" /></label>
-            <label className="studio-field">Cloud folder password<input className="studio-input" value={data.cloudPassword} onChange={set("cloudPassword")} autoComplete="off" /></label>
-          </div></div>
+            </>}{galleries && <><label className="studio-field">Cloud folder link<input type="url" className="studio-input" value={data.cloudLink} onChange={set("cloudLink")} placeholder="https://" /></label>
+            <label className="studio-field">Cloud folder password<input className="studio-input" value={data.cloudPassword} onChange={set("cloudPassword")} autoComplete="off" /></label></>}
+          </div></div>}
           <div className="studio-crm-form-section"><label className="studio-field">Internal notes<textarea rows={3} className="studio-input" value={data.notes} onChange={set("notes")} placeholder="Visible to your studio team" /></label></div>
           <footer className="studio-modal-footer"><button type="button" className="studio-button" onClick={onClose} disabled={saving}>Cancel</button><StudioButton type="submit" variant="primary" loading={saving} loadingLabel="Saving enquiry">{editing ? "Save changes" : "Create enquiry"}</StudioButton></footer>
         </form>

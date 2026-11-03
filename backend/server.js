@@ -193,8 +193,8 @@ authRouter.post('/login', require('./saas/routes').authLimit, require('./saas/ro
 
 authRouter.get('/me', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('firstName lastName email role galleryTag cloudLink cloudPassword leadId createdAt updatedAt');
-        res.json(user);
+        const user = await User.findById(req.user.id).select('firstName lastName email role studioOwner moduleAccess galleryTag cloudLink leadId createdAt updatedAt');
+        res.json({ ...user.toObject(), ...require('./utils/moduleAccess').accessPayload(user) });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -208,9 +208,9 @@ authRouter.put('/profile', auth, async (req, res) => {
             req.user.id,
             { $set: updateData },
             { new: true, runValidators: true }
-        ).select('firstName lastName email role galleryTag cloudLink cloudPassword leadId createdAt updatedAt');
+        ).select('firstName lastName email role studioOwner moduleAccess galleryTag cloudLink leadId createdAt updatedAt');
         if (!user) return res.status(404).json({ msg: "User not found" });
-        res.json(user);
+        res.json({ ...user.toObject(), ...require('./utils/moduleAccess').accessPayload(user) });
     } catch (err) {
         if (err.status) return res.status(err.status).json({ msg: err.message });
         console.error('Profile update failed:', err.message);

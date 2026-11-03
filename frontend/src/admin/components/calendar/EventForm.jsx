@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from '../../../context/AuthContext';
+import { hasModuleAccess } from '../../../utils/moduleAccess';
 import { WorkspaceDialog, WorkspaceField } from "../operations/WorkspaceUI";
 import { DEFAULT_STUDIO_TIMEZONE, studioDateTimeInput, studioDateTimeToISO, studioDayKey, shiftDayKey, validStudioDay } from '../../../utils/studioTime';
 export default function EventForm({
@@ -11,6 +13,8 @@ export default function EventForm({
   error,
   timezone = DEFAULT_STUDIO_TIMEZONE,
 }) {
+  const { user } = useAuth();
+  const canAssignCrew = hasModuleAccess(user, 'crew');
   const [validationError, setValidationError] = useState('');
   const [form, setForm] = useState(() => ({
     title: "",
@@ -39,7 +43,7 @@ export default function EventForm({
     if (!start || !end) { setValidationError(`Enter valid start and end times in ${timezone}. A daylight-saving clock change may make a selected time unavailable.`); return; }
     if (end <= start) { setValidationError('The end must be after the start.'); return; }
     setValidationError('');
-    onSave({
+    const payload = {
       ...form,
       start,
       end,
@@ -47,7 +51,9 @@ export default function EventForm({
       startDate: form.allDay ? form.startDate : '',
       endDateExclusive,
       dateTimezone: form.allDay ? timezone : '',
-    });
+    };
+    if (!canAssignCrew) delete payload.teamMembers;
+    onSave(payload);
   };
   return (
     <WorkspaceDialog
@@ -118,7 +124,7 @@ export default function EventForm({
       {!form.allDay && form.start && form.end && form.end <= form.start && (
         <p className="studio-error">The end must be after the start.</p>
       )}
-      <fieldset className="workspace-crew-picker">
+      {canAssignCrew && <fieldset className="workspace-crew-picker">
         <legend>Assigned crew</legend>
         {crew.map((member) => (
           <label key={member._id}>
@@ -145,7 +151,7 @@ export default function EventForm({
             Add crew members in Crew & scheduling first.
           </p>
         )}
-      </fieldset>
+      </fieldset>}
       <p className="studio-muted">
         Event times use your selected time zone, {timezone}. Google-linked events keep their
         existing sync workflow.

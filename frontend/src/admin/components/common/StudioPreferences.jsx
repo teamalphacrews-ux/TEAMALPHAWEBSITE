@@ -1,3 +1,4 @@
+import { canAccessStudioPath } from '../../../utils/moduleAccess';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -27,10 +28,10 @@ export function StudioPreferencesProvider({ children }) {
   const storageKey = 'teamalpha-studio-preferences:' + (user?._id || user?.id || user?.email || 'current');
   // Remount all request state when the account/session changes. An old response can
   // never update another administrator's preference cache or queued writes.
-  return <AccountPreferences key={storageKey + ':' + (token || '')} storageKey={storageKey} token={token} preview={user?.isPreview === true}>{children}</AccountPreferences>;
+  return <AccountPreferences key={storageKey + ':' + (token || '')} storageKey={storageKey} token={token} user={user} preview={user?.isPreview === true}>{children}</AccountPreferences>;
 }
 
-function AccountPreferences({ children, storageKey, token, preview }) {
+function AccountPreferences({ children, storageKey, token, preview, user }) {
   const [preferences, setPreferences] = useState(() => normalize(read(storageKey)));
   const [syncState, setSyncState] = useState(preview ? 'preview' : 'loading');
   const [ready, setReady] = useState(preview || !token);
@@ -100,8 +101,8 @@ function AccountPreferences({ children, storageKey, token, preview }) {
   useLayoutEffect(() => installStudioBrowserTheme(document, resolvedTheme), [resolvedTheme]);
   useEffect(() => () => cancelStudioThemeTransition(), []);
   useEffect(() => {
-    if (ready && location.pathname === '/admin' && location.state?.studioSignIn === true) navigate(preferences.landingPage, { replace: true, state: null });
-  }, [ready, location.pathname, location.state, navigate, preferences.landingPage]);
+    if (ready && location.pathname === '/admin' && location.state?.studioSignIn === true) navigate(canAccessStudioPath(user, preferences.landingPage) ? preferences.landingPage : '/admin', { replace: true, state: null });
+  }, [ready, location.pathname, location.state, navigate, preferences.landingPage, user]);
 
   const update = useCallback((value, { origin } = {}) => {
     const patch = preferencePatch(value);

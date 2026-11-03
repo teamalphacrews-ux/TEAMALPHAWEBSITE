@@ -1,3 +1,4 @@
+import { canAccessStudioPath, hasFullModuleAccess } from '../../../utils/moduleAccess';
 import StudioButton from './StudioButton';
 import StudioIcon from './StudioIcon';
 import { useState, useEffect, useRef } from 'react';
@@ -23,6 +24,7 @@ const destinations = [
   ['Quotations', '/admin/quotations', 'proposals pricing services terms'], ['Data & backups', '/admin/data', 'nas storage folders backup checks'], ['Settings', '/admin/settings', 'studio profile configuration'],
   ['Production projects', '/admin/projects', 'weddings bookings'], ['Crew & scheduling', '/admin/crew', 'photographers team assignments'],
   ['Post production', '/admin/post-production', 'tasks editing delivery'], ['Calendar', '/admin/calendar', 'shoots events dates'],
+  ['Invoices', '/admin/invoices', 'client billing documents'],
   ['Finance', '/admin/finance', 'invoices expenses payments'],
   ['Integrations', '/admin/integrations', 'webhook enquiries connect automation'],
   ['Email', '/admin/email', 'gmail inbox sent mail messages'],
@@ -35,6 +37,7 @@ import QuickCreate from './QuickCreate';
 
 export default function Topbar({ onMenuClick }) {
   const { user, token, logout, updateUser } = useAuth();
+  const fullAccess = hasFullModuleAccess(user);
   const { resolvedTheme, preferences, toggleTheme } = useStudioPreferences();
   const t = text => studioText(preferences.language, text);
   const { identity } = useStudioIdentity();
@@ -78,6 +81,7 @@ export default function Topbar({ onMenuClick }) {
     return () => window.removeEventListener('keydown', searchShortcut);
   }, []);
   useEffect(() => {
+    if (!fullAccess) return;
     const controller = new AbortController();
     let seen = null, fetching = false;
     const fetchNotifications = async () => {
@@ -110,7 +114,7 @@ export default function Topbar({ onMenuClick }) {
     fetchNotifications();
     const timer = setInterval(fetchNotifications, 60000);
     return () => { controller.abort(); clearInterval(timer); };
-  }, [token, accountId]);
+  }, [token, accountId, fullAccess]);
   useEffect(() => {
     const close = event => { if (!panelRef.current?.contains(event.target)) { setSearchOpen(false); setShowNotifications(false); } };
     const escape = event => { if (event.key === 'Escape') {
@@ -141,7 +145,7 @@ export default function Topbar({ onMenuClick }) {
   };
   const unread = notifications.filter(item => !item.isRead).length;
   const badgeUnread = preferences.notificationBadges !== false ? notifications.filter(item => !item.isRead && notificationIsSelected(item, preferences)).length : 0;
-  const matches = destinations.filter(item => (item[0] + ' ' + t(item[0]) + ' ' + item[2]).toLowerCase().includes(query.toLowerCase()));
+  const matches = destinations.filter(item => canAccessStudioPath(user, item[1]) && (item[0] + ' ' + t(item[0]) + ' ' + item[2]).toLowerCase().includes(query.toLowerCase()));
   return <>
     <header className="studio-topbar" ref={panelRef}>
       <div className="studio-topbar-context"><StudioButton type="button" variant="icon" className="studio-menu-button studio-icon-button" label="Open navigation" icon={Menu} onClick={onMenuClick} /><span className="studio-topbar-workspace" lang={preferences.language} dir="auto">{t("Workspace")}</span><span className="studio-breadcrumb-separator" aria-hidden="true">/</span><strong lang={preferences.language} dir="auto"><span className="studio-topbar-full-title">{t(active)}</span><span className="studio-topbar-phone-title">{t(active==="Crew & scheduling"?"Crew":active)}</span></strong></div>
@@ -150,9 +154,9 @@ export default function Topbar({ onMenuClick }) {
         <div className="studio-global-search"><Search size={16} /><input ref={searchInputRef} aria-label={t("Find a page")} aria-controls="studio-page-results" aria-expanded={searchOpen} placeholder={t("Find a page") + "…"} value={query} onFocus={() => { setSearchOpen(true); setShowNotifications(false); }} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'ArrowDown') { e.preventDefault(); setSearchOpen(true); panelRef.current?.querySelector('.studio-search-results a')?.focus(); } if (e.key === 'Enter' && matches[0]) { navigate(matches[0][1]); setSearchOpen(false); setQuery(''); } }} /><kbd className="studio-search-shortcut" aria-hidden="true">{searchShortcut}</kbd>
           {searchOpen && <div id="studio-page-results" className="studio-search-results" onKeyDown={event => { if (!['ArrowDown','ArrowUp'].includes(event.key)) return; const links = [...event.currentTarget.querySelectorAll('a')]; const index = links.indexOf(document.activeElement); if (index < 0) return; event.preventDefault(); links[(index + (event.key === 'ArrowDown' ? 1 : links.length - 1)) % links.length]?.focus(); }}><p className="studio-search-label">{t("Find a page")}</p>{matches.length ? matches.map(item => <Link to={item[1]} key={item[1]} onClick={() => { setSearchOpen(false); setQuery(''); }}>{t(item[0])}<ArrowUpRight size={14} /></Link>) : <p className="studio-muted">No matching pages.</p>}</div>}
         </div>
-        <div className="studio-notification-wrap"><button type="button" className="studio-icon-button studio-notification-button" aria-label={'Notifications' + (badgeUnread ? ', ' + badgeUnread + ' unread' : '')} aria-expanded={showNotifications} aria-controls="studio-notifications" ref={notificationButtonRef} onClick={() => { setShowNotifications(value => !value); setSearchOpen(false); }}><StudioIcon icon={Bell} size={18} />{badgeUnread > 0 && <i />}</button>
+        {fullAccess && <div className="studio-notification-wrap"><button type="button" className="studio-icon-button studio-notification-button" aria-label={'Notifications' + (badgeUnread ? ', ' + badgeUnread + ' unread' : '')} aria-expanded={showNotifications} aria-controls="studio-notifications" ref={notificationButtonRef} onClick={() => { setShowNotifications(value => !value); setSearchOpen(false); }}><StudioIcon icon={Bell} size={18} />{badgeUnread > 0 && <i />}</button>
           {showNotifications && <section className="studio-notification-panel" id="studio-notifications" aria-label="Notifications"><div className="studio-notification-heading"><h2>Notifications</h2><StudioButton type="button" variant="icon" className="studio-icon-button" label="Close notifications" icon={X} onClick={closeNotifications} /></div>{notificationError ? <p className="studio-empty">Activity is unavailable. Try again shortly.</p> : notifications.length ? <div className="studio-notification-list">{notifications.slice(0, 6).map(item => <Link key={item._id} to={notificationLink(item)} className={item.isRead ? '' : 'is-unread'} onClick={() => setShowNotifications(false)}><span className="studio-status-dot" /><div><strong>{item.title}</strong><p>{item.description}</p></div></Link>)}</div> : <p className="studio-empty">You’re all caught up.</p>}<div className="studio-notification-footer"><StudioButton type="button" variant="ghost" size="sm" icon={CheckCheck} onClick={markAll} disabled={!unread} loading={markingRead} loadingLabel="Marking notifications as read">Mark all read</StudioButton><Link to="/admin/activity-log" onClick={() => setShowNotifications(false)}>View all <ArrowUpRight size={14} /></Link></div></section>}
-        </div>
+        </div>}
         <span className="studio-topbar-divider" /><button type="button" className="studio-profile-button" onClick={() => setShowProfile(true)} aria-label="Edit your profile"><span className="studio-avatar">{user?.firstName?.[0] || 'A'}{user?.lastName?.[0] || ''}</span></button>
       </div>
     </header>

@@ -1,3 +1,4 @@
+import { hasModuleAccess, hasFullModuleAccess } from '../../utils/moduleAccess';
 import StudioSelect from '../components/common/StudioSelect';
 import { useEffect, useState, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -58,8 +59,8 @@ export default function Calendar() {
   const [sessionParams, setSessionParams]=useSearchParams();
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/calendar",
-    "/api/photographers",
-    "/api/leads",
+    hasModuleAccess(user, 'crew') ? '/api/photographers' : null,
+    hasModuleAccess(user, 'enquiries') ? '/api/leads' : null,
   ]);
   const [events = [], crew = [], leads = []] = data;
   const eventId = sessionParams.get('event');
@@ -92,13 +93,14 @@ export default function Calendar() {
   const detail = linkedEvent || detailState;
   const setupMessage = isPreview ? GOOGLE_PREVIEW_MESSAGE : sync.setupMessage || "";
   useEffect(() => {
+    if (!hasFullModuleAccess(user)) return;
     let socket, cancelled = false;
     const connect = () => { if (cancelled) return; socket = io(operationAPI + (user?.workspace?.id ? '/studio-' + user.workspace.id : ''), { auth: { token: localStorage.getItem('token') } }); socket.on('calendar_update', reload); };
     // The access check initializes the namespace before an authenticated studio connects.
     if (user?.workspace?.id) workspaceRequest('/api/saas/workspace').then(connect).catch(() => {});
     else connect();
     return () => { cancelled = true; socket?.disconnect(); };
-  }, [reload, user?.workspace?.id]);
+  }, [reload, user, user?.workspace?.id]);
   const visible = events.filter(
     (event) =>
       (crewFilter === "all" ||

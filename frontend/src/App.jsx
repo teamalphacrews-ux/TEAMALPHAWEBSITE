@@ -60,6 +60,7 @@ const AdminStudioProjectDetail = lazy(
   () => import("./admin/pages/StudioProjectDetail"),
 );
 const AdminQuoteTemplates = lazy(() => import("./admin/pages/QuoteTemplates"));
+const AdminInvoices = lazy(() => import('./admin/pages/Invoices'));
 const InvoiceWorkspace = lazy(() => import("./admin/pages/InvoiceWorkspace"));
 const PublicInvoice = lazy(() => import("./pages/PublicInvoice"));
 const AdminQuotations = lazy(() => import("./admin/pages/Quotations"));
@@ -163,6 +164,7 @@ function App() {
                   element={<AdminQuoteTemplates />}
                 />
                 <Route path="templates" element={<AdminQuoteTemplates />} />
+                <Route path="invoices" element={<AdminInvoices />} />
                 <Route path="invoices/new" element={<InvoiceWorkspace />} />
                 <Route path="invoices/:id" element={<InvoiceWorkspace />} />
                 <Route

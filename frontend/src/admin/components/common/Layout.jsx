@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, Suspense, lazy } from 'react';
-import { Outlet, useLocation, useNavigationType } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigationType } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import { canAccessStudioPath } from '../../../utils/moduleAccess';
 import Topbar from './Topbar';
 import { OfflineDraftsProvider } from '../../../offline/OfflineDrafts';
 import { NativeDeviceBridge } from '../../../native/NativeDeviceSettings';
@@ -96,7 +97,7 @@ function StudioLayout() {
       <div className="studio-preview-label" hidden={!user?.isPreview}>DESIGN PREVIEW · SAMPLE DATA · Changes in this local preview are temporary.</div>
         <main id="studio-main" className={"studio-main" + (["/admin/users", "/admin/activity-log"].includes(location.pathname) ? " studio-legacy-page" : "")} tabIndex={-1}>
         <Suspense fallback={<div className="studio-loading" role="status"><span className="studio-loader" /> Opening your workspace…</div>}>
-          {StudioControlReview && new URLSearchParams(location.search).get('controls') === 'review' ? <StudioControlReview /> : <Outlet context={{ setIsFocusMode }} />}
+          {!canAccessStudioPath(user, location.pathname) ? <section className="studio-card studio-empty" role="status"><h1>Module unavailable</h1><p>Your account has not been assigned access to this area.</p><Link className="studio-button" to="/admin">Open your workspace</Link></section> : StudioControlReview && new URLSearchParams(location.search).get('controls') === 'review' ? <StudioControlReview /> : <Outlet context={{ setIsFocusMode }} />}
         </Suspense>
       </main>
       {!isFocusMode && <footer className="studio-footer"><span>{user?.workspace?.name || 'TEAM ALPHA'} <span className="studio-footer-dot">·</span> STUDIO OS</span><span>Made for the stories you create.</span></footer>}

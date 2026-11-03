@@ -71,7 +71,8 @@ function createGmailOAuthHandlers({
         const email = typeof profile?.emailAddress === 'string' ? profile.emailAddress.trim().toLowerCase() : '';
         if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw publicError('Google could not identify this mailbox.', 400);
         step = 'account';
-        if (!await User.findOne({ _id: flow.userId, role: 'admin' })) throw publicError('Administrator access is required.', 403);
+        const currentUser = await User.findOne({ _id: flow.userId, role: 'admin' });
+        if (!currentUser || !require('./moduleAccess').hasModule(currentUser, 'email')) throw publicError('Administrator access is required.', 403);
         let refresh = typeof tokens.refresh_token === 'string' ? tokens.refresh_token : '';
         const filter = { userId: flow.userId };
         if (!refresh) {

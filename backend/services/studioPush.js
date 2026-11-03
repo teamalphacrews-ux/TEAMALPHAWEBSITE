@@ -49,8 +49,8 @@ async function deliverNotification(note){
  const devices=await Device.find({workspaceKey,enabled:true,expiresAt:{$gt:now},lastNotificationId:{$ne:String(note._id)}}).select('+encryptedToken').limit(100);
  for(const device of devices){
   try{
-   const[user,session]=await Promise.all([User.findById(device.userId).select('role studioPreferences +sessionVersion'),Session.findById(device.sessionId)]);
-   if(!user||user.role!=='admin'||!session||String(session.user)!==device.userId||session.version!==(user.sessionVersion||0)||require('./studioSecurity').sessionExpired(session,security,now.getTime())){await Device.updateOne({_id:device._id,sessionId:device.sessionId},{$set:{enabled:false}});continue;}
+   const[user,session]=await Promise.all([User.findById(device.userId).select('role email studioOwner moduleAccess studioPreferences +sessionVersion'),Session.findById(device.sessionId)]);
+   if(!user||!require('../utils/moduleAccess').hasFullAccess(user)||!session||String(session.user)!==device.userId||session.version!==(user.sessionVersion||0)||require('./studioSecurity').sessionExpired(session,security,now.getTime())){await Device.updateOne({_id:device._id,sessionId:device.sessionId},{$set:{enabled:false}});continue;}
    if(workspace){const registry=require('../saas/models');const member=await registry.Membership.findOne({workspaceId:workspace._id,localUserId:device.userId,state:'active'});if(!member||!await registry.Account.exists({_id:member.accountId,state:'active'}))continue;}
    const prefs=user.studioPreferences||{};if((Array.isArray(prefs.notificationCategories)&&!prefs.notificationCategories.includes(notificationCategory(note)))||quietNow(prefs,now,config?.timezone))continue;
    const claimed=await Device.updateOne({_id:device._id,enabled:true,sessionId:device.sessionId,lastNotificationId:{$ne:String(note._id)}},{$set:{lastNotificationId:String(note._id)}});if(!claimed.modifiedCount)continue;

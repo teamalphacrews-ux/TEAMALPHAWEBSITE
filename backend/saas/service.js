@@ -77,7 +77,7 @@ async function issueSession(account, workspace, membership, req) {
     const sign = (payload, secret, options) => jwt.sign({ ...payload, accountId: String(account._id), workspaceId: String(workspace._id) }, secret, options);
     const token = await require('../services/studioSecurity').openSession(user, req, sign, process.env.JWT_SECRET);
     return { token, user: { id: String(user._id), accountId: String(account._id), firstName: user.firstName, lastName: user.lastName,
-      email: account.email, role: 'admin', workspaceRole: membership.role, workspace: workspaceView(workspace, membership) } };
+      email: account.email, role: 'admin', ...require('../utils/moduleAccess').accessPayload(user), workspaceRole: membership.role, workspace: workspaceView(workspace, membership) } };
   });
 }
 async function expireInvitations(workspaceId) {
