@@ -1,5 +1,13 @@
 /* Studio OS precision controls. Operational UI only; document artwork is untouched. */
-:is(.studio-app.studio-personal-workspace,.studio-crm-overlay) {
+:is(.studio-app.studio-personal-workspace,.studio-crm-overlay,.studio-crm-invoice-dialog) {
+  --studio-space-1:4px; --studio-space-2:8px; --studio-space-3:12px; --studio-space-4:16px;
+  --studio-control-size:44px; --studio-control-size-lg:48px;
+  --studio-radius-control:12px; --studio-radius-small:10px; --studio-radius-panel:16px;
+  --studio-control-font:13px; --studio-control-line:1.4; --studio-input-font:13px;
+  --studio-field-surface:var(--studio-surface); --studio-field-border:#8a94a3;
+  --studio-success-ink:#216c50; --studio-success-surface:#edf7f2; --studio-success-border:#b7d7c8;
+  --studio-warning-ink:#805716; --studio-warning-surface:#fff5df; --studio-warning-border:#e4c78c;
+  --studio-danger-ink:#973c4a; --studio-danger-border:#e4b3bf;
   --control-accent:#245bd8; --control-accent-hover:#1c4cc0;
   --control-accent-soft:#edf3ff; --control-accent-ink:#2455bc;
   --control-danger:#ba3444; --control-danger-hover:#a32939;
@@ -7,15 +15,23 @@
   --control-border:color-mix(in srgb,var(--studio-text) 18%,transparent);
   --control-hover:color-mix(in srgb,var(--studio-text) 5%,var(--studio-surface));
   --control-pressed:color-mix(in srgb,var(--studio-text) 9%,var(--studio-surface));
-  --control-radius:11px; --control-duration:190ms;
+  --control-radius:var(--studio-radius-control); --control-duration:190ms;
   --control-ease:cubic-bezier(.2,.7,.2,1);
+  --studio-control-accent:var(--control-accent);
+  --studio-control-tint:var(--control-accent-soft); --studio-control-ring:var(--control-focus);
+  --studio-dock-shadow:0 10px 30px #182c451a;
 }
-html[data-studio-appearance=dark] :is(.studio-app.studio-personal-workspace,.studio-crm-overlay) {
+html[data-studio-appearance=dark] :is(.studio-app.studio-personal-workspace,.studio-crm-overlay,.studio-crm-invoice-dialog) {
+  --studio-field-surface:#18191c; --studio-field-border:#737983;
+  --studio-success-ink:#a4dfc2; --studio-success-surface:#243a30; --studio-success-border:#416552;
+  --studio-warning-ink:#ead29b; --studio-warning-surface:#3b3424; --studio-warning-border:#6e5e36;
+  --studio-danger-ink:#ffb4c3; --studio-danger-border:#784a58;
   --control-accent:#3265d7; --control-accent-hover:#3a6bdd;
   --control-accent-soft:#22314b; --control-accent-ink:#a5c2ff;
-  --control-danger:#d34859; --control-danger-hover:#e05666;
+  --control-danger:#bd3e50; --control-danger-hover:#c44355;
   --control-danger-soft:#39232a; --control-focus:#99baff;
   --control-border:color-mix(in srgb,var(--studio-text) 22%,transparent);
+  --studio-dock-shadow:0 12px 36px #0007;
 }
 /* Known legacy entry points share the same geometry without changing their handlers. */
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(
@@ -23,24 +39,24 @@ html[data-studio-appearance=dark] :is(.studio-app.studio-personal-workspace,.stu
  .studio-icon-button,.reference-icon-button,.ops-icon-button,
  .reference-text-button,.qw-text-button,.invoice-text-action,.settings-back-button,.settings-text-button
 ) {
-  display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  min-height:44px; padding:10px 16px; border-radius:var(--control-radius);
+  display:inline-flex; align-items:center; justify-content:center; gap:var(--studio-space-2);
+  min-height:var(--studio-control-size); padding:10px var(--studio-space-4); border-radius:var(--control-radius);
   border:1px solid var(--control-border); background:var(--studio-surface);
-  color:var(--studio-text); font-family:inherit; font-size:13px; font-weight:600;
-  line-height:1.35; letter-spacing:-.012em; text-transform:none;
+  color:var(--studio-text); font-family:inherit; font-size:var(--studio-control-font); font-weight:600;
+  line-height:var(--studio-control-line); letter-spacing:-.012em; text-transform:none;
   text-decoration:none; vertical-align:middle; cursor:pointer; position:relative;
-  box-shadow:0 1px 2px #00000005; filter:none;
+  box-shadow:none; filter:none;
   transition:background-color var(--control-duration) var(--control-ease),border-color var(--control-duration) var(--control-ease),color var(--control-duration) var(--control-ease),box-shadow var(--control-duration) var(--control-ease);
 }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(
  .studio-button.primary,.reference-button,.qw-primary,.invoice-primary
 ):not(.danger) {
   background:var(--control-accent) !important; border-color:var(--control-accent) !important;
-  color:#fff !important; box-shadow:inset 0 1px 0 #ffffff18,0 1px 3px #152b5018;
+  color:#fff !important; box-shadow:none;
 }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button.danger,.studio-control-button[data-variant=destructive]) {
   background:var(--control-danger) !important; border-color:var(--control-danger) !important;
-  color:#fff !important; box-shadow:inset 0 1px 0 #ffffff12;
+  color:#fff !important; box-shadow:none;
 }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.reference-text-button,.qw-text-button,.invoice-text-action,.settings-text-button,.settings-back-button,.studio-control-button[data-variant=ghost]) {
   background:transparent !important; border-color:transparent !important; box-shadow:none;
@@ -49,16 +65,16 @@ html[data-studio-appearance=dark] :is(.studio-app.studio-personal-workspace,.stu
   background:transparent !important; border-color:var(--control-border) !important;
 }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-icon-button,.reference-icon-button,.ops-icon-button,.studio-control-button.is-icon-only) {
-  width:44px; min-width:44px; height:44px; flex:0 0 44px; padding:0; border-radius:12px;
+  width:var(--studio-control-size); min-width:var(--studio-control-size); height:var(--studio-control-size); flex:0 0 var(--studio-control-size); padding:0; border-radius:var(--control-radius);
 }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button.small,.studio-control-button[data-size=sm]):not(.is-icon-only) {
-  min-height:36px; padding:7px 12px; font-size:12px; border-radius:9px;
+  min-height:var(--studio-control-size); padding:var(--studio-space-2) var(--studio-space-3); font-size:12px; border-radius:var(--studio-radius-small);
 }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-control-button[data-size=lg] {
-  min-height:48px; padding:12px 20px; font-size:14px;
+  min-height:var(--studio-control-size-lg); padding:var(--studio-space-3) 20px; font-size:14px;
 }
 .studio-control-button.is-full-width { width:100%; }
-.studio-button-content { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-width:0; }
+.studio-button-content { display:inline-flex; align-items:center; justify-content:center; gap:var(--studio-space-2,8px); min-width:0; }
 .studio-control-button:is(.is-loading,.is-success) > .studio-button-content { visibility:hidden; }
 .studio-button-indicator { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
 .studio-control-button.is-loading { cursor:progress; }
@@ -68,6 +84,24 @@ html[data-studio-appearance=dark] :is(.studio-app.studio-personal-workspace,.stu
 }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary,.studio-icon-button,.reference-icon-button,.ops-icon-button,.reference-text-button,.qw-text-button,.invoice-text-action,.settings-text-button):disabled {
   opacity:.46; cursor:not-allowed; box-shadow:none; transform:none; scale:1;
+}
+/* Form controls use the same geometry, with a visible boundary on white and dark surfaces. */
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(
+ input.studio-input,select.studio-input,textarea.studio-input,.studio-select-trigger.studio-input,
+ .qw-field input,.qw-field select,.qw-field textarea,.invoice-field input,.invoice-field select,.invoice-field textarea
+):not(:where(.invoice-public *,.qw-read-document *,.pdf-page *,.qw-email-preview *,.invoice-email-preview *,input[type=checkbox],input[type=radio],input[type=range],input[type=color],input[type=file],input[type=hidden])) {
+  box-sizing:border-box; max-width:100%;
+  padding:10px var(--studio-space-3); border:1px solid var(--studio-field-border); border-radius:var(--control-radius);
+  background:var(--studio-field-surface); color:var(--studio-text); font-family:inherit; font-size:var(--studio-input-font); line-height:var(--studio-control-line);
+}
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(
+ input.studio-input,select.studio-input,.studio-select-trigger.studio-input,.qw-field input,.qw-field select,.invoice-field input,.invoice-field select
+):not(:where(.invoice-public *,.qw-read-document *,.pdf-page *,.qw-email-preview *,.invoice-email-preview *,input[type=checkbox],input[type=radio],input[type=range],input[type=color],input[type=file],input[type=hidden])) { min-height:var(--studio-control-size); }
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(
+ input.studio-input,select.studio-input,textarea.studio-input,.studio-select-trigger.studio-input,
+ .qw-field input,.qw-field select,.qw-field textarea,.invoice-field input,.invoice-field select,.invoice-field textarea
+):not(:where(.invoice-public *,.qw-read-document *,.pdf-page *,.qw-email-preview *,.invoice-email-preview *,input[type=checkbox],input[type=radio],input[type=range],input[type=color],input[type=file],input[type=hidden])):focus-visible {
+  border-color:var(--control-focus); outline:2px solid var(--control-focus); outline-offset:2px; box-shadow:none;
 }
 /* SVG geometry is consistent; decorative charts and document SVGs are excluded. */
 .studio-app :is(button,a.studio-button,a.reference-button,.studio-nav-item,.settings-directory-link) > svg.lucide,
@@ -81,7 +115,7 @@ html[data-studio-appearance=dark] :is(.studio-app.studio-personal-workspace,.stu
 }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(button,a):active { scale:1; }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(button,a):focus-visible {
-  outline:2px solid var(--control-focus); outline-offset:3px;
+  outline:2px solid var(--control-focus); outline-offset:var(--studio-space-1);
 }
 /* Apple-inspired app destinations: a single softly lit colour surface.
    Toolbar glyphs and tab-bar symbols stay unboxed. No Apple assets are embedded. */
@@ -111,7 +145,7 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
   box-shadow:inset 0 1px 0 #ffffff30,inset 0 -1px 0 #00000018,0 1px 3px #0003 !important;
 }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-nav-item {
-  border-radius:12px; font-weight:500; transition:background-color 190ms ease,color 190ms ease;
+  border-radius:var(--control-radius); font-weight:500; transition:background-color var(--control-duration) var(--control-ease),color var(--control-duration) var(--control-ease);
 }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-nav-item.is-active {
   background:var(--control-accent-soft); color:var(--studio-text);
@@ -129,10 +163,10 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
 .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation .studio-mobile-tab-icon::before { display:none; }
 .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation .studio-mobile-tab-icon > svg,
 .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > .is-active .studio-mobile-tab-icon > svg {
-  width:22px !important; height:22px !important; color:inherit !important; stroke-width:1.8;
+  width:22px !important; height:22px !important; color:inherit !important; stroke-width:1.8; filter:none;
 }
 .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-mobile-navigation > .is-active {
-  color:var(--control-accent-ink); background:var(--control-accent-soft);
+  color:var(--control-accent-ink); background:var(--control-accent-soft); font-weight:600;
 }
 .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-more-shortcut .studio-symbol-precision {
   width:38px !important; height:38px !important; flex-basis:38px !important;
@@ -157,7 +191,7 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
  :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button.danger,.studio-control-button[data-variant=destructive]):not(:disabled):hover { background:var(--control-danger-hover) !important; border-color:var(--control-danger-hover) !important; }
  :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-control-button[data-variant=ghost]:not(:disabled):hover { background:var(--control-hover) !important; }
 }
-:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary,.studio-icon-button,.reference-icon-button,.ops-icon-button):not(:disabled):active { box-shadow:inset 0 1px 3px #00000014; border-color:var(--control-focus); }
+:is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary,.studio-icon-button,.reference-icon-button,.ops-icon-button):not(:disabled):active { background:var(--control-pressed); box-shadow:inset 0 1px 3px #00000014; border-color:var(--control-focus); }
 /* Animation is on internal SVG parts, never the entire navigation symbol. */
 .studio-icon-shutter { transform-origin:12px 13.5px; }
 .studio-icon-gear { transform-origin:12px 12px; }
@@ -181,7 +215,8 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
 @keyframes studio-check-draw { from{stroke-dasharray:1;stroke-dashoffset:1} to{stroke-dasharray:1;stroke-dashoffset:0} }
 @keyframes studio-control-spin { to{transform:rotate(360deg)} }
 @media(max-width:768px) {
- :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary) { min-height:44px; padding:10px 14px; font-size:13px; border-radius:11px; }
+ :is(.studio-app.studio-personal-workspace,.studio-crm-overlay,.studio-crm-invoice-dialog) { --studio-input-font:16px; }
+ :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-button,.reference-button,.qw-button,.qw-primary,.invoice-primary) { min-height:var(--studio-control-size); padding:10px 14px; font-size:var(--studio-control-font); border-radius:var(--control-radius); }
  :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) :is(.studio-icon-button,.reference-icon-button,.ops-icon-button,.studio-control-button.is-icon-only) { width:44px; min-width:44px; height:44px; padding:0; flex-basis:44px; }
  :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-topbar :is(.studio-icon-button,.studio-profile-button) { min-width:44px; width:44px; height:44px; border-radius:50%; }
  :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-topbar .studio-profile-button { border-radius:50%; }

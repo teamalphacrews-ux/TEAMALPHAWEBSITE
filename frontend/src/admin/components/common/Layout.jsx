@@ -33,6 +33,25 @@ import '../../studio-live-mobile.css';
 
 const StudioControlReview = import.meta.env.DEV ? lazy(() => import('./StudioControlReview')) : null;
 
+const pageTitles = {
+  '': 'Overview', 'shoot-day': 'Shoot day', 'offline-drafts': 'Offline drafts',
+  crm: 'Enquiries', quotations: 'Quotations', contacts: 'Contacts',
+  'studio-projects': 'Projects', 'quote-templates': 'Document templates', templates: 'Document templates',
+  invoices: 'Invoices', clients: 'Clients', data: 'Data management', settings: 'Settings',
+  integrations: 'Connections', email: 'Email', whatsapp: 'WhatsApp', projects: 'Production',
+  crew: 'Crew', 'post-production': 'Post-production', gallery: 'Galleries', finance: 'Finance',
+  calendar: 'Calendar', 'activity-log': 'Activity', chats: 'Messages', users: 'Team',
+  workspace: 'Workspace', subscription: 'Subscription',
+};
+function studioRouteTitle(pathname) {
+  const [section = '', record] = pathname.replace(/^\/admin\/?/, '').split('/');
+  if (record && section === 'contacts') return 'Contact details';
+  if (record && section === 'studio-projects') return 'Project details';
+  if (record && section === 'invoices') return record === 'new' ? 'New invoice' : 'Invoice';
+  if (record && section === 'gallery') return 'Gallery';
+  return pageTitles[section] || 'Workspace';
+}
+
 function IPhoneNavigation() {
   const [open, setOpen] = useState(false);
   return <div className={'studio-iphone-navigation' + (open ? ' is-more-open' : '')}>
@@ -76,9 +95,9 @@ function StudioLayout() {
   };
   useEffect(() => {
     const previous = document.title;
-    document.title = (user?.workspace?.name || 'Team Alpha') + ' — Studio OS';
+    document.title = studioRouteTitle(location.pathname) + ' — ' + (user?.workspace?.name || 'Team Alpha') + ' · Studio OS';
     return () => { document.title = previous; };
-  }, [user?.workspace?.name]);
+  }, [location.pathname, user?.workspace?.name]);
   const drawerOpen = !iPhoneNavigation && isDrawerLayout && isSidebarOpen;
   const compact = isSidebarCompact && !isDrawerLayout;
   const drawerRef = useStudioDialog(() => setIsSidebarOpen(false), { enabled: drawerOpen });

@@ -1,0 +1,29 @@
+.invoice-register-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.invoice-register-heading h2 { margin:0; font-size:17px; line-height:1.4; }
+.invoice-register-heading p,.invoice-register-zone { color:var(--studio-muted); font-size:12px; line-height:1.7; margin:5px 0 0; }
+.invoice-register-zone { text-align:right; }
+.studio-app.studio-app .invoice-register-toolbar { gap:10px; margin:18px 0; }
+.invoice-register-toolbar > .studio-search { flex:1 1 240px; max-width:none; }
+.invoice-register-toolbar > .studio-select { flex:0 1 180px; width:180px; min-width:0; }
+.studio-app.studio-app .invoice-register-table th,.studio-app.studio-app .invoice-register-table td { padding:14px 10px; }
+.studio-app.studio-app .invoice-register-table td { vertical-align:top; }
+.invoice-register-table { min-width:820px; }
+.invoice-register-reference { min-width:145px; }
+.invoice-register-reference a { display:inline-flex; align-items:center; gap:5px; color:var(--studio-text); font-weight:500; text-decoration:underline; text-decoration-color:var(--studio-border); text-underline-offset:4px; }
+.invoice-register-reference a:hover { text-decoration-color:currentColor; }
+.invoice-register-reference a svg { flex-shrink:0; }
+.invoice-register-client { max-width:180px; overflow-wrap:anywhere; }
+.invoice-register-money { white-space:nowrap; font-variant-numeric:tabular-nums; }
+.invoice-register-deadline { min-width:130px; }
+.invoice-register-timing { display:block; color:var(--studio-muted); font-size:11px; margin-top:4px; }
+.invoice-register-timing.is-overdue { color:var(--studio-text); font-weight:600; }
+.invoice-register-footer { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; padding-top:16px; border-top:1px solid var(--studio-border); color:var(--studio-muted); font-size:11px; line-height:1.7; }
+@media (max-width:768px) {
+  .invoice-register-heading { display:block; }
+  .invoice-register-zone { display:block; text-align:left; margin-top:8px; }
+  .invoice-register-toolbar > .studio-select { flex:1 1 100%; width:100%; }
+  .studio-app.studio-app .invoice-register-table .invoice-register-client { max-width:none; }
+  .studio-app.studio-app .invoice-register-table .invoice-register-money { white-space:normal; overflow-wrap:anywhere; }
+  .studio-app.studio-app.studio-personal-workspace .invoice-register-table td.invoice-register-deadline:last-child { display:block; }
+  .studio-app.studio-app.studio-personal-workspace .invoice-register-table td.invoice-register-deadline:last-child::before { display:block; }
+}

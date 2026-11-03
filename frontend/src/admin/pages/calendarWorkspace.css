@@ -1,0 +1,13 @@
+.studio-calendar-page .calendar-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px; padding:18px 0; margin:12px 0 22px; border-bottom:1px solid var(--studio-border); }
+.calendar-summary dt { color:var(--studio-muted); font-size:12px; margin-bottom:4px; }
+.calendar-summary dd { color:var(--studio-text); font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; margin:0; }
+.calendar-summary dd span { color:var(--studio-muted); font-size:12px; font-weight:400; margin-left:6px; }
+.calendar-summary .calendar-sync-label { font-size:14px; line-height:1.6; }
+.calendar-summary .calendar-sync-label span { display:block; margin-left:0; overflow-wrap:anywhere; }
+@media (min-width:769px) {
+  .studio-app.studio-app .studio-calendar-page .workspace-calendar { padding:20px; }
+  .studio-app.studio-app .studio-calendar-page .workspace-calendar > .studio-toolbar { margin:16px 0; }
+}
+@media (max-width:680px) {
+  .studio-calendar-page .calendar-summary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+}

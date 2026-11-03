@@ -1,0 +1,10 @@
+/* Keep task completion reversible in its queue until dismissed or navigation. */
+.studio-overview #overview-work{scroll-margin-top:100px}
+.studio-overview #overview-work:focus-visible{outline:3px solid var(--studio-control-accent);outline-offset:4px}
+.studio-overview .ov-task-recovery{margin:12px 0;padding:12px;border:1px solid var(--studio-border);border-radius:12px;background:var(--studio-canvas);color:var(--studio-text)}
+.studio-overview .ov-recovery-heading{margin:0 0 8px;font-size:13px;line-height:1.5;color:var(--studio-muted)}
+.studio-overview .ov-recovery-row{display:grid;grid-template-columns:18px minmax(0,1fr) auto 44px;align-items:center;gap:8px;padding:6px 0}
+.studio-overview .ov-recovery-row>span{font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.studio-overview .ov-recovery-row .studio-button{min-height:44px;font-size:13px}
+.studio-overview .ov-recovery-error{font-size:13px;line-height:1.5;margin:8px 0 0;color:var(--studio-text)}
+@media(max-width:360px){.studio-overview .ov-recovery-row{grid-template-columns:18px minmax(0,1fr) 44px}.studio-overview .ov-recovery-row>.studio-button:not(.is-icon-only){grid-column:2;grid-row:2}.studio-overview .ov-recovery-row>.is-icon-only{grid-column:3;grid-row:1 / 3}}

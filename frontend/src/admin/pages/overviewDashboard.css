@@ -99,8 +99,8 @@ html[data-studio-appearance=dark] .studio-app.studio-app .overview-organized .ov
 .studio-app.studio-app .overview-organized .overview-enquiry-row > svg { color: var(--studio-muted); }
 .studio-app.studio-app .overview-organized .studio-quick-actions { margin: 0; gap: 14px; }
 .studio-app.studio-app .overview-organized .studio-quick-action { padding: 19px 20px; border-radius: 18px; background: var(--studio-surface); }
-.studio-app.studio-app .overview-organized .studio-data-note { padding-top: 20px; margin-top: 26px; border-top: 1px solid var(--studio-border); flex-wrap: wrap; font-size: 10px; gap: 7px 12px; }
-.studio-app.studio-app .overview-organized .studio-data-note button { width: 36px; height: 36px; margin-left: auto; }
+.studio-app.studio-app .overview-organized .studio-data-note { padding-top: 20px; margin-top: 26px; border-top: 1px solid var(--studio-border); flex-wrap: wrap; font-size: 12px; line-height: 1.5; gap: 8px 12px; }
+.studio-app.studio-app .overview-organized .studio-data-note button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; margin-left: auto; }
 
 @container overview-section (max-width:760px) {
   .studio-app.studio-app .overview-organized .overview-grid-feature { gap: 12px; }

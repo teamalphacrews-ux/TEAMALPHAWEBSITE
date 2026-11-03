@@ -1,4 +1,7 @@
 export const LEAD_STATUSES = ["New", "Follow-up", "Meeting", "Negotiation", "Converted", "Archived"];
+// Active is a view over existing stages, never a stored enquiry status.
+export const matchesLeadStage = (lead, stage) => stage === 'All' || (stage === 'Active' ? !['Converted', 'Archived'].includes(lead.status) : lead.status === stage);
+export const leadStatusLabel = value => value === "Converted" ? "Booked" : value || "New";
 export const PAYMENT_STATUSES = ["Unpaid", "Deposit Paid", "Paid"];
 export const studioApi = import.meta.env?.VITE_API_URL || "";
 export const studioAuth = () => ({ headers: { "x-auth-token": localStorage.getItem("token") } });

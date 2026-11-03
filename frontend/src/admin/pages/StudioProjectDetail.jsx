@@ -1,7 +1,7 @@
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
 import StudioSelect from '../components/common/StudioSelect';
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -50,6 +50,15 @@ function StudioProjectWorkspace({id}){
  const tabs=[['overview','Overview'], ...(hasModuleAccess(user,'quotations') || hasModuleAccess(user,'invoices') || hasModuleAccess(user,'contacts') ? [['documents','Documents']] : []), ...(hasModuleAccess(user,'finance') && hasModuleAccess(user,'invoices') ? [['payments','Payments']] : []), ...(hasModuleAccess(user,'crew') ? [['crew','Crew']] : []), ...(hasModuleAccess(user,'production') ? [['delivery','Delivery']] : [])];
  const tab=tabs.some(([value])=>value===sectionParams.get('tab'))?sectionParams.get('tab'):'overview';
  const setTab=value=>setSectionParams(previous=>{const next=new URLSearchParams(previous);if(value==='overview')next.delete('tab');else next.set('tab',value);return next;},{replace:true});
+ const tabsId=useId();
+ const navigateTabs=event=>{
+   if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+   const buttons=[...event.currentTarget.querySelectorAll('[role="tab"]')],index=buttons.indexOf(event.target);
+   if(index<0)return;
+   event.preventDefault();
+   const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(index+(event.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length;
+   buttons[next].click();buttons[next].focus();
+ };
  const {preferences}=useStudioPreferences(),{identity}=useStudioIdentity();
  const recordDate=value=>formatWorkspaceDate(value,preferences,identity?.timezone);
   const { data, loading, error, reload } = useWorkspaceData([
@@ -212,9 +221,10 @@ function StudioProjectWorkspace({id}){
         /></div>
       </div>
       <WorkspaceError error={error} retry={reload} />
-      <nav className="project-hub-tabs" aria-label="Project sections">{tabs.map(([value,label])=><button type="button" key={value} aria-pressed={tab===value} onClick={()=>setTab(value)}>{label}</button>)}</nav>
+      <div className="project-hub-tabs" role="tablist" aria-label="Project sections" onKeyDown={navigateTabs}>{tabs.map(([value,label])=><button type="button" key={value} role="tab" id={`${tabsId}-tab-${value}`} aria-controls={`${tabsId}-panel-${value}`} aria-selected={tab===value} tabIndex={tab===value?0:-1} onClick={()=>setTab(value)}>{label}</button>)}</div>
       <div className={'reference-detail-grid project'+(tab==='overview'?'':' project-hub-wide')}>
-        <main>
+        <div style={{ minWidth: 0 }}>
+          {tabs.map(([value])=><div key={value} role="tabpanel" id={`${tabsId}-panel-${value}`} aria-labelledby={`${tabsId}-tab-${value}`} hidden={tab!==value} tabIndex={0}>{tab===value&&<>
           {tab==='overview'&&<ProjectOverview detail={detail} onTab={setTab}/>}
           {tab==='documents'&&<ReferenceSection title={hasDocuments ? "Documents" : "Get Started"}>
             {hasDocuments && (
@@ -279,7 +289,8 @@ function StudioProjectWorkspace({id}){
           </ReferenceSection>}
           {['crew','delivery'].includes(tab)&&<ProjectOperations key={id+tab} projectId={id} production={detail.production} mode={tab} onSaved={reload}/>}
 
-        </main>
+          </>}</div>)}
+        </div>
         {tab==='overview'&&<aside>
           <ReferenceSection title="Project Details">
             <button

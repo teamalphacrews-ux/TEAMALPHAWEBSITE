@@ -30,7 +30,8 @@ import {
   rupees,
 } from "../components/operations/workspaceData";
 import { remainingAmount } from "../components/studio/leadUtils";
-import { FinanceInsights, ExpenseBreakdown } from "../components/finance/FinanceInsights";
+import FinanceAnalysis from "../components/finance/FinanceAnalysis";
+import ExpenseBreakdown from "../components/finance/ExpenseBreakdown";
 import { bookingCollections } from "../components/operations/insightData";
 import API from '../../utils/apiConfig';
 import ReceiptCapture from '../components/finance/ReceiptCapture';
@@ -443,7 +444,7 @@ export default function Finance() {
           </section>
         </aside>}
       </div>
-      {tab!=='due'&&<details className="studio-card finance-analysis-disclosure"><summary>Business insights & trends</summary><FinanceInsights entries={entries} leads={leads} loading={loading||!!error}/></details>}
+      {tab!=='due'&&<FinanceAnalysis entries={entries} leads={leads} loading={loading||!!error}/>}
       {entry !== undefined && (
         <WorkspaceDialog
           title={entry ? "Edit expense" : "Record a transaction"}

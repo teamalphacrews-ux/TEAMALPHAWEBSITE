@@ -3,6 +3,7 @@ import { useEffect, useId, useRef } from "react";
 import { createPortal } from 'react-dom';
 import { AlertCircle, ArrowUpRight, Loader2, X } from "lucide-react";
 import { isolateDialogBackground, lockDialogScroll } from '../studio/studioDialogIsolation';
+import StudioPortalSurface from '../common/StudioPortalSurface';
 
 export function OperationsModal({ title, description, onClose, children, footer, busy = false }) {
   const dialogId = useId();
@@ -39,7 +40,7 @@ export function OperationsModal({ title, description, onClose, children, footer,
     };
   }, []);
   return createPortal(
-    <div className="studio-app studio-personal-workspace studio-ops studio-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
+    <StudioPortalSurface className="studio-ops studio-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
       <section className="studio-modal ops-modal" role="dialog" aria-modal="true" aria-labelledby={`${dialogId}-title`} aria-describedby={description ? `${dialogId}-description` : undefined} aria-busy={busy} tabIndex={-1} ref={panelRef}>
         <div className="studio-modal-header">
           <div><h2 id={`${dialogId}-title`}>{title}</h2>{description && <p id={`${dialogId}-description`} className="studio-muted">{description}</p>}</div>
@@ -48,7 +49,7 @@ export function OperationsModal({ title, description, onClose, children, footer,
         <div className="ops-modal-body">{children}</div>
         {footer && <div className="studio-modal-footer">{footer}</div>}
       </section>
-    </div>, document.body
+    </StudioPortalSurface>, document.body
   );
 }
 export function OperationsError({ children, onRetry }) {

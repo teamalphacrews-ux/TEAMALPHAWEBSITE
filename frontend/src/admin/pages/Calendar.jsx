@@ -24,13 +24,14 @@ import { operationAPI } from "../components/operations/operationsUtils";
 import { useAuth } from "../../context/AuthContext";
 import { useStudioIdentity } from "../../utils/studioIdentity";
 import { eventOnStudioDay, eventStartDay, studioDayKey, studioDateTimeToISO } from "../../utils/studioTime";
+import { eventScheduleLabel } from "../../utils/eventSchedule";
 import { useStudioPreferences } from '../components/common/StudioPreferences';
 import { formatWorkspaceDate, formatWorkspaceTime, resolveWorkspaceTimezone } from '../../utils/workspaceLocale';
 import '../components/calendar/calendarRefinements.css';
+import './calendarWorkspace.css';
 import { GOOGLE_PREVIEW_MESSAGE, googleCalendarHandoff, googleConnectionError } from "../components/calendar/googleConnection";
 import {
   WorkspaceHeader,
-  WorkspaceMetrics,
   WorkspaceError,
   WorkspaceSearch,
   WorkspaceEmpty,
@@ -54,7 +55,7 @@ export default function Calendar() {
   const timezone = resolveWorkspaceTimezone(preferences, identity?.timezone);
   const time = value => formatWorkspaceTime(value, preferences, identity?.timezone);
   const dateLabel = (key, options) => formatWorkspaceDate(key, preferences, identity?.timezone, options);
-  const eventTime = event => event.allDay === true ? 'All day' : `${time(event.start)} – ${studioDayKey(event.start, timezone) !== studioDayKey(event.end, timezone) ? dateLabel(event.end) + ' ' : ''}${time(event.end)}`;
+  const eventTime = event => eventScheduleLabel(event, timezone, { date: dateLabel, time });
   const isPreview = user?.isPreview === true;
   const [sessionParams, setSessionParams]=useSearchParams();
   const { data, loading, error, reload } = useWorkspaceData([
@@ -241,48 +242,9 @@ export default function Calendar() {
       {setupMessage && <aside id="google-calendar-setup" className="workspace-info" role="status">{setupMessage}</aside>}
       <WorkspaceError error={connectionError || (callbackResult === "error" ? "Google authorization was not completed. Please connect again and approve the calendar permissions." : "")} />
       {callbackResult === "success" && sync.isSynced && !sync.syncError && <p className="workspace-info" role="status">Google Calendar is connected. Your events will synchronize with the studio calendar.</p>}
-      <WorkspaceMetrics
-        loading={loading || (!!error && !data.length)}
-        items={[
-          {
-            label: "This month",
-            value: monthEvents.length,
-            note: "Events in the selected month",
-          },
-          {
-            label: "Upcoming events",
-            value: schedule.upcomingEvents.length,
-            note: "From the shared studio calendar",
-          },
-          {
-            label: "Crew overlaps",
-            value: schedule.conflicts.length,
-            note: "Assignments to review",
-          },
-          {
-            label: "Google Calendar",
-            kind: "label",
-            value: connection.loading
-              ? "Checking…"
-              : connection.error
-                ? "Unavailable"
-                : isPreview
-                  ? "Preview only"
-                : sync.configured === false
-                  ? "Setup required"
-                : sync.isSynced
-                  ? sync.syncError ? "Needs attention" : "Connected"
-                  : "Not connected",
-            note: sync.isSynced
-              ? sync.email
-              : "Your studio calendar remains available",
-          },
-        ]}
-      />
       <WorkspaceError error={error} retry={reload} />
       {returnTo && <Link className="studio-button small calendar-return-link" to={returnTo}><ChevronLeft size={15} /> Back to previous page</Link>}
       {eventId && !loading && !error && !linkedEvent && <WorkspaceError error="This event could not be found. It may have been removed or is no longer accessible." />}
-      <CalendarInsights key={month + timezone} events={visible} month={month} selected={selected} onSelect={setSelected} loading={loading} timezone={timezone} formatDate={dateLabel} />
       <section className="studio-card workspace-calendar">
         <div className="workspace-calendar-heading">
           <div className="workspace-calendar-nav">
@@ -478,6 +440,13 @@ export default function Calendar() {
           />
         )}
       </section>
+      <dl className="calendar-summary" aria-label="Calendar summary">
+        <div><dt>This month</dt><dd>{loading || error ? '—' : monthEvents.length}<span>events</span></dd></div>
+        <div><dt>Upcoming</dt><dd>{loading || error ? '—' : schedule.upcomingEvents.length}<span>events</span></dd></div>
+        <div><dt>Crew overlaps</dt><dd>{loading || error ? '—' : schedule.conflicts.length}<span>to review</span></dd></div>
+        <div><dt>Google Calendar</dt><dd className="calendar-sync-label">{connection.loading ? 'Checking…' : connection.error ? 'Unavailable' : isPreview ? 'Preview only' : sync.configured === false ? 'Setup required' : sync.isSynced ? sync.syncError ? 'Needs attention' : 'Connected' : 'Not connected'}<span>{sync.isSynced ? sync.email : 'Studio calendar available'}</span></dd></div>
+      </dl>
+      <CalendarInsights key={month + timezone} events={visible} month={month} selected={selected} onSelect={setSelected} loading={loading} timezone={timezone} formatDate={dateLabel} />
       {schedule.conflicts.length > 0 && (
         <div className="workspace-info">
           <UsersRound size={17} />
