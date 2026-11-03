@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { hasModuleAccess } from '../../../utils/moduleAccess';
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -455,6 +457,8 @@ export function ContactCreateMenu({
   onDocument,
 }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const optionModules = { Project: 'projects', Invoice: 'invoices', Contract: 'contacts', Questionnaire: 'contacts', Quote: 'quotations', Session: 'calendar', Message: 'contacts' };
   const query = new URLSearchParams({
     contact: contact._id,
     ...(projectId ? { project: projectId } : {}),
@@ -490,7 +494,7 @@ export function ContactCreateMenu({
   ];
   return (
     <WorkspaceActionMenu label="Create new" className="reference-create-menu" primary>
-      {options.filter(option => option.action).map(option => {
+      {options.filter(option => option.action && hasModuleAccess(user, optionModules[option.name])).map(option => {
         const Icon = option.icon;
         return <button key={option.name} onClick={option.action}><Icon size={16} aria-hidden="true" />{option.name}</button>;
       })}

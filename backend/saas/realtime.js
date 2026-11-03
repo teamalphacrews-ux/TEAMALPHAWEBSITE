@@ -17,7 +17,7 @@ function createWorkspaceRealtime(io) {
           if (!current || String(current.workspace._id) !== String(workspace._id)) throw new Error('Workspace access ended');
           await runInWorkspace(current.workspace, async () => {
             const user = await require('../models/User').findById(current.membership.localUserId).select('+sessionVersion');
-            if (!user) throw new Error('Workspace account unavailable');
+            if (!user || !require('../utils/moduleAccess').hasFullAccess(user)) throw new Error('Workspace account unavailable');
             const row = await require('../services/studioSecurity').createSessionVerifier()({ token, decoded: current.decoded, user, touch: false });
             socket.sessionId = String(row._id); socket.user = { id: String(user._id) };
           });

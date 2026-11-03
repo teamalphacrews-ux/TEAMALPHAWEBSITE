@@ -1,3 +1,4 @@
+import { hasModuleAccess } from '../../utils/moduleAccess';
 import { useState, useEffect } from 'react';
 import { Webhook, Copy, Check, ArrowRight, ShieldCheck, RefreshCw, CalendarDays } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -35,9 +36,9 @@ export default function Integrations() {
   };
   return <div className="studio-integrations">
     <WorkspaceHeader title="Integrations" description="Connect your calendar, email, WhatsApp and website enquiries." />
-    <GmailConnectionCard />
-    <WhatsAppConnectionCard />
-    <section className="studio-card studio-gmail-card"><span className="studio-webhook-icon"><CalendarDays size={24} strokeWidth={1.3} /></span><div><h2>Google Calendar</h2><p>Connect your studio calendar and manage event synchronization.</p><small>Your Calendar connection is managed from the Calendar workspace.</small></div><Link className="studio-button" to="/admin/calendar">Open calendar <ArrowRight size={15} /></Link></section>
+    {hasModuleAccess(user, 'email') && <GmailConnectionCard />}
+    {hasModuleAccess(user, 'whatsapp') && <WhatsAppConnectionCard />}
+    {hasModuleAccess(user, 'calendar') && <section className="studio-card studio-gmail-card"><span className="studio-webhook-icon"><CalendarDays size={24} strokeWidth={1.3} /></span><div><h2>Google Calendar</h2><p>Connect your studio calendar and manage event synchronization.</p><small>Your Calendar connection is managed from the Calendar workspace.</small></div><Link className="studio-button" to="/admin/calendar">Open calendar <ArrowRight size={15} /></Link></section>}
     {error && <div className="studio-error" role="alert">{error}<button className="studio-button small" onClick={() => setRefresh(value => value + 1)}><RefreshCw size={13} />Retry</button></div>}
     <section className="studio-card studio-webhook-intro"><span className="studio-webhook-icon"><Webhook size={25} strokeWidth={1.3} /></span><div><h2>Website enquiries</h2><p>Connect a form or automation to create new leads in Team Alpha CRM.</p></div><span className={'studio-badge ' + (status?.configured ? 'green' : 'gold')}>{preview ? 'Preview only' : status ? status.configured ? 'Configured' : 'Setup needed' : error ? 'Status unavailable' : 'Checking configuration…'}</span></section>
     <div className="studio-integration-grid">
@@ -47,6 +48,6 @@ export default function Integrations() {
       <div className="studio-integration-side"><section className="studio-card"><div className="studio-card-heading"><h2>Sample enquiry</h2><button className="studio-button small" onClick={() => copy(sampleJson, 'Payload')}><Copy size={12} />Copy JSON</button></div><p className="studio-card-subtitle">Illustrative values. Replace with your enquiry fields.</p><pre className="studio-webhook-json">{sampleJson}</pre><p className="studio-webhook-required"><strong>Required:</strong> name and email.<br />Event dates use YYYY-MM-DD. Optional fields can be omitted.</p></section>
       <section className="studio-card studio-webhook-security"><ShieldCheck size={21} /><h2>Keep the secret server-side</h2><p>Configure it in your backend and the sending service. Add it to server requests only; browser forms should submit through your server.</p><p>Payment, account and permission fields are rejected by this enquiry endpoint.</p></section></div>
     </div>
-    <section className="studio-card studio-integration-outro"><div><h2>Every enquiry, in one place.</h2><p>Once connected, new enquiries appear directly in your pipeline.</p></div><Link className="studio-button primary" to="/admin/crm">Open enquiries <ArrowRight size={14} /></Link></section>
+    <section className="studio-card studio-integration-outro"><div><h2>Every enquiry, in one place.</h2><p>Once connected, new enquiries appear directly in your pipeline.</p></div>{hasModuleAccess(user, 'enquiries') && <Link className="studio-button primary" to="/admin/crm">Open enquiries <ArrowRight size={14} /></Link>}</section>
   </div>;
 }

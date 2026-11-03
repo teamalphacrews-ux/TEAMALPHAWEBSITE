@@ -9,6 +9,7 @@ const Invoice = require("../models/Invoice");
 const Event = require("../models/Event");
 const validate = require("../utils/contactRecords");
 const pipeline = require("../services/enquiryPipeline");
+const modules = require('../utils/moduleAccess');
 const router = express.Router();
 router.use(["/contacts", "/studio-projects", "/contact-documents"], auth, requireAdmin);
 const error = (message, status = 400) =>
@@ -63,7 +64,7 @@ const projectLinks = async (values, existing) => {
     throw error("Project end date must follow its start date");
 };
 const escaped = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-async function documentsFor(contact, studioProjectId) {
+async function documentsFor(contact, studioProjectId, user) {
   const contactId = contact._id;
   const projectFilter = studioProjectId ? { studioProjectId } : { contactId };
   const name = [contact.firstName, contact.lastName].filter(Boolean).join(" ");
@@ -90,25 +91,25 @@ async function documentsFor(contact, studioProjectId) {
         ],
       };
   const [quotations, invoices, sessions, documents] = await Promise.all([
-    Quotation.find(quoteFilter)
+    modules.hasModule(user, 'quotations') ? Quotation.find(quoteFilter)
       .select(
         "title documentNumber issueDate acceptedAt expiryEnabled status totalPaise validUntil createdAt invoiceId contactId studioProjectId",
       )
       .sort({ createdAt: -1 })
-      .lean(),
-    Invoice.find(invoiceFilter)
+      .lean() : [],
+    modules.hasModule(user, 'invoices') ? Invoice.find(invoiceFilter)
       .select(
         "clientName invoiceNumber documentNumber invoiceDate dueDate documentStatus paymentScheduleEnabled paymentSchedule total advancePaid status contactId studioProjectId",
       )
       .sort({ createdAt: -1 })
-      .lean(),
-    Event.find(projectFilter)
+      .lean() : [],
+    modules.hasModule(user, 'calendar') ? Event.find(projectFilter)
       .select("title start end location type contactId studioProjectId description teamMembers lead")
       .sort({ start: -1 })
-      .lean(),
-    Document.find({ ...projectFilter, status: { $ne: "Archived" } })
+      .lean() : [],
+    modules.hasModule(user, 'contacts') ? Document.find({ ...projectFilter, status: { $ne: "Archived" } })
       .sort({ updatedAt: -1 })
-      .lean(),
+      .lean() : [],
   ]);
   return { quotations, invoices, sessions, documents };
 }
@@ -133,13 +134,13 @@ router.get(
   wrap(async (req, res) => {
     const contact = await requireContact(id(req), true);
     const [projects, related] = await Promise.all([
-      Project.find({
+      modules.hasModule(req.user, 'projects') ? Project.find({
         $or: [{ contactId: contact._id }, { additionalClients: contact._id }],
         status: { $ne: "Archived" },
       })
         .sort({ createdAt: -1 })
-        .lean(),
-      documentsFor(contact),
+        .lean() : [],
+      documentsFor(contact, undefined, req.user),
     ]);
     res.json({ contact, projects, ...related });
   }),
@@ -159,10 +160,10 @@ router.patch(
 );
 router.get(
   "/studio-projects",
-  wrap(async (_req, res) =>
+  wrap(async (req, res) =>
     res.json(
       await Project.find({ status: { $ne: "Archived" } })
-        .populate("contactId", "firstName lastName email phone")
+        .populate("contactId", modules.hasModule(req.user, "contacts") ? "firstName lastName email phone" : "_id")
         .sort({ createdAt: -1 })
         .lean(),
     ),
@@ -184,10 +185,10 @@ router.get(
   "/studio-projects/:id",
   wrap(async (req, res) => {
     const project = await Project.findById(id(req))
-      .populate("contactId")
-      .populate("additionalClients", "firstName lastName email");
+      .populate("contactId", modules.hasModule(req.user, "contacts") ? undefined : "_id")
+      .populate("additionalClients", modules.hasModule(req.user, "contacts") ? "firstName lastName email" : "_id");
     if (!project) throw error("Project not found", 404);
-    const [related,production]=await Promise.all([documentsFor(project.contactId,project._id),require('../services/projectWorkspace').productionFor(project)]);
+    const [related,production]=await Promise.all([documentsFor(project.contactId,project._id,req.user),require('../services/projectWorkspace').productionFor(project)]);
     res.json({project,...related,production});
   }),
 );

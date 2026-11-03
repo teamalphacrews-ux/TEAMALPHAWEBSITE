@@ -90,7 +90,7 @@ test('first configured admin login saves one normalized account and returns only
   assert.equal(state.hashes[0].rounds, 12);
   assert.match(response.body.user.id, /^[a-f\d]{24}$/i);
   assert.equal(response.body.user.id, adminId);
-  assert.deepEqual(Object.keys(response.body.user).sort(), ['email', 'firstName', 'id', 'lastName', 'role']);
+  assert.deepEqual(Object.keys(response.body.user).sort(), ['canManageTeam', 'email', 'firstName', 'id', 'lastName', 'moduleAccess', 'role', 'studioOwner']);
   assert.equal(JSON.stringify(response.body).includes(deploymentPassword), false);
   assert.equal(JSON.stringify(response.body).includes('synthetic-signing-key'), false);
   assert.deepEqual(state.signatures[0], {

@@ -39,8 +39,8 @@ test('existing case-variant emails cannot create a second unusable account', asy
 
 test('editing prevents duplicate email identities without changing the account', async t => {
   let saved = false;
-  const account = { _id: '507f1f77bcf86cd799439011', save: async () => { saved = true; } };
-  t.mock.method(User, 'findById', async () => account);
+  const account = { _id: '507f1f77bcf86cd799439011', role: 'admin', save: async () => { saved = true; } };
+  t.mock.method(User, 'findById', () => ({ select: async () => account }));
   t.mock.method(User, 'findOne', async query => { assert.equal(query._id.$ne, account._id); return { _id: 'another' }; });
   const output = res(); await route('/:id', 'put').stack.at(-1).handle({ user: { role: 'admin' }, params: { id: account._id }, body: { email: ' DUPLICATE@EXAMPLE.TEST ' } }, output);
   assert.equal(output.statusCode, 409); assert.equal(saved, false);
@@ -53,11 +53,10 @@ test('partial updates preserve an unchanged password and validate any replacemen
   assert.throws(() => parseAdminUserInput({ role: { $ne: null } }, { partial: true }), error => error.status === 400);
 });
 
-test('a second administrator cannot bypass owner-only account changes', async t => {
-  t.mock.method(User, 'findById', () => ({ select: async () => ({ role: 'admin', studioOwner: false, email: 'staff@example.test' }) }));
+test('a member without team access cannot manage accounts', async () => {
   for (const [path, method] of [['/create', 'post'], ['/:id', 'put'], ['/:id', 'delete']]) {
     const output = res(); let next = false;
-    await route(path, method).stack[1].handle({ user: { id: '507f1f77bcf86cd799439011', role: 'admin' } }, output, () => { next = true; });
+    await route(path, method).stack[2].handle({ user: { id: '507f1f77bcf86cd799439011', role: 'admin', moduleAccess: ['overview'] } }, output, () => { next = true; });
     assert.equal(output.statusCode, 403); assert.equal(next, false);
   }
 });

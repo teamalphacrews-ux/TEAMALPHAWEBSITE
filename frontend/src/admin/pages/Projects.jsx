@@ -1,5 +1,7 @@
+import { useAuth } from '../../context/AuthContext';
+import { hasFullModuleAccess } from '../../utils/moduleAccess';
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { Search, CalendarDays, MapPin, ArrowUpRight, RefreshCw, FolderOpen, Users, Wallet, List, LayoutGrid } from "lucide-react";
 import StudioSelect from "../components/common/StudioSelect";
@@ -40,6 +42,10 @@ export function ProjectsView({ projects = [], loading = false, error = "", onSel
 }
 
 export default function Projects() {
+  const { user } = useAuth();
+  return hasFullModuleAccess(user) ? <FullProjects /> : <Navigate to="/admin/studio-projects" replace />;
+}
+function FullProjects() {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [invoices, setInvoices] = useState([]);

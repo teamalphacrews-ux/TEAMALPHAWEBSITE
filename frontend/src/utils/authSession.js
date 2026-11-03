@@ -39,6 +39,10 @@ export async function verifyStoredSession(session, { fetcher, api = '', signal, 
     // Keep workspace metadata while accepting only verified identity fields.
     const user = { ...session.user, id, role: profile.role };
     for (const field of ['firstName', 'lastName', 'email']) if (typeof profile[field] === 'string') user[field] = profile[field];
+    user.moduleAccess = Array.isArray(profile.moduleAccess) ? [...profile.moduleAccess] : profile.moduleAccess == null ? null : [];
+    user.studioOwner = profile.studioOwner === true;
+    user.canManageTeam = profile.canManageTeam === true;
+    delete user.owner;
     return { status: 'valid', user };
   } catch {
     return { status: signal?.aborted ? 'cancelled' : 'unavailable' };

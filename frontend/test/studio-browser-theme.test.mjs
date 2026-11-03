@@ -17,7 +17,7 @@ test('browser chrome tracks dark and light workspace themes and restores the pub
   assert.equal(doc.meta.getAttribute('content'), '#F6F3ED');
   assert.equal(doc.attr.has('data-studio-browser-theme'), false);
   const restoreLight = installStudioBrowserTheme(doc, 'light');
-  assert.equal(doc.meta.getAttribute('content'), '#f2f3f0');
+  assert.equal(doc.meta.getAttribute('content'), '#ffffff');
   restoreLight();
   assert.equal(doc.documentElement.style.getPropertyValue('--studio-browser-canvas'), '');
 });

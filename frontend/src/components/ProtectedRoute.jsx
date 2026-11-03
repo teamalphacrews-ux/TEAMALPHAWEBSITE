@@ -1,8 +1,11 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+
+import { canAccessStudioPath } from '../utils/moduleAccess';
 
 const ProtectedRoute = ({ allowedRoles }) => {
     const { token, user, loading } = useAuth();
+    const location = useLocation();
 
     if (loading) return null; // Or a spinner
 
@@ -14,6 +17,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
         return <Navigate to="/" replace />;
     }
 
+    if (location.pathname.startsWith('/quote-preview/') && !canAccessStudioPath(user, location.pathname)) return <Navigate to="/admin" replace />;
     return <Outlet />;
 };
 

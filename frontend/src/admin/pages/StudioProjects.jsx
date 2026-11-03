@@ -1,3 +1,5 @@
+import { useAuth } from '../../context/AuthContext';
+import { canAccessStudioPath, hasModuleAccess } from '../../utils/moduleAccess';
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
@@ -13,9 +15,10 @@ import {
 } from "../components/operations/WorkspaceUI";
 import "./referenceContacts.css";
 export default function StudioProjects() {
+  const { user } = useAuth();
   const { data, loading, error, reload } = useWorkspaceData([
       "/api/studio-projects",
-      "/api/contacts",
+      hasModuleAccess(user, 'contacts') ? '/api/contacts' : null,
     ]),
     [projects = [], contacts = []] = data;
   const [query, setQuery] = useState(""),
@@ -41,7 +44,7 @@ export default function StudioProjects() {
     <div className="reference-workspace">
       <div className="reference-heading">
         <h1>Projects</h1>
-        <Link className="studio-button small" to="/admin/projects">Earlier bookings</Link>
+        {canAccessStudioPath(user, '/admin/projects') && <Link className="studio-button small" to="/admin/projects">Earlier bookings</Link>}
         <label className="reference-search">
           <Search size={16} />
           <input
@@ -51,9 +54,9 @@ export default function StudioProjects() {
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
-        <button className="reference-button" onClick={() => setCreating(true)}>
+        {hasModuleAccess(user, 'contacts') && <button className="reference-button" onClick={() => setCreating(true)}>
           New Project
-        </button>
+        </button>}
       </div>
       <div className="reference-tabs">
         {["All Projects", "Inquiry", "Booked", "Completed"].map((label) => (

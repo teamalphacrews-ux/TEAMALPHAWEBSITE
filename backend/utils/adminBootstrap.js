@@ -92,7 +92,7 @@ function createLoginHandler({
                 : sign({ user: { id, role: user.role } }, env.JWT_SECRET, { expiresIn: '1d' });
             return res.json({ token, user: {
                 id, firstName: user.firstName, lastName: user.lastName,
-                email: user.email, role: user.role,
+                email: user.email, role: user.role, ...require('./moduleAccess').accessPayload(user),
             } });
         } catch (error) {
             if (error.loginStatus === 400) return res.status(400).json({ msg: 'Invalid Credentials' });

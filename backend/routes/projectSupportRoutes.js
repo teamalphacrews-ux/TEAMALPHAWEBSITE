@@ -150,7 +150,7 @@ router.get(
         documentNumber: quote.documentNumber,
         invoiceId: quote.invoiceId,
       },
-      clientUrl,
+      clientUrl: require('../utils/moduleAccess').hasFullAccess(req.user) ? clientUrl : null,
     });
   }),
 );

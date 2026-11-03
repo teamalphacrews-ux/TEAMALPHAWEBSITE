@@ -1,3 +1,5 @@
+import { useAuth } from '../../context/AuthContext';
+import { hasModuleAccess } from '../../utils/moduleAccess';
 import StudioSelect from '../components/common/StudioSelect';
 import StudioButton from '../components/common/StudioButton';
 import DocumentSettingsPanel from '../components/common/DocumentSettingsPanel';
@@ -211,6 +213,8 @@ function Toggle({ label, checked, onChange, description }) {
   );
 }
 export default function InvoiceWorkspace() {
+  const { user } = useAuth();
+  const returnPath = hasModuleAccess(user, 'finance') ? '/admin/finance' : '/admin/invoices';
   const { id } = useParams(),
     [search] = useSearchParams(),
     navigate = useNavigate();
@@ -651,7 +655,7 @@ export default function InvoiceWorkspace() {
     try {
       if (modal === "delete") {
         await workspaceRequest("delete", `/api/invoices/${savedId.current}`);
-        navigate("/admin/finance");
+        navigate(returnPath);
       } else {
         await workspaceRequest("put", `/api/invoices/${savedId.current}`, {
           status: "Cancelled",
@@ -680,7 +684,7 @@ export default function InvoiceWorkspace() {
   return (
     <div className="invoice-editor">
       <header className="invoice-editor-toolbar">
-        <Link to="/admin/finance" aria-label="Back to finance">
+        <Link to={returnPath} aria-label="Back to invoices">
           <ArrowLeft size={21} />
         </Link>
         <div className="invoice-editor-title">

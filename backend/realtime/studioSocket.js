@@ -14,15 +14,16 @@ function createSocketAuth({ User, getSecret = () => process.env.JWT_SECRET, veri
             if (decoded.workspaceId) return next(new Error('Use your studio workspace connection'));
             if (!decoded.user || typeof decoded.user.id !== 'string') return next(new Error('Invalid authentication'));
             if (!validRoomId(decoded.user.id)) return next(new Error('Invalid authentication'));
-            const user = await User.findById(decoded.user.id).select('_id role +sessionVersion');
+            const user = await User.findById(decoded.user.id).select('_id role email studioOwner moduleAccess +sessionVersion');
             if (!user) return next(new Error('Invalid authentication'));
+            if (user.role === 'admin' && !require('../utils/moduleAccess').hasFullAccess(user)) return next(new Error('Realtime is unavailable for restricted accounts'));
             const session = await verifySession({ token, decoded, user, touch: false });
             if (session) socket.sessionId = String(session._id);
             // Read the current database role so revoked access takes effect on reconnect.
             socket.user = { id: String(user._id), role: user.role };
             socket.revalidateSession = async () => {
-                const current = await User.findById(decoded.user.id).select('_id role +sessionVersion');
-                if (!current || current.role !== socket.user.role) throw new Error('Access changed');
+                const current = await User.findById(decoded.user.id).select('_id role email studioOwner moduleAccess +sessionVersion');
+                if (!current || current.role !== socket.user.role || (current.role === 'admin' && !require('../utils/moduleAccess').hasFullAccess(current))) throw new Error('Access changed');
                 await verifySession({ token, decoded, user: current, touch: false });
             };
             return next();

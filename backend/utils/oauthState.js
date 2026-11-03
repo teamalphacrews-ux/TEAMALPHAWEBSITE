@@ -46,7 +46,7 @@ function createOAuthStateService({
     if (typeof userId !== "string" || !/^[a-f\d]{24}$/i.test(userId))
       throw fail(403);
     const user = await User.findOne({ _id: userId, role: "admin" });
-    if (!user || user.role !== "admin") throw fail(403);
+    if (!user || user.role !== "admin" || !require("./moduleAccess").hasModule(user, "calendar")) throw fail(403);
     return user;
   }
   async function issue(identity) {

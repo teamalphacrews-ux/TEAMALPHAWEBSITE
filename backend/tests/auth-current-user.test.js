@@ -17,7 +17,7 @@ function setup(current, extraEnv = {}) {
       lookups.push(userId);
       return {
         async select(projection) {
-          assert.equal(projection, "_id role +sessionVersion");
+          assert.equal(projection, "_id role email studioOwner moduleAccess +sessionVersion");
           if (current instanceof Error) throw current;
           return current;
         },
@@ -70,7 +70,7 @@ test("demoted administrators use their current role and lose studio-wide access"
   const result = await request(f.auth, signed("admin"), { admin: true });
   assert.equal(result.statusCode, 403);
   assert.equal(result.passed, false);
-  assert.deepEqual(result.user, { id, role: "client" });
+  assert.deepEqual(result.user, { id, role: "client", moduleAccess: [], studioOwner: false, canManageTeam: false });
   assert.equal((await request(f.auth, signed("admin"))).passed, true);
 });
 
@@ -82,7 +82,7 @@ test("valid saved admins and clients retain their current permissions and no ext
     { admin: true },
   );
   assert.equal(allowed.passed, true);
-  assert.deepEqual(allowed.user, { id, role: "admin" });
+  assert.deepEqual(allowed.user, { id, role: "admin", moduleAccess: null, studioOwner: false, canManageTeam: true });
   assert.equal(
     (await request(admin.auth, signed(), { admin: true, legacyHeader: true }))
       .passed,

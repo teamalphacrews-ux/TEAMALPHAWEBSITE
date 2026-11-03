@@ -1,3 +1,5 @@
+import { useAuth } from '../../context/AuthContext';
+import { hasModuleAccess } from '../../utils/moduleAccess';
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Pencil } from "lucide-react";
@@ -31,6 +33,8 @@ import {
 import "./referenceContacts.css";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 export default function ContactDetail() {
+  const { user } = useAuth();
+  const tabs = ['Overview', 'Documents', ...(hasModuleAccess(user, 'finance') && hasModuleAccess(user, 'invoices') ? ['Payments'] : []), ...(hasModuleAccess(user, 'calendar') ? ['Sessions'] : [])];
   const { id } = useParams(),
     navigate = useNavigate();
   const { data, loading, error, reload } = useWorkspaceData([
@@ -38,11 +42,12 @@ export default function ContactDetail() {
       "/api/contacts",
     ]),
     [detail, contacts = []] = data;
-  const [tab, setTab] = useState("Overview"),
+  const [requestedTab, setTab] = useState("Overview"),
     [editing, setEditing] = useState(false),
     [newProject, setNewProject] = useState(false),
     [document, setDocument] = useState(null),
     [busy, setBusy] = useState(false);
+  const tab = tabs.includes(requestedTab) ? requestedTab : 'Overview';
   if (!detail || String(detail.contact?._id) !== id)
     return (
       <div className="reference-workspace">
@@ -155,7 +160,7 @@ export default function ContactDetail() {
       <div className="reference-detail-grid">
         <main>
           <div className="reference-tabs">
-            {["Overview", "Documents", "Payments", "Sessions"].map((label) => (
+            {tabs.map((label) => (
               <button
                 className={label === tab ? "active" : ""}
                 key={label}
@@ -167,7 +172,7 @@ export default function ContactDetail() {
           </div>
           {tab === "Overview" && (
             <>
-              <ReferenceSection
+              {hasModuleAccess(user, 'projects') && <ReferenceSection
                 title="Projects"
                 action={() => setNewProject(true)}
               >
@@ -201,7 +206,7 @@ export default function ContactDetail() {
                     No projects from this contact yet.
                   </p>
                 )}
-              </ReferenceSection>
+              </ReferenceSection>}
               <ReferenceSection
                 title="Recent Conversations"
                 action={() => openDocument("Message")}
@@ -309,7 +314,7 @@ export default function ContactDetail() {
           }}
         />
       )}
-      {newProject && (
+      {newProject && hasModuleAccess(user, 'projects') && (
         <ProjectForm
           contact={contact}
           contacts={contacts}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useStudioIdentity } from "../../../utils/studioIdentity";
+import { canAccessStudioPath, hasModuleAccess } from '../../../utils/moduleAccess';
 import StudioAppIcon from "./StudioAppIcon";
 import { useStudioPreferences } from './StudioPreferences';
 import { studioText } from '../../../utils/studioTranslations';
@@ -21,8 +22,8 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
   const searchTerm = compact ? '' : query.trim().toLowerCase();
   const aliases = { Quotations: 'quotes proposal', Contacts: 'clients address book', Finance: 'invoices payments expenses', Email: 'gmail mail inbox', 'Client support': 'chat messages', 'Crew & scheduling': 'team photographers' };
   const matches = item => (item.name + ' ' + t(item.name) + ' ' + (aliases[item.name] || '')).toLowerCase().includes(searchTerm);
-  const matchingPrimary = primaryItems.filter(matches);
-  const matchingGroups = groups.map(group => ({ ...group, items: group.items.filter(item => matches(item) || matches({ name: group.label })) })).filter(group => group.items.length);
+  const matchingPrimary = primaryItems.filter(item => canAccessStudioPath(user, item.path) && matches(item));
+  const matchingGroups = groups.map(group => ({ ...group, items: group.items.filter(item => canAccessStudioPath(user, item.path) && (matches(item) || matches({ name: group.label }))) })).filter(group => group.items.length);
   const closeNavigation = () => { setQuery(''); onClose?.(); };
   const [unreadCount, setUnreadCount] = useState(0);
   const navRef = useRef(null);
@@ -30,7 +31,7 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
     navRef.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: "nearest" });
   }, [pathname, compact]);
   useEffect(() => {
-    if (!user || !token) return;
+    if (!user || !token || !hasModuleAccess(user, 'support')) return;
     const controller = new AbortController();
     const refresh = () =>
       fetch(API_URL + "/api/project-support/unread", {
@@ -169,11 +170,11 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
       </nav>
       <div className="studio-sidebar-bottom">
         <div className="studio-sidebar-utilities">
-          {renderLink({ name: "Settings", path: "/admin/settings", icon: Settings2 })}
+          {canAccessStudioPath(user, "/admin/settings") && renderLink({ name: "Settings", path: "/admin/settings", icon: Settings2 })}
           <Link to="/" onClick={onClose} className="studio-website-shortcut" aria-label={t('View website')} title={t('View website')}><ArrowUpRight size={18} /></Link>
         </div>
         <div className="studio-sidebar-profile">
-          <Link to="/admin/settings?section=workspace" onClick={onClose} className="studio-avatar" aria-label="Your workspace preferences" title="Your workspace preferences">
+          <Link to={canAccessStudioPath(user, "/admin/settings") ? "/admin/settings?section=workspace" : "/admin"} onClick={onClose} className="studio-avatar" aria-label="Your workspace preferences" title="Your workspace preferences">
             {user?.firstName?.[0] || "A"}
             {user?.lastName?.[0] || ""}
           </Link>

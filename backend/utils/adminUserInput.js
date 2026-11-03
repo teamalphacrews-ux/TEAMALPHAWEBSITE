@@ -24,6 +24,10 @@ function parseAdminUserInput(body, { partial = false } = {}) {
     if (!['admin', 'client'].includes(body.role)) throw fail('Choose a valid account role.');
     result.role = body.role;
   }
+  if (body.moduleAccess !== undefined) {
+    result.moduleAccess = require('./moduleAccess').parseModuleAccess(body.moduleAccess);
+  }
+  for (const field of ['studioOwner', 'sessionVersion', 'vaultPassword', 'iv']) if (Object.hasOwn(body, field)) throw fail('Protected account fields cannot be changed.');
   return result;
 }
 

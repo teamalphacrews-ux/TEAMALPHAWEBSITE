@@ -1,3 +1,4 @@
+import { hasFullModuleAccess } from '../../utils/moduleAccess';
 import StudioButton from '../components/common/StudioButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -47,6 +48,8 @@ const sections = [
 export default function Settings() {
   const { data, loading, error, reload } = useWorkspaceData(['/api/studio/settings']);
   const { user } = useAuth();
+  const fullAccess = hasFullModuleAccess(user);
+  const availableSections = fullAccess ? sections : sections.filter(section => ['workspace','language','notifications','device','profile','branding','connections','security'].includes(section.id));
   const { preferences, resolvedTheme, update } = useStudioPreferences();
   const t = text => studioText(preferences.language, text);
   const [params, setParams] = useSearchParams(), navigate = useNavigate();
@@ -69,10 +72,10 @@ export default function Settings() {
   const saved = data[0], original = baseline || (saved ? settingsWithDefaults(saved) : null), values = form || original;
   const changed = values && original ? changedSettingsSections(values, original) : [];
   const dirty = changed.length > 0;
-  const tab = sections.some(section => section.id === params.get('section')) ? params.get('section') : null;
-  const current = sections.find(section => section.id === tab);
+  const tab = availableSections.some(section => section.id === params.get('section')) ? params.get('section') : null;
+  const current = availableSections.find(section => section.id === tab);
   const personalSection = current?.group === 'Personal';
-  const matching = sections.filter(section => query.trim().toLowerCase().split(/\s+/).every(word => (section.title + ' ' + t(section.title) + ' ' + section.description + ' ' + section.keywords).toLowerCase().includes(word)));
+  const matching = availableSections.filter(section => query.trim().toLowerCase().split(/\s+/).every(word => (section.title + ' ' + t(section.title) + ' ' + section.description + ' ' + section.keywords).toLowerCase().includes(word)));
   const change = (key, value) => { if (!saveLock.current) setForm(previous => ({ ...(previous || original), [key]: value })); };
   const changeNested = (group, key, value) => { if (!saveLock.current) setForm(previous => { const base = previous || original; return { ...base, [group]: { ...base[group], [key]: value } }; }); };
   const selectSection = id => {
@@ -108,6 +111,7 @@ export default function Settings() {
     saveLock.current = true; setBusy(true); setSaveError('');
     try {
       const payload = { ...values, quotationValidityDays: Number(values.quotationValidityDays) };
+      if (!fullAccess) { const allowed = [...settingsSectionKeys.profile, ...settingsSectionKeys.branding]; Object.keys(payload).forEach(key => { if (!allowed.includes(key)) delete payload[key]; }); }
       // Never silently drop edited policies. The server authorizes protected groups.
       for (const group of ['security', 'backups']) if (!changed.includes(group)) delete payload[group];
       const { data: result } = await axios.put(API + '/api/studio/settings', payload, { ...operationAuth(), timeout: 30000 });
@@ -164,14 +168,14 @@ export default function Settings() {
             <div className="settings-grouped-rows">{group === 'Personal' && <label className="settings-quick-theme studio-switch-control">
               <StudioAppIcon icon={Moon} tone="indigo" size={34} /><span className="settings-row-label"><strong>Dark mode</strong></span>
               <input type="checkbox" role="switch" aria-label="Dark mode" checked={resolvedTheme === 'dark'} onChange={event => update({ theme: event.target.checked ? 'dark' : 'light' }, { origin: event.currentTarget.closest('label') })} /><span className="studio-switch-track" aria-hidden="true" />
-            </label>}{sections.filter(section => section.group === group).map(section => sectionLink(section))}</div>
+            </label>}{availableSections.filter(section => section.group === group).map(section => sectionLink(section))}</div>
           </section>)}</div>
           <p className="settings-directory-note">Personal preferences apply to your account. Studio settings are shared with your team.</p>
         </>}
       </section> : <>
         <div className="settings-detail-toolbar"><button type="button" className="settings-back-button" onClick={() => selectSection(null)}><ArrowLeft size={17} />All settings</button><span className="settings-scope-note">{personalSection ? 'Applies to you' : 'Shared with your studio'}</span></div>
         <div className="settings-layout">
-          <aside className="settings-rail"><nav aria-label={current.group + ' settings'}><p className="settings-rail-title">{t(current.group)}</p>{sections.filter(section => section.group === current.group).map(section => sectionLink(section, true))}</nav><button type="button" className="settings-rail-browse" onClick={() => selectSection(null)}>Browse all settings<ChevronRight size={14} /></button></aside>
+          <aside className="settings-rail"><nav aria-label={current.group + ' settings'}><p className="settings-rail-title">{t(current.group)}</p>{availableSections.filter(section => section.group === current.group).map(section => sectionLink(section, true))}</nav><button type="button" className="settings-rail-browse" onClick={() => selectSection(null)}>Browse all settings<ChevronRight size={14} /></button></aside>
           <div className="settings-content">
             <header className="settings-section-heading"><StudioAppIcon icon={current.icon} tone={current.tone} size={40} /><div><span className="settings-section-eyebrow">{t(current.group)}</span><h2 tabIndex={-1} ref={heading} lang={preferences.language} dir="auto">{t(current.title)}</h2><p>{current.description}</p></div></header>
             <SettingsDisclosures key={tab}>
@@ -182,8 +186,8 @@ export default function Settings() {
         </div>
       </>}
       <WorkspaceError error={saveError} />
-      {dirty && <footer className="settings-save-bar has-changes"><div role="status"><span className="settings-save-symbol"><span className="settings-unsaved-dot" /></span><span><strong>{busy ? 'Saving changes…' : photoUploading ? 'Wait for your photo to finish uploading…' : changed.length + (changed.length === 1 ? ' section' : ' sections') + ' with unsaved changes'}</strong><small>{changed.map(id => sections.find(section => section.id === id)?.title).join(' · ')}</small></span></div><div className="settings-save-actions"><button type="button" className="studio-button" disabled={busy || photoUploading} onClick={() => setConfirmation({ kind: 'all' })}>{t("Discard")}</button><StudioButton type="button" variant="primary" icon={Save} loading={busy} disabled={photoUploading} onClick={saveAll} loadingLabel="Saving all studio settings">Save all changes</StudioButton></div></footer>}
+      {dirty && <footer className="settings-save-bar has-changes"><div role="status"><span className="settings-save-symbol"><span className="settings-unsaved-dot" /></span><span><strong>{busy ? 'Saving changes…' : photoUploading ? 'Wait for your photo to finish uploading…' : changed.length + (changed.length === 1 ? ' section' : ' sections') + ' with unsaved changes'}</strong><small>{changed.map(id => availableSections.find(section => section.id === id)?.title).join(' · ')}</small></span></div><div className="settings-save-actions"><button type="button" className="studio-button" disabled={busy || photoUploading} onClick={() => setConfirmation({ kind: 'all' })}>{t("Discard")}</button><StudioButton type="button" variant="primary" icon={Save} loading={busy} disabled={photoUploading} onClick={saveAll} loadingLabel="Saving all studio settings">Save all changes</StudioButton></div></footer>}
     </>}
-    {confirmation && <OperationsModal title={confirmation.kind === 'leave' ? 'Leave without saving?' : confirmation.kind === 'section' ? 'Revert this section?' : 'Discard unsaved changes?'} onClose={() => setConfirmation(null)} footer={<><button type="button" className="studio-button" onClick={() => setConfirmation(null)}>Keep editing</button><button type="button" className="studio-button primary" onClick={discard}>{confirmation.kind === 'leave' ? 'Discard & leave' : 'Discard changes'}</button></>}><p className="studio-muted">{confirmation.kind === 'section' ? 'Restore ' + (sections.find(section => section.id === confirmation.section)?.title || 'this section').toLowerCase() + ' to its last saved values. Changes in other sections will stay.' : 'Only unsaved studio settings will be discarded. Your saved settings, personal preferences and project records will stay.'}</p></OperationsModal>}
+    {confirmation && <OperationsModal title={confirmation.kind === 'leave' ? 'Leave without saving?' : confirmation.kind === 'section' ? 'Revert this section?' : 'Discard unsaved changes?'} onClose={() => setConfirmation(null)} footer={<><button type="button" className="studio-button" onClick={() => setConfirmation(null)}>Keep editing</button><button type="button" className="studio-button primary" onClick={discard}>{confirmation.kind === 'leave' ? 'Discard & leave' : 'Discard changes'}</button></>}><p className="studio-muted">{confirmation.kind === 'section' ? 'Restore ' + (availableSections.find(section => section.id === confirmation.section)?.title || 'this section').toLowerCase() + ' to its last saved values. Changes in other sections will stay.' : 'Only unsaved studio settings will be discarded. Your saved settings, personal preferences and project records will stay.'}</p></OperationsModal>}
   </div>;
 }

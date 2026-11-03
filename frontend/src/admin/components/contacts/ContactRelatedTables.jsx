@@ -1,3 +1,5 @@
+import { useAuth } from '../../../context/AuthContext';
+import { hasModuleAccess } from '../../../utils/moduleAccess';
 import {useStudioPreferences} from '../common/StudioPreferences';
 import {useStudioIdentity} from '../../../utils/studioIdentity';
 import {formatWorkspaceDate,formatWorkspaceTime,resolveWorkspaceTimezone} from '../../../utils/workspaceLocale';
@@ -12,13 +14,14 @@ export function ContactDocuments({
   documents = [],
   onDraft,
 }) {
+  const { user } = useAuth();
   const [clock, setClock] = useState(() => Date.now());
   useEffect(() => {
     const interval = setInterval(() => setClock(Date.now()), 60000);
     return () => clearInterval(interval);
   }, []);
   const rows = [
-    ...quotations.map((item) => ({
+    ...quotations.filter(() => hasModuleAccess(user, 'quotations')).map((item) => ({
       ...item,
       label:
         (item.documentNumber ? `Quote #${item.documentNumber} · ` : "") +
@@ -28,7 +31,7 @@ export function ContactDocuments({
       amount: rupees(item.totalPaise / 100),
       url: "/admin/quotations?quote=" + item._id,
     })),
-    ...invoices.map((item) => ({
+    ...invoices.filter(() => hasModuleAccess(user, 'invoices')).map((item) => ({
       ...item,
       label:
         "Invoice" +
@@ -41,7 +44,7 @@ export function ContactDocuments({
       url: "/admin/invoices/" + item._id,
     })),
     ...documents
-      .filter((item) => item.type !== "Message")
+      .filter((item) => item.type !== 'Message' && hasModuleAccess(user, 'contacts'))
       .map((item) => ({
         ...item,
         label: item.title,
@@ -96,6 +99,8 @@ export function ContactDocuments({
   );
 }
 export function ContactPayments({ invoices = [] }) {
+  const { user } = useAuth();
+  if (!hasModuleAccess(user, 'finance') || !hasModuleAccess(user, 'invoices')) return null;
   const issued = invoices.filter(
     (item) =>
       !["Draft", "Cancelled", "Archived"].includes(item.documentStatus) &&
@@ -146,6 +151,8 @@ export function ContactPayments({ invoices = [] }) {
   );
 }
 export function ContactPaymentSummary({ invoices = [] }) {
+  const { user } = useAuth();
+  if (!hasModuleAccess(user, 'finance') || !hasModuleAccess(user, 'invoices')) return null;
   const totals = contactPaymentTotals(invoices);
   return (
     <div className="reference-payment-summary">

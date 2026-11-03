@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { Link } from 'react-router-dom';
 import { CloudOff, FileClock, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { canAccessStudioPath } from '../utils/moduleAccess';
 import { deviceDrafts, draftScope, draftRoute, clearLocalDrafts } from './draftVault';
 import './offlineDrafts.css';
 const Context=createContext(null);
@@ -57,11 +58,13 @@ export function OfflineDraftStatus({draft}) {
 }
 const kindLabel={enquiry:'Enquiry',quotation:'Quotation','project-note':'Project note'};
 export function OfflineDraftsHub(){
+ const {user}=useAuth();
  const context=useContext(Context),scope=context?.scope||'';
  const [state,setState]=useState({scope:'',rows:[],error:'',loading:true}),requestVersion=useRef(0);
  const load=useCallback(async()=>{const sequence=++requestVersion.current;setState({scope,rows:[],error:'',loading:true});try{const rows=await deviceDrafts.list(scope);if(sequence===requestVersion.current)setState({scope,rows,error:'',loading:false});}catch(failure){if(sequence===requestVersion.current)setState({scope,rows:[],error:failure.message,loading:false});}},[scope]);
  useEffect(()=>{const guard=requestVersion;let active=true;Promise.resolve().then(()=>{if(active)load();});window.addEventListener('studio-drafts-changed',load);return()=>{active=false;guard.current++;window.removeEventListener('studio-drafts-changed',load);};},[load]);
  const remove=async row=>{if(!window.confirm('Delete this local draft? Saved studio records will stay.'))return;try{await deviceDrafts.remove(scope,row.kind,row.recordId);changed();}catch(failure){setState(previous=>previous.scope===scope?{...previous,error:failure.message}:previous);}};
- const {rows,error,loading}=state.scope===scope?state:{rows:[],error:'',loading:true};
+ const {rows:storedRows,error,loading}=state.scope===scope?state:{rows:[],error:'',loading:true};
+ const rows=storedRows.filter(row=>canAccessStudioPath(user,draftRoute(row.kind,row.recordId)));
  return <div className="studio-offline-hub"><div className="studio-page-heading"><div><h1>Offline drafts</h1><p>Continue work you kept on this device.</p></div><button type="button" className="studio-button" onClick={load}><RefreshCw size={15}/>Refresh</button></div><p className="studio-muted">Drafts expire after 7 days and are removed when you sign out or switch studios. Reconnect and review each draft before submitting; nothing is sent automatically.</p>{error&&<p className="studio-error" role="alert">{error}</p>}{loading?<p role="status">Loading local drafts…</p>:rows.length?<div className="studio-offline-list">{rows.map(row=><article key={row.kind+':'+row.recordId}><FileClock size={22}/><div><h2>{kindLabel[row.kind]}</h2><p>{row.value.name||row.value.clientName||row.value.title||'Unsaved project note'}</p><small>Saved {new Date(row.updatedAt).toLocaleString()}{row.uncertain?' · Submission not confirmed':''}</small></div><Link className="studio-button" to={draftRoute(row.kind,row.recordId)}>Continue<ArrowRight size={14}/></Link><button type="button" className="studio-icon-button" aria-label={'Delete local '+kindLabel[row.kind].toLowerCase()} onClick={()=>remove(row)}><Trash2 size={16}/></button></article>)}</div>:<div className="studio-empty"><CloudOff size={25}/><p>No local drafts on this device.</p></div>}</div>;
 }

@@ -3,10 +3,12 @@ import {Link,useLocation} from 'react-router-dom';
 import {Search,X,Loader2} from 'lucide-react';
 import {OperationsModal} from '../operations/OperationsUI';
 import {useAuth} from '../../../context/AuthContext';
+import {hasFullModuleAccess} from '../../../utils/moduleAccess';
 import API from '../../../utils/apiConfig';
 const labels={contacts:'Contacts',projects:'Projects',enquiries:'Enquiries',quotations:'Quotations',invoices:'Invoices'};
 export default function WorkspaceRecordSearch(){
  const {user}=useAuth(),location=useLocation();
+ if(!hasFullModuleAccess(user))return null;
  return <RecordSearch key={String(user?._id||user?.id||'')+':'+String(user?.workspace?.id||user?.workspace?._id||'legacy')+location.pathname+location.search}/>;
 }
 function RecordSearch(){

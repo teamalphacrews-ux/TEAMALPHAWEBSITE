@@ -11,7 +11,7 @@ const id = value => { if (!/^[a-f\d]{24}$/i.test(value || '')) throw security.fa
 const requireOwner = async (req, res, next) => { try { await security.assertOwner(req.user.id); next(); } catch (e) { res.status(e.status || 503).json({ error: e.status ? e.message : 'Owner checks are unavailable.' }); } };
 router.get('/access', wrap(async (req, res) => {
   const owner = await security.isOwner(req.user.id), config = await security.securityConfig();
-  res.json({ owner, currentSessionId: req.sessionId, permissions: Object.fromEntries(Object.entries(config.permissions).map(([key, rule]) => [key, rule === 'all_admins' || owner])) });
+  res.json({ owner, ...require('../utils/moduleAccess').accessPayload(req.user), currentSessionId: req.sessionId, permissions: Object.fromEntries(Object.entries(config.permissions).map(([key, rule]) => [key, rule === 'all_admins' || owner])) });
 }));
 router.get('/sessions', wrap(async (req, res) => {
   const rows = await Session.find({ user: req.user.id, revokedAt: null, expiresAt: { $gt: new Date() } }).sort({ lastSeenAt: -1 }).lean(), config = await security.securityConfig();

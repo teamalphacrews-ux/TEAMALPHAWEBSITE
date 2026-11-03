@@ -1,3 +1,4 @@
+import { hasModuleAccess } from '../../utils/moduleAccess';
 import StudioIcon from '../components/common/StudioIcon';
 import StudioSelect from '../components/common/StudioSelect';
 import { useEffect, useState, useRef } from "react";
@@ -37,11 +38,11 @@ import {WorkspaceActionMenu} from '../components/operations/WorkspaceActionMenu'
 import {useAuth} from '../../context/AuthContext';
 export default function Finance() {
   const navigate=useNavigate();
-  const {token}=useAuth();
+  const {token,user}=useAuth();
   const [receiptFile,setReceiptFile]=useState(null),[openingReceipt,setOpeningReceipt]=useState('');
   const expenseRequest=useRef(''),saveLock=useRef(false);
   const [params, setParams] = useSearchParams();
-  const tab = ['due', 'invoices', 'ledger'].includes(params.get('view')) ? params.get('view') : 'bookings';
+  const tab = (hasModuleAccess(user, 'invoices') ? ['due', 'invoices', 'ledger'] : ['ledger']).includes(params.get('view')) ? params.get('view') : 'bookings';
   const setTab = value => setParams(current => { const next = new URLSearchParams(current); next.set('view', value); return next; });
   const { identity } = useStudioIdentity();
   const timezone = studioTimezone(identity?.timezone);
@@ -50,8 +51,8 @@ export default function Finance() {
   useEffect(() => { const timer = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(timer); }, []);
   const { data, loading, error, reload } = useWorkspaceData([
     "/api/studio/finance",
-    "/api/invoices",
-    "/api/studio-projects",
+    hasModuleAccess(user, 'invoices') ? '/api/invoices' : null,
+    hasModuleAccess(user, 'projects') ? '/api/studio-projects' : null,
   ]);
   const { leads = [], entries = [] } = data[0] || {};
   const invoices = data[1] || [];
@@ -217,10 +218,10 @@ export default function Finance() {
         title="Finance"
         description="Bookings, invoices and your cash ledger, each with a clear purpose."
       >
-        <button className="studio-button" onClick={() => navigate("/admin/invoices/new")}>
+        {hasModuleAccess(user, 'invoices') && <button className="studio-button" onClick={() => navigate("/admin/invoices/new")}>
           <FileText size={14} />
           New invoice
-        </button>
+        </button>}
         <button
           className="studio-button primary"
           onClick={() => openEntry(null)}
@@ -252,7 +253,7 @@ export default function Finance() {
             value: <Link className="finance-due-summary-link" to="/admin/finance?view=due" aria-label="Review invoice payments due now">{rupees(dueRows.reduce((sum, row) => sum + Math.round(row.amountDue * 100), 0) / 100)}<ArrowUpRight size={17} /></Link>,
             note: "Issued INR invoices · today & overdue",
           },
-        ]}
+        ].filter(item => item.label !== 'Due now' || hasModuleAccess(user, 'invoices'))}
       />
       <WorkspaceError error={error} retry={reload} />
       <details className="finance-balance-explainer"><summary><Wallet size={16} />How balances work</summary>
@@ -264,13 +265,13 @@ export default function Finance() {
       </details>
       <div className={tab === 'due' ? 'finance-due-layout' : 'workspace-two-column'}>
         <section className="studio-card">
-          <div className="studio-phone-filter finance-view-filter"><StudioSelect aria-label="View finance records" value={tab} onChange={event=>{setTab(event.target.value);setQuery("");}}>{[["bookings","Booking payments"],["due","Due now"],["invoices","Invoices"],["ledger","Cash ledger"]].map(([key,label])=><option key={key} value={key}>{label}</option>)}</StudioSelect></div><div className="studio-tabs finance-register-tabs">
+          <div className="studio-phone-filter finance-view-filter"><StudioSelect aria-label="View finance records" value={tab} onChange={event=>{setTab(event.target.value);setQuery("");}}>{[["bookings","Booking payments"],["due","Due now"],["invoices","Invoices"],["ledger","Cash ledger"]].filter(([key]) => !['due','invoices'].includes(key) || hasModuleAccess(user, 'invoices')).map(([key,label])=><option key={key} value={key}>{label}</option>)}</StudioSelect></div><div className="studio-tabs finance-register-tabs">
             {[
               ["bookings", "Booking payments"],
               ["due", "Due now"],
               ["invoices", "Invoices"],
               ["ledger", "Cash ledger"],
-            ].map(([key, label]) => (
+            ].filter(([key]) => !['due','invoices'].includes(key) || hasModuleAccess(user, 'invoices')).map(([key, label]) => (
               <button
                 className={tab === key ? "active" : ""}
                 aria-pressed={tab === key}

@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const modules = require("../utils/moduleAccess");
 
 function createAuth({
   User = require("../models/User"),
@@ -39,7 +40,7 @@ function createAuth({
       return res.status(401).json({ msg: "Token is not valid" });
     let current;
     try {
-      current = await User.findById(identity.id).select("_id role +sessionVersion");
+      current = await User.findById(identity.id).select("_id role email studioOwner moduleAccess +sessionVersion");
     } catch {
       return res
         .status(503)
@@ -58,7 +59,11 @@ function createAuth({
     }
     // A valid signature proves who signed in, not that an old role or a
     // deleted account should retain access for the token's entire lifetime.
-    req.user = { id: String(current._id), role: current.role };
+    req.user = { id: String(current._id), role: current.role, ...modules.accessPayload(current) };
+    if (!modules.requestAllowed(req.user, req)) return res.status(403).json({ msg: 'Your account does not have access to this module.', code: 'MODULE_ACCESS_DENIED' });
+    try { modules.assertOperationalWrite(req.user, req); }
+    catch (error) { return res.status(error.status || 403).json({ msg: error.message, code: 'MODULE_ACCESS_DENIED' }); }
+    if (req.user.role === 'admin') modules.installResponseProjection(req, res);
     return next();
   };
 }

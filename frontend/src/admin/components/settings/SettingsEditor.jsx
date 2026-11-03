@@ -1,3 +1,4 @@
+import { canAccessStudioPath } from '../../../utils/moduleAccess';
 import StudioButton from '../common/StudioButton';
 import StudioSelect from '../common/StudioSelect';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -98,6 +99,7 @@ function EmailStatus() {
   return <><div className="settings-mail-status"><StudioAppIcon icon={Mail} tone="rose" size={38} /><div><strong>{preview ? 'Email delivery preview' : status ? status.configured ? 'Email delivery configured' : 'Email delivery needs setup' : error ? 'Email delivery unavailable' : 'Checking email delivery…'}</strong><p>{preview ? 'Connect your studio mail service in the live workspace to send a test.' : status?.sender || 'Uses your studio’s secure mail service.'}</p></div><StudioButton type="button" size="sm" icon={Mail} disabled={preview || !status?.configured} loading={busy} onClick={test} loadingLabel="Sending test email">Send test to my email</StudioButton></div><WorkspaceError error={error} /></>;
 }
 export default function SettingsEditor({ tab, values, change, changeNested, beginProfilePhotoUpload, saving = false }) {
+  const { user } = useAuth();
   const field = (label, name, options = {}, group) => <WorkspaceField key={(group || '') + name} label={label} name={name} value={group ? values[group]?.[name] : values[name]} onChange={(key, value) => { const next = options.type === 'number' ? Number(value) : value; if (group) changeNested(group, key, next); else change(key, next); }} {...options} />;
   const fields = (items, group) => <div className="studio-form-grid">{items.map(([label, name, options]) => field(label, name, options || {}, group))}</div>;
   const toggle = (group, key, label, description) => <SettingsToggle key={key} label={label} description={description} value={values[group][key]} onChange={value => changeNested(group, key, value)} />;
@@ -173,5 +175,5 @@ export default function SettingsEditor({ tab, values, change, changeNested, begi
     ['/admin/calendar', 'Google Calendar', 'Manage your connection and sync studio events.', CalendarDays, 'blue'],
     ['/admin/integrations', 'Website enquiries', 'Review the enquiry webhook and Gmail connection.', Webhook, 'violet'],
     ['/admin/users', 'Team & access', 'Manage studio team accounts.', UsersRound, 'cyan'],
-  ].map(([to, title, copy, icon, tone]) => <Link className="settings-connection" to={to} key={to}><StudioAppIcon icon={icon} tone={tone} size={38} /><h3>{title}</h3><p>{copy}</p><span>Open<ExternalLink size={13} /></span></Link>)}</div><Help>WhatsApp Business, Instagram and Facebook contact links are managed in Studio profile.</Help></>;
+  ].filter(([to]) => canAccessStudioPath(user, to)).map(([to, title, copy, icon, tone]) => <Link className="settings-connection" to={to} key={to}><StudioAppIcon icon={icon} tone={tone} size={38} /><h3>{title}</h3><p>{copy}</p><span>Open<ExternalLink size={13} /></span></Link>)}</div><Help>WhatsApp Business, Instagram and Facebook contact links are managed in Studio profile.</Help></>;
 }

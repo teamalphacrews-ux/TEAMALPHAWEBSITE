@@ -1,5 +1,7 @@
 import StudioButton from '../components/common/StudioButton';
 import StudioSelect from '../components/common/StudioSelect';
+import { useAuth } from '../../context/AuthContext';
+import { hasModuleAccess } from '../../utils/moduleAccess';
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
 import { useSearchParams } from "react-router-dom";
@@ -43,6 +45,9 @@ const isOverdue = (task, today) =>
   new Date(task.dueDate).getTime() < today;
 
 export default function PostProduction() {
+  const { user } = useAuth();
+  const canCrew = hasModuleAccess(user, 'crew');
+  const canEnquiries = hasModuleAccess(user, 'enquiries');
   const [search] = useSearchParams();
   const [crew, setCrew] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -79,8 +84,8 @@ export default function PostProduction() {
   const fetchWorkspace = useCallback(() => {
     return Promise.allSettled([
       axios.get(`${operationAPI}/api/tasks`, operationAuth()),
-      axios.get(`${operationAPI}/api/leads`, operationAuth()),
-      axios.get(`${operationAPI}/api/photographers`, operationAuth()),
+      canEnquiries ? axios.get(`${operationAPI}/api/leads`, operationAuth()) : Promise.resolve({data:[]}),
+      canCrew ? axios.get(`${operationAPI}/api/photographers`, operationAuth()) : Promise.resolve({data:[]}),
     ]).then(([taskResult, leadResult, crewResult]) => {
       if (
         taskResult.status === "fulfilled" &&
@@ -113,7 +118,7 @@ export default function PostProduction() {
       } else setCrewError("The crew roster is unavailable. Existing assignments are preserved; retry before changing the assigned person.");
       setLoading(false);
     });
-  }, []);
+  }, [canCrew, canEnquiries]);
   useEffect(() => {
     fetchWorkspace();
   }, [fetchWorkspace]);
@@ -233,6 +238,7 @@ export default function PostProduction() {
           ? new Date(`${form.dueDate}T12:00:00`).toISOString()
           : null,
       };
+      if (!canCrew) delete body.assignee;
       let response;
       if (editing) {
         response = await axios.patch(
@@ -833,7 +839,7 @@ export default function PostProduction() {
               <StudioSelect title="Assigned crew member"
                 className="studio-input"
                 value={form.assignee}
-                disabled={!!crewError}
+                disabled={!canCrew || !!crewError}
                 onChange={(event) =>
                   setForm({ ...form, assignee: event.target.value })
                 }

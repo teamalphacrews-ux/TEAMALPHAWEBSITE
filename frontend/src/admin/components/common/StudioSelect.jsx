@@ -40,7 +40,7 @@ export default function StudioSelect({ children, className = '', value, defaultV
     rows[index]?.focus();
   };
   return <span className={'studio-select ' + className}>
-    <select {...props} ref={native} className={'studio-select-native ' + className} value={value} defaultValue={value === undefined ? defaultValue : undefined} disabled={disabled}
+    <select {...props} title={title} aria-label={props['aria-label'] || title} ref={native} className={'studio-select-native ' + className} value={value} defaultValue={value === undefined ? defaultValue : undefined} disabled={disabled}
       onChange={event => { setLocalValue(event.target.value); onChange?.(event); }}
       onInvalid={event => { onInvalid?.(event); if (window.matchMedia('(max-width: 768px)').matches) { event.preventDefault(); show(); } }}>
       {children}

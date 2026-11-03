@@ -3,12 +3,12 @@
   --studio-nav-width: 220px;
   --studio-content-width: 1780px;
   --studio-page-gutter: clamp(18px, 2vw, 32px);
-  --studio-canvas: #f1f2f3;
+  --studio-canvas: #fff;
   --studio-surface: #fff;
   --studio-text: #17191c;
   --studio-muted: #6b7077;
   --studio-border: #e1e4e7;
-  --studio-nav-surface: #f1f2f3;
+  --studio-nav-surface: #fff;
   --studio-nav-hover: #e5e7e9;
   --studio-nav-active: #17191c;
   --studio-nav-accent: #fff;
