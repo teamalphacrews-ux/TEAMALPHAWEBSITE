@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { motion as Motion, Reorder, useDragControls, useReducedMotion } from 'framer-motion';
-import { ArrowUp, ArrowDown, RotateCcw, GripVertical, Eye, LayoutGrid, CalendarDays, MessageSquare, Folder, TrendingUp, BarChart3, Wallet, ListChecks, Activity, PieChart, Zap, Check } from 'lucide-react';
+import { ArrowUp, ArrowDown, RotateCcw, GripVertical, Eye, LayoutGrid, CalendarDays, MessageSquare, Folder, TrendingUp, BarChart3, Wallet, ListChecks, Clapperboard, Grid3X3, Zap, Check } from 'lucide-react';
 import { OperationsModal } from '../operations/OperationsUI';
 import { OVERVIEW_CARDS, useStudioPreferences } from './StudioPreferences';
 import StudioAppIcon from './StudioAppIcon';
@@ -8,9 +8,9 @@ import { moveOverviewCard, reorderVisibleOverviewCards } from '../../../utils/ov
 import './overviewCustomization.css';
 
 const symbols = {
-  openEnquiries: [MessageSquare, 'blue'], bookedProjects: [Folder, 'indigo'], upcomingEvents: [CalendarDays, 'rose'], pendingTasks: [ListChecks, 'amber'],
-  bookingMomentum: [TrendingUp, 'green'], productionPulse: [BarChart3, 'violet'], financePulse: [Wallet, 'blue'], upcomingSchedule: [CalendarDays, 'rose'],
-  actionQueue: [ListChecks, 'amber'], activityMap: [Activity, 'cyan'], enquiryPipeline: [PieChart, 'indigo'], recentEnquiries: [MessageSquare, 'blue'], quickActions: [Zap, 'amber'],
+  openEnquiries: [MessageSquare, 'blue'], bookedProjects: [Folder, 'indigo'], upcomingEvents: [CalendarDays, 'rose'], pendingTasks: [Clapperboard, 'amber'],
+  bookingMomentum: [TrendingUp, 'amber'], productionPulse: [BarChart3, 'violet'], financePulse: [Wallet, 'green'], upcomingSchedule: [CalendarDays, 'rose'],
+  actionQueue: [ListChecks, 'amber'], activityMap: [Grid3X3, 'cyan'], enquiryPipeline: [TrendingUp, 'amber'], recentEnquiries: [MessageSquare, 'blue'], quickActions: [Zap, 'amber'],
 };
 const cardFor = id => OVERVIEW_CARDS.find(card => card.id === id);
 
@@ -39,7 +39,8 @@ export default function OverviewCustomizer({ onClose, initialTab = 'arrange' }) 
   const [tab, setTab] = useState(initialTab);
   const [order, setOrder] = useState(() => preferences.cardOrder.filter(id => preferences.visibleCards.includes(id)));
   const [announcement, setAnnouncement] = useState('');
-  const orderRef = useRef(order), dragging = useRef(false);
+  const [previousLayout, setPreviousLayout] = useState(null);
+  const orderRef = useRef(order), dragging = useRef(false), resetControl = useRef(null);
   const instructions = useId();
   const systemReduced = useReducedMotion();
   const reduced = preferences.reduceMotion || systemReduced;
@@ -59,23 +60,33 @@ export default function OverviewCustomizer({ onClose, initialTab = 'arrange' }) 
   };
   const start = id => { dragging.current = true; setAnnouncement('Moving ' + cardFor(id).label + '.'); };
   const finish = id => { dragging.current = false; commit(orderRef.current, id); };
-  const reset = () => { dragging.current = false; resetCards(); setAnnouncement('Default cards and order restored.'); };
-  return <OperationsModal title="Make it yours" description="Arrange your Insights cards. Today keeps schedules and urgent work first." onClose={onClose} footer={<>
-    <button type="button" className="studio-button" onClick={reset}><RotateCcw size={16} />Reset layout</button>
+  const reset = () => {
+    dragging.current = false;
+    setPreviousLayout(previous => previous || { cardOrder: [...preferences.cardOrder], visibleCards: [...preferences.visibleCards] });
+    resetCards(); setAnnouncement('Default cards and order restored. Undo reset is available.');
+  };
+  const undoReset = () => {
+    update(previousLayout); setPreviousLayout(null);
+    setAnnouncement('Your previous card order and visibility have been restored.');
+    resetControl.current?.focus();
+  };
+  return <OperationsModal title="Customize overview" description="Choose your cards and arrange their order in Insights. Today keeps your schedule and urgent work first." onClose={onClose} footer={<>
+    <button ref={resetControl} type="button" className="studio-button" onClick={reset}><RotateCcw size={16} />Reset layout</button>
     <button type="button" className="studio-button primary" onClick={onClose}><Check size={16} />Done</button>
   </>}>
+    {previousLayout && <div className="overview-reset-recovery" role="status"><span>Default layout restored.</span><button type="button" className="studio-button" onClick={undoReset}><RotateCcw size={16} />Undo reset</button></div>}
     <div className="overview-layout-tabs" role="group" aria-label="Customize overview">
       <button type="button" aria-pressed={tab === 'arrange'} onClick={() => setTab('arrange')}><GripVertical size={17} />Rearrange</button>
       <button type="button" aria-pressed={tab === 'visibility'} onClick={() => setTab('visibility')}><Eye size={17} />Show or hide</button>
     </div>
     {tab === 'arrange' ? <>
-      <div className="overview-arrange-intro"><span><LayoutGrid size={17} />{order.length} cards in your overview</span><p id={instructions}>Drag the grip to change the order. You can also use the arrow buttons or arrow keys.</p></div>
+      <div className="overview-arrange-intro"><span><LayoutGrid size={17} />{order.length} {order.length === 1 ? 'card' : 'cards'} shown in Insights</span><p id={instructions}>Drag a grip or use the arrow buttons. With a grip focused, use the Up and Down arrow keys.</p></div>
       {order.length ? <Motion.div className="overview-arrange-scroll" layoutScroll>
         <Reorder.Group as="ol" axis="y" values={order} onReorder={changeOrder} className="overview-arrange-list" aria-label="Overview card order">
           {order.map((id, index) => <ArrangeRow key={id} id={id} index={index} count={order.length} move={move} start={start} finish={finish} reduced={reduced} instructions={instructions} />)}
         </Reorder.Group>
       </Motion.div> : <div className="overview-layout-empty"><LayoutGrid size={28} /><p>No visible cards yet.</p><button type="button" className="studio-button" onClick={() => setTab('visibility')}>Choose cards</button></div>}
-      <p className="overview-layout-hint">Your welcome banner stays at the top. Hidden cards keep their place for later.</p>
+      <p className="overview-layout-hint">Studio ideas lead Insights and follow your work cards in Today. Hidden cards keep their saved positions.</p>
     </> : <div className="overview-visibility-list">
       {['At a glance', 'Featured cards', 'Workspace cards'].map(group => <fieldset key={group}><legend>{group}</legend>
         {OVERVIEW_CARDS.filter(card => card.group === group).map(card => {

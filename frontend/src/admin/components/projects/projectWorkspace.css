@@ -2,7 +2,7 @@
 .project-hub .project-hub-wide{grid-template-columns:minmax(0,1fr)}
 .project-hub-tabs{display:flex;gap:5px;overflow-x:auto;padding:5px;margin:0 0 22px;background:var(--studio-canvas);border:1px solid var(--studio-border);border-radius:15px}
 .project-hub-tabs>button{flex:0 0 auto;display:flex;align-items:center;gap:7px;min-height:44px;padding:10px 15px;border:0;border-radius:10px;background:transparent;color:var(--studio-muted);font:500 13px/1.4 var(--studio-font);cursor:pointer}
-.project-hub-tabs>button[aria-pressed=true]{background:var(--studio-surface);color:var(--studio-text);box-shadow:0 1px 4px #0001}
+.project-hub-tabs>button[aria-selected=true]{background:var(--studio-surface);color:var(--studio-text);box-shadow:0 1px 4px #0001}
 .project-hub .project-hub-section,.project-hub .project-hub-overview{padding:22px;margin-bottom:20px;border:1px solid var(--studio-border);border-radius:20px;background:var(--studio-surface)}
 .project-hub-section>header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
 .studio-app .project-hub :is(.project-hub-intro h2,.project-hub-section h2){font:600 19px/1.4 var(--studio-font);letter-spacing:-.4px;color:var(--studio-text);margin:0}
@@ -32,3 +32,11 @@
 }
 
 .project-hub-task>.studio-select{min-width:0;width:100%;align-self:start}.project-hub-task>.studio-icon-button{width:44px;min-width:44px;height:44px;padding:0;margin:0;align-self:start}
+
+.project-hub-shortcuts strong.is-label{font-size:18px;line-height:1.35}
+.project-hub-readiness{margin-top:22px;padding-top:18px;border-top:1px solid var(--studio-border)}
+.project-hub-readiness h3{margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--studio-text)}
+.project-hub-readiness ul{list-style:none;padding:0;margin:0}
+.project-hub-readiness li{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:9px 0;color:var(--studio-muted);font-size:13px;line-height:1.6}
+.project-hub-readiness li>.studio-button{flex-shrink:0}
+@media(max-width:480px){.project-hub-readiness li{align-items:flex-start;flex-direction:column;gap:8px;padding:12px 0}.project-hub-shortcuts strong.is-label{font-size:16px}}

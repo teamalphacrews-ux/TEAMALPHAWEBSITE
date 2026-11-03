@@ -1,6 +1,6 @@
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Pencil } from "lucide-react";
 import StudioSelect from "../components/common/StudioSelect";
@@ -48,6 +48,17 @@ export default function ContactDetail() {
     [document, setDocument] = useState(null),
     [busy, setBusy] = useState(false);
   const tab = tabs.includes(requestedTab) ? requestedTab : 'Overview';
+  const tabsId = useId();
+  const navigateTabs = event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const buttons = [...event.currentTarget.querySelectorAll('[role="tab"]')];
+    const index = buttons.indexOf(event.target);
+    if (index < 0) return;
+    event.preventDefault();
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
+    buttons[next].click();
+    buttons[next].focus();
+  };
   if (!detail || String(detail.contact?._id) !== id)
     return (
       <div className="reference-workspace">
@@ -158,11 +169,17 @@ export default function ContactDetail() {
       </div>
       <WorkspaceError error={error} retry={reload} />
       <div className="reference-detail-grid">
-        <main>
-          <div className="reference-tabs">
+        <div style={{ minWidth: 0 }}>
+          <div className="reference-tabs" role="tablist" aria-label="Contact sections" onKeyDown={navigateTabs}>
             {tabs.map((label) => (
               <button
                 className={label === tab ? "active" : ""}
+                type="button"
+                role="tab"
+                id={`${tabsId}-tab-${label}`}
+                aria-controls={`${tabsId}-panel-${label}`}
+                aria-selected={label === tab}
+                tabIndex={label === tab ? 0 : -1}
                 key={label}
                 onClick={() => setTab(label)}
               >
@@ -170,7 +187,7 @@ export default function ContactDetail() {
               </button>
             ))}
           </div>
-          {tab === "Overview" && (
+          <div role="tabpanel" id={`${tabsId}-panel-Overview`} aria-labelledby={`${tabsId}-tab-Overview`} hidden={tab !== 'Overview'} tabIndex={0}>{tab === "Overview" && (
             <>
               {hasModuleAccess(user, 'projects') && <ReferenceSection
                 title="Projects"
@@ -218,8 +235,8 @@ export default function ContactDetail() {
               </ReferenceSection>
 
             </>
-          )}
-          {tab === "Documents" && (
+          )}</div>
+          <div role="tabpanel" id={`${tabsId}-panel-Documents`} aria-labelledby={`${tabsId}-tab-Documents`} hidden={tab !== 'Documents'} tabIndex={0}>{tab === "Documents" && (
             <ReferenceSection title="Documents">
               <ContactDocuments
                 quotations={quotations}
@@ -228,22 +245,22 @@ export default function ContactDetail() {
                 onDraft={openDocument}
               />
             </ReferenceSection>
-          )}
-          {tab === "Payments" && (
+          )}</div>
+          {tabs.includes('Payments') && <div role="tabpanel" id={`${tabsId}-panel-Payments`} aria-labelledby={`${tabsId}-tab-Payments`} hidden={tab !== 'Payments'} tabIndex={0}>{tab === "Payments" && (
             <ReferenceSection title="Payments">
               <ContactPaymentSummary invoices={invoices} />
               <ContactPayments invoices={invoices} />
             </ReferenceSection>
-          )}
-          {tab === "Sessions" && (
+          )}</div>}
+          {tabs.includes('Sessions') && <div role="tabpanel" id={`${tabsId}-panel-Sessions`} aria-labelledby={`${tabsId}-tab-Sessions`} hidden={tab !== 'Sessions'} tabIndex={0}>{tab === "Sessions" && (
             <ReferenceSection
               title="Sessions"
               action={() => navigate(`/admin/calendar?contact=${id}`)}
             >
               <ContactSessions sessions={sessions} />
             </ReferenceSection>
-          )}
-        </main>
+          )}</div>}
+        </div>
         <aside className="reference-contact-sidebar">
           <ReferenceSection title="Contact Info">
             <button

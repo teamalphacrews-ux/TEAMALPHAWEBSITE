@@ -5,7 +5,7 @@
 .studio-app.studio-app.studio-personal-workspace .qw-list-header p {font-size:13px;line-height:1.7;color:var(--studio-muted);margin:8px 0 0}
 .studio-app.studio-app.studio-personal-workspace .qw-list-actions {display:flex;align-items:center;gap:10px;flex-shrink:0}
 .studio-app.studio-app.studio-personal-workspace .qw-list-actions .studio-button {min-height:44px}
-.studio-app.studio-app.studio-personal-workspace .qw-list-panel {--quote-columns:minmax(0,1.55fr) minmax(0,3fr) 44px;--quote-meta-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.85fr);container:quotes-list / inline-size;padding:22px 24px 4px;border:1px solid var(--studio-border);border-radius:24px;background:var(--studio-surface);min-width:0}
+.studio-app.studio-app.studio-personal-workspace .qw-list-panel {--quote-columns:minmax(0,1.65fr) minmax(0,3fr) 44px;--quote-meta-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.85fr);container:quotes-list / inline-size;padding:22px 24px 4px;border:1px solid var(--studio-border);border-radius:24px;background:var(--studio-surface);min-width:0}
 .studio-app.studio-app.studio-personal-workspace .qw-list-toolbar {display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px}
 .studio-app.studio-app.studio-personal-workspace .qw-list-search {flex:1;max-width:420px;border:1px solid var(--studio-border);border-radius:14px;background:var(--studio-canvas)}
 .studio-app.studio-app.studio-personal-workspace .qw-list-search input {font-size:13px}
@@ -17,18 +17,21 @@
 .studio-app.studio-app.studio-personal-workspace .qw-list-filters button[aria-pressed=true] {background:var(--appearance-active);color:#25341d}
 .studio-app.studio-app.studio-personal-workspace :is(.qw-list-columns,.qw-quote-row) {display:grid;grid-template-columns:var(--quote-columns);gap:24px;align-items:center;min-width:0}
 .studio-app.studio-app.studio-personal-workspace .qw-list-columns {padding:18px 0 13px;color:var(--studio-muted);font-size:11px}
-.studio-app.studio-app.studio-personal-workspace .qw-quote-row {position:relative;padding:21px 0;border-top:1px solid var(--studio-border)}
+.studio-app.studio-app.studio-personal-workspace .qw-quote-row {position:relative;align-items:start;padding:21px 0;border-top:1px solid var(--studio-border)}
 .studio-app.studio-app.studio-personal-workspace .qw-quote-row:first-child {border-top:0}
 .studio-app.studio-app.studio-personal-workspace .qw-quote-description {min-width:0}
-.studio-app.studio-app.studio-personal-workspace .qw-quote-description h2 {margin:0;font-size:14px;line-height:1.5}
-.studio-app.studio-app.studio-personal-workspace .qw-quote-title {border:0;background:none;color:var(--studio-text);font:inherit;font-weight:600;text-align:left;padding:0;overflow-wrap:anywhere;min-height:30px}
+.studio-app.studio-app.studio-personal-workspace .qw-quote-description h2 {margin:0;font-size:15px;line-height:1.4}
+.studio-app.studio-app.studio-personal-workspace .qw-quote-title {display:inline-flex;align-items:center;border:0;background:none;color:var(--studio-text);font:inherit;font-weight:600;text-align:left;padding:0;overflow-wrap:anywhere;min-height:44px}
 .studio-app.studio-app.studio-personal-workspace .qw-quote-title:hover {text-decoration:underline;text-underline-offset:4px}
-.studio-app.studio-app.studio-personal-workspace .qw-quote-description p {color:var(--studio-muted);font-size:12px;line-height:1.6;margin:5px 0 0;overflow-wrap:anywhere}
+.studio-app.studio-app.studio-personal-workspace .qw-quote-description p {color:var(--studio-muted);font-size:12px;line-height:1.6;margin:0;overflow-wrap:anywhere}
 .studio-app.studio-app.studio-personal-workspace .qw-quote-metadata {display:grid;grid-template-columns:var(--quote-meta-columns);gap:20px;align-items:center;min-width:0;margin:0}
 .studio-app.studio-app.studio-personal-workspace .qw-quote-metadata > div {min-width:0}
 .studio-app.studio-app.studio-personal-workspace .qw-quote-metadata dt {position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 .studio-app.studio-app.studio-personal-workspace .qw-quote-metadata dd {margin:0;color:var(--studio-text);font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.studio-app.studio-app.studio-personal-workspace .qw-quote-row > .qw-quote-metadata {padding-top:11px;align-items:start}
+.studio-app.studio-app.studio-personal-workspace .qw-quote-reference dd {font-size:12px;color:var(--studio-muted);font-variant-numeric:tabular-nums}
 .studio-app.studio-app.studio-personal-workspace :is(.qw-quote-amount,.qw-list-columns .qw-quote-metadata > span:nth-child(2)) {text-align:right;padding-right:10px;font-variant-numeric:tabular-nums}
+.studio-app.studio-app.studio-personal-workspace .qw-quote-amount dd {font-weight:550}
 .studio-app.studio-app.studio-personal-workspace .qw-quote-open {display:grid;place-items:center;width:44px;height:44px;border:1px solid var(--studio-border);border-radius:50%;color:var(--studio-muted);background:transparent}
 .studio-app.studio-app.studio-personal-workspace .qw-quote-open:hover {background:var(--appearance-subtle);color:var(--studio-text)}
 .studio-app.studio-app.studio-personal-workspace .qw-list-empty {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;min-height:210px;padding:30px 16px;text-align:center;color:var(--studio-muted);font-size:13px}
@@ -49,8 +52,9 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
   .studio-app.studio-app.studio-personal-workspace .qw-quote-row {display:block;padding:20px 0}
   .studio-app.studio-app.studio-personal-workspace .qw-quote-description {padding-right:54px}
   .studio-app.studio-app.studio-personal-workspace .qw-quote-description p {max-width:450px}
-  .studio-app.studio-app.studio-personal-workspace .qw-quote-row .qw-quote-metadata {grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px;margin-top:18px;align-items:start}
-  .studio-app.studio-app.studio-personal-workspace .qw-quote-metadata dt {position:static;width:auto;height:auto;margin:0 0 5px;overflow:visible;clip:auto;white-space:normal;font-size:11px;color:var(--studio-muted)}
+  .studio-app.studio-app.studio-personal-workspace .qw-quote-row .qw-quote-metadata {grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px;margin-top:18px;padding-top:0;align-items:start}
+  .studio-app.studio-app.studio-personal-workspace .qw-quote-metadata > div {display:grid;align-content:start;gap:5px}
+  .studio-app.studio-app.studio-personal-workspace .qw-quote-metadata dt {position:static;width:auto;height:auto;margin:0;overflow:visible;clip:auto;white-space:normal;font-size:11px;line-height:1.4;color:var(--studio-muted)}
   .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-row .qw-quote-metadata .qw-quote-amount {text-align:left;padding:0}
   .studio-app.studio-app.studio-personal-workspace .qw-quote-open {position:absolute;top:20px;right:0}
 }

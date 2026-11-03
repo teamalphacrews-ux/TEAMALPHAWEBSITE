@@ -9,10 +9,11 @@ import { quotationDefaults, addDocumentDays, documentCommunication, resolveStudi
 import { API_BASE_URL } from '../../utils/apiConfig';
 import { quotationStatus } from '../../utils/quotationStatus';
 import { documentClientLink } from '../../utils/documentClientLink';
+import { removeQuoteItem, restoreQuoteItem } from '../utils/quoteItemUndo';
 import {useOfflineDraft,OfflineDraftStatus} from '../../offline/OfflineDrafts';
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
-  Save, Send, Mail, Link2,
+  Save, Send, Mail, Link2, Undo2,
   Plus,
   ArrowLeft,
   X,
@@ -40,6 +41,7 @@ import "./quotationWorkspace.css";
 import "./documentWorkspaceRefinements.css";
 import "./quotationList.css";
 import "./documentWorkflowRepair.css";
+import "./quotationEditorPolish.css";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 const covers = [
   "/assets/banner.jpg",
@@ -173,7 +175,9 @@ export default function Quotations() {
     [busy, setBusy] = useState(false),
     [saveError, setSaveError] = useState(""),
     [dirty, setDirty] = useState(false),
-    [savedAt, setSavedAt] = useState(""),
+    [saving, setSaving] = useState(false),
+    [deletedItem, setDeletedItem] = useState(null),
+    [remindersOpen, setRemindersOpen] = useState(false),
     [actionMenu, setActionMenu] = useState(false),
     [designOpen, setDesignOpen] = useState(false),
     [modal, setModal] = useState(""),
@@ -197,7 +201,7 @@ export default function Quotations() {
     generationRef = useRef(0),
     lastSavedVersion = useRef(-1);
   const offline=useOfflineDraft({kind:'quotation',recordId:current?._id||'new',value:form,dirty,enabled:['wizard','editor'].includes(mode)&&current?.status!=='Accepted',onRestore:value=>{
-    const base={...defaultForm(settings),...formRef.current};const restored={...base,...value,design:{...base.design,...value.design}};formRef.current=restored;setForm(restored);versionRef.current++;lastSavedVersion.current=-1;setDirty(true);setMode('editor');setSavedAt('Local draft restored');
+    const base={...defaultForm(settings),...formRef.current};const restored={...base,...value,design:{...base.design,...value.design}};formRef.current=restored;setForm(restored);versionRef.current++;lastSavedVersion.current=-1;setDirty(true);setMode('editor');setDeletedItem(null);
   }});
   useEffect(() => {
     const documentGeneration = generationRef;
@@ -221,7 +225,12 @@ export default function Quotations() {
     setMode(q.status === "Accepted" ? "detail" : "editor");
     setDirty(false);
     setSaveError("");
-    setSavedAt("All changes saved");
+    setSaving(false);
+    setDeletedItem(null);
+    setRemindersOpen(false);
+    setModal("");
+    setActionMenu(false);
+    setDesignOpen(false);
     setBusy(false);
   };
   const saveDraft = async () => {
@@ -251,6 +260,7 @@ export default function Quotations() {
       throw error;
     }
     setBusy(true);
+    setSaving(true);
     setSaveError("");
     const promise = (async () => {
       try {
@@ -267,9 +277,12 @@ export default function Quotations() {
         currentRef.current = result;
         if (version === versionRef.current) {
           await offline.clear().catch(()=>toast('Quotation saved. Review local drafts before resubmitting.'));
+        }
+        if (generation !== generationRef.current) throw stale();
+        if (version === versionRef.current) {
           const next = normalize(result);
           setForm(next); formRef.current = next;
-          setDirty(false); setSavedAt("All changes saved");
+          setDirty(false);
         } else if (formRef.current.contactId === snapshot.contactId && formRef.current.studioProjectId === snapshot.studioProjectId && !formRef.current.lead) {
           const next = { ...formRef.current, lead: result.lead?._id || result.lead || "" };
           formRef.current = next; setForm(next);
@@ -277,12 +290,12 @@ export default function Quotations() {
         reload();
         return result;
       } catch (error) {
-        if(!error.cancelled&&(!error.response||error.response.status>=500))await offline.markUncertain();
+        if(generation === generationRef.current&&!error.cancelled&&(!error.response||error.response.status>=500))await offline.markUncertain();
         if (generation === generationRef.current && !error.cancelled) setSaveError(recordError(error));
         throw error;
       } finally {
         if (saveRef.current?.promise === promise) saveRef.current = null;
-        if (generation === generationRef.current) setBusy(false);
+        if (generation === generationRef.current) { setBusy(false); setSaving(false); }
       }
     })();
     saveRef.current = { promise, generation, version };
@@ -296,7 +309,6 @@ export default function Quotations() {
     setForm(next);
     versionRef.current++;
     setDirty(true);
-    setSavedAt("Unsaved changes");
     clearTimeout(timerRef.current);
     if (offline.ready && !offline.candidate && offline.status !== "uncertain" && currentRef.current && currentRef.current.status !== "Accepted")
       timerRef.current = setTimeout(() => {
@@ -318,7 +330,15 @@ export default function Quotations() {
     setMode("editor");
     setStep(0);
     setSaveError("");
-    setSavedAt("Unsaved changes");
+    setSaving(false);
+    setDeletedItem(null);
+    setRemindersOpen(false);
+    setModal("");
+    setModalValue("");
+    setActionMenu(false);
+    setDesignOpen(false);
+    setShareUrl("");
+    setHistory([]);
   };
 
   const status = (quote) => quotationStatus(quote, clock);
@@ -345,18 +365,38 @@ export default function Quotations() {
     setCurrent(null);
     currentRef.current = null;
     setActionMenu(false);
+    setDeletedItem(null);
     setSearchParams({});
   };
   const updateItem = (index, patch) =>
     change(
       "items",
-      form.items.map((i, n) => (n === index ? { ...i, ...patch } : i)),
+      formRef.current.items.map((i, n) => (n === index ? { ...i, ...patch } : i)),
     );
   const reorder = (index, offset) => {
+    setDeletedItem(null);
     const a = [...form.items];
     [a[index], a[index + offset]] = [a[index + offset], a[index]];
     change("items", a);
   };
+  const deleteItem = index => {
+    const removed = removeQuoteItem(formRef.current.items, index, generationRef.current);
+    if (!removed) return;
+    setDeletedItem(removed.undo);
+    change('items', removed.items);
+  };
+  const undoDeleteItem = () => {
+    const restored = restoreQuoteItem(formRef.current.items, deletedItem, generationRef.current);
+    if (!restored) return;
+    setDeletedItem(null);
+    change('items', restored);
+  };
+  const saveState = saving ? 'Saving…'
+    : offline.candidate ? 'Device draft available'
+    : !dirty && current ? 'Saved to studio'
+    : offline.status === 'uncertain' ? 'Studio save not confirmed'
+    : dirty && offline.isCurrent ? 'Saved on this device — waiting to sync'
+    : dirty ? 'Changes not saved to studio' : 'Not saved to studio';
   const act = async (action) => {
     if (action === 'share' && !fullAccess) return;
     const generation = generationRef.current;
@@ -680,6 +720,16 @@ export default function Quotations() {
     loadQuote(quote);
     setMode(quote.status === "Draft" ? "editor" : "detail");
   };
+  const quoteActionsMenu = (fullAccess || mode === "editor") && (
+    <WorkspaceActionMenu label="Actions" className="qw-menu" menuClassName="qw-dropdown qw-editor-action-menu" open={actionMenu} onOpenChange={setActionMenu} disabled={busy}>
+      {mode === "editor" && <>
+        <button onClick={() => { setActionMenu(false); saveDraft().catch(() => {}); }}><Save size={16}/>Save to studio</button>
+        <button onClick={() => { setActionMenu(false); setDesignOpen(!designOpen); }}><Pencil size={16}/>Edit design</button>
+        {fullAccess && <button onClick={() => { setActionMenu(false); prepareSend(); }}><Mail size={16}/>Email quote</button>}
+      </>}
+      {actionItems()}
+    </WorkspaceActionMenu>
+  );
   return (
     <div className={'qw-page' + (mode === 'list' ? ' qw-list-workspace' : '')}>
       {mode === "list" && (
@@ -699,16 +749,16 @@ export default function Quotations() {
             </div>
             <div className="qw-list-filters" role="group" aria-label="Filter quotations by status">{quoteFilters.map(value => <button type="button" key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value}</button>)}</div>
             {error ? <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={reload}>Retry</button></div> : loading ? <div className="qw-list-empty" role="status"><span className="studio-loader" />Loading quotations…</div> : visible.length ? <>
-              <div className="qw-list-columns" aria-hidden="true"><span>Quote</span><div className="qw-quote-metadata"><span>Client</span><span>Amount</span><span>Expires</span><span>Status</span></div><span /></div>
+              <div className="qw-list-columns" aria-hidden="true"><span>Client / proposal</span><div className="qw-quote-metadata"><span>Reference</span><span>Amount</span><span>Expires</span><span>Status</span></div><span /></div>
               <div className="qw-quote-records">{visible.map(quote => <article className="qw-quote-row" key={quote._id} aria-labelledby={'quote-list-' + quote._id}>
-                <div className="qw-quote-description"><h2 id={'quote-list-' + quote._id}><button className="qw-quote-title" onClick={() => openListQuote(quote)}>Quote #{quoteNumber(quote)}</button></h2><p>{quote.title}</p></div>
+                <div className="qw-quote-description"><h2 id={'quote-list-' + quote._id}><button className="qw-quote-title" aria-label={`Open quote ${quoteNumber(quote)} for ${quote.clientName || 'client to be confirmed'}`} onClick={() => openListQuote(quote)}>{quote.clientName || 'Client to be confirmed'}</button></h2>{quote.title && <p>{quote.title}</p>}</div>
                 <dl className="qw-quote-metadata">
-                  <div><dt>Client</dt><dd>{quote.clientName || 'Client to be confirmed'}</dd></div>
+                  <div className="qw-quote-reference"><dt>Reference</dt><dd>{quoteNumber(quote)}</dd></div>
                   <div className="qw-quote-amount"><dt>Amount</dt><dd>{rupees(quote.totalPaise / 100)}</dd></div>
                   <div><dt>Expires</dt><dd>{quote.expiryEnabled === false ? 'No expiry' : recordDate(quote.validUntil)}</dd></div>
                   <div><dt>Status</dt><dd><span className="qw-badge" data-status={status(quote).toLowerCase()}>{status(quote)}</span></dd></div>
                 </dl>
-                <button className="studio-icon-button qw-quote-open" aria-label={'Open quote ' + quote.clientName} onClick={() => openListQuote(quote)}><ArrowUpRight size={18} /></button>
+                <button className="studio-icon-button qw-quote-open" aria-label={`Open quote ${quoteNumber(quote)} for ${quote.clientName || 'client to be confirmed'}`} onClick={() => openListQuote(quote)}><ArrowUpRight size={18} /></button>
               </article>)}</div>
             </> : <div className="qw-list-empty" role="status"><h2>{search.trim() || filter !== 'All' ? 'No matching quotations' : 'Your next proposal starts here'}</h2><p>{search.trim() || filter !== 'All' ? 'Try another client name or choose a different status.' : 'Create a quotation to start a new client conversation.'}</p>{search.trim() || filter !== 'All' ? <button className="studio-button" onClick={() => { setSearch(''); setFilter('All'); }}>Reset filters</button> : <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>}</div>}
           </section>
@@ -851,12 +901,35 @@ export default function Quotations() {
         </div>
       )}
       {(mode === "editor" || mode === "detail") && (
-        <div className="qw-fullscreen">
+        <div className={'qw-fullscreen' + (mode === 'editor' ? ' qw-quote-editor' : '')}>
           <header className="qw-doc-header">
             <button aria-label="Back to quotes" onClick={close}>
               <ArrowLeft size={18} />
             </button>
             <div className="qw-quote-identity">
+              {mode === "editor" ? <>
+                <div className="qw-quote-heading">
+                  <strong>Quote #{quoteNumber(current || {})}</strong>
+                  <span className="qw-badge">{status(current || { status: "Draft" })}</span>
+                  <button
+                    className="qw-edit-number"
+                    aria-label="Edit quote number"
+                    disabled={!!current?.acceptedAt || current?.status === "Accepted"}
+                    onClick={() => {
+                      setModalValue(form.documentNumber || "");
+                      setModal("number");
+                    }}
+                  ><Pencil size={16}/></button>
+                </div>
+                <div className="qw-quote-meta">
+                  <small>
+                    {form.studioProjectId ? (
+                      <Link to={`/admin/studio-projects/${form.studioProjectId}`}>Linked project ↗</Link>
+                    ) : form.title}
+                  </small>
+                  <span className="qw-save-state" role="status" aria-live="polite">{saveState}</span>
+                </div>
+              </> : <>
               <strong>Quote #{quoteNumber(current || {})}</strong>
               <button
                 aria-label="Edit quote number"
@@ -879,28 +952,22 @@ export default function Quotations() {
                   form.title
                 )}
               </small>
+              </>}
             </div>
-            <span className="qw-badge">
+            {mode === "detail" && <><span className="qw-badge">
               {status(current || { status: "Draft" })}
             </span>
-            <span className="qw-save-state">{busy ? "Saving…" : savedAt}</span>
+            <span className="qw-save-state" role="status" aria-live="polite">{saveState}</span></>}
             <div className="qw-header-actions qw-quotation-toolbar" data-layout={mode === "detail" && current?.invoiceId ? "with-invoice" : mode}>
-              {fullAccess && <WorkspaceActionMenu label="Actions" className="qw-menu" menuClassName="qw-dropdown" open={actionMenu} onOpenChange={setActionMenu} disabled={busy}>
-                {mode === "editor" && <><button className="studio-phone-menu-action" onClick={() => { setActionMenu(false); setDesignOpen(!designOpen); }}>Edit design</button><button className="studio-phone-menu-action" onClick={() => { setActionMenu(false); preview(); }}>Preview</button></>}
-                {actionItems()}
-              </WorkspaceActionMenu>}
               {mode === "editor" ? (
                 <>
-                  <button className="studio-desktop-toolbar-action" onClick={() => setDesignOpen(!designOpen)}>
-                    Edit design
-                  </button>
-                  <button className="studio-desktop-toolbar-action" onClick={preview}>Preview</button>
-                  <StudioButton type="button" icon={Save} onClick={() => saveDraft().catch(() => {})} disabled={busy} loadingLabel="Saving quotation">Save</StudioButton>
-                  {fullAccess && <StudioButton type="button" icon={Mail} disabled={busy} onClick={prepareSend} loadingLabel="Preparing quotation email">Email quote</StudioButton>}
+                  <StudioButton type="button" className="qw-preview-action" disabled={busy} onClick={preview} loadingLabel="Preparing preview">Preview</StudioButton>
                   {fullAccess && <StudioButton type="button" variant="primary" className="qw-primary" icon={Link2} disabled={busy} onClick={openClientLink} loadingLabel="Preparing client link">Share client link</StudioButton>}
+                  {quoteActionsMenu}
                 </>
               ) : (
                 <>
+                  {quoteActionsMenu}
                   {!current?.acceptedAt && current?.status !== "Accepted" && (
                     <button
                       onClick={() => {
@@ -980,8 +1047,12 @@ export default function Quotations() {
                     </p>
                   </>
                 )}
-                <Toggle
-                  label="Document Reminders"
+                <div className="qw-reminder-summary">
+                  <div><strong>Quote reminders</strong><p>{form.remindersEnabled ? form.reminderDays?.length ? `${[...form.reminderDays].sort((a,b)=>a-b).join(', ')} days after sending` : 'On · no days selected' : 'Off'}</p></div>
+                  <button type="button" aria-expanded={remindersOpen} aria-controls="quote-reminder-options" onClick={()=>setRemindersOpen(!remindersOpen)}>{remindersOpen?'Done':'Edit'}</button>
+                </div>
+                {remindersOpen && <div id="quote-reminder-options" className="qw-reminder-options"><Toggle
+                  label="Enable quote reminders"
                   checked={form.remindersEnabled}
                   onChange={(v) => change("remindersEnabled", v)}
                 />
@@ -1010,6 +1081,7 @@ export default function Quotations() {
                     </p>
                   </div>
                 )}
+                </div>}
                 <Field label="Currency">
                   <StudioSelect title="Currency" value="INR" onChange={() => {}}>
                     <option value="INR">INR · Indian Rupee</option>
@@ -1024,9 +1096,9 @@ export default function Quotations() {
                 </Field>
               </DocumentSettingsPanel>
 </aside>
-              <section className="qw-editor-scroll"><OfflineDraftStatus draft={offline}/>
+              <section className="qw-editor-scroll"><OfflineDraftStatus draft={offline} compact/>
                 <div className="qw-paper">
-                  <Field label="Proposal title">
+                  <Field label="Quote title">
                     <input
                       className="qw-title"
                       value={form.title}
@@ -1034,6 +1106,7 @@ export default function Quotations() {
                     />
                   </Field>
                   <h2>Items</h2>
+                  {deletedItem && <div className="qw-item-undo"><span role="status">Removed “{deletedItem.item.title || 'Quotation item'}”.</span><button type="button" onClick={undoDeleteItem}><Undo2 size={16}/>Undo</button><button type="button" className="qw-undo-dismiss" aria-label="Dismiss item undo" onClick={()=>setDeletedItem(null)}><X size={16}/></button></div>}
                   <div className="qw-item-labels">
                     <span>ITEMS</span>
                     <span>QTY</span>
@@ -1115,25 +1188,21 @@ export default function Quotations() {
                         <button
                           aria-label={`Duplicate item ${index + 1}`}
                           disabled={form.items.length >= 40}
-                          onClick={() =>
+                          onClick={() => {
+                            setDeletedItem(null);
                             change("items", [
                               ...form.items.slice(0, index + 1),
                               { ...item },
                               ...form.items.slice(index + 1),
-                            ])
-                          }
+                            ]);
+                          }}
                         >
                           <Copy size={12} />
                         </button>
                         <button
                           aria-label={`Delete item ${index + 1}`}
                           disabled={form.items.length === 1}
-                          onClick={() =>
-                            change(
-                              "items",
-                              form.items.filter((_, n) => n !== index),
-                            )
-                          }
+                          onClick={() => deleteItem(index)}
                         >
                           <Trash2 size={12} />
                         </button>
@@ -1144,9 +1213,7 @@ export default function Quotations() {
                     <button
                       className="qw-text-button"
                       disabled={form.items?.length >= 40}
-                      onClick={() =>
-                        change("items", [...form.items, blankItem()])
-                      }
+                      onClick={() => { setDeletedItem(null); change("items", [...form.items, blankItem()]); }}
                     >
                       + Add Item
                     </button>
@@ -1311,6 +1378,7 @@ export default function Quotations() {
               </div>
             </section>
           )}
+          {mode === 'editor' && <aside className="qw-running-total" aria-label="Running quotation total"><div><strong>Quote total</strong><span>{form.items?.length || 0} {(form.items?.length || 0) === 1 ? 'item' : 'items'}{discountPaise ? ' · discount applied' : ''}{tax ? ' · includes tax' : ''}</span></div><output aria-label="Quote total">{rupees(total / 100)}</output></aside>}
           {designOpen && (
             <OperationsModal title="Quotation design" description="Choose how this document appears to your client." onClose={() => setDesignOpen(false)} footer={<StudioButton type="button" variant="primary" onClick={() => setDesignOpen(false)}>Done</StudioButton>}>
             <div className="document-design-content">
@@ -1548,6 +1616,8 @@ export default function Quotations() {
                         }
                         if (modal === "leave") {
                           generationRef.current++;
+                          setDeletedItem(null);
+                          setSaving(false);
                           currentRef.current = null;
                           setCurrent(null);
                           setSearchParams({});

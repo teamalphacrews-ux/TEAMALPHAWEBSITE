@@ -31,16 +31,16 @@ import './settingsGrouped.css';
 const sections = [
   ['workspace', 'My workspace', 'Appearance, motion and your overview.', SlidersHorizontal, 'violet', 'Personal', 'dark light daylight system theme animations reduced motion homepage landing dashboard cards order reset'],
   ['language', 'Language & region', 'Choose your language, date formats and time zone.', Languages, 'blue', 'Personal', 'Indian Hindi Bengali Marathi Telugu Tamil Gujarati Urdu Kannada Odia Malayalam English country region locale timezone date time numbers'],
-  ['notifications', 'Sound & notifications', 'Choose what gets your attention and when.', Volume2, 'rose', 'Personal', 'sound volume tone chime bell notification badge banner quiet hours do not disturb alerts mute'],
+  ['notifications', 'Sound & notifications', 'Your in-app sounds, banners and quiet hours.', Volume2, 'rose', 'Personal', 'sound volume tone chime bell notification badge banner quiet hours do not disturb alerts mute'],
   ['device', 'App & device', 'Privacy lock, push alerts and offline drafts.', Smartphone, 'blue', 'Personal', 'Face ID Touch ID passcode offline drafts push iPhone app privacy'],
   ['profile', 'Studio profile', 'Your business identity and contact details.', Building2, 'blue', 'Studio', 'name legal GSTIN tax photo address phone email website whatsapp instagram facebook social'],
   ['branding', 'Brand & documents', 'Make every client document feel like your studio.', Palette, 'violet', 'Studio', 'logo cover image colour color typography font preview'],
   ['billing', 'Billing & payments', 'Document references, amounts and payment plans.', Wallet, 'green', 'Studio', 'invoice quotation numbering prefix discount tax GST bank UPI installments milestones financial year due date'],
-  ['automation', 'Reminders & alerts', 'Keep clients and your team up to date.', Bell, 'amber', 'Workflow', 'auto create invoice approval quotation validity expiry notifications briefing daily digest payment reminder'],
-  ['communication', 'Email & messages', 'A consistent voice for every client conversation.', Mail, 'cyan', 'Workflow', 'sender reply subject support hours terms deliverables mail test SMTP'],
+  ['automation', 'Reminders & alerts', 'Shared rules for client reminders and team alerts.', Bell, 'amber', 'Workflow', 'auto create invoice approval quotation validity expiry notifications briefing daily digest payment reminder'],
+  ['communication', 'Email & messages', 'Shared sender details and client message defaults.', Mail, 'cyan', 'Workflow', 'sender reply subject support hours terms deliverables mail test SMTP'],
   ['production', 'Production templates', 'Reusable checklists for thoughtful delivery.', Workflow, 'indigo', 'Workflow', 'photos album traditional video cinematic film stages tasks deadlines'],
   ['client', 'Client smart links', 'Choose what clients see in new shared documents.', Eye, 'rose', 'Workflow', 'visibility crew progress deliverables payment invoice schedule support chat expire link'],
-  ['connections', 'Connections', 'Find your studio channels and connected tools.', Plug, 'violet', 'Workspace management', 'Gmail Google Calendar integrations website enquiry webhook whatsapp team'],
+  ['connections', 'Connections', 'Shared email, messaging and calendar connections.', Plug, 'violet', 'Workspace management', 'Gmail Google Calendar integrations website enquiry webhook whatsapp team'],
   ['security', 'Security & access', 'Control access and manage signed-in devices.', ShieldCheck, 'slate', 'Workspace management', 'permissions password sessions devices sign out timeout owner policy'],
   ['backups', 'Backups & recovery', 'Protect your records and recover deleted work.', Database, 'blue', 'Workspace management', 'restore export download retention bin trash'],
 ].map(([id, title, description, icon, tone, group, keywords]) => ({ id, title, description, icon, tone, group, keywords }));
@@ -177,7 +177,7 @@ export default function Settings() {
         <div className="settings-layout">
           <aside className="settings-rail"><nav aria-label={current.group + ' settings'}><p className="settings-rail-title">{t(current.group)}</p>{availableSections.filter(section => section.group === current.group).map(section => sectionLink(section, true))}</nav><button type="button" className="settings-rail-browse" onClick={() => selectSection(null)}>Browse all settings<ChevronRight size={14} /></button></aside>
           <div className="settings-content">
-            <header className="settings-section-heading"><StudioAppIcon icon={current.icon} tone={current.tone} size={40} /><div><span className="settings-section-eyebrow">{t(current.group)}</span><h2 tabIndex={-1} ref={heading} lang={preferences.language} dir="auto">{t(current.title)}</h2><p>{current.description}</p></div></header>
+            <header className="settings-section-heading"><StudioAppIcon icon={current.icon} tone={current.tone} size={40} /><div><h2 tabIndex={-1} ref={heading} lang={preferences.language} dir="auto">{t(current.title)}</h2><p>{current.description}</p></div></header>
             <SettingsDisclosures key={tab}>
               {tab === 'device' ? <NativeDeviceSettings /> : tab === 'workspace' ? <WorkspacePreferences /> : tab === 'language' ? <LocalePreferences studioTimezone={values.timezone} /> : tab === 'notifications' ? <NotificationPreferences /> : ['security', 'backups'].includes(tab) ? <fieldset className="settings-edit-fields" disabled={busy}><SecurityRecoveryPanel mode={tab} settings={values} onChange={changeNested} /></fieldset> : <form id="studio-settings-form" onSubmit={event => { saveSettings(event).catch(() => {}); }} className="settings-editor"><fieldset className="settings-edit-fields" disabled={busy}><SettingsEditor tab={tab} values={values} change={change} changeNested={changeNested} beginProfilePhotoUpload={beginProfilePhotoUpload} saving={busy} /></fieldset></form>}
             </SettingsDisclosures>

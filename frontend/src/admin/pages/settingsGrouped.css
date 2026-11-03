@@ -23,8 +23,7 @@ html[data-studio-appearance=dark] .studio-app.studio-app .settings-grouped { --s
 .settings-grouped-rows > * + *::before,.settings-grouped .settings-results-list > * + *::before { content:''; position:absolute; left:66px; right:18px; top:0; height:1px; background:var(--settings-separator); }
 .studio-app.studio-app .settings-grouped .settings-row-label { flex:1; min-width:0; }
 .studio-app.studio-app .settings-grouped .settings-row-label strong { color:var(--studio-text)!important; font-size:16px; line-height:1.4; font-weight:500; letter-spacing:-.2px; }
-.settings-grouped .settings-grouped-rows .settings-row-label small { display:none; }
-.settings-grouped .settings-results-list .settings-row-label small { font-size:12px; }
+.settings-grouped :is(.settings-grouped-rows,.settings-results-list) .settings-row-label small { display:block; margin-top:3px; color:var(--settings-secondary); font-size:12px; line-height:1.45; overflow-wrap:anywhere; }
 .studio-app.studio-app .settings-grouped .settings-directory-link > .settings-row-value { flex:0 0 auto; color:var(--settings-secondary); font-size:13px; max-width:26%; text-align:right; }
 .settings-grouped .settings-directory-link > svg { width:18px; height:18px; stroke-width:2.5; }
 .settings-grouped .settings-directory-note { padding:0 18px; font-size:12px; }

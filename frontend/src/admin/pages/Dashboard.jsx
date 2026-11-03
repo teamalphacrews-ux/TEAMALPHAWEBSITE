@@ -1,11 +1,11 @@
 import { hasFullModuleAccess, canAccessStudioPath } from '../../utils/moduleAccess';
 import { workspacePrimaryItems, workspaceNavigationGroups } from '../components/common/workspaceNavigation';
 import StudioButton from '../components/common/StudioButton';
-import { Fragment, useState, useEffect } from 'react';
+import { Fragment, useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { Plus, ArrowUpRight, CalendarDays, MessageSquare, Folder, Clapperboard, Check, RefreshCw, ArrowRight, CircleCheck, FileText, Wallet, ChevronRight, GripVertical, X, Sparkles } from 'lucide-react';
+import { Plus, ArrowUpRight, CalendarDays, MessageSquare, Folder, Clapperboard, Check, RefreshCw, ArrowRight, CircleCheck, FileText, Wallet, ChevronRight, GripVertical, X, Sparkles, ArrowDown, Undo2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import StudioAppIcon from '../components/common/StudioAppIcon';
 import { useStudioPreferences } from '../components/common/StudioPreferences';
@@ -16,11 +16,13 @@ import { formatWorkspaceDate, formatWorkspaceTime, formatWorkspaceNumber, resolv
 import { studioText } from '../../utils/studioTranslations';
 import { dashboardWork, taskIsOverdue } from '../../utils/dashboardData';
 import { recordDestination } from '../../utils/studioNavigation';
+import { leadStatusLabel } from '../components/studio/leadUtils';
 import { OverviewWelcome, BookingInsight, RhythmInsight, ActivityInsight, PipelineRings, WeekStrip } from '../components/overview/OverviewInsights';
 import OverviewDaySchedule from '../components/overview/OverviewDaySchedule';
 import './overviewDashboard.css';
 import './overviewReference.css';
 import './overviewPhone.css';
+import './overviewRecovery.css';
 
 const API = import.meta.env.VITE_API_URL || '';
 const statusClass = status => status === 'Converted' ? 'green' : ['Meeting', 'Negotiation'].includes(status) ? 'gold' : '';
@@ -48,9 +50,24 @@ function FullDashboard() {
   const [ideaRevision, setIdeaRevision] = useState(0);
   const refreshOverview = () => { setRefreshKey(value => value + 1); setIdeaRevision(value => value + 1); };
   const [completing, setCompleting] = useState(null);
+  const [completedTasks, setCompletedTasks] = useState([]);
+  const [recoveryError, setRecoveryError] = useState('');
+  const taskRequest = useRef(false);
+  const taskRevision = useRef(0);
+  const mounted = useRef(true);
+  const taskControls = useRef(new Map());
+  const taskFocus = useRef(null);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => {
+    if (completing || !taskFocus.current) return;
+    const control = taskControls.current.get(taskFocus.current);
+    if (control) { control.focus({ preventScroll: true }); taskFocus.current = null; }
+  }, [completing, completedTasks, overview]);
   useEffect(() => {
     const controller = new AbortController();
     const load = async () => {
+      if (taskRequest.current) return;
+      const revision = taskRevision.current;
       try {
         const result = await axios.get(API + '/api/dashboard/studio-overview', {
           headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }, signal: controller.signal, params: { timezone },
@@ -74,6 +91,8 @@ function FullDashboard() {
             // An unavailable sample list must not turn a working overview into an error.
           }
         }
+        if (controller.signal.aborted || taskRequest.current || revision !== taskRevision.current) return;
+        setCompletedTasks(items => items.filter(item => !result.data.actionQueue?.some(task => task._id === item._id && task.status === 'pending')));
         setOverview(result.data); setError('');
       } catch (err) {
         if (axios.isCancel(err)) return;
@@ -86,14 +105,55 @@ function FullDashboard() {
     return () => { controller.abort(); clearInterval(timer); };
   }, [refreshKey, logout, timezone, user?.isPreview]);
 
-  const completeTask = async task => {
+  const changeTaskStatus = async (task, status) => {
+    // Catch repeat taps before React renders the loading state.
+    if (taskRequest.current) return;
+    taskRequest.current = true;
+    taskRevision.current += 1;
+    taskFocus.current = task._id + (status === 'completed' ? ':complete' : ':undo');
     setCompleting(task._id);
+    setRecoveryError('');
     try {
-      await axios.patch(API + '/api/tasks/' + task._id, { status: 'completed' }, { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
+      const headers = { Authorization: 'Bearer ' + localStorage.getItem('token') };
+      let previousTask = task;
+      if (status === 'completed') {
+        // The aggregate omits production stage. Capture it before completing so
+        // Undo restores a client-visible Editing/In review stage exactly.
+        const response = await axios.get(API + '/api/tasks', { headers });
+        if (!mounted.current) return;
+        const current = Array.isArray(response.data) && response.data.find(item => item._id === task._id);
+        if (!current || current.status !== 'pending') {
+          setRefreshKey(value => value + 1);
+          toast.error('This task has changed. Refresh the queue before completing it.');
+          return;
+        }
+        previousTask = { ...current, lead: task.lead };
+      }
+      const values = status === 'pending' && previousTask.productionStage ? { status, productionStage: previousTask.productionStage } : { status };
+      await axios.patch(API + '/api/tasks/' + task._id, values, { headers });
+      if (!mounted.current) return;
+      if (status === 'completed') {
+        setCompletedTasks(items => [...items.filter(item => item._id !== task._id), previousTask]);
+        taskFocus.current = task._id + ':undo';
+        toast.success('Task completed. Undo is available in the action queue.');
+      } else {
+        setCompletedTasks(items => items.filter(item => item._id !== task._id));
+        taskFocus.current = task._id + ':complete';
+        toast.success('Task restored to your action queue.');
+      }
+      const countChange = status === 'completed' ? -1 : 1;
+      const overdueChange = taskIsOverdue(previousTask, new Date(), timezone) ? countChange : 0;
+      setOverview(current => current ? { ...current, actionQueue: [...(current.actionQueue || []).filter(item => item._id !== task._id), ...(status === 'pending' ? [{ ...previousTask, status: 'pending' }] : [])], summary: { ...current.summary, pendingTasks: Math.max(0, (Number(current.summary?.pendingTasks) || 0) + countChange), overdueTasks: Math.max(0, (Number(current.summary?.overdueTasks) || 0) + overdueChange) } } : current);
       setRefreshKey(value => value + 1);
-      toast.success('Task completed');
-    } catch { toast.error('Could not complete the task. Please try again.'); }
-    finally { setCompleting(null); }
+    } catch {
+      if (!mounted.current) return;
+      if (status === 'pending') setRecoveryError('The task could not be restored. Check your connection, then try Undo again.');
+      else toast.error('Could not complete the task. Please try again.');
+    } finally {
+      taskRequest.current = false;
+      taskRevision.current += 1;
+      if (mounted.current) setCompleting(null);
+    }
   };
   const summary = overview?.summary || {};
   const today = new Date();
@@ -111,6 +171,7 @@ function FullDashboard() {
   const conversion = total > 0 ? Math.round(bookedEnquiries / total * 100) : null;
   const work = dashboardWork(overview?.upcomingEvents, overview?.actionQueue, today, timezone);
   const tasks = work.tasks;
+  const recoverableTasks = completedTasks;
   const enquiries = overview?.recentEnquiries || [];
   const emptyLabel = error ? 'Studio data is temporarily unavailable.' : 'Loading your studio…';
   const quickActions = [
@@ -129,23 +190,32 @@ function FullDashboard() {
     productionPulse: <RhythmInsight insights={overview?.insights} loading={!overview && !error} remove={remove('productionPulse', 'Studio rhythm')} />,
     activityMap: <ActivityInsight insights={overview?.insights} loading={!overview && !error} remove={remove('activityMap', 'Activity map')} />,
     upcomingSchedule: <OverviewDaySchedule timezone={timezone} preferences={preferences} refreshKey={refreshKey} remove={remove('upcomingSchedule', 'Upcoming schedule')} />,
-    actionQueue: (<section className="studio-card studio-action-card overview-workspace-card" aria-labelledby="overview-tasks-title" data-overview-card="actionQueue">
+    actionQueue: (<section ref={element => taskControls.current.set('queue', element)} id="overview-work" tabIndex={-1} className="studio-card studio-action-card overview-workspace-card" aria-labelledby="overview-tasks-title" data-overview-card="actionQueue">
           <div className="studio-card-heading"><div><h3 id="overview-tasks-title" lang={preferences.language} dir="auto">{t('Action queue')}<span className="studio-inline-count">{summary.pendingTasks ?? '—'}</span></h3><p className="studio-card-subtitle">{work.overdueTasks ? work.overdueTasks + ' overdue. Start with the earliest deadline.' : 'Your next tasks, ordered by deadline.'}</p></div><div className="overview-card-actions"><Link to="/admin/post-production">View all<ArrowUpRight size={14} /></Link>{remove('actionQueue', 'Action queue')}</div></div>
 
           <div className="studio-task-list">
+            {recoverableTasks.length > 0 && <div className="ov-task-recovery" aria-label="Recently completed tasks">
+              <p className="ov-recovery-heading" role="status">{recoverableTasks.length === 1 ? 'Task completed' : recoverableTasks.length + ' tasks completed'}. You can undo this here.</p>
+              {recoverableTasks.map(task => <div className="ov-recovery-row" key={task._id}>
+                <CircleCheck size={18} aria-hidden="true" /><span>{task.title}</span>
+                <StudioButton ref={element => taskControls.current.set(task._id + ':undo', element)} type="button" variant="secondary" icon={Undo2} aria-label={'Undo completion: ' + task.title} loading={completing === task._id} loadingLabel="Restoring task" disabled={Boolean(completing)} onClick={() => changeTaskStatus(task, 'pending')}>Undo</StudioButton>
+                <StudioButton type="button" variant="icon" icon={X} label={'Dismiss completed task: ' + task.title} disabled={Boolean(completing)} onClick={() => { const next = recoverableTasks.find(item => item._id !== task._id); taskFocus.current = next ? next._id + ':undo' : tasks[0] ? tasks[0]._id + ':complete' : 'queue'; setCompletedTasks(items => items.filter(item => item._id !== task._id)); }} />
+              </div>)}
+              {recoveryError && <p className="ov-recovery-error" role="alert">{recoveryError}</p>}
+            </div>}
             {tasks.length ? tasks.slice(0, 4).map(task => {
               const overdue = taskIsOverdue(task, today, timezone);
               return (
                 <div className="studio-task-row" key={task._id}>
-                  <StudioButton type="button" variant="icon" className="studio-task-check" icon={Check} label={'Complete task: ' + task.title} loading={completing === task._id} loadingLabel={'Completing task: ' + task.title} onClick={() => completeTask(task)} />
+                  <StudioButton ref={element => taskControls.current.set(task._id + ':complete', element)} type="button" variant="icon" className="studio-task-check" icon={Check} label={'Complete task: ' + task.title} loading={completing === task._id} loadingLabel={'Completing task: ' + task.title} disabled={Boolean(completing)} onClick={() => changeTaskStatus(task, 'completed')} />
                   <div><h3><Link to={task.lead?._id ? recordDestination('enquiry', task.lead._id) : '/admin/post-production'}>{task.title}</Link></h3><p>{task.lead?.name || 'Studio task'}</p></div>
                   <span className={'studio-task-due' + (overdue ? ' overdue' : '')}>{overdue ? 'Overdue' : task.dueDate ? dateFormat(task.dueDate, { day: 'numeric', month: 'short' }) : 'No due date'}</span>
                 </div>
               );
-            }) : <div className="studio-empty"><CircleCheck size={26} /><span>{overview && !error ? 'You’re all caught up. No pending tasks.' : emptyLabel}</span></div>}
+            }) : !recoverableTasks.length && <div className="studio-empty"><CircleCheck size={26} /><span>{overview && !error ? 'You’re all caught up. No pending tasks.' : emptyLabel}</span></div>}
           </div>
         </section>),
-    enquiryPipeline: <PipelineRings pipeline={pipeline} loading={!overview} remove={remove('enquiryPipeline', 'Pipeline performance')} />,
+    enquiryPipeline: <PipelineRings pipeline={pipeline} loading={!overview && !error} unavailable={!overview && Boolean(error)} remove={remove('enquiryPipeline', 'Pipeline performance')} />,
     recentEnquiries: (<section className="studio-card studio-recent-card overview-workspace-card" aria-labelledby="overview-enquiries-title" data-overview-card="recentEnquiries">
           <div className="studio-card-heading"><div><h3 id="overview-enquiries-title" lang={preferences.language} dir="auto">{t('Recent enquiries')}</h3><p className="studio-card-subtitle">The latest conversations with your studio.</p></div><div className="overview-card-actions"><Link to="/admin/crm">View all<ArrowUpRight size={14} /></Link>{remove('recentEnquiries', 'Recent enquiries')}</div></div>
           {enquiries.length ? (
@@ -154,7 +224,7 @@ function FullDashboard() {
                 <li key={lead._id}><Link to={recordDestination('enquiry', lead._id)} className="overview-enquiry-row">
                   <span className="studio-client-initials" aria-hidden="true">{initials(lead.name)}</span>
                   <span className="overview-enquiry-person"><strong>{lead.name}</strong><small>{lead.eventType || 'To be discussed'} · {dateFormat(lead.eventDate)}</small><small className="overview-enquiry-added">Added {dateFormat(lead.createdAt, { day: 'numeric', month: 'short' })}</small></span>
-                  <span className={'studio-badge ' + statusClass(lead.status)}>{lead.status === 'Converted' ? 'Booked' : lead.status}</span>
+                  <span className={'studio-badge ' + statusClass(lead.status)}>{leadStatusLabel(lead.status)}</span>
                   <ChevronRight size={15} aria-hidden="true" />
                 </Link></li>
               ))}
@@ -170,7 +240,7 @@ function FullDashboard() {
   const savedOrder = preferences.cardOrder.filter(id => preferences.visibleCards.includes(id) && cardContent[id]);
   const todayMode = preferences.overviewMode === 'today';
   const overviewContext = todayMode && overview
-    ? `${work.todayEvents} ${work.todayEvents === 1 ? 'event' : 'events'} today · ${work.overdueTasks} overdue ${work.overdueTasks === 1 ? 'task' : 'tasks'}`
+    ? `${work.todayEvents} ${work.todayEvents === 1 ? 'event' : 'events'} remaining today · ${work.overdueTasks} overdue ${work.overdueTasks === 1 ? 'task' : 'tasks'}`
     : dateFormat(today, { weekday: 'long', day: 'numeric', month: 'short' });
   const visibleOrder = todayMode ? ['upcomingSchedule','actionQueue','financePulse','recentEnquiries','quickActions'].filter(id=>savedOrder.includes(id)) : savedOrder;
   const displayOrder=todayMode?['upcomingSchedule','actionQueue','financePulse','recentEnquiries','inspiration','quickActions'].filter(id=>id==='inspiration'?preferences.showInspiration:visibleOrder.includes(id)):[...(preferences.showInspiration?['inspiration']:[]),...visibleOrder];
@@ -180,7 +250,7 @@ function FullDashboard() {
     <div className="studio-overview studio-overview-modern overview-organized studio-overview-reference overview-phone-refined">
       <div className="ov-page-toolbar"><div><span className="ov-page-eyebrow">YOUR CREATIVE WORKSPACE</span><h1>Studio overview</h1><p className="ov-page-context">{overviewContext}</p></div></div>
       {error && <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={() => setRefreshKey(value => value + 1)}><RefreshCw size={14} />Retry</button></div>}
-      <div className="ov-view-controls"><div role="group" aria-label="Overview view"><button type="button" aria-pressed={todayMode} onClick={()=>update({overviewMode:'today'})}>Today</button><button type="button" aria-pressed={!todayMode} onClick={()=>update({overviewMode:'insights'})}>Insights</button></div><div className="ov-view-tools"><Link className="studio-button ov-shoot-day-link" to="/admin/shoot-day" aria-label="Open Shoot day" title="Shoot day"><CalendarDays size={15}/><span>Shoot day</span></Link><button type="button" className="studio-button ov-customize-button" aria-label="Customize overview" title="Customize overview" onClick={() => setCustomizing(true)}><GripVertical size={17}/><span>Customize</span></button></div></div>
+      <div className="ov-view-controls"><div role="group" aria-label="Overview view"><button type="button" aria-pressed={todayMode} onClick={()=>update({overviewMode:'today'})}>Today</button><button type="button" aria-pressed={!todayMode} onClick={()=>update({overviewMode:'insights'})}>Insights</button></div><div className="ov-view-tools">{!todayMode && visibleOrder.includes('actionQueue') && <a className="ov-phone-work-link" href="#overview-work">Jump to work<ArrowDown size={14} aria-hidden="true" /></a>}<Link className="studio-button ov-shoot-day-link" to="/admin/shoot-day" aria-label="Open Shoot day" title="Shoot day"><CalendarDays size={15}/><span>Shoot day</span></Link><button type="button" className="studio-button ov-customize-button" aria-label="Customize overview" title="Customize overview" onClick={() => setCustomizing(true)}><GripVertical size={17}/><span>Customize</span></button></div></div>
       <div className={'ov-reference-grid'+(todayMode?' is-today':'')}>
         {displayOrder.map(id => id==='inspiration'?<Fragment key={id}>{welcome}</Fragment>:<Fragment key={id}><div className={'ov-reference-slot ov-slot-' + id}>{cardContent[id]}</div>{!todayMode && preferences.showActivityStreak && id === lastInsight && <div className="ov-week-slot"><WeekStrip insights={overview?.insights} /></div>}</Fragment>)}
       </div>

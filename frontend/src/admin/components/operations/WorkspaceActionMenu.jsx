@@ -3,6 +3,7 @@ import { Children, Fragment, cloneElement, isValidElement, useEffect, useId, use
 import { ChevronDown, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import useStudioDialog from "../studio/useStudioDialog";
+import StudioPortalSurface from '../common/StudioPortalSurface';
 
 const menuItems = children => Children.map(children, child => {
   if (!isValidElement(child)) return child;
@@ -61,12 +62,12 @@ export function WorkspaceActionMenu({ label = "Actions", ariaLabel, children, cl
     <StudioButton ref={trigger} type="button" variant={primary ? "primary" : "ghost"} trailingIcon={hideChevron ? undefined : ChevronDown} className={primary ? "reference-button" : undefined} aria-label={ariaLabel || (typeof label==="string"?label:"Add new record")} aria-expanded={open} aria-controls={open ? (phone ? id+"-sheet" : id) : undefined} aria-haspopup={phone ? "dialog" : "menu"} disabled={disabled} onClick={() => { lastItem.current = false; setOpen(!open); }} onKeyDown={event => {
       if (["ArrowDown", "ArrowUp"].includes(event.key)) { event.preventDefault(); lastItem.current = event.key === "ArrowUp"; setOpen(true); }
     }}>{label}</StudioButton>
-    {open && (phone ? createPortal(<div className="studio-app studio-personal-workspace studio-action-sheet-overlay" onClick={event=>{if(event.target===event.currentTarget)close(true);}}>
+    {open && (phone ? createPortal(<StudioPortalSurface className="studio-action-sheet-overlay" onClick={event=>{if(event.target===event.currentTarget)close(true);}}>
       <section ref={dialog} id={id+'-sheet'} role="dialog" aria-modal="true" aria-labelledby={id+'-title'} className="studio-action-sheet">
         <header><h2 id={id+'-title'}>{ariaLabel || (typeof label==="string"?label:"Create a record")}</h2><StudioButton type="button" variant="icon" label="Close actions" icon={X} onClick={()=>close(true)} /></header>
         <div id={id} role="menu" aria-label={ariaLabel || (typeof label==="string"?label:"Create a record")} className="studio-action-sheet-items" ref={menu} onKeyDown={navigate} onClick={event=>{const item=event.target.closest("button,a");if(item&&!item.disabled)close();}}>{menuItems(children)}</div>
       </section>
-    </div>,document.body) : <div id={id} className={menuClassName} role="menu" aria-label={typeof label==="string"?label:"Create a record"} ref={menu} onKeyDown={navigate} onClick={event => {
+    </StudioPortalSurface>,document.body) : <div id={id} className={menuClassName} role="menu" aria-label={typeof label==="string"?label:"Create a record"} ref={menu} onKeyDown={navigate} onClick={event => {
       const item = event.target.closest("button, a");
       if (item && !item.disabled) close();
     }}>{menuItems(children)}</div>)}
