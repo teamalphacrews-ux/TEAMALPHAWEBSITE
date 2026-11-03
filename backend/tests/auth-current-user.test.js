@@ -17,7 +17,7 @@ function setup(current, extraEnv = {}) {
       lookups.push(userId);
       return {
         async select(projection) {
-          assert.equal(projection, "_id role email studioOwner moduleAccess +sessionVersion");
+          assert.equal(projection, "_id role email studioOwner moduleAccess accountDisabled +sessionVersion");
           if (current instanceof Error) throw current;
           return current;
         },

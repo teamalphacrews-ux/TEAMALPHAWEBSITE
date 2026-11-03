@@ -75,7 +75,7 @@ test('socket read and delivery events cannot mutate another client conversation'
     };
     const ChatRoom = { findOneAndUpdate: async () => {}, findOne: async () => ({ unreadCountUser: 0, unreadCountAdmin: 2 }) };
     const onlineUsers = new Map();
-    registerStudioSockets(state.io, { User, Message, ChatRoom, onlineUsers });
+    registerStudioSockets(state.io, { User, Message, ChatRoom, onlineUsers, archiveGate: { withShared: work => work() } });
     assert.deepEqual(state.joined, [clientId]);
     await state.handlers.join_chat('admin');
     await state.handlers.join_chat(otherId);

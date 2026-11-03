@@ -25,7 +25,7 @@ const initCronJobs = () => {
 
     // Schedule task to run everyday at 8:00 AM server time
     cron.schedule('0 8 * * *', async () => {
-      await require('../saas/workers').forEachWorkspace(async () => {
+      await require('../saas/workers').forEachWorkspace(() => require('./studioArchiveGate').withShared(async () => {
         // Tenant mail needs its own approved sender; never reuse Team Alpha SMTP.
         if (require('../saas/tenantContext').currentWorkspace()) return;
         try {
@@ -94,13 +94,13 @@ const initCronJobs = () => {
             // The workspace runner records this failure without private mail data.
             throw error;
         }
-      });
+      }, { integrations: true }));
     });
 
     console.log("Photographer Reminder Cron Job Initialized to run daily at 8:00 AM.");
 };
 
-const sendEventNotification = async (event, photographerNames) => {
+const sendEventNotificationUnlocked = async (event, photographerNames) => {
     if (require('../saas/tenantContext').currentWorkspace()) return;
     if (!transporter) {
         console.warn("Transporter not initialized, skipping event notification emails.");
@@ -149,4 +149,8 @@ const sendEventNotification = async (event, photographerNames) => {
     }
 };
 
+const sendEventNotification = (event, photographerNames) => {
+    if (!transporter || require('../saas/tenantContext').currentWorkspace()) return Promise.resolve();
+    return require('./studioArchiveGate').withShared(() => sendEventNotificationUnlocked(event, photographerNames), { integrations: true });
+};
 module.exports = { initCronJobs, sendEventNotification };

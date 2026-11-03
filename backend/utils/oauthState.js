@@ -85,7 +85,7 @@ function createOAuthStateService({
       codeVerifier,
       expiresAt: new Date(now() + STATE_MS),
     });
-    return { state, browser, codeChallenge };
+    return { state, browser, codeChallenge, userId: String(user._id) };
   }
   async function consume(state, browser) {
     if (!validNonce(state) || !validNonce(browser)) throw fail();

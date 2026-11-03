@@ -23,7 +23,7 @@ function fixture(overrides = {}) {
   };
   Object.assign(wabbService, overrides.wabbService);
   const ownerCalls = [], verifyOwner = overrides.assertOwner || (async id => { ownerCalls.push(id); });
-  const router = createWhatsAppRouter({ service, wabbService, env: overrides.env || {}, isOwner: overrides.isOwner || (async () => true), assertOwner: verifyOwner });
+  const router = createWhatsAppRouter({ service, wabbService, env: overrides.env || {}, isOwner: overrides.isOwner || (async () => true), assertOwner: verifyOwner, archiveGate: { withShared: work => work() } });
   return { router, service, calls, wabbService, wabbCalls, ownerCalls };
 }
 function dispatch(router, { method = 'GET', path = '/status', query = {}, body, role = 'admin', rawBody, headers = {} } = {}) {

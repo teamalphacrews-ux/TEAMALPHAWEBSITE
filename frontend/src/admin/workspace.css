@@ -517,7 +517,7 @@
   }
 }
 @media print {
-  body * {
+  body:has(.studio-quote-document) * {
     visibility: hidden !important;
   }
   .studio-quote-document,

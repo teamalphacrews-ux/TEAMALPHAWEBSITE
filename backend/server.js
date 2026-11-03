@@ -2,6 +2,8 @@
 require('./saas/tenantModels').installTenantModels();
 const express = require('express');
 const mongoose = require('mongoose');
+const archiveGate = require('./services/studioArchiveGate');
+archiveGate.installWriteFence(mongoose);
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -38,6 +40,7 @@ const readiness = createRuntimeReadiness({
     getConnectionState: () => mongoose.connection.readyState,
     models: ['Lead', 'Quotation', 'Invoice', 'StudioContact', 'StudioProject',
         'ContactDocument', 'ProjectMessage', 'QuoteDelivery', 'GmailConnection', 'GmailOAuthNonce',
+        'StudioArchive', 'StudioArchiveChunk', 'StudioArchiveState', 'DriveBackupConnection', 'DriveBackupOAuthNonce',
         'AdminSession', 'StudioBackup', 'RecoveryRecord', 'StudioProfileImage', 'DocumentCounter', 'Task', 'Notification', 'StudioOperationLease',
         'WhatsAppConnection', 'WhatsAppConversation', 'WhatsAppMessage', 'WhatsAppReceipt', 'WabbMessageAttempt', 'StudioPushDevice', 'FinanceReceipt'].map(name => require(`./models/${name}`)).concat(Object.values(require('./saas/models')))
 });
@@ -105,6 +108,7 @@ app.get('/api/health', readiness.health);
 app.use('/api', readiness.requireReady);
 app.use('/api', require('./saas/access').createWorkspaceMiddleware({ onWorkspace: workspaceRealtime.ensureWorkspace }));
 app.use('/api', require('./saas/publicTokens').createPublicWorkspaceMiddleware({ Workspace: require('./saas/models').Workspace }));
+app.use('/api', archiveGate.middleware());
 // The personal website retains shared support modules without publishing SaaS APIs.
 if (process.env.SAAS_ENABLED === 'true') app.use('/api/saas', require('./saas/routes'));
 
@@ -136,11 +140,11 @@ readiness.initialize(() => {
     initCronJobs();
     require('./services/quoteWorkflow').startQuoteWorker();
     const { forEachWorkspace } = require('./saas/workers');
-    require('node-cron').schedule('* * * * *',()=>forEachWorkspace(() => require('./services/invoiceDelivery').runInvoiceDeliveryJobs()).catch(()=>console.error('Invoice delivery worker failed.')));
+    require('node-cron').schedule('* * * * *',()=>forEachWorkspace(() => archiveGate.withShared(() => require('./services/invoiceDelivery').runInvoiceDeliveryJobs(), { integrations: true })).catch(()=>console.error('Invoice delivery worker failed.')));
     const settingsJobs = () => {
         forEachWorkspace(workspace => workspace ? require('./saas/service').expireInvitations(workspace._id) : Promise.resolve()).catch(() => console.error('Studio invitation cleanup failed.'));
-        forEachWorkspace(() => require('./services/studioRecovery').runBackupJobs()).catch(() => console.error('Studio backup job failed.'));
-        forEachWorkspace(() => require('./services/studioAutomation').runStudioAutomation()).catch(() => console.error('Studio notification job failed.'));
+        forEachWorkspace(() => archiveGate.withShared(() => require('./services/studioRecovery').runBackupJobs())).catch(() => console.error('Studio backup job failed.'));
+        forEachWorkspace(() => archiveGate.withShared(() => require('./services/studioAutomation').runStudioAutomation(), { integrations: true })).catch(() => console.error('Studio notification job failed.'));
     };
     settingsJobs();
     const settingsTimer = setInterval(settingsJobs, 60000);
@@ -150,7 +154,7 @@ readiness.initialize(() => {
     const { pollGoogleCalendar } = require('./services/googleCalendarService');
     const User = require('./models/User');
 
-    setInterval(async () => {
+    setInterval(() => archiveGate.withShared(async () => {
         try {
             const connectedUsers = await User.find({
                 googleAccessToken: { $exists: true, $ne: null }
@@ -161,7 +165,7 @@ readiness.initialize(() => {
         } catch (err) {
             console.error('Error in Google Calendar polling loop:', err.message);
         }
-    }, 60000); // Every 60 seconds
+    }, { integrations: true }).catch(() => console.error('Calendar work is paused or unavailable.')), 60000); // Every 60 seconds
 
 });
 
@@ -193,7 +197,7 @@ authRouter.post('/login', require('./saas/routes').authLimit, require('./saas/ro
 
 authRouter.get('/me', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('firstName lastName email role studioOwner moduleAccess galleryTag cloudLink leadId createdAt updatedAt');
+        const user = await User.findById(req.user.id).select('firstName lastName email role studioOwner moduleAccess workspaceDataVersion galleryTag cloudLink leadId createdAt updatedAt');
         res.json({ ...user.toObject(), ...require('./utils/moduleAccess').accessPayload(user) });
     } catch (err) {
         console.error(err.message);
@@ -208,7 +212,7 @@ authRouter.put('/profile', auth, async (req, res) => {
             req.user.id,
             { $set: updateData },
             { new: true, runValidators: true }
-        ).select('firstName lastName email role studioOwner moduleAccess galleryTag cloudLink leadId createdAt updatedAt');
+        ).select('firstName lastName email role studioOwner moduleAccess workspaceDataVersion galleryTag cloudLink leadId createdAt updatedAt');
         if (!user) return res.status(404).json({ msg: "User not found" });
         res.json({ ...user.toObject(), ...require('./utils/moduleAccess').accessPayload(user) });
     } catch (err) {
@@ -258,8 +262,10 @@ authRouter.post('/google/webhook', async (req, res) => {
 authRouter.get('/google/callback', googleOAuth.callback);
 
 app.use('/api/auth', authRouter);
+app.use('/api/integrations/drive-backups', require('./routes/driveBackupRoutes'));
 app.use('/api/integrations/gmail', require('./routes/gmailRoutes'));
 app.use('/api/integrations/whatsapp', require('./routes/whatsappRoutes'));
+app.use('/api/studio/security', require('./routes/studioArchiveRoutes'));
 app.use('/api/studio/security', require('./routes/studioSecurityRoutes'));
 app.use('/api/studio', require('./routes/studioPreferencesRoutes'));
 app.use('/api/studio', require('./routes/studioProfileRoutes'));

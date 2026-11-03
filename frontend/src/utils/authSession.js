@@ -42,6 +42,7 @@ export async function verifyStoredSession(session, { fetcher, api = '', signal, 
     user.moduleAccess = Array.isArray(profile.moduleAccess) ? [...profile.moduleAccess] : profile.moduleAccess == null ? null : [];
     user.studioOwner = profile.studioOwner === true;
     user.canManageTeam = profile.canManageTeam === true;
+    user.workspaceDataVersion = Number.isSafeInteger(profile.workspaceDataVersion) && profile.workspaceDataVersion >= 0 ? profile.workspaceDataVersion : 0;
     delete user.owner;
     return { status: 'valid', user };
   } catch {

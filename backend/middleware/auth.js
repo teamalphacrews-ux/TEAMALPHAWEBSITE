@@ -40,7 +40,7 @@ function createAuth({
       return res.status(401).json({ msg: "Token is not valid" });
     let current;
     try {
-      current = await User.findById(identity.id).select("_id role email studioOwner moduleAccess +sessionVersion");
+      current = await User.findById(identity.id).select("_id role email studioOwner moduleAccess accountDisabled +sessionVersion");
     } catch {
       return res
         .status(503)
@@ -48,7 +48,7 @@ function createAuth({
           msg: "Authentication is temporarily unavailable. Please try again.",
         });
     }
-    if (!current || typeof current.role !== "string" || !current.role) {
+    if (!current || current.accountDisabled || typeof current.role !== "string" || !current.role) {
       return res.status(401).json({ msg: "Token is not valid" });
     }
     try {

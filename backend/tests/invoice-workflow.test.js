@@ -1,3 +1,4 @@
+require('node:test').beforeEach(t => t.mock.method(require('../services/studioArchiveGate'), 'withShared', work => work()));
 const test = require("node:test");
 test.beforeEach(require('./sessionFixture'));
 const assert = require("node:assert/strict");

@@ -1,11 +1,11 @@
-:is(.studio-app,.studio-crm-overlay) .studio-select{display:inline-block;min-width:0;position:relative;vertical-align:middle;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;min-height:0!important;height:auto}
+:is(.studio-app,.studio-crm-overlay) .studio-select{display:inline-block;min-width:0;max-width:100%;box-sizing:border-box;position:relative;vertical-align:middle;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;min-height:0!important;height:auto}
 .studio-select-native{width:100%;max-width:100%;box-sizing:border-box}
 .studio-select-trigger{display:none}
 /* Caller form classes must not expose the phone replacement on desktop. */
 @media(min-width:769px){
  :is(.studio-app,.studio-crm-overlay) .studio-select>.studio-select-trigger{display:none!important}
- :is(.studio-app.studio-app.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-select>.studio-select-native{display:block;width:100%;max-width:100%;min-width:0;min-height:44px;box-sizing:border-box;padding:10px 30px 10px 12px;border:1px solid var(--studio-border);border-radius:11px;background:var(--studio-surface);color:var(--studio-text);font-family:inherit;font-size:13px;line-height:1.4;vertical-align:middle}
- :is(.studio-app,.studio-crm-overlay) .studio-field>.studio-select{display:block;width:100%}
+ :is(.studio-app.studio-app,.studio-crm-overlay.studio-crm-overlay) .studio-select>.studio-select-native{display:block;width:100%;max-width:100%;min-width:0;min-height:44px;height:44px;box-sizing:border-box;padding:10px 30px 10px 12px;border:1px solid var(--studio-border);border-radius:11px;background:var(--studio-surface);color:var(--studio-text);font-family:inherit;font-size:13px;line-height:1.4;vertical-align:middle}
+ :is(.studio-app,.studio-crm-overlay) :is(.studio-field,.ops-field,.invoice-field,.qw-field)>.studio-select{display:block;width:100%}
 }
 
 .studio-app.studio-select-overlay{position:fixed;inset:0;z-index:1600;display:flex;align-items:flex-end;justify-content:center;min-height:0;padding:12px;background:rgba(0,0,0,.45)!important;backdrop-filter:blur(8px);box-sizing:border-box}
@@ -31,8 +31,13 @@
  :is(.studio-app,.studio-crm-overlay) .studio-select-trigger>svg{flex-shrink:0;opacity:.65}
  :is(.studio-app,.studio-crm-overlay) .studio-select-trigger:focus-visible{outline:2px solid #5383ef;outline-offset:2px}
  :is(.studio-app,.studio-crm-overlay) .studio-select-trigger:disabled{opacity:.5}
- :is(.studio-app,.studio-crm-overlay) .studio-field>.studio-select{display:block;width:100%}
+ :is(.studio-app,.studio-crm-overlay) :is(.studio-field,.ops-field,.invoice-field,.qw-field)>.studio-select{display:block;width:100%}
 }
 
 html[data-studio-motion=reduced] .studio-select-sheet{animation:none}
 .studio-select-search:focus-within{outline:2px solid #5383ef;outline-offset:2px}
+
+/* Form fields keep one control baseline, including dialogs rendered in portals. */
+:is(.studio-app,.studio-crm-overlay) :is(.studio-field,.ops-field,.invoice-field,.qw-field)>input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]){min-width:0;max-width:100%;box-sizing:border-box;min-height:44px}
+html[data-studio-appearance=dark] .studio-select-native{color-scheme:dark}
+html[data-studio-appearance=light] .studio-select-native{color-scheme:light}

@@ -57,7 +57,7 @@ function sendError(res, error) {
   return res.status(safe ? error.status : 503).json({ error: safe ? error.message : 'WhatsApp is temporarily unavailable. Please try again.', code: safe ? error.code : 'WHATSAPP_UNAVAILABLE' });
 }
 
-function createWhatsAppRouter({ service, wabbService, env = process.env, authenticate = auth, authorize = requireAdmin, isOwner = id => security.isOwner(id), assertOwner = id => security.assertOwner(id) } = {}) {
+function createWhatsAppRouter({ service, wabbService, env = process.env, authenticate = auth, authorize = requireAdmin, isOwner = id => security.isOwner(id), assertOwner = id => security.assertOwner(id), archiveGate = require('../services/studioArchiveGate') } = {}) {
   const router = express.Router(), meta = () => service || require('../services/whatsappService');
   const provider = () => {
     if (env.WHATSAPP_PROVIDER === undefined || env.WHATSAPP_PROVIDER === '' || env.WHATSAPP_PROVIDER === 'meta') return 'meta';
@@ -66,7 +66,7 @@ function createWhatsAppRouter({ service, wabbService, env = process.env, authent
   };
   const selected = () => { const name = provider(); return { name, api: name === 'wabb' ? wabbService || require('../services/wabbService') : meta() }; };
   const capability = () => Object.assign(new Error('This option is unavailable for the selected WhatsApp provider.'), { status: 409, code: 'WHATSAPP_CAPABILITY' });
-  const wrap = handler => async (req, res) => { try { await handler(req, res); } catch (error) { sendError(res, error); } };
+  const wrap = handler => async (req, res) => { try { await archiveGate.withShared(() => handler(req, res), { integrations: true, rejectPaused: true }); } catch (error) { sendError(res, error); } };
   const empty = req => { fields(req.body === undefined ? {} : req.body, []); query(req.query, []); };
   router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); res.set('Referrer-Policy', 'no-referrer'); next(); });
 

@@ -28,7 +28,7 @@
 .studio-ops .ops-search input { font-size:12px; padding:10px 0; min-width:0; }
 .studio-ops .ops-select { width:auto; max-width:150px; font-size:11px; min-height:37px; padding:8px 26px 8px 10px; }
 .studio-ops .ops-sort { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--brand-muted); }
-.studio-ops .ops-sort select { min-width:0; font-size:11px; background:transparent; border:0; color:var(--studio-muted); padding:8px 0; max-width:100px; }
+.studio-ops .ops-sort>.studio-select { min-width:0; width:142px; max-width:100%; }
 .studio-ops .ops-table-scroll { overflow-x:auto; min-width:0; max-width:100%; contain:inline-size layout; }
 .studio-ops .studio-table { width:100%; }
 .studio-ops .studio-table th { font-size:11px; letter-spacing:.02em; padding:12px 18px; }
@@ -255,3 +255,5 @@
 .ops-client-visibility strong { display:block; font-weight:500; color:#40516a; margin-bottom:6px; }
 .ops-client-visibility small { display:block; font-size:11px; line-height:1.7; color:#8290a3; }
 .ops-published-update { display:block; font-size:11px; color:#6b88af; margin-top:6px; }
+
+.ops-client-visibility>input{width:18px;height:18px;flex:0 0 18px;margin:2px 0 0}.ops-client-visibility>span{min-width:0}

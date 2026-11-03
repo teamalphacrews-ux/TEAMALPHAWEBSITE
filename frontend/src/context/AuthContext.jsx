@@ -4,6 +4,7 @@ import {clearLocalDrafts,draftScope} from '../offline/draftVault';
 import {disconnectNativeDevice} from '../native/deviceFeatures';
 import API from '../utils/apiConfig';
 import { notifyNativeWorkspaceChanged } from '../native/nativeCapabilities';
+import { reconcileWorkspaceDataEpoch } from '../utils/workspaceDataEpoch';
 import { cleanSessionToken as cleanToken, draftScopeToPurge, isCurrentSession, shouldRedirectExpiredSession, verifyStoredSession } from '../utils/authSession';
 
 const AuthContext = createContext();
@@ -44,6 +45,7 @@ export const AuthProvider = ({ children }) => {
     const token = cleanToken(userToken);
     if (!token || user?.role !== 'admin') return;
     const old=readStoredSession();
+    await reconcileWorkspaceDataEpoch(user, { storage: localStorage, purgeDrafts: clearLocalDrafts, scope: draftScope(user) });
     const nextScope = draftScope(user), purgeScope = draftScopeToPurge(lastDraftScope.current, nextScope, { verified: true });
     if (purgeScope) await clearLocalDrafts(purgeScope);
     if(old.token&&old.token!==token)await disconnectNativeDevice(old.token);
@@ -81,6 +83,7 @@ export const AuthProvider = ({ children }) => {
       if (controller.signal.aborted || !isCurrentSession(token, currentSession.current, localStorage.getItem('token'))) return;
       if (result.status === 'expired') { expireSession(token); return; }
       if (result.status === 'valid') {
+        await reconcileWorkspaceDataEpoch(result.user, { storage: localStorage, purgeDrafts: clearLocalDrafts, scope: draftScope(result.user) });
         const nextScope = draftScope(result.user), purgeScope = draftScopeToPurge(lastDraftScope.current, nextScope, { verified: true });
         if (purgeScope) await clearLocalDrafts(purgeScope);
         if (controller.signal.aborted || !isCurrentSession(token, currentSession.current, localStorage.getItem('token'))) return;
