@@ -3,6 +3,9 @@ const crypto=require('node:crypto'),fs=require('node:fs/promises'),path=require(
 const codec=require('../utils/workspaceArchive'),modules=require('../utils/moduleAccess'),security=require('./studioSecurity');
 const fail=security.fail;
 const RESET_CONFIRMATION='DELETE WORKSPACE DATA',RESTORE_CONFIRMATION='RESTORE WORKSPACE',RESUME_CONFIRMATION='RESUME INTEGRATIONS';
+const RECOVERY_RELEASE_BLOCK='Master reset and replacement restore are disabled until recovery has been verified on a disposable database and explicitly enabled by the server operator. Encrypted backups remain available.';
+const recoveryEnabled=env=>env.WORKSPACE_RECOVERY_ENABLED==='true';
+function assertRecoveryEnabled(env){if(!recoveryEnabled(env))throw fail(RECOVERY_RELEASE_BLOCK,503);}
 function assertPersonal(){if(require('../saas/tenantContext').currentWorkspace())throw fail('Workspace replacement is available only for the personal studio installation; no SaaS workspace was changed.',403);}
 async function localFileBlockers({readDirectory=fs.readdir,directory=path.join(__dirname,'..','uploads')}={}){
  const pending=[directory];let scanned=0;
@@ -155,6 +158,7 @@ function createArchiveService(options={}){
   return collections;
  }
  async function replace({actorId,password,confirmation,archive,currentSessionId,reset}){
+  assertRecoveryEnabled(get().env);
   if(confirmation!==(reset?RESET_CONFIRMATION:RESTORE_CONFIRMATION))throw fail('Type '+(reset?RESET_CONFIRMATION:RESTORE_CONFIRMATION)+' exactly to confirm.',400);
   const verified=await owner(actorId,password,{reauth:true}),deps=get();codec.archiveKey(deps.env);
   if(!codec.identity(currentSessionId))throw fail('A current owner session is required. Sign in again.',409);
@@ -197,9 +201,10 @@ function createArchiveService(options={}){
   return deps.gate.withShared(async()=>{
    const counts={};for(const name of codec.MODEL_NAMES)counts[name]=await deps.registry[name].countDocuments({});
    const state=await deps.gate.getState(),blockers=await deps.fileBlockers();
+   if(!recoveryEnabled(deps.env))blockers.push(RECOVERY_RELEASE_BLOCK);
    if(state?.uncertainReaders)blockers.push('A previous operation lost its safety lease. Destructive maintenance is blocked until an operator confirms all old processes stopped and clears the stale state.');
    const latest=await deps.Archive.findOne({expiresAt:{$gt:deps.now()}}).sort({createdAt:-1});
-   return{counts,coverage:codec.COVERAGE,limits:{maxBytes:codec.MAX_BYTES,maxUploadBytes:codec.MAX_UPLOAD_BYTES,maxRecords:codec.MAX_RECORDS},keyConfigured:codec.keyConfigured(deps.env),dataVersion:state?.dataVersion||0,integrationsPaused:state?.integrationsPaused===true,maintenanceBlocked:state?.uncertainReaders===true,latestArchiveWarnings:latest?{sourceCreatedAt:latest.sourceCreatedAt,historicalAccounts:latest.historicalAccounts||0,unresolvedReferences:latest.unresolvedReferences||0}:null,resetBlocked:blockers.length>0,blockers};
+   return{counts,coverage:codec.COVERAGE,limits:{maxBytes:codec.MAX_BYTES,maxUploadBytes:codec.MAX_UPLOAD_BYTES,maxRecords:codec.MAX_RECORDS},keyConfigured:codec.keyConfigured(deps.env),recoveryEnabled:recoveryEnabled(deps.env),dataVersion:state?.dataVersion||0,integrationsPaused:state?.integrationsPaused===true,maintenanceBlocked:state?.uncertainReaders===true,latestArchiveWarnings:latest?{sourceCreatedAt:latest.sourceCreatedAt,historicalAccounts:latest.historicalAccounts||0,unresolvedReferences:latest.unresolvedReferences||0}:null,resetBlocked:blockers.length>0,blockers};
   });
  }
  async function listBackups({actorId}){
@@ -207,6 +212,7 @@ function createArchiveService(options={}){
   return deps.gate.withShared(async()=>({backups:(await deps.Archive.find({expiresAt:{$gt:deps.now()}}).sort({createdAt:-1}).limit(30)).map(metadata),coverage:codec.COVERAGE}));
  }
  async function resumeIntegrations({actorId,password,confirmation}){
+  assertRecoveryEnabled(get().env);
   if(confirmation!==RESUME_CONFIRMATION)throw fail('Type '+RESUME_CONFIRMATION+' exactly to confirm.',400);
   const verified=await owner(actorId,password,{reauth:true}),deps=get();
   return deps.gate.withExclusive(()=>deps.transaction(async session=>{

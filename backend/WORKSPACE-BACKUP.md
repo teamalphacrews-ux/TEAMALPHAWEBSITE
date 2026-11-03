@@ -52,6 +52,12 @@ be imported as a full-workspace replacement.
 
 ## Reset and restore behavior
 
+Master reset, replacement restore and post-recovery integration resume are
+disabled by default. They require the explicit backend setting
+`WORKSPACE_RECOVERY_ENABLED=true` after the release checks below pass. Missing,
+false or other values leave these service operations blocked, even for the
+owner. Encrypted archive creation, download and inspection remain available.
+
 The owner must enter the current password, acknowledge the warning and type
 `DELETE WORKSPACE DATA` or `RESTORE WORKSPACE`. The backend independently checks
 the saved owner and active session. Before any deletion it creates an encrypted
@@ -94,3 +100,5 @@ process/worker, verify receipt/profile images and totals, and reconnect Google
 Drive with a test account. The local environment used for this change has no
 MongoDB replica-set binary; real transaction/provider validation remains a
 release dependency. No live data was reset or restored during development.
+Keep `WORKSPACE_RECOVERY_ENABLED` unset or false while that dependency is open;
+the live interface shows the release block and disables reset and restore.

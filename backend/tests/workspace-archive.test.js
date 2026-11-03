@@ -27,7 +27,7 @@ function snapshot(){
  add('QuoteDelivery',{_id:id(23),quotation:id(13),revision:1,key:'historical-attempt',status:'queued',dueAt:fixed});
  return{format:codec.FORMAT,version:codec.VERSION,createdAt:fixed.toISOString(),sourceOwnerId:ownerId,coverage:codec.COVERAGE,collections};
 }
-function fixture({source=snapshot(),failInsert,blockers=[],differentOwner=false}={}){
+function fixture({source=snapshot(),failInsert,blockers=[],differentOwner=false,environment={...env,WORKSPACE_RECOVERY_ENABLED:'true'}}={}){
  const state={db:{},commits:0,rollbacks:0,reauth:[],gate:[],rowsRead:[]};
  for(const name of codec.MODEL_NAMES)state.db[name]=source.collections[name].map(row=>codec.decodedRecord(name,row));
  const actingId=differentOwner?id(99):ownerId;
@@ -55,7 +55,7 @@ function fixture({source=snapshot(),failInsert,blockers=[],differentOwner=false}
  };
  const registry=Object.fromEntries(codec.MODEL_NAMES.map(name=>[name,model(name)])),User=registry.User;
  const gate={withShared:async fn=>{state.gate.push('shared');return fn();},withExclusive:async fn=>{state.gate.push('exclusive');return fn();},assertExclusive:async()=>{state.gate.push('fenced');},getState:async()=>state.db.StudioArchiveState[0]};
- const service=createArchiveService({registry,User,Session:model('AdminSession'),PushDevice:model('StudioPushDevice'),Archive:model('StudioArchive'),Chunk:model('StudioArchiveChunk'),State:model('StudioArchiveState'),credentialModels:Object.fromEntries(codec.RESET_CREDENTIAL_MODELS.map(name=>[name,model(name)])),gate,env,now:()=>new Date(fixed),fileBlockers:async()=>blockers,
+ const service=createArchiveService({registry,User,Session:model('AdminSession'),PushDevice:model('StudioPushDevice'),Archive:model('StudioArchive'),Chunk:model('StudioArchiveChunk'),State:model('StudioArchiveState'),credentialModels:Object.fromEntries(codec.RESET_CREDENTIAL_MODELS.map(name=>[name,model(name)])),gate,env:environment,now:()=>new Date(fixed),fileBlockers:async()=>blockers,
   comparePassword:async(input,hash)=>{state.reauth.push([input,hash]);return input==='correct-owner-password'&&hash==='current-private-hash';},
   readRows:async function*(Model,session){state.rowsRead.push(Model.modelName);for(const row of selected(session)[Model.modelName])yield row;},
   transaction:async work=>{const staged={db:clone(state.db)};try{const result=await work(staged);state.db=staged.db;state.commits++;return result;}catch(error){state.rollbacks++;throw error;}},
@@ -98,6 +98,30 @@ test('creation snapshots all supported data into encrypted chunks and owner hist
  assert.equal(JSON.stringify(state.db.StudioArchiveChunk).includes('current-private-hash'),false);
  assert.deepEqual(codec.validateSnapshot(codec.unseal(result.archive,env)).collections.User.map(row=>row.role),['admin','admin']);
  assert.equal(state.rowsRead.length,codec.MODEL_NAMES.length);
+});
+test('destructive recovery is disabled by default and rejects requests before password or database work',async()=>{
+ for(const flag of [undefined,'false','TRUE','1',true]){
+  const environment={...env};if(flag!==undefined)environment.WORKSPACE_RECOVERY_ENABLED=flag;
+  const f=fixture({environment}),before=clone(f.state.db),archive=codec.seal(snapshot(),env);
+  await assert.rejects(f.service.resetWorkspace({...f.args,confirmation:RESET_CONFIRMATION}),error=>error.status===503&&error.message.includes('disabled until recovery'));
+  await assert.rejects(f.service.restorePortableArchive({...f.args,archive,confirmation:RESTORE_CONFIRMATION}),error=>error.status===503);
+  await assert.rejects(f.service.resumeIntegrations({...f.args,confirmation:'RESUME INTEGRATIONS'}),error=>error.status===503);
+  assert.deepEqual(f.state.db,before);assert.deepEqual(f.state.reauth,[]);assert.deepEqual(f.state.gate,[]);assert.equal(f.state.commits,0);
+  const status=await f.service.getStatus({actorId:f.actingId});
+  assert.equal(status.recoveryEnabled,false);assert.equal(status.resetBlocked,true);assert.ok(status.blockers.some(message=>message.includes('disabled until recovery')));
+ }
+});
+test('release-disabled recovery still permits encrypted archive creation, download and inspection',async()=>{
+ const f=fixture({environment:env}),created=await f.service.createPortableArchive(f.args);
+ const archive=await f.service.readStoredArchive({actorId:f.actingId,backupId:created.backupId});
+ const inspection=await f.service.inspectPortableArchive({actorId:f.actingId,archive});
+ assert.equal(inspection.counts.StudioProject,1);assert.equal(f.state.db.StudioProject.length,1);assert.equal(f.state.db.User.length,2);
+});
+test('explicit recovery release setting enables owner-controlled integration resume',async()=>{
+ const f=fixture();f.state.db.StudioArchiveState[0].integrationsPaused=true;
+ assert.equal((await f.service.getStatus({actorId:f.actingId})).recoveryEnabled,true);
+ assert.deepEqual(await f.service.resumeIntegrations({...f.args,confirmation:'RESUME INTEGRATIONS'}),{integrationsPaused:false});
+ assert.equal(f.state.db.StudioArchiveState[0].integrationsPaused,false);
 });
 test('wrong actor password and nonowner accounts never enter destructive work',async()=>{
  const f=fixture();await assert.rejects(f.service.resetWorkspace({...f.args,password:'legacy-master-password',confirmation:RESET_CONFIRMATION}),error=>error.status===400);
