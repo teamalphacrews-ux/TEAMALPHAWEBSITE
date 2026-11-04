@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { SignupFrame, PasswordField } from './AuthFrame';
 import { isWorkspaceSession, openWorkspaceSession, saasRequest } from './api';
 import { callbackParameters, readSocialFlow, safeAuthorizationUrl, SOCIAL_FLOW_KEY, validSocialCode } from './socialAuthFlow';
+import { IS_COMMERCIAL_DEPLOYMENT } from './release';
 
 function usePublicConfig() {
   const [config, setConfig] = useState(null), [loading, setLoading] = useState(true);
@@ -83,7 +84,7 @@ export function ProductLoginPage() {
       <button className="saas-primary" type="submit" disabled={busy || loading || config?.authEnabled !== true}>{busy ? 'Signing in…' : 'Open my studio'}<ArrowRight size={16} /></button>
     </fieldset></form>
     {!loading && config?.authEnabled !== true && <p className="saas-social-status">Studio account sign-in is not available here yet.</p>}
-    <p className="saas-auth-existing"><LockKeyhole size={14} />Existing Team Alpha team? <Link to="/auth">Use studio sign-in</Link></p>
+    <p className="saas-auth-existing"><LockKeyhole size={14} />Existing Team Alpha team? {IS_COMMERCIAL_DEPLOYMENT ? <a href="https://teamalpha.photography/auth">Use Team Alpha sign-in</a> : <Link to="/auth">Use studio sign-in</Link>}</p>
   </SignupFrame>;
 }
 

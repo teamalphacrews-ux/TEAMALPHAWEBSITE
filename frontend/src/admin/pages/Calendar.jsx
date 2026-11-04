@@ -29,6 +29,7 @@ import { useStudioPreferences } from '../components/common/StudioPreferences';
 import { formatWorkspaceDate, formatWorkspaceTime, resolveWorkspaceTimezone } from '../../utils/workspaceLocale';
 import '../components/calendar/calendarRefinements.css';
 import './calendarWorkspace.css';
+import './schedulingRefinement.css';
 import { GOOGLE_PREVIEW_MESSAGE, googleCalendarHandoff, googleConnectionError } from "../components/calendar/googleConnection";
 import {
   WorkspaceHeader,
@@ -93,6 +94,7 @@ export default function Calendar() {
   const editing = editingState && !editingState.start ? { ...editingState, start: studioDateTimeToISO(`${selected}T10:00`, timezone), end: studioDateTimeToISO(`${selected}T11:00`, timezone) } : editingState;
   const detail = linkedEvent || detailState;
   const setupMessage = isPreview ? GOOGLE_PREVIEW_MESSAGE : sync.setupMessage || "";
+  const googleStatus = connection.loading ? 'Checking connection…' : connection.error ? 'Connection unavailable' : isPreview ? 'Sample preview' : sync.configured === false ? 'Setup required' : sync.isSynced ? sync.syncError ? 'Reconnect required' : 'Connected' : 'Not connected';
   useEffect(() => {
     if (!hasFullModuleAccess(user)) return;
     let socket, cancelled = false;
@@ -215,12 +217,21 @@ export default function Calendar() {
     }
   };
   return (
-    <div className="studio-calendar-page">
+    <div className="studio-calendar-page scheduling-workspace scheduling-calendar">
       <WorkspaceHeader
-        eyebrow="MAKE ROOM FOR EVERY STORY"
         title="Studio calendar"
-        description="Shoots, consultations and crew assignments in one place."
+        description="Plan your shoots, consultations and crew assignments."
       >
+        <button className="studio-button primary" onClick={openNew} disabled={identityLoading}>
+          <Plus size={15} />
+          Schedule event
+        </button>
+      </WorkspaceHeader>
+      <section className="scheduling-connection" aria-label="Google Calendar connection">
+        <div className="scheduling-connection-copy">
+          <CalendarDays size={19} aria-hidden="true" />
+          <div><strong>Google Calendar <span className={'scheduling-status' + (sync.isSynced && !sync.syncError && !isPreview ? ' is-connected' : '')}>{googleStatus}</span></strong><p id="google-calendar-setup">{setupMessage || (sync.isSynced ? `${sync.email || 'Your Google account'} · Studio times use ${timezone}.` : 'Connect your Google account to keep studio events in sync.')}</p></div>
+        </div>
         <button
           className="studio-button"
           onClick={sync.isSynced && !sync.syncError ? syncNow : connect}
@@ -234,12 +245,7 @@ export default function Calendar() {
               ? sync.syncError ? "Reconnect Google" : "Sync Google"
               : "Connect Google"}
         </button>
-        <button className="studio-button primary" onClick={openNew} disabled={identityLoading}>
-          <Plus size={14} />
-          Schedule event
-        </button>
-      </WorkspaceHeader>
-      {setupMessage && <aside id="google-calendar-setup" className="workspace-info" role="status">{setupMessage}</aside>}
+      </section>
       <WorkspaceError error={connectionError || (callbackResult === "error" ? "Google authorization was not completed. Please connect again and approve the calendar permissions." : "")} />
       {callbackResult === "success" && sync.isSynced && !sync.syncError && <p className="workspace-info" role="status">Google Calendar is connected. Your events will synchronize with the studio calendar.</p>}
       <WorkspaceError error={error} retry={reload} />
@@ -292,13 +298,13 @@ export default function Calendar() {
             ))}
           </div>
         </div>
-        <div className="studio-toolbar">
+        <div className="studio-toolbar scheduling-calendar-filters">
           <WorkspaceSearch
             value={query}
             onChange={setQuery}
             placeholder="Search events or locations…"
           />
-          <StudioSelect
+          <label className="scheduling-filter-field"><span>Crew</span><StudioSelect
             className="studio-input workspace-select"
             aria-label="Filter calendar crew"
             value={crewFilter}
@@ -310,7 +316,8 @@ export default function Calendar() {
                 {c.name}
               </option>
             ))}
-          </StudioSelect>
+          </StudioSelect></label>
+          {(query.trim() || crewFilter !== 'all') && <button type="button" className="studio-button scheduling-clear-filters" onClick={() => { setQuery(''); setCrewFilter('all'); }}>Clear filters</button>}
         </div>
         {view === 'agenda' && <div className="workspace-agenda-heading"><div><h3>{agendaScope === 'day' ? dateLabel(selected) : 'Agenda for ' + dateLabel(`${month}-01`, { month: 'long', year: 'numeric', day: undefined })}</h3><p className="studio-muted">{agendaEvents.length} {agendaEvents.length === 1 ? 'event' : 'events'} · {timezone}</p></div>{agendaScope === 'day' && <button type="button" className="studio-button small" onClick={() => setAgendaScope('month')}>Show whole month</button>}</div>}
         {loading ? (
@@ -444,7 +451,6 @@ export default function Calendar() {
         <div><dt>This month</dt><dd>{loading || error ? '—' : monthEvents.length}<span>events</span></dd></div>
         <div><dt>Upcoming</dt><dd>{loading || error ? '—' : schedule.upcomingEvents.length}<span>events</span></dd></div>
         <div><dt>Crew overlaps</dt><dd>{loading || error ? '—' : schedule.conflicts.length}<span>to review</span></dd></div>
-        <div><dt>Google Calendar</dt><dd className="calendar-sync-label">{connection.loading ? 'Checking…' : connection.error ? 'Unavailable' : isPreview ? 'Preview only' : sync.configured === false ? 'Setup required' : sync.isSynced ? sync.syncError ? 'Needs attention' : 'Connected' : 'Not connected'}<span>{sync.isSynced ? sync.email : 'Studio calendar available'}</span></dd></div>
       </dl>
       <CalendarInsights key={month + timezone} events={visible} month={month} selected={selected} onSelect={setSelected} loading={loading} timezone={timezone} formatDate={dateLabel} />
       {schedule.conflicts.length > 0 && (

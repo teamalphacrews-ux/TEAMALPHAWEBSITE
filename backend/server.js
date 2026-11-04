@@ -262,6 +262,7 @@ authRouter.post('/google/webhook', async (req, res) => {
 authRouter.get('/google/callback', googleOAuth.callback);
 
 app.use('/api/auth', authRouter);
+app.use('/api/integrations/assistants', require('./routes/studioAssistantRoutes'));
 app.use('/api/integrations/drive-backups', require('./routes/driveBackupRoutes'));
 app.use('/api/integrations/gmail', require('./routes/gmailRoutes'));
 app.use('/api/integrations/whatsapp', require('./routes/whatsappRoutes'));

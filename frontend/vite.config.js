@@ -4,6 +4,7 @@ import process from "node:process";
 import { hostname } from "node:os";
 import { createWebsiteRouter } from "./website-server.mjs";
 import react from "@vitejs/plugin-react";
+import { transformDeploymentHtml } from "./src/saas/releaseConfig.js";
 
 // https://vite.dev/config/
 function websiteGateway(env) {
@@ -24,6 +25,10 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     websiteGateway({ ...loadEnv(mode, process.cwd(), ""), ...process.env }),
+    {
+      name: "studio-deployment-identity",
+      transformIndexHtml: html => transformDeploymentHtml(html, { ...loadEnv(mode, process.cwd(), "VITE_"), ...process.env }),
+    },
   ],
   server: {
     proxy: {

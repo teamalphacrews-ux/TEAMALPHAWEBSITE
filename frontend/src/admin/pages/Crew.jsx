@@ -14,6 +14,7 @@ import { formatStudioDate, studioDayBounds, eventStartDay, studioTimezone } from
 import { eventScheduleLabel } from '../../utils/eventSchedule';
 import { recordDestination } from '../../utils/studioNavigation';
 import "./studioOperations.css";
+import "./schedulingRefinement.css";
 
 const initials = name => String(name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase();
 const roleLabel = role => String(role || "Crew member").toLowerCase().replace(/(^|\s)\S/g, letter => letter.toUpperCase());
@@ -96,8 +97,8 @@ export default function Crew() {
     finally { setSaving(false); }
   };
 
-  return <div className="studio-ops">
-    <div className="studio-page-heading"><div><p className="studio-eyebrow">People & planning</p><h1>Crew</h1><p className="studio-muted">The people behind every beautiful frame.</p></div><div className="ops-heading-actions"><Link className="studio-button" to="/admin/calendar"><CalendarDays size={15} /> Manage schedule</Link><button className="studio-button primary" onClick={() => openEditor()}><Plus size={16} /> Add crew member</button></div></div>
+  return <div className="studio-ops scheduling-workspace scheduling-crew">
+    <div className="studio-page-heading"><div><h1>Crew & scheduling</h1><p className="studio-muted">Find your crew, check assignments and plan the next shoot.</p></div><div className="ops-heading-actions"><Link className="studio-button" to="/admin/calendar"><CalendarDays size={15} /> View calendar</Link><button className="studio-button primary" onClick={() => openEditor()}><Plus size={16} /> Add crew member</button></div></div>
     <div className="studio-metric-grid ops-metrics">{[{ label: "Active crew", value: crew.filter(member => member.status === "Active").length, icon: Users, detail: `${crew.length} members in your roster`, tone: "plum" }, { label: "Upcoming events", value: calendarError ? "—" : upcomingEvents.length, icon: CalendarDays, detail: "From the shared studio calendar", tone: "gold" }, { label: "Events with crew", value: calendarError ? "—" : assignedEvents.length, icon: ShieldCheck, detail: "With at least one assigned member", tone: "sage" }, { label: "Schedule overlaps", value: calendarError ? "—" : conflicts.length, icon: AlertTriangle, detail: `${conflictedMembers.size} crew members to review`, tone: "rose" }].map(metric => <div className="studio-metric" key={metric.label}><div className="ops-metric-top"><span>{metric.label}</span><span className={`ops-metric-icon ${metric.tone}`}><metric.icon size={18} /></span></div><strong>{loading || crewError ? "—" : metric.value}</strong><small>{metric.detail}</small></div>)}</div>
     {crewError && <OperationsError onRetry={retryWorkspace}>{crewError}</OperationsError>}{calendarError && <OperationsError onRetry={retryWorkspace}>{calendarError}</OperationsError>}
     <div className="ops-workspace-grid ops-crew-grid">

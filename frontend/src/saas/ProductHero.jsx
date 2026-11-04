@@ -73,7 +73,7 @@ export default function ProductHero({ children }) {
   return <section className="sos-launch" id="workspace">
     <div className="sos-launch-halo" aria-hidden="true"><i/><i/></div>
     <div className="sos-container">
-      <div className="sos-launch-kicker"><span><i/>STUDIO OS ULTRA · MADE FOR PHOTOGRAPHERS</span><small>PRODUCT PREVIEW</small></div>
+      <div className="sos-launch-kicker"><span><i/>STUDIO X OS · MADE FOR PHOTOGRAPHERS</span><small>PRODUCT PREVIEW</small></div>
       <div className="sos-launch-intro">
         <div className="sos-launch-headline">
           <div className="sos-headline-glow" aria-hidden="true"><i/><i/><i/></div>

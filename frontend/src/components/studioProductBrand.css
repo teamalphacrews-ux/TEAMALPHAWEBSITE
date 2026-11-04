@@ -1,0 +1,53 @@
+.studio-x-brand-art {
+  display: inline-flex;
+  align-items: center;
+  width: 212px;
+  max-width: 100%;
+  aspect-ratio: 2048 / 683;
+  flex: 0 0 auto;
+  vertical-align: middle;
+  gap: 0;
+  line-height: 0;
+}
+.studio-x-brand-art > img { display: block; object-fit: contain; height: auto; min-width: 0; }
+.studio-x-brand-art > .studio-x-brand-symbol { display: none; width: 100%; border-radius: 22%; }
+.studio-x-brand-art > .studio-x-brand-lockup { width: 100%; }
+.studio-x-brand-art > .studio-x-brand-lockup.is-dark { display: none; }
+.studio-x-brand-art.tone-inverse > .studio-x-brand-lockup.is-light,
+[data-studio-theme="dark"] .studio-x-brand-art.tone-auto > .studio-x-brand-lockup.is-light { display: none; }
+.studio-x-brand-art.tone-inverse > .studio-x-brand-lockup.is-dark,
+[data-studio-theme="dark"] .studio-x-brand-art.tone-auto > .studio-x-brand-lockup.is-dark { display: block; }
+.studio-x-brand-art.is-mark { width: 40px; height: 40px; aspect-ratio: 1; justify-content: center; }
+.studio-x-brand-art.is-mark > .studio-x-brand-symbol { display: block; width: 100%; max-height: 100%; }
+.studio-app .studio-brand.studio-x-brand { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.studio-app .studio-brand.studio-x-brand > .studio-x-brand-art { width: 176px; }
+.studio-app .studio-brand.studio-x-brand > small { margin: 0; padding-left: 2px; font: 500 11px/1.4 var(--studio-font); color: var(--studio-muted); letter-spacing: 0; }
+.studio-app.studio-sidebar-compact .studio-brand.studio-x-brand { width: 44px; flex: 0 0 44px; }
+.studio-app.studio-sidebar-compact .studio-brand.studio-x-brand > .studio-x-brand-art { width: 42px; height: 42px; aspect-ratio: 1; }
+.studio-app.studio-sidebar-compact .studio-brand.studio-x-brand .studio-x-brand-symbol { display: block; width: 100%; }
+.studio-app.studio-sidebar-compact .studio-brand.studio-x-brand :is(.studio-x-brand-lockup, small) { display: none; }
+.studio-auth .studio-auth-brand.studio-x-auth-brand { display: grid; gap: 4px; }
+.studio-auth .studio-x-auth-brand > .studio-x-brand-art { width: 256px; }
+.studio-auth .studio-x-auth-brand > small { font-size: 12px; letter-spacing: .02em; color: var(--studio-muted, #69717d); }
+.studio-app .studio-footer .studio-x-brand-art { width: 124px; }
+.studio-product-footer-identity { display: inline-flex; align-items: center; gap: 14px; }
+.studio-app .studio-more-header .studio-x-brand-art { width: 144px; }
+.saas-auth .saas-product-brand > .studio-x-brand-art { display: inline-flex; width: 212px; height: auto; border-radius: 0; background: none; box-shadow: none; }
+.sos-product .sos-brand > .studio-x-brand-art { display: inline-flex; width: 212px; height: auto; border-radius: 0; background: none; box-shadow: none; }
+.sos-overview-preview .pov-brand > .studio-x-brand-art { display: inline-flex; width: 115px; height: auto; border-radius: 0; background: none; }
+.sos-overview-preview .pov-brand { flex-wrap: wrap; gap: 7px; }
+.sos-overview-preview .pov-brand > small { width: 100%; font-size: 9px; }
+.studio-app .saas-switcher-icon { background: transparent; }
+.studio-app .saas-switcher-icon > .studio-x-brand-art { width: 32px; height: 32px; }
+.saas-workspace-emblem > .studio-x-brand-art { width: 42px; height: 42px; }
+.saas-auth .saas-auth-orbit > .studio-x-brand-art { width: 72px; height: 72px; }
+.sos-demo-studio > .studio-x-brand-art { width: 32px; height: 32px; }
+.studio-recovery-card > .studio-x-brand-art { width: 180px; margin: 10px 0 18px; }
+.studio-product-loading { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #fff; color: #69717d; font: 400 14px/1.5 system-ui, sans-serif; }
+.studio-product-loading p { margin: 0; }
+@media (max-width: 600px) {
+  .sos-product .sos-brand > .studio-x-brand-art { width: 145px; }
+  .saas-auth .saas-product-brand > .studio-x-brand-art { width: 160px; }
+  .studio-auth .studio-x-auth-brand > .studio-x-brand-art { width: 218px; }
+  .studio-product-footer-identity { flex-wrap: wrap; justify-content: center; gap: 8px; }
+}

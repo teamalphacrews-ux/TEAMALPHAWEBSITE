@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import RouteErrorBoundary from './RouteErrorBoundary';
+import StudioProductBrand from './StudioProductBrand';
 import { installStudioBrowserTheme } from '../utils/studioBrowserTheme';
 import './appErrorBoundary.css';
 
@@ -19,7 +20,7 @@ function RecoveryPage({ onRetry, appearance }) {
             <path d="M20 7v5h-5" /><path d="M19.1 15.5a8 8 0 1 1 .2-7.3L20 12" />
           </svg>
         </span>
-        <p className="studio-recovery-eyebrow">Studio OS</p>
+        <StudioProductBrand tone={appearance === 'dark' ? 'inverse' : 'auto'} />
         <h1 id="studio-recovery-title" ref={titleRef} tabIndex={-1}>This page couldn’t open.</h1>
         <p role="alert">Try again to reopen this page. If the problem continues, reload the website.</p>
         <div className="studio-recovery-actions">

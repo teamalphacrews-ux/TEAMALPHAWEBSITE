@@ -40,9 +40,9 @@ const sections = [
   ['communication', 'Email & messages', 'Shared sender details and client message defaults.', Mail, 'cyan', 'Workflow', 'sender reply subject support hours terms deliverables mail test SMTP'],
   ['production', 'Production templates', 'Reusable checklists for thoughtful delivery.', Workflow, 'indigo', 'Workflow', 'photos album traditional video cinematic film stages tasks deadlines'],
   ['client', 'Client smart links', 'Choose what clients see in new shared documents.', Eye, 'rose', 'Workflow', 'visibility crew progress deliverables payment invoice schedule support chat expire link'],
-  ['connections', 'Connections', 'Shared email, messaging and calendar connections.', Plug, 'violet', 'Workspace management', 'Gmail Google Calendar integrations website enquiry webhook whatsapp team'],
+  ['connections', 'Connections', 'Writing assistants, Google Drive and your connected studio services.', Plug, 'violet', 'Workspace management', 'ChatGPT OpenAI Claude Anthropic OpenClaw assistants drafts Google Drive backups Gmail Google Calendar integrations website enquiry webhook whatsapp team'],
   ['security', 'Security & access', 'Control access and manage signed-in devices.', ShieldCheck, 'slate', 'Workspace management', 'permissions password sessions devices sign out timeout owner policy'],
-  ['backups', 'Backups & recovery', 'Protect your records and recover deleted work.', Database, 'blue', 'Workspace management', 'restore export download retention bin trash'],
+  ['backups', 'Backups & recovery', 'Back up, restore or reset your studio data.', Database, 'blue', 'Workspace management', 'master reset delete all data backup restore export download retention bin trash'],
 ].map(([id, title, description, icon, tone, group, keywords]) => ({ id, title, description, icon, tone, group, keywords }));
 
 export default function Settings() {
