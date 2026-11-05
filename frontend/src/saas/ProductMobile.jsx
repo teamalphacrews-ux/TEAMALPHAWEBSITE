@@ -112,7 +112,7 @@ export default function ProductMobile() {
         <div className="sos-mobile-context"><i/><span>{stage.moment}</span><Smartphone size={14}/></div>
         <div className="sos-mobile-phone">
           <div className="sos-mobile-status-bar" aria-hidden="true"><span>9:41</span><i/><svg width="43" height="11" viewBox="0 0 43 11" fill="none"><path d="M1 9V7M5 9V5M9 9V2" stroke="currentColor" strokeWidth="2"/><path d="M15 3Q20 -1 25 3M17 5Q20 2 23 5M19 7L20 8L21 7" stroke="currentColor" strokeWidth="1.5"/><rect x="29" y="2" width="11" height="7" rx="1.5" stroke="currentColor"/><path d="M41 4V7" stroke="currentColor"/><path d="M31 4H38V7H31Z" fill="currentColor"/></svg></div>
-          <div className="sos-mobile-browser"><ShieldCheck size={10}/><span>Studio OS · Mobile workspace</span></div>
+          <div className="sos-mobile-browser"><ShieldCheck size={10}/><span>Studio X OS · Mobile workspace</span></div>
           <div className="sos-mobile-app-bar" aria-hidden="true"><ChevronLeft size={17}/><span>studio<span>os</span></span><MoreHorizontal size={18}/></div>
           <div className="sos-mobile-screen" key={active}><Screen/></div>
           <div className="sos-mobile-home-indicator" aria-hidden="true"/>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import API from './apiConfig';
-import { TEAM_ALPHA_LOGO } from './branding';
+import { TEAM_ALPHA_LOGO, STUDIO_X_MARK } from './branding';
 import { useAuth } from '../context/AuthContext';
 import { resolveProfileImage } from './studioProfileImage';
 
@@ -25,5 +25,5 @@ export function useStudioIdentity() {
     if (token) axios.get(API + '/api/studio/settings', { signal: controller.signal, headers: { Authorization: 'Bearer ' + token } }).then(result => setIdentity(result.data)).catch(() => {}).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); window.removeEventListener('studio-settings-updated', changed); };
   }, []);
-  return { name: identity?.studioName || user?.workspace?.name || 'Team Alpha', photo: studioImageUrl(identity?.profilePhotoUrl || identity?.logoUrl || (user?.workspace ? '/assets/studio-os-mark.svg' : '')), identity, loading };
+  return { name: identity?.studioName || user?.workspace?.name || 'Team Alpha', photo: studioImageUrl(identity?.profilePhotoUrl || identity?.logoUrl || (user?.workspace ? STUDIO_X_MARK : '')), identity, loading };
 }

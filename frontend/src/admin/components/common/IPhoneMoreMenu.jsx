@@ -7,6 +7,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useStudioIdentity } from '../../../utils/studioIdentity';
 import { studioText } from '../../../utils/studioTranslations';
 import WorkspaceSwitcher from '../../../saas/WorkspaceSwitcher';
+import StudioProductBrand from '../../../components/StudioProductBrand';
 import useStudioDialog from '../studio/useStudioDialog';
 import { useStudioPreferences } from './StudioPreferences';
 import StudioAppIcon from './StudioAppIcon';
@@ -40,7 +41,7 @@ export default function IPhoneMoreMenu({ onClose }) {
     <section id="studio-iphone-more" className="studio-more-dialog" role="dialog" aria-modal="true" aria-labelledby="studio-more-title" ref={dialogRef} tabIndex={-1}>
       <div className="studio-more-panel">
         <span className="studio-more-handle" aria-hidden="true" />
-        <header className="studio-more-header"><div><h2 id="studio-more-title">More</h2><p>{identity.name}</p></div><button type="button" className="studio-more-close" aria-label="Close More menu" onClick={onClose}><X size={19} /></button></header>
+        <header className="studio-more-header"><div><StudioProductBrand /><h2 id="studio-more-title">More</h2><p>{identity.name}</p></div><button type="button" className="studio-more-close" aria-label="Close More menu" onClick={onClose}><X size={19} /></button></header>
         <div className="studio-more-content">
           <nav className="studio-more-shortcuts" aria-label="Workspace shortcuts">{workspacePrimaryItems.map(renderShortcut)}</nav>
           <div className="studio-more-categories">{workspaceNavigationGroups.filter(group => group.id !== 'studio').map(groupButton)}</div>

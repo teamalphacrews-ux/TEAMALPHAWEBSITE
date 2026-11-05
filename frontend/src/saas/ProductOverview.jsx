@@ -2,6 +2,7 @@ import { createElement, useEffect, useRef } from 'react';
 import { ArrowUpRight, Bell, CalendarDays, Camera, ChevronLeft, ChevronRight, Clapperboard, FileText, FolderOpen, Grid2X2, Mail, MessageCircle, PanelLeftClose, Plus, Search, Settings2, SlidersHorizontal, Sun, UsersRound, Wallet } from 'lucide-react';
 import { ActivityInsight, BookingInsight, PipelineRings, RhythmInsight, WeekStrip } from '../admin/components/overview/OverviewInsights';
 import './productOverview.css';
+import StudioProductBrand from '../components/StudioProductBrand';
 
 // Public, illustrative data only. This preview never loads an admin session or API.
 const enquiries = [1, 1, 0, 1, 1, 1, 0];
@@ -30,10 +31,10 @@ export default function ProductOverview({ dark = false, compact = false }) {
     observer.observe(screen);
     return () => observer.disconnect();
   }, [compact]);
-  return <div ref={preview} className={`sos-overview-preview${dark ? ' is-dark' : ''}${compact ? ' is-compact' : ''}`} role="img" aria-label={`Updated Studio OS Overview in ${dark ? 'dark' : 'daylight'} mode: welcome banner, daily planner, booking and studio rhythm charts, activity map and pipeline performance. Illustrative sample data.`}>
+  return <div ref={preview} className={`sos-overview-preview${dark ? ' is-dark' : ''}${compact ? ' is-compact' : ''}`} role="img" aria-label={`Studio X OS Overview in ${dark ? 'dark' : 'daylight'} mode: welcome banner, daily planner, booking and studio rhythm charts, activity map and pipeline performance. Illustrative sample data.`}>
     <div className="pov-screen" inert aria-hidden="true">
       <aside className="pov-sidebar">
-        <div className="pov-brand"><span><Camera size={19} /></span><strong>Your Studio<small>Studio OS</small></strong><PanelLeftClose size={14} /></div>
+        <div className="pov-brand"><StudioProductBrand tone={dark ? 'inverse' : 'auto'} /><PanelLeftClose size={14} /><small>Your studio workspace</small></div>
         <small className="pov-nav-label">WORKSPACE</small>
         <div className="pov-pages">{pages.map(([icon, label], index) => <span key={label} className={index === 0 ? 'is-active' : ''}>{createElement(icon, { size: 16 })}{label}</span>)}</div>
         {['OPERATIONS', 'COMMUNICATION', 'STUDIO'].map(label => <div className="pov-nav-group" key={label}>{label}<ChevronRight size={12} /></div>)}

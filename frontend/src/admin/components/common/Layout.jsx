@@ -11,6 +11,7 @@ import '../../studio-mobile.css';
 import '../../studio-brand.css';
 import { useAuth } from '../../../context/AuthContext';
 import useStudioDialog from '../studio/useStudioDialog';
+import StudioProductBrand from '../../../components/StudioProductBrand';
 import { StudioPreferencesProvider, useStudioPreferences } from './StudioPreferences';
 import '../../studio-appearance.css';
 import '../../studio-responsive.css';
@@ -95,7 +96,7 @@ function StudioLayout() {
   };
   useEffect(() => {
     const previous = document.title;
-    document.title = studioRouteTitle(location.pathname) + ' — ' + (user?.workspace?.name || 'Team Alpha') + ' · Studio OS';
+    document.title = studioRouteTitle(location.pathname) + ' — ' + (user?.workspace?.name || 'Team Alpha') + ' · Studio X OS';
     return () => { document.title = previous; };
   }, [location.pathname, user?.workspace?.name]);
   const drawerOpen = !iPhoneNavigation && isDrawerLayout && isSidebarOpen;
@@ -119,7 +120,7 @@ function StudioLayout() {
           {!canAccessStudioPath(user, location.pathname) ? <section className="studio-card studio-empty" role="status"><h1>Module unavailable</h1><p>Your account has not been assigned access to this area.</p><Link className="studio-button" to="/admin">Open your workspace</Link></section> : StudioControlReview && new URLSearchParams(location.search).get('controls') === 'review' ? <StudioControlReview /> : <Outlet context={{ setIsFocusMode }} />}
         </Suspense>
       </main>
-      {!isFocusMode && <footer className="studio-footer"><span>{user?.workspace?.name || 'TEAM ALPHA'} <span className="studio-footer-dot">·</span> STUDIO OS</span><span>Made for the stories you create.</span></footer>}
+      {!isFocusMode && <footer className="studio-footer"><span className="studio-product-footer-identity"><StudioProductBrand /><span>{user?.workspace?.name || 'Team Alpha'}</span></span><span>Made for the stories you create.</span></footer>}
     </div>
     {!isFocusMode && (iPhoneNavigation ? <IPhoneNavigation key={location.key} /> : <MobileNavigation menuOpen={drawerOpen} onMenuClick={() => setIsSidebarOpen(true)} />)}
   </div>;

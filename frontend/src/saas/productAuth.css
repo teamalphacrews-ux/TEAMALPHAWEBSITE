@@ -6,11 +6,11 @@
 .saas-auth .saas-auth-signin strong{color:#fff;font-size:13px}
 .saas-auth .saas-auth-layout{background:#111;border-color:#292929;border-radius:18px;box-shadow:none}
 .saas-auth .saas-kicker{font-size:11px;letter-spacing:.05em;color:#999}
-.saas-auth h1{color:#fff;letter-spacing:-.045em!important}
+.saas-auth h1{color:#fff;letter-spacing:-.04em!important;text-wrap:balance}
 .saas-auth .saas-auth-description{color:#a5a5a5;font-size:15px;line-height:1.7}
 .saas-auth .saas-auth-aside{background:radial-gradient(ellipse at 20% 110%,#193ec366,transparent 60%),radial-gradient(ellipse at 100% 60%,#7846c833,transparent 65%),#101117;color:#eee;border-left:1px solid #292929}
 .saas-auth .saas-editorial-label{color:#adb2c1;font-size:13px}
-.saas-auth .saas-auth-aside h2{font-weight:500;letter-spacing:-.045em}
+.saas-auth .saas-auth-aside h2{font-weight:500;letter-spacing:-.04em}
 .saas-auth .saas-auth-aside>p{color:#a6a9b5;font-size:14px}
 .saas-auth .saas-auth-aside ul{font-size:13px;line-height:1.7;gap:17px;color:#c9ccda}
 .saas-auth .saas-auth-orbit{color:#a5b5ff;opacity:.8}
@@ -32,10 +32,36 @@
 .saas-auth .saas-invite-summary,.saas-auth .saas-trial-note{background:#171e32;border:1px solid #354366;border-radius:10px;color:#d1dcff}
 .saas-auth .saas-invite-summary small,.saas-auth .saas-trial-note small{color:#acb7d5;font-size:12px}
 .saas-auth .saas-trial-note span{color:#d1dcff;font-size:14px}
-.saas-auth .saas-social-button{border-radius:8px;min-height:48px}
+.saas-auth .saas-social-button{position:relative;border-radius:8px;min-height:48px;padding-inline:28px;transition:background .18s ease,border-color .18s ease,box-shadow .18s ease}
+.saas-auth .saas-social-button:active:not(:disabled){box-shadow:inset 0 1px 3px #0002}
 .saas-auth .saas-social-button.is-apple{border-color:#676767}
-.saas-auth .saas-social-button:disabled{opacity:.65}
+.saas-auth .saas-social-button:disabled{opacity:.6}
+.saas-auth .saas-social-button[aria-busy=true]{opacity:1;cursor:progress}
+.saas-auth .saas-provider-progress{position:absolute;right:13px}
 .saas-auth .saas-social-status{color:#aaa;font-size:12px}
+.saas-auth .saas-social-status p{margin:0 0 7px}
+.saas-auth .saas-social-status a{color:#e2e8ff;text-decoration:underline;text-underline-offset:3px}
+.saas-auth .saas-auth-availability{margin:0 0 20px;padding:14px 0;border-bottom:1px solid #303030}
+.saas-auth .saas-auth-availability p{display:flex;gap:9px;align-items:center;color:#bbb;font-size:13px;line-height:1.6;margin:0}
+.saas-auth .saas-auth-availability.has-error p{color:#ffb3c2}
+.saas-auth .saas-auth-retry{display:inline-flex;gap:8px;align-items:center;justify-content:center;min-height:44px;margin-top:8px;padding:8px 12px;border:1px solid #4b4b4b;background:#202020;color:#fff;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;line-height:1.5;cursor:pointer}
+.saas-auth .saas-auth-retry:hover{background:#2b2b2b}
+.saas-auth .saas-verified-account{display:flex;align-items:center;gap:13px;padding:18px 0;margin-bottom:25px;border-block:1px solid #333;color:#cfddff}
+.saas-auth .saas-verified-account>svg{flex-shrink:0}
+.saas-auth .saas-verified-account>div{min-width:0;display:grid;gap:3px}
+.saas-auth .saas-verified-account strong{color:#f5f5f5;font-size:14px;font-weight:500}
+.saas-auth .saas-verified-account span{color:#b8b8b8;font-size:13px;overflow-wrap:anywhere}
+.saas-auth .saas-identity-help{margin:-10px 0 24px}
+.saas-auth .saas-field small{font-size:12px;font-weight:400}
+.saas-auth .saas-field-error{color:#ffb3c2;line-height:1.6}
+.saas-auth .saas-field input[aria-invalid=true]{border-color:#dc7d91}
+.saas-auth .saas-auth-verifying{display:flex;align-items:center;gap:12px;padding:24px 0;border-block:1px solid #333;color:#bbb;font-size:14px;line-height:1.6}
+.saas-auth .saas-restart-auth{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-top:12px;font-size:13px}
+.saas-auth .saas-auth-spinner{flex-shrink:0;animation:saas-auth-spin .9s linear infinite}
+.saas-auth ::selection{background:#34476f;color:#fff}
+.saas-auth input{caret-color:#c3d1ff}
+@keyframes saas-auth-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.saas-auth .saas-auth-spinner{animation:none}}
 .saas-auth .saas-auth-divider{color:#999;font-size:11px}
 .saas-auth .saas-auth-divider:before,.saas-auth .saas-auth-divider:after{background:#303030}
 .saas-auth .saas-auth-existing{color:#aaa;font-size:12px}

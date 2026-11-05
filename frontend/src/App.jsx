@@ -3,7 +3,9 @@ import { Suspense, lazy } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useAuth } from './context/AuthContext';
 import { StudioPreviewStart, StudioPreviewNavigation } from './native/StudioPreview';
-import { SAAS_RELEASE_ENABLED } from './saas/release';
+import { IS_COMMERCIAL_DEPLOYMENT, SAAS_RELEASE_ENABLED } from './saas/release';
+import StudioProductMetadata from './components/StudioProductMetadata';
+import StudioProductBrand from './components/StudioProductBrand';
 
 // Public website pages load independently of internal Studio OS routes.
 const PublicLayout = lazy(() => import("./public/PublicLayout"));
@@ -84,17 +86,16 @@ import { Toaster } from "react-hot-toast";
 function App() {
   const { user } = useAuth();
   const location = useLocation();
-  const isStudioPage = location.pathname.startsWith("/studio-os") || location.pathname === "/auth" || location.pathname === '/signup' || /^\/(?:join|invite)\//.test(location.pathname) || location.pathname === "/admin" || location.pathname.startsWith("/admin/");
+  const isStudioPage = IS_COMMERCIAL_DEPLOYMENT || location.pathname.startsWith("/studio-os") || location.pathname === "/auth" || location.pathname === '/signup' || /^\/(?:join|invite)\//.test(location.pathname) || location.pathname === "/admin" || location.pathname.startsWith("/admin/");
 
   return (
     <div className={`font-sans text-[#1C1C1C] ${isStudioPage ? "bg-white" : "bg-[#F7F5F2]"} min-h-screen selection:bg-black selection:text-white`}>
       {import.meta.env.DEV && <StudioPreviewNavigation />}
+      {isStudioPage && <StudioProductMetadata />}
       <Toaster position="top-right" containerStyle={isStudioPage ? { top: 'calc(80px + env(safe-area-inset-top, 0px))' } : undefined} toastOptions={{ className: isStudioPage ? "studio-toast" : undefined }} />
       <Suspense
         fallback={
-          <div className="flex h-screen w-full items-center justify-center text-xl">
-            Loading...
-          </div>
+          isStudioPage ? <div className="studio-product-loading" role="status"><StudioProductBrand /><p>Opening your workspace…</p></div> : <div className="flex h-screen w-full items-center justify-center text-xl">Loading...</div>
         }
       >
         <AnimatePresence mode="wait">
@@ -104,7 +105,7 @@ function App() {
             <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
               <Route path="/quote-preview/:id" element={<SharedQuotation />} />
             </Route>
-            <Route element={<PublicLayout />}>
+            {IS_COMMERCIAL_DEPLOYMENT ? <Route path="/" element={<ProductHome />} /> : <Route element={<PublicLayout />}>
               <Route index element={<LuxuryHome />} />
               <Route
                 path="portfolio"
@@ -130,9 +131,9 @@ function App() {
               <Route path="privacy" element={<LegalPage type="privacy" />} />
               <Route path="terms" element={<LegalPage type="terms" />} />
               <Route path="*" element={<PublicNotFound />} />
-            </Route>
-            <Route path="/quote" element={<Navigate to="/enquire" replace />} />
-            <Route path="/auth" element={<AuthPage />} />
+            </Route>}
+            <Route path="/quote" element={<Navigate to={IS_COMMERCIAL_DEPLOYMENT ? "/" : "/enquire"} replace />} />
+            <Route path="/auth" element={IS_COMMERCIAL_DEPLOYMENT ? <Navigate to="/studio-os/login" replace /> : <AuthPage />} />
             {import.meta.env.DEV && <Route path="/native-preview/start" element={<StudioPreviewStart />} />}
             {SAAS_RELEASE_ENABLED && <><Route path="/signup" element={<SignupPage />} />
             <Route path="/studio-os" element={<ProductHome />} />
@@ -141,6 +142,7 @@ function App() {
             <Route path="/join/:token" element={<AcceptInvitationPage />} />
             <Route path="/invite/:token" element={<AcceptInvitationPage />} /></>}
             <Route path="/portal/*" element={<Navigate to="/" replace />} />
+            {IS_COMMERCIAL_DEPLOYMENT && <Route path="*" element={<Navigate to="/" replace />} />}
 
             {/* Protected Admin Routes */}
             <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>

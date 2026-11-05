@@ -7,6 +7,7 @@ import StudioAppIcon from "./StudioAppIcon";
 import { useStudioPreferences } from './StudioPreferences';
 import { studioText } from '../../../utils/studioTranslations';
 import WorkspaceSwitcher from '../../../saas/WorkspaceSwitcher';
+import StudioProductBrand from '../../../components/StudioProductBrand';
 import { X, LogOut, Settings2, ArrowUpRight, ChevronDown, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import { workspaceIconTones as iconTones, workspacePrimaryItems as primaryItems, workspaceNavigationGroups as groups } from "./workspaceNavigation";
 
@@ -87,18 +88,13 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
       <div className="studio-brand-row">
         {user?.workspace ? <WorkspaceSwitcher compact={compact} onNavigate={onClose} /> : <Link
           to="/admin"
-          className="studio-brand"
+          className="studio-brand studio-x-brand"
           onClick={closeNavigation}
-          aria-label={`${identity.name} Studio OS home`}
+          aria-label={`${identity.name} — Studio X OS home`}
           title={compact ? identity.name : undefined}
         >
-          <span className="studio-brand-mark">
-            <img src={identity.photo} alt="" width="52" height="52" />
-          </span>
-          <span className="studio-brand-copy">
-            <strong>{identity.name}</strong>
-            <small>Studio OS</small>
-          </span>
+          <StudioProductBrand />
+          <small>{identity.name}</small>
         </Link>}
         {onToggleCompact && <button
           type="button"

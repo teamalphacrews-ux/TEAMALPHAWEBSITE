@@ -13,7 +13,7 @@ const chapters = [
 function JourneyPreview({ active }) {
   const chapter = chapters[active];
   return <div className={'sos-journey-preview preview-'+chapter.id} role="region" tabIndex={0} aria-label={chapter.label+' sample project preview'}>
-    <header className="sos-journey-screenbar"><div><Camera size={16}/><span>YOUR STUDIO<span>STUDIO OS</span></span></div><span><i/>SAMPLE PROJECT</span></header>
+    <header className="sos-journey-screenbar"><div><Camera size={16}/><span>YOUR STUDIO<span>STUDIO X OS</span></span></div><span><i/>SAMPLE PROJECT</span></header>
     <div className="sos-journey-project"><span className="sos-journey-monogram">AR</span><div><strong>Anika & Rohan</strong><span>Wedding · Bengaluru · 08 November</span></div><Link2 size={17}/></div>
     <div className="sos-journey-content" key={chapter.id}>
       {active === 0 && <div className="sos-journey-enquiry">
