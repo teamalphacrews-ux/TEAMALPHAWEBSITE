@@ -1,0 +1,73 @@
+.studio-app.studio-app .overview-day-schedule {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  min-height: 334px;
+  padding: 19px 18px 14px;
+  color: #f5f6f5;
+  background: linear-gradient(145deg, #292b2f, #1b1d20 56%, #111315);
+  border: 1px solid #36383c;
+  border-radius: 20px;
+  box-shadow: none;
+  container: overview-day / inline-size;
+}
+.studio-app.studio-app .overview-day-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 10px; padding-right: 16px; }
+.studio-app.studio-app .overview-day-top h2 { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #f5f6f5; font: 550 14px/1.4 var(--studio-font, inherit); letter-spacing: -.02em; }
+.studio-app.studio-app .overview-day-navigation { display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-left: auto; }
+.studio-app.studio-app .overview-day-navigation button { display: inline-flex; justify-content: center; align-items: center; width: 44px; height: 44px; min-height: 44px; border: 1px solid #ffffff20; border-radius: 50%; background: transparent; color: #d3d8d5; padding: 0; cursor: pointer; }
+.studio-app.studio-app .overview-day-navigation .overview-day-today { width: auto; border-radius: 999px; padding-inline: 12px; font-size: 12px; }
+.studio-app.studio-app .overview-day-navigation button:hover:not(:disabled) { color: white; background: #ffffff12; border-color: #ffffff50; }
+.studio-app.studio-app .overview-day-navigation button:disabled { cursor: default; opacity: .55; }
+.studio-app.studio-app .overview-day-zone { margin: 6px 0 12px; overflow-wrap: anywhere; font-size: 12px; color: #bcc4bf; line-height: 1.5; }
+.studio-app.studio-app .overview-day-zone span { color: #b0bab3; }
+.studio-app.studio-app .overview-day-scene { position: relative; flex: 1; min-height: 160px; }
+.studio-app.studio-app .overview-day-landscape { position: absolute; inset: 0 -20px -40px; z-index: -1; overflow: hidden; pointer-events: none; }
+.studio-app.studio-app .overview-day-landscape i { position: absolute; inset: 55% 0 0; background: #373a40; opacity: .45; clip-path: polygon(0 46%, 12% 20%, 22% 38%, 38% 0, 54% 42%, 66% 12%, 80% 42%, 100% 5%, 100% 100%, 0 100%); }
+.studio-app.studio-app .overview-day-landscape i:nth-child(2) { inset: 68% -25% 0 0; background: #101215; opacity: .75; transform: scaleX(-1); }
+.studio-app.studio-app .overview-day-landscape i:nth-child(3) { inset: 80% 0 0 -20%; background: #090a0c; opacity: .85; }
+.studio-app.studio-app .overview-day-axis { height: 27px; position: relative; margin-inline: 1px; }
+.studio-app.studio-app .overview-day-axis span { position: absolute; top: 0; transform: translateX(-50%); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; color: #b7c0bb; }
+.studio-app.studio-app .overview-day-axis span:first-child { transform: none; }
+.studio-app.studio-app .overview-day-axis span:last-child { transform: translateX(-100%); }
+.studio-app.studio-app .overview-day-timeline { min-height: 156px; background-image: repeating-linear-gradient(90deg, #ffffff07 0, #ffffff07 1px, transparent 1px, transparent 25%); }
+.studio-app.studio-app .overview-day-lane { position: relative; height: 48px; margin-bottom: 6px; }
+.studio-app.studio-app .overview-day-event {
+  position: absolute;
+  left: clamp(0%, var(--event-start), calc(100% - 168px));
+  width: max(168px, var(--event-width));
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 48px;
+  min-width: 0;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #ff671e;
+  color: #311506;
+  text-decoration: none;
+  transition: filter 160ms ease, transform 160ms ease;
+}
+.studio-app.studio-app .overview-day-event.tone-1 { background: #69c79a; color: #103323; }
+.studio-app.studio-app .overview-day-event.tone-2 { background: #f2f3ed; color: #282c28; }
+.studio-app.studio-app .overview-day-event.is-all-day { left: 0; width: 100%; }
+.studio-app.studio-app .overview-day-event strong { font-size: 13px; line-height: 1.4; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; }
+.studio-app.studio-app .overview-day-event span { font-size: 12px; line-height: 1.4; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: inherit; }
+.studio-app.studio-app .overview-day-event:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.studio-app.studio-app .overview-day-schedule :focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.studio-app.studio-app .overview-day-empty { min-height: 160px; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 7px; padding: 10px 8px; }
+.studio-app.studio-app .overview-day-empty > svg { color: #a6b3aa; margin-bottom: 4px; }
+.studio-app.studio-app .overview-day-empty strong { font-size: 14px; font-weight: 500; color: #f5f6f5; }
+.studio-app.studio-app .overview-day-empty span { font-size: 12px; color: #b5c0b9; }
+.studio-app.studio-app .overview-day-empty button { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin-top: 5px; padding: 7px 10px; border: 1px solid #ffffff30; border-radius: 7px; background: transparent; color: #f4f5f2; font-size: 12px; cursor: pointer; }
+.studio-app.studio-app .overview-day-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 8px; padding-top: 8px; margin-top: auto; border-top: 1px solid #ffffff14; font-size: 12px; color: #b7c0bb; }
+.studio-app.studio-app .overview-day-footer a { display: inline-flex; align-items: center; gap: 5px; color: #e6ebe7; font-size: 12px; line-height: 1.5; min-height: 44px; }
+.studio-app.studio-app .overview-day-footer a svg { flex-shrink: 0; }
+.studio-app.studio-app .overview-day-footer a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.studio-app.studio-app .overview-day-schedule > .overview-hide-card { color: #bec7c1; background: transparent; top: 7px; right: 7px; }
+@media (prefers-reduced-motion: reduce) { .studio-app.studio-app .overview-day-event { transition: none; } }
+html[data-studio-motion=reduced] .studio-app.studio-app .overview-day-event { transition: none; }

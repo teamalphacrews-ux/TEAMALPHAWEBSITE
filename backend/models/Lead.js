@@ -4,6 +4,13 @@ const leadSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true },
     phone: String,
+    contactId: { type: mongoose.Schema.Types.ObjectId, ref: 'StudioContact' },
+    studioProjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'StudioProject' },
+    projectName: String,
+    quotationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quotation' },
+    quotationStatus: String,
+    quotationNumber: String,
+    webhookEventId: { type: String, unique: true, sparse: true, immutable: true, select: false },
     status: {
         type: String,
         enum: ['New', 'Follow-up', 'Meeting', 'Negotiation', 'Converted', 'Archived'],
@@ -30,4 +37,5 @@ const leadSchema = new mongoose.Schema({
     cloudPassword: { type: String }
 }, { timestamps: true });
 
+leadSchema.index({ studioProjectId: 1 }, { unique: true, partialFilterExpression: { studioProjectId: { $type: 'objectId' } } });
 module.exports = mongoose.models.Lead || mongoose.model('Lead', leadSchema);

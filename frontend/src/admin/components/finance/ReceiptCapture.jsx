@@ -1,0 +1,10 @@
+import StudioButton from '../common/StudioButton';
+import {useEffect,useRef,useState} from 'react';
+import {Camera,Paperclip,X} from 'lucide-react';
+import {prepareReceipt} from '../../../utils/receiptImage';
+export default function ReceiptCapture({file,onChange,disabled=false,existing=false}){
+ const camera=useRef(null),picker=useRef(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[preview,setPreview]=useState('');
+ useEffect(()=>{let active=true;const url=file?URL.createObjectURL(file):'';queueMicrotask(()=>{if(active)setPreview(url);});return()=>{active=false;if(url)URL.revokeObjectURL(url);};},[file]);
+ const choose=async event=>{const selected=event.target.files?.[0];event.target.value='';if(!selected)return;setBusy(true);setError('');try{onChange(await prepareReceipt(selected));}catch(failure){setError(failure.message);}finally{setBusy(false);}};
+ return <section className="studio-receipt-capture"><h3>Receipt photo</h3><p className="studio-muted">{file?'Ready to attach when you save.':existing?'A receipt is already attached. Choose a photo to replace it.':'Photograph a receipt or choose an image. It stays private to your studio.'}</p><div><StudioButton type="button" icon={Camera} disabled={disabled} loading={busy} loadingLabel="Preparing receipt photo" onClick={()=>camera.current?.click()}>Take photo</StudioButton><StudioButton type="button" icon={Paperclip} disabled={disabled||busy} onClick={()=>picker.current?.click()}>Choose photo</StudioButton>{file&&<StudioButton type="button" variant="icon" label="Remove selected receipt photo" icon={X} disabled={disabled||busy} onClick={()=>onChange(null)}/>}</div><input hidden ref={camera} type="file" accept="image/*" capture="environment" onChange={choose}/><input hidden ref={picker} type="file" accept="image/*" onChange={choose}/>{busy&&<p role="status">Preparing receipt…</p>}{error&&<p className="studio-error" role="alert">{error}</p>}{preview&&<img src={preview} alt="Selected receipt" style={{maxWidth:180,maxHeight:180,objectFit:'contain',marginTop:12,borderRadius:12}}/>}</section>;
+}

@@ -1,0 +1,735 @@
+.lux-enquiry {
+  background: var(--lux-paper, #f6f3ed);
+  color: var(--lux-ink, #141414);
+  font-family: var(--lux-sans, "Inter", sans-serif);
+  padding: 70px 5.5vw 0;
+}
+.lux-enquiry * {
+  box-sizing: border-box;
+}
+.lux-enquiry-shell {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.lux-enquiry-intro {
+  padding: 35px 0 76px;
+  border-bottom: 1px solid #d8d3ca;
+}
+.lux-enquiry-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 30px;
+  font-size: 10px;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6a604f;
+}
+.lux-enquiry-eyebrow > span {
+  width: 25px;
+  height: 1px;
+  background: #9b825e;
+}
+.lux-enquiry h1,
+.lux-enquiry h2,
+.lux-enquiry-closing p {
+  color: var(--lux-ink, #141414);
+  font-family: var(--lux-serif, "Playfair Display", Georgia, serif);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+}
+.lux-enquiry h1 {
+  max-width: 1100px;
+  font-size: clamp(64px, 7.8vw, 120px);
+  line-height: 1.08;
+  margin: 0;
+}
+.lux-enquiry h1 em,
+.lux-enquiry h2 em,
+.lux-enquiry-closing em {
+  font-weight: 400;
+  color: #8b7352;
+}
+.lux-enquiry-intro-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin: 35px 0 0 41%;
+}
+.lux-enquiry-intro-bottom p {
+  font-size: 13px;
+  line-height: 1.9;
+  color: #69645d;
+  margin: 0;
+}
+.lux-enquiry-intro-bottom a {
+  display: grid;
+  place-items: center;
+  border: 1px solid #c8bda9;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  color: #5d4a32;
+  transition:
+    background 0.25s,
+    transform 0.25s;
+}
+.lux-enquiry-intro-bottom a:hover {
+  background: #e9e2d6;
+  transform: translateY(3px);
+}
+.lux-enquiry-layout {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 9vw;
+  padding: 92px 0 105px;
+  scroll-margin-top: 120px;
+  align-items: start;
+}
+.lux-enquiry-aside {
+  padding-top: 10px;
+}
+.lux-enquiry-aside .lux-enquiry-eyebrow {
+  font-size: 9px;
+}
+.lux-enquiry-aside h2 {
+  font-size: clamp(33px, 3.2vw, 48px);
+  line-height: 1.25;
+  margin: 0 0 28px;
+}
+.lux-enquiry-aside > p:not(.lux-enquiry-eyebrow) {
+  max-width: 335px;
+  font-size: 13px;
+  color: #69645d;
+  line-height: 1.95;
+  margin: 0 0 24px;
+}
+.lux-enquiry-aside > p.lux-enquiry-collection-note {
+  font-size: 11px;
+  padding-top: 21px;
+  border-top: 1px solid #ded7cb;
+  max-width: 335px;
+  color: #746550;
+}
+.lux-enquiry-location {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 45px;
+}
+.lux-enquiry-location span:first-child {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: #6d604e;
+}
+.lux-enquiry-location span:last-child {
+  font-family: var(--lux-serif, Georgia, serif);
+  font-size: 17px;
+  font-style: italic;
+  color: #736b5e;
+}
+.lux-enquiry-direct {
+  margin-top: 58px;
+  max-width: 350px;
+}
+.lux-enquiry-direct > p {
+  font-size: 11px;
+  color: #625b51;
+  margin: 0 0 14px;
+}
+.lux-enquiry-direct a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  color: #554b3d;
+  text-decoration: none;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.lux-enquiry-direct a span {
+  flex: 1;
+}
+.lux-enquiry-direct a:hover span {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.lux-enquiry-panel {
+  min-width: 0;
+  border: 1px solid #ded8ce;
+  background: #fcfbf8;
+  padding: 38px 40px 42px;
+}
+.lux-enquiry-progress ol {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 20px;
+  justify-content: space-between;
+}
+.lux-enquiry-progress li {
+  flex: 1;
+  border-bottom: 1px solid #e4ded3;
+  padding-bottom: 19px;
+}
+.lux-enquiry-progress li.is-current {
+  border-color: #6d5738;
+}
+.lux-enquiry-progress button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: inherit;
+  border: 0;
+  background: transparent;
+  color: #9b958a;
+  padding: 0;
+  font-size: 10px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.lux-enquiry-progress button span {
+  display: inline-flex;
+  min-width: 16px;
+  font-size: 9px;
+  letter-spacing: 0.03em;
+}
+.lux-enquiry-progress .is-current button,
+.lux-enquiry-progress .is-complete button {
+  color: #5d4a32;
+}
+.lux-enquiry-progress button:disabled {
+  cursor: default;
+}
+.lux-enquiry-step-heading {
+  margin-top: 44px;
+  margin-bottom: 34px;
+}
+.lux-enquiry-step-heading .lux-enquiry-eyebrow {
+  font-size: 9px;
+  margin: 0 0 15px;
+  color: #78664e;
+}
+.lux-enquiry-step-heading h2 {
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.25;
+  margin: 0 0 12px;
+  outline: none;
+}
+.lux-enquiry-step-heading > p:last-child {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #746c60;
+  margin: 0;
+}
+.lux-enquiry-step-fields {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  min-width: 0;
+}
+.lux-enquiry-field {
+  margin: 0 0 25px;
+  min-width: 0;
+}
+.lux-enquiry-field > label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin-bottom: 9px;
+  color: #514b42;
+}
+.lux-enquiry-field > label span {
+  font-size: 9px;
+  font-weight: 400;
+  color: #766d5e;
+}
+.lux-enquiry-field input,
+.lux-enquiry-field select,
+.lux-enquiry-field textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 47px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #9a8e7a;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 10px 0 11px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #28241e;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.lux-enquiry-field select {
+  padding-right: 24px;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+.lux-enquiry-field input::placeholder,
+.lux-enquiry-field textarea::placeholder {
+  color: #756d61;
+  opacity: 1;
+}
+.lux-enquiry-field input:focus,
+.lux-enquiry-field select:focus,
+.lux-enquiry-field textarea:focus {
+  border-color: #6f5635;
+  outline: 1px solid #8b7352;
+  outline-offset: 4px;
+}
+.lux-enquiry-field input:disabled {
+  color: #8c8579;
+  opacity: 0.6;
+}
+.lux-enquiry-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+.lux-enquiry-field-error input,
+.lux-enquiry-field-error select {
+  border-color: #9b4338;
+}
+.lux-enquiry-error {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #953f32;
+  margin: 9px 0 0;
+}
+.lux-enquiry-date-pending {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 11px;
+  color: #635a4c;
+  margin-top: -12px;
+  cursor: pointer;
+}
+.lux-enquiry input[type="checkbox"] {
+  accent-color: #705b3f;
+}
+.lux-enquiry-hint {
+  color: #746c60;
+  font-size: 10px;
+  line-height: 1.8;
+  margin: 0 0 15px;
+}
+.lux-enquiry-date-note {
+  margin: 11px 0 28px;
+  font-size: 10px;
+}
+.lux-enquiry-choices {
+  margin: 0 0 31px;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.lux-enquiry-choices legend {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #514b42;
+  margin-bottom: 6px;
+}
+.lux-enquiry-choices > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.lux-enquiry-choices label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #e2dbd0;
+  padding: 12px 10px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #736b5e;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.lux-enquiry-choices label:hover {
+  border-color: #a99578;
+}
+.lux-enquiry-choices label.is-selected {
+  background: #f0eadf;
+  border-color: #ae9776;
+  color: #4d402f;
+}
+.lux-enquiry-choices label input {
+  opacity: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+}
+.lux-enquiry-choices label:focus-within {
+  outline: 2px solid #8b7352;
+  outline-offset: 3px;
+}
+.lux-enquiry-choice-mark {
+  display: grid;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  place-items: center;
+  border: 1px solid #94856f;
+}
+.lux-enquiry-review {
+  border-top: 1px solid #e2dbd0;
+  border-bottom: 1px solid #e2dbd0;
+  padding: 17px 0;
+  margin: 30px 0 0;
+}
+.lux-enquiry-review > span {
+  color: #78664e;
+  font-size: 8px;
+  letter-spacing: 0.15em;
+}
+.lux-enquiry-review p {
+  color: #64594a;
+  font-size: 11px;
+  line-height: 1.9;
+  margin: 9px 0;
+}
+.lux-enquiry-review p span {
+  color: #baa98f;
+  padding: 0 3px;
+}
+.lux-enquiry-review button {
+  font-family: inherit;
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  font-size: 10px;
+  color: #7d6748;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lux-enquiry-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding-top: 18px;
+}
+.lux-enquiry-next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  border: 1px solid #28241d;
+  padding: 17px 23px;
+  min-height: 52px;
+  background: #28241d;
+  color: #fcfaf6;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.025em;
+  cursor: pointer;
+  transition:
+    background 0.25s,
+    transform 0.25s;
+}
+.lux-enquiry-next:hover:not(:disabled) {
+  background: #59482f;
+  border-color: #59482f;
+}
+.lux-enquiry-next:hover:not(:disabled) svg {
+  transform: translateX(3px);
+}
+.lux-enquiry-next svg {
+  transition: transform 0.25s;
+}
+.lux-enquiry-next:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+.lux-enquiry-previous {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: #746551;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+.lux-enquiry-required-note {
+  color: #756b5d;
+  font-size: 9px;
+}
+.lux-enquiry-privacy {
+  color: #756d61;
+  font-size: 9px;
+  line-height: 1.8;
+  margin: 23px 0 0;
+}
+.lux-enquiry-status {
+  font-size: 11px;
+  line-height: 1.8;
+}
+.lux-enquiry-status:not(:empty) {
+  padding: 13px 15px;
+  margin: 15px 0 3px;
+}
+.lux-enquiry-status.is-error {
+  border-left: 2px solid #a76754;
+  color: #813e30;
+  background: #f5eae4;
+}
+.lux-enquiry-status.is-pending {
+  background: #f1ece3;
+  color: #6f5d43;
+}
+.lux-enquiry-success {
+  padding: 28px 0;
+}
+.lux-enquiry-success-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #eee6d7;
+  color: #776042;
+  margin-bottom: 34px;
+}
+.lux-enquiry-success .lux-enquiry-eyebrow {
+  font-size: 8px;
+  margin-bottom: 23px;
+}
+.lux-enquiry-success h2 {
+  margin: 0 0 24px;
+  font-size: clamp(40px, 4vw, 58px);
+  line-height: 1.2;
+}
+.lux-enquiry-success > p:not(.lux-enquiry-eyebrow) {
+  color: #766c5d;
+  font-size: 12px;
+  line-height: 1.9;
+  margin: 0 0 22px;
+}
+.lux-enquiry-success > p.lux-enquiry-hint {
+  font-size: 10px;
+}
+.lux-enquiry-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+  color: #6b5639;
+  font-size: 11px;
+  padding: 10px 0;
+  text-decoration: none;
+  border-bottom: 1px solid #b6a17e;
+}
+.lux-enquiry-closing {
+  border-top: 1px solid #d8d3ca;
+  padding: 65px 0 72px;
+  text-align: center;
+}
+.lux-enquiry-closing > span {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.25em;
+  color: #77664e;
+}
+.lux-enquiry-closing p {
+  margin: 22px 0 0;
+  font-size: clamp(31px, 3.5vw, 48px);
+  line-height: 1.3;
+}
+.lux-enquiry button:focus-visible,
+.lux-enquiry a:focus-visible {
+  outline: 2px solid #806744;
+  outline-offset: 5px;
+}
+.lux-enquiry-honey,
+.lux-enquiry-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 1000px) {
+  .lux-enquiry {
+    padding: 55px 5vw 0;
+  }
+  .lux-enquiry-layout {
+    gap: 5vw;
+    grid-template-columns: 0.8fr 1.2fr;
+  }
+  .lux-enquiry-panel {
+    padding: 30px 25px;
+  }
+  .lux-enquiry-progress ol {
+    gap: 10px;
+  }
+  .lux-enquiry-progress button {
+    gap: 5px;
+    font-size: 9px;
+  }
+  .lux-enquiry-choices > div {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 700px) {
+  .lux-enquiry {
+    padding: 30px 6vw 0;
+  }
+  .lux-enquiry-intro {
+    padding: 33px 0 43px;
+  }
+  .lux-enquiry-eyebrow {
+    font-size: 8px;
+    letter-spacing: 0.13em;
+    margin-bottom: 26px;
+  }
+  .lux-enquiry h1 {
+    font-size: clamp(48px, 12vw, 76px);
+    line-height: 1.13;
+    letter-spacing: -0.05em;
+  }
+  .lux-enquiry-intro-bottom {
+    margin: 26px 0 0;
+    gap: 14px;
+  }
+  .lux-enquiry-intro-bottom p {
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  .lux-enquiry-intro-bottom a {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+  .lux-enquiry-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 34px;
+    padding: 43px 0 49px;
+    scroll-margin-top: 90px;
+  }
+  .lux-enquiry-aside {
+    display: contents;
+  }
+  .lux-enquiry-aside > .lux-enquiry-eyebrow,
+  .lux-enquiry-aside h2,
+  .lux-enquiry-aside > p:not(.lux-enquiry-collection-note),
+  .lux-enquiry-location {
+    display: none;
+  }
+  .lux-enquiry-aside > p.lux-enquiry-collection-note {
+    order: 0;
+    max-width: 100%;
+    padding-top: 0;
+    border: 0;
+    margin: 0;
+    font-size: 11px;
+  }
+  .lux-enquiry-panel {
+    order: 1;
+    width: 100%;
+    padding: 26px 22px 30px;
+  }
+  .lux-enquiry-direct {
+    order: 2;
+    width: 100%;
+    margin: 0;
+    max-width: none;
+  }
+  .lux-enquiry-direct a {
+    padding: 12px 0;
+    font-size: 12px;
+  }
+  .lux-enquiry-direct > p {
+    font-size: 11px;
+  }
+  .lux-enquiry-step-heading {
+    margin-top: 34px;
+    margin-bottom: 29px;
+  }
+  .lux-enquiry-step-heading h2 {
+    font-size: 32px;
+  }
+  .lux-enquiry-progress ol {
+    gap: 10px;
+  }
+  .lux-enquiry-progress button {
+    font-size: 9px;
+    gap: 5px;
+  }
+  .lux-enquiry-progress li {
+    padding-bottom: 16px;
+  }
+  .lux-enquiry-field {
+    margin-bottom: 26px;
+  }
+  .lux-enquiry-field input,
+  .lux-enquiry-field select,
+  .lux-enquiry-field textarea {
+    font-size: 16px;
+    min-height: 49px;
+  }
+  .lux-enquiry-field > label {
+    font-size: 11px;
+  }
+  .lux-enquiry-field-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .lux-enquiry-choices > div {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .lux-enquiry-choices label {
+    min-height: 45px;
+    font-size: 11px;
+  }
+  .lux-enquiry-next {
+    padding: 16px 18px;
+    gap: 18px;
+  }
+  .lux-enquiry-required-note {
+    font-size: 8px;
+  }
+  .lux-enquiry-success {
+    padding: 12px 0;
+  }
+  .lux-enquiry-success h2 {
+    font-size: 43px;
+  }
+  .lux-enquiry-closing {
+    padding: 45px 0 51px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lux-enquiry *,
+  .lux-enquiry *::before,
+  .lux-enquiry *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

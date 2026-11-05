@@ -1,0 +1,23 @@
+/* Colors follow the live floating wave without replacing existing card animations. */
+html.studio-theme-fade :is(.studio-app,.studio-sidebar,.studio-workspace,.studio-main,.studio-topbar,.studio-card,.studio-metric,.studio-modal,.studio-input,.studio-button,.studio-nav-item,.settings-pref-section,.studio-crm-overlay,.studio-crm-detail-card,.qw-page,.invoice-editor) {
+  transition-property: background-color, color, border-color, box-shadow;
+  transition-duration: 340ms;
+  transition-timing-function: ease;
+  transition-delay: var(--studio-theme-delay,0ms);
+}
+.studio-theme-ripple { position: fixed; inset: 0; overflow: hidden; z-index: 2147483000; pointer-events: none; contain: strict; }
+.studio-theme-ripple-disc {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle,transparent 51%,#ffffff10 65%,#ffffff40 81%,transparent 100%);
+  animation: studio-theme-ripple-out 620ms cubic-bezier(.22,.8,.25,1) both;
+  will-change: transform,opacity;
+}
+html[data-studio-appearance=dark] .studio-theme-ripple-disc { background: radial-gradient(circle,transparent 51%,#10121810 65%,#10121840 81%,transparent 100%); }
+@keyframes studio-theme-ripple-out {
+  from { transform: translate(-50%,-50%) scale(0); opacity: .9; }
+  to { transform: translate(-50%,-50%) scale(1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-theme-ripple { display: none; }
+  html.studio-theme-fade :is(.studio-app,.studio-app *) { transition-duration: 0s !important; }
+}

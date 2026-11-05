@@ -1,5 +1,6 @@
 ﻿import React, { forwardRef } from 'react';
 import { numberToIndianWords } from '../../utils/numberToWords';
+import { TEAM_ALPHA_LOGO } from '../../../utils/branding';
 
 const EstimatePreview = forwardRef(({ data }, ref) => {
     // A4 proportions: 794 x 1123 px at 96 DPI
@@ -41,7 +42,7 @@ const EstimatePreview = forwardRef(({ data }, ref) => {
                     </h1>
 
                     <div className="mt-8 mb-40">
-                        <img src="/team-alpha-logo.png" className="w-48 h-auto object-contain" alt="Team Alpha"
+                        <img src={TEAM_ALPHA_LOGO} className="w-48 h-auto object-contain" alt="Team Alpha"
                             onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
                         <div style={{ display: 'none' }} className="w-48 h-48 flex items-center justifies-center bg-gray-200 font-bold text-2xl">TEAM ALPHA</div>
                     </div>

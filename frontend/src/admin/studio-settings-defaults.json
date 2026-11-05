@@ -1,0 +1,90 @@
+{
+  "billingDefaults": {
+    "quotationPrefix": "TA-Q",
+    "invoicePrefix": "TA-INV",
+    "numberingMode": "reference",
+    "includeFinancialYear": false,
+    "defaultTaxPercent": 0,
+    "defaultDiscountType": "amount",
+    "defaultDiscountValue": 0,
+    "invoiceDueDays": 30,
+    "paymentScheduleEnabled": false,
+    "paymentMilestones": [
+      {
+        "label": "Booking",
+        "percent": 30,
+        "offsetDays": 0
+      },
+      {
+        "label": "Before the event",
+        "percent": 40,
+        "offsetDays": 14
+      },
+      {
+        "label": "Final delivery",
+        "percent": 30,
+        "offsetDays": 30
+      }
+    ]
+  },
+  "automation": {
+    "autoCreateInvoice": true,
+    "invoiceApprovalRequired": true,
+    "quoteRemindersEnabled": false,
+    "quoteReminderDays": [
+      3,
+      7,
+      14,
+      21,
+      30
+    ],
+    "invoiceRemindersEnabled": false,
+    "invoiceReminderDays": [
+      3,
+      7,
+      14
+    ],
+    "notifyQuoteAccepted": true,
+    "notifyPaymentOverdue": true,
+    "notifyAssignments": true,
+    "notifyDeliveryDue": true,
+    "dailyDigestEnabled": false,
+    "dailyDigestHour": 9
+  },
+  "communication": {
+    "senderName": "Team Alpha",
+    "replyTo": "",
+    "quoteSubject": "",
+    "quoteMessage": "",
+    "invoiceSubject": "",
+    "invoiceMessage": "",
+    "supportHours": ""
+  },
+  "productionDefaults": {
+    "defaultTemplateId": "",
+    "templates": []
+  },
+  "clientLinkDefaults": {
+    "showCrew": true,
+    "showProgress": true,
+    "showDeliverables": true,
+    "showPayments": true,
+    "allowChat": true,
+    "linkExpiryDays": 0
+  },
+  "security": {
+    "idleTimeoutMinutes": 60,
+    "absoluteSessionHours": 24,
+    "permissions": {
+      "discounts": "all_admins",
+      "deletion": "all_admins",
+      "exports": "all_admins",
+      "invoiceIssue": "all_admins"
+    }
+  },
+  "backups": {
+    "enabled": false,
+    "frequency": "daily",
+    "retentionDays": 30
+  }
+}

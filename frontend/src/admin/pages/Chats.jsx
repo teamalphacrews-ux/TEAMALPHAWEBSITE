@@ -636,7 +636,7 @@ export default function Chats() {
             <div className="flex flex-col h-full">
               <div className="px-5 py-4 border-b border-white/60 flex items-center justify-between z-10 bg-white/20 backdrop-blur-md rounded-t-[22px]">
                 <div className="flex items-center gap-3">
-                  <button onClick={backToList} className="md:hidden p-1 hover:bg-[#fafafa] rounded-lg text-[#2c2c2c]"><ChevronLeft size={18} /></button>
+                  <button aria-label="Back to conversations" title="Back to conversations" onClick={backToList} className="md:hidden p-1 hover:bg-[#fafafa] rounded-lg text-[#2c2c2c]"><ChevronLeft size={18} /></button>
                   <div className="w-9 h-9 bg-white/60 rounded-xl flex items-center justify-center text-[#2c2c2c] font-serif text-sm border border-white shrink-0 shadow-sm">{String(selectedUser.userName || '').charAt(0)}</div>
                   <div className="flex flex-col">
                     <h3 className="font-serif text-[16px] text-[#2c2c2c] leading-none mb-1">{String(selectedUser.userName || '')}</h3>
@@ -651,8 +651,8 @@ export default function Chats() {
                     setSearchQuery(q);
                     setNumResults(messages.filter(m => String(m.text || '').toLowerCase().includes(q.toLowerCase())).length);
                   }} />
-                  <button onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="p-2 hover:bg-white/60 rounded-xl transition-all relative">
-                    <MoreVertical size={18} />
+                  <div className="relative">
+                    <button type="button" aria-label="Conversation options" title="Conversation options" aria-expanded={showOptionsMenu} onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="studio-icon-button"><MoreVertical size={18} /></button>
                     <AnimatePresence>
                       {showOptionsMenu && (
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute top-11 right-0 w-44 bg-white/90 backdrop-blur-xl border border-white/80 shadow-2xl rounded-2xl py-2 z-50 overflow-hidden">
@@ -662,7 +662,7 @@ export default function Chats() {
                         </motion.div>
                       )}
                     </AnimatePresence>
-                  </button>
+                  </div>
                 </div>
               </div>
 
@@ -729,7 +729,7 @@ export default function Chats() {
                               )}
                             </div>
 
-                            <button onClick={() => setActiveMenuId(activeMenuId === msg._id ? null : msg._id)} className={`p-1.5 mt-1 text-lightgray opacity-0 group-hover:opacity-100 hover:bg-white/60 rounded-xl transition-all ${activeMenuId === msg._id ? 'opacity-100' : ''}`}><MoreVertical size={16} /></button>
+                            <button aria-label="Message options" title="Message options" aria-expanded={activeMenuId === msg._id} onClick={() => setActiveMenuId(activeMenuId === msg._id ? null : msg._id)} className={`p-1.5 mt-1 text-lightgray opacity-0 group-hover:opacity-100 hover:bg-white/60 rounded-xl transition-all ${activeMenuId === msg._id ? 'opacity-100' : ''}`}><MoreVertical size={16} /></button>
 
                             {activeMenuId === msg._id && (
                               <div ref={menuRef} className={`absolute top-full mt-2 w-52 bg-white/90 backdrop-blur-2xl shadow-2xl rounded-[20px] py-2 z-[100] border border-white animate-in zoom-in-95 duration-200 ${isSentByAdmin ? "right-0" : "left-0"}`}>
@@ -762,12 +762,12 @@ export default function Chats() {
                       <p className="text-[9px] font-black text-emerald-600 mb-1 uppercase tracking-widest">Replying to msg</p>
                       <p className="text-[13px] text-charcoal font-medium truncate opacity-70 italic">"{replyingTo.text}"</p>
                     </div>
-                    <button onClick={() => setReplyingTo(null)} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-500 shadow-sm"><X size={16} /></button>
+                    <button aria-label="Cancel reply" title="Cancel reply" onClick={() => setReplyingTo(null)} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-500 shadow-sm"><X size={16} /></button>
                   </motion.div>
                 )}
 
                 <div className="flex items-center gap-4 bg-white/60 backdrop-blur-2xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] rounded-[28px] px-4 py-3 relative border border-white">
-                  <button onClick={() => fileInputRef.current?.click()} className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-2xl transition-all text-warmgray hover:text-charcoal group shadow-sm border border-transparent hover:border-white/80">
+                  <button aria-label="Attach file" title="Attach file" onClick={() => fileInputRef.current?.click()} className="w-12 h-12 flex items-center justify-center hover:bg-white rounded-2xl transition-all text-warmgray hover:text-charcoal group shadow-sm border border-transparent hover:border-white/80">
                     <Paperclip size={20} className="group-hover:rotate-45 transition-transform" />
                   </button>
                   <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
@@ -779,7 +779,7 @@ export default function Chats() {
                       className="w-full bg-transparent border-none py-3 pl-2 pr-12 text-[14px] min-h-[48px] max-h-40 resize-none focus:outline-none placeholder:text-warmgray/50 text-charcoal font-medium"
                       rows={1} onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px'; }}
                     />
-                    <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-0 p-2.5 rounded-2xl transition-all ${showEmojiPicker ? 'bg-emerald-50 text-emerald-600' : 'text-warmgray hover:text-charcoal hover:bg-white'}`}><Smile size={22} /></button>
+                    <button aria-label="Choose emoji" title="Choose emoji" aria-expanded={showEmojiPicker} onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-0 p-2.5 rounded-2xl transition-all ${showEmojiPicker ? 'bg-emerald-50 text-emerald-600' : 'text-warmgray hover:text-charcoal hover:bg-white'}`}><Smile size={22} /></button>
                     {showEmojiPicker && (
                       <div className="absolute bottom-[calc(100%+24px)] right-0 z-50 shadow-3xl rounded-[28px] overflow-hidden border border-white/80 scale-100 origin-bottom-right transition-transform">
                         <EmojiPicker onEmojiClick={handleEmojiClick} width={320} height={420} theme="light" skinTonesDisabled />
@@ -788,7 +788,7 @@ export default function Chats() {
                   </div>
 
                   <button
-                    onClick={handleSend} disabled={!newMessage.trim() && !attachmentsPreview}
+                    aria-label="Send message" title="Send message" onClick={handleSend} disabled={!newMessage.trim() && !attachmentsPreview}
                     className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-[#2c2c2c] to-[#4c4c4c] text-white rounded-2xl transition-all duration-300 hover:shadow-2xl hover:scale-105 active:scale-95 disabled:opacity-20 disabled:grayscale shadow-lg"
                   >
                     <Send size={18} className="translate-x-[1px]" />
@@ -798,7 +798,7 @@ export default function Chats() {
                 {attachmentsPreview && (
                   <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="absolute bottom-[calc(100%+20px)] left-8 bg-white/90 backdrop-blur-2xl border-4 border-white rounded-2xl p-2 shadow-3xl z-40 group">
                     <img src={attachmentsPreview.url} className="max-h-40 rounded-xl shadow-inner" />
-                    <button onClick={() => setAttachmentsPreview(null)} className="absolute -top-3 -right-3 bg-red-600 text-white rounded-full p-2 shadow-2xl border-2 border-white hover:scale-110 transition-transform"><X size={12} /></button>
+                    <button aria-label="Remove attachment" title="Remove attachment" onClick={() => setAttachmentsPreview(null)} className="absolute -top-3 -right-3 bg-red-600 text-white rounded-full p-2 shadow-2xl border-2 border-white hover:scale-110 transition-transform"><X size={12} /></button>
                   </motion.div>
                 )}
               </div>

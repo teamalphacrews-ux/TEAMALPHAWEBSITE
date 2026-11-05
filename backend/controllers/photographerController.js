@@ -24,10 +24,11 @@ const createPhotographer = async (req, res) => {
 const deletePhotographer = async (req, res) => {
     const { id } = req.params;
     try {
-        await Photographer.findByIdAndDelete(id);
+        const removed = await require('../services/studioRecovery').recoverableDelete({ Model: Photographer, filter: { _id: id }, actorId: req.user.id });
+        if (!removed) return res.status(404).json({ message: 'Crew member not found.' });
         res.status(200).json({ message: "Photographer deleted successfully." });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(error.status || 500).json({ message: error.status ? error.message : 'The crew member could not be removed.' });
     }
 };
 

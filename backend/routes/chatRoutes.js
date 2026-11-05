@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const multer = require('multer');
@@ -25,7 +26,10 @@ const upload = multer({ storage });
 router.post('/', auth, async (req, res) => {
     const { text, recipient, messageType, attachments, replyTo } = req.body;
     try {
-        const user = await User.findById(req.user.id);
+        if (req.user.role !== 'admin' && !(await getAdminIds()).includes(String(recipient))) {
+            return res.status(403).json({ error: 'Clients may message the studio only' });
+        }
+        const user = req.user.id === 'hardcoded-admin-id' ? null : await User.findById(req.user.id);
         const senderName = user ? (user.name || `${user.firstName} ${user.lastName}`.trim()) : 'Alpha Admin';
 
         // Determine initial status based on recipient online status
@@ -67,7 +71,7 @@ router.post('/', auth, async (req, res) => {
 
             const ioInstance = req.app.get('io');
             if (ioInstance) {
-                ioInstance.emit('room_updated', {
+                ioInstance.to('admin').to(String(roomUserId)).emit('room_updated', {
                     roomId: roomUserId,
                     unreadCountAdmin: updatedRoom.unreadCountAdmin,
                     unreadCountUser: updatedRoom.unreadCountUser
@@ -160,7 +164,7 @@ async function getAdminIds(adminId) {
 }
 
 // API 1: GET /api/chats/admin/conversations
-router.get('/admin/conversations', auth, async (req, res) => {
+router.get('/admin/conversations', auth, requireAdmin, async (req, res) => {
     try {
         const adminIds = await getAdminIds(req.user.id);
         const messages = await Message.find({
@@ -207,7 +211,7 @@ router.get('/admin/conversations', auth, async (req, res) => {
 
 // @route   GET api/chats/search-users
 // @desc    Global search for all clients (for starting new chats)
-router.get('/search-users', auth, async (req, res) => {
+router.get('/search-users', auth, requireAdmin, async (req, res) => {
     const { query } = req.query;
     if (!query || query.length < 2) return res.json([]);
     try {
@@ -230,7 +234,7 @@ router.get('/search-users', auth, async (req, res) => {
 
 // API 3: GET /api/chats/unread-summary
 // API 3: GET /api/chats/unread-summary
-router.get('/unread-summary', auth, async (req, res) => {
+router.get('/unread-summary', auth, requireAdmin, async (req, res) => {
     try {
         const ChatRoom = require('../models/ChatRoom');
         const roomsWithUnread = await ChatRoom.countDocuments({ unreadCountAdmin: { $gt: 0 } });
@@ -238,7 +242,7 @@ router.get('/unread-summary', auth, async (req, res) => {
     } catch (err) { res.status(500).send('Server Error'); }
 });
 
-router.put('/mark-as-seen', auth, async (req, res) => {
+router.put('/mark-as-seen', auth, requireAdmin, async (req, res) => {
     const { chatId } = req.body;
     try {
         const adminIds = await getAdminIds(req.user.id);
@@ -254,7 +258,7 @@ router.put('/mark-as-seen', auth, async (req, res) => {
 
         const io = req.app.get('io');
         if (io) {
-            io.emit('room_updated', {
+            io.to('admin').to(String(chatId)).emit('room_updated', {
                 roomId: chatId,
                 unreadCountAdmin: 0,
                 unreadCountUser: updatedRoom ? updatedRoom.unreadCountUser : 0
@@ -278,7 +282,7 @@ router.put('/read', auth, async (req, res) => {
         const updatedRoom = await ChatRoom.findOne({ userId: req.user.id });
         const io = req.app.get('io');
         if (io) {
-            io.emit('room_updated', {
+            io.to('admin').to(String(req.user.id)).emit('room_updated', {
                 roomId: req.user.id,
                 unreadCountAdmin: updatedRoom ? updatedRoom.unreadCountAdmin : 0,
                 unreadCountUser: 0
@@ -299,7 +303,7 @@ router.get('/unread', auth, async (req, res) => {
 });
 
 // Admin-side: Fetch detailed thread with a user
-router.get('/admin/:userId', auth, async (req, res) => {
+router.get('/admin/:userId', auth, requireAdmin, async (req, res) => {
     const { userId } = req.params;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 40;
@@ -328,7 +332,7 @@ router.get('/admin/:userId', auth, async (req, res) => {
 
 // @route   POST api/chats/clear/:userId (Admin)
 // @desc    Clear chat history for admin only
-router.post('/clear/:userId', auth, async (req, res) => {
+router.post('/clear/:userId', auth, requireAdmin, async (req, res) => {
     const { userId } = req.params;
     try {
         const adminIds = await getAdminIds(req.user.id);
@@ -443,6 +447,9 @@ router.post('/react/:messageId', auth, async (req, res) => {
     try {
         const message = await Message.findById(req.params.messageId);
         if (!message) return res.status(404).json({ msg: 'Message not found' });
+        if (req.user.role !== 'admin' && String(message.sender) !== req.user.id && String(message.recipient) !== req.user.id) {
+            return res.status(403).json({ msg: 'Access denied' });
+        }
         const existingIdx = message.reactions.findIndex(r => r.userId === req.user.id);
         if (existingIdx > -1) message.reactions[existingIdx].emoji = emoji;
         else message.reactions.push({ userId: req.user.id, emoji });
@@ -457,7 +464,12 @@ router.delete('/:id/:mode', auth, async (req, res) => {
     try {
         const message = await Message.findById(req.params.id);
         if (!message) return res.status(404).json({ msg: 'Message not found' });
+        if (req.user.role !== 'admin' && String(message.sender) !== req.user.id && String(message.recipient) !== req.user.id) {
+            return res.status(403).json({ msg: 'Access denied' });
+        }
         if (req.params.mode === 'everyone') {
+            const ownsMessage = String(message.sender) === req.user.id || (req.user.role === 'admin' && (await getAdminIds()).includes(String(message.sender)));
+            if (!ownsMessage) return res.status(403).json({ msg: 'Only the sender may delete a message for everyone' });
             message.text = 'This transmission redacted';
             message.isDeletedEveryone = true;
             message.attachments = [];

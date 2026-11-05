@@ -102,7 +102,7 @@ export default function PhotographerProfile({ photographer, onClose, onUpdate })
                                 </div>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-3 bg-white/60 hover:bg-white text-[#8a8a8a] hover:text-[#2d2d2d] rounded-full transition-all border border-white/80 hover:rotate-90 hover:shadow-sm">
+                        <button aria-label="Close photographer profile" title="Close photographer profile" onClick={onClose} className="p-3 bg-white/60 hover:bg-white text-[#8a8a8a] hover:text-[#2d2d2d] rounded-full transition-all border border-white/80 hover:rotate-90 hover:shadow-sm">
                             <X size={20} />
                         </button>
                     </div>

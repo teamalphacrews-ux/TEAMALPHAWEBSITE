@@ -2,30 +2,27 @@ import { useState, useEffect } from 'react';
 import { X, Calendar, Link, Image, Loader2, Save } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { API_BASE_URL } from '../../../utils/apiConfig';
+import { dateInputValue } from '../operations/operationsUtils';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export default function EditEventModal({ isOpen, onClose, event, onSuccess }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    driveLink: '',
-    eventDate: ''
-  });
-  const [thumbnail, setThumbnail] = useState(null);
-  const [preview, setPreview] = useState('');
-  const [loading, setLoading] = useState(false);
+  if (!isOpen || !event) return null;
+  return <EditEventForm key={`${event._id}:${event.updatedAt || ""}`} event={event} onClose={onClose} onSuccess={onSuccess} />;
+}
 
-  useEffect(() => {
-    if (event) {
-      setFormData({
-        name: event.name,
-        // We don't have the original link, but we can reconstruct it from driveFolderId or just let them paste a new one
-        driveLink: `https://drive.google.com/drive/folders/${event.driveFolderId}`,
-        eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : ''
-      });
-      setPreview(event.thumbnail);
-    }
-  }, [event]);
+function EditEventForm({ event, onClose, onSuccess }) {
+  const [formData, setFormData] = useState(() => ({
+    name: event.name || '',
+    driveLink: event.driveFolderId ? `https://drive.google.com/drive/folders/${event.driveFolderId}` : '',
+    eventDate: dateInputValue(event.eventDate)
+  }));
+  const [thumbnail, setThumbnail] = useState(null);
+  const [preview, setPreview] = useState(event.thumbnail || '');
+  const [loading, setLoading] = useState(false);
+  useEffect(() => () => {
+    if (preview.startsWith('blob:')) URL.revokeObjectURL(preview);
+  }, [preview]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -37,6 +34,7 @@ export default function EditEventModal({ isOpen, onClose, event, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -65,14 +63,14 @@ export default function EditEventModal({ isOpen, onClose, event, onSuccess }) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
         <div className="relative p-8">
           <button 
             onClick={onClose}
+            aria-label="Close event editor"
+            disabled={loading}
             className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
           >
             <X size={20} />

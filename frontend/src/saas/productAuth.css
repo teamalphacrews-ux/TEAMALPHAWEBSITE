@@ -1,0 +1,44 @@
+/* Public SaaS account screens share the product site's neutral, focused palette. */
+.saas-auth.studio-app{--studio-text:#f5f5f5;--studio-muted:#a5a5a5;--studio-border:#303030;--studio-surface:#111;--studio-canvas:#000;background:#000;color:#f5f5f5}
+.saas-auth .saas-product-brand>span{background:#202020;border-radius:10px;box-shadow:none}
+.saas-auth .saas-product-brand small{color:#999;font-size:11px}
+.saas-auth .saas-auth-signin{color:#999!important;font-size:13px}
+.saas-auth .saas-auth-signin strong{color:#fff;font-size:13px}
+.saas-auth .saas-auth-layout{background:#111;border-color:#292929;border-radius:18px;box-shadow:none}
+.saas-auth .saas-kicker{font-size:11px;letter-spacing:.05em;color:#999}
+.saas-auth h1{color:#fff;letter-spacing:-.045em!important}
+.saas-auth .saas-auth-description{color:#a5a5a5;font-size:15px;line-height:1.7}
+.saas-auth .saas-auth-aside{background:radial-gradient(ellipse at 20% 110%,#193ec366,transparent 60%),radial-gradient(ellipse at 100% 60%,#7846c833,transparent 65%),#101117;color:#eee;border-left:1px solid #292929}
+.saas-auth .saas-editorial-label{color:#adb2c1;font-size:13px}
+.saas-auth .saas-auth-aside h2{font-weight:500;letter-spacing:-.045em}
+.saas-auth .saas-auth-aside>p{color:#a6a9b5;font-size:14px}
+.saas-auth .saas-auth-aside ul{font-size:13px;line-height:1.7;gap:17px;color:#c9ccda}
+.saas-auth .saas-auth-orbit{color:#a5b5ff;opacity:.8}
+.saas-auth .saas-auth-orbit>i{border-color:#6f8dff70;box-shadow:0 0 35px #3b66ff14}
+.saas-auth .saas-auth-footer{color:#888;font-size:12px}
+.saas-auth .saas-field{color:#c5c5c5;font-size:13px}
+.saas-auth .saas-field input{background:#1b1b1b;border-color:#3c3c3c;border-radius:8px;color:#fff;font-size:15px}
+.saas-auth .saas-field input:focus{border-color:#9daceb;box-shadow:0 0 0 3px #738aff30}
+.saas-auth .saas-field input::placeholder{color:#888}
+.saas-auth .saas-password button{color:#a7a7a7}
+.saas-auth .saas-primary{background:#fff;color:#111;border-color:#fff;border-radius:8px;font-size:14px}
+.saas-auth .saas-primary:hover:not(:disabled){background:#e8e8e8}
+.saas-auth .saas-primary:disabled{cursor:not-allowed}
+.saas-auth .saas-form-help{color:#a5a5a5;font-size:12px}
+.saas-auth .saas-info{background:#1a1a1a;border-color:#333;border-radius:10px;color:#aaa;font-size:14px}
+.saas-auth .saas-info h2{color:#f5f5f5;font-size:18px}
+.saas-auth .saas-info a{color:#d0daff}
+.saas-auth .saas-error{background:#2a171b;border-color:#713444;color:#ffb3c2;border-radius:8px;font-size:13px}
+.saas-auth .saas-invite-summary,.saas-auth .saas-trial-note{background:#171e32;border:1px solid #354366;border-radius:10px;color:#d1dcff}
+.saas-auth .saas-invite-summary small,.saas-auth .saas-trial-note small{color:#acb7d5;font-size:12px}
+.saas-auth .saas-trial-note span{color:#d1dcff;font-size:14px}
+.saas-auth .saas-social-button{border-radius:8px;min-height:48px}
+.saas-auth .saas-social-button.is-apple{border-color:#676767}
+.saas-auth .saas-social-button:disabled{opacity:.65}
+.saas-auth .saas-social-status{color:#aaa;font-size:12px}
+.saas-auth .saas-auth-divider{color:#999;font-size:11px}
+.saas-auth .saas-auth-divider:before,.saas-auth .saas-auth-divider:after{background:#303030}
+.saas-auth .saas-auth-existing{color:#aaa;font-size:12px}
+.saas-auth .saas-auth-existing a,.saas-auth .saas-restart-auth{color:#e6e6e6}
+.saas-auth :is(a,button):focus-visible{outline:2px solid #b2c0ff;outline-offset:4px}
+@media(max-width:580px){.saas-auth .saas-auth-card{padding:30px 22px}.saas-auth .saas-auth-description{font-size:14px}.saas-auth .saas-auth-header{align-items:flex-start}.saas-auth .saas-auth-signin,.saas-auth .saas-auth-signin strong{font-size:11px}.saas-auth .saas-product-brand small{font-size:10px}.saas-auth .saas-auth-footer{font-size:10px}.saas-auth .saas-field input{font-size:16px}.saas-auth .saas-auth-layout{border-radius:14px}.saas-auth .saas-form-grid{grid-template-columns:1fr}}

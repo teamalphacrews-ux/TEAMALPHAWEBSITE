@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Menu, Instagram, MessageSquare } from "lucide-react";
+import { Menu, Instagram } from "lucide-react";
+import { TEAM_ALPHA_LOGO } from "../../utils/branding";
 
 export default function Header({ toggleSidebar }) {
   return (
@@ -10,8 +11,8 @@ export default function Header({ toggleSidebar }) {
           
           {/* Brand */}
           <Link to="/portal" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover scale-150" />
+            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+              <img src={TEAM_ALPHA_LOGO} alt="" width="48" height="48" className="w-full h-full object-contain" />
             </div>
             <span className="text-[10px] font-bold tracking-[0.3em] uppercase">Team Alpha</span>
           </Link>

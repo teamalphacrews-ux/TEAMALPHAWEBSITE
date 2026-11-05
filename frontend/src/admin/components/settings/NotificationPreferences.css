@@ -1,0 +1,12 @@
+.settings-notification-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:22px 0 18px}
+.settings-notification-controls .studio-field{min-width:0;font-size:12px}
+.settings-notification-controls .studio-input{width:100%;min-height:44px}
+.settings-notification-volume>span{display:flex;justify-content:space-between;gap:12px}
+.settings-notification-volume output{color:var(--studio-muted);font-variant-numeric:tabular-nums}
+.settings-notification-volume input[type=range]{min-height:44px;width:100%;accent-color:var(--settings-accent,var(--studio-text));cursor:pointer}
+.settings-notification-test{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.settings-notification-test .studio-button{min-height:44px;flex-shrink:0}
+.settings-notification-test>span{font-size:11px;color:var(--studio-muted);line-height:1.7;flex:1;min-width:170px}
+.settings-notification-zone{display:flex;gap:8px;align-items:flex-start;font-size:11px!important;color:var(--studio-muted);line-height:1.7!important}
+.settings-notification-zone svg{flex-shrink:0;margin-top:3px}
+@media(max-width:600px){.settings-notification-controls{grid-template-columns:minmax(0,1fr);gap:16px}.settings-notification-controls .studio-input{font-size:16px}.settings-notification-test>span{flex-basis:100%}.settings-notifications .settings-text-button{text-align:left;line-height:1.6}}

@@ -7,6 +7,7 @@ import { toJpeg } from "html-to-image";
 
 import jsPDF from "jspdf";
 import EstimatePreview from "./EstimatePreview";
+import useStudioDialog from "../studio/useStudioDialog";
 
 export default function InvoiceForm({ onClose, initialData = null, initialClientName = "" }) {
   const token = localStorage.getItem('token');
@@ -18,32 +19,13 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
   const [currentStep, setCurrentStep] = useState(1);
 
   const [events, setEvents] = useState(initialData?.events || [
-    { eventName: "Pre Wedding", services: "Candid Photography\nCinematography\nDrone Coverage", equipment: "SONY A7R4\nSONY FX3\nDJI AIR 3S", dateLocation: "Feb 2026", price: 35000 },
-    { eventName: "Home Rituals\nBride & Groom", services: "Traditional Photography", equipment: "SONY M4", dateLocation: "9th or 10th\nApril 2026", price: 16000 },
-    { eventName: "Haldi\nBride & Groom", services: "Traditional Photography", equipment: "SONY M4", dateLocation: "9th or 10th\nApril 2026", price: 16000 },
-    { eventName: "Sangeeth", services: "Candid Photography\nTraditional Videography\nCinematography", equipment: "SONY A7R4\nSONY M4\nSONY FX3", dateLocation: "10th April 2026", price: 45000 },
-    { eventName: "Reception", services: "Candid Photography\nTraditional Photography\nTraditional Videography X2\nCinematography\nDrone Coverage", equipment: "SONY A7R4\nSONY M4\nSONY FX-30\nSONY FX3\nDJI AIR 3S", dateLocation: "11th April 2026", price: 70000 },
-    { eventName: "Muhurtham", services: "Candid Photography\nTraditional Photography\nTraditional Videography X2\nCinematography\nDrone Coverage", equipment: "SONY A7R4\nSONY M4\nSONY FX-30\nSONY FX3\nDJI AIR 3S", dateLocation: "12th April 2026", price: 70000 }
+    { eventName: "", services: "", equipment: "", dateLocation: "", price: 0 }
   ]);
-
   const [timeline, setTimeline] = useState(initialData?.timeline || [
-    { deliverable: "Soft Copies (All photos)", time: "7 Days" },
-    { deliverable: "Candid Photographs", time: "45 days" },
-    { deliverable: "Cinematography Video", time: "60 days" },
-    { deliverable: "Edited Traditional Video", time: "60 days" }
+    { deliverable: "", time: "" }
   ]);
-
-  const [deliverables, setDeliverables] = useState(initialData?.deliverables || [
-    "All RAW Data",
-    "35 Pre wedding Edited Photos",
-    "Pre wedding cinematic Video (3 min max)",
-    "Wedding edited images",
-    "2 Premium Wedding Albums 15*24(40 pages)",
-    "Wedding Cinematography Video 5 Min",
-    "Traditional Video Edited 2 Hrs max",
-    "Reels"
-  ]);
-  const [deliverablesPrice, setDeliverablesPrice] = useState(initialData?.deliverablesPrice || 40000);
+  const [deliverables, setDeliverables] = useState(initialData?.deliverables || [""]);
+  const [deliverablesPrice, setDeliverablesPrice] = useState(initialData?.deliverablesPrice || 0);
   const [discount, setDiscount] = useState(initialData?.discount || 0);
   const [extraCharges, setExtraCharges] = useState(initialData?.extraCharges || 0);
 
@@ -51,6 +33,8 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
 
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const inFlight = useRef(false);
+  const dialogRef = useStudioDialog(onClose, { canClose: !loading });
 
   const previewRef = useRef(null);
 
@@ -91,11 +75,14 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+    if (inFlight.current) return;
     if (!clientName.trim()) {
       toast.error("Please provide a Client Name in Step 1 before saving.");
       setCurrentStep(1);
       return;
     }
+    if (!invoiceDate) { toast.error("Please choose an invoice date."); setCurrentStep(1); return; }
+    inFlight.current = true;
     setLoading(true);
     try {
       const payload = {
@@ -124,6 +111,7 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
       toast.error("Failed to save estimate data.");
     } finally {
       setLoading(false);
+      inFlight.current = false;
     }
   };
 
@@ -139,30 +127,30 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
   };
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-[8px] z-[9999] flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-4xl rounded-[32px] shadow-[0_25px_80px_rgba(0,0,0,0.3)] border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-400 relative flex flex-col max-h-[95vh]">
+    <div className="studio-crm-invoice-dialog fixed inset-0 bg-black/60 backdrop-blur-[8px] z-[9999] flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-300">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Client invoice" className="bg-white w-full max-w-4xl rounded-[32px] shadow-[0_25px_80px_rgba(0,0,0,0.3)] border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-400 relative flex flex-col max-h-[95vh]">
         
         {/* Premium Gradient Header */}
         <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-br from-[#fafafa] to-white shrink-0">
           <div>
             <h2 className="font-serif text-2xl md:text-3xl text-[#2d2d2d] flex items-center gap-3 leading-tight">
-              <LayoutTemplate className="text-[#D9CDEB]" /> Estimate Orchestrator
+              <LayoutTemplate className="text-[#D9CDEB]" /> Client invoice
             </h2>
-            <p className="text-[9px] md:text-[10px] text-[#8a8a8a] mt-2 font-black uppercase tracking-[0.25em] bg-gray-100/50 px-3 py-1 rounded-full border border-gray-200 inline-block">Bespoke Financial Crafting</p>
+            <p className="text-[9px] md:text-[10px] text-[#8a8a8a] mt-2 font-black uppercase tracking-[0.25em] bg-gray-100/50 px-3 py-1 rounded-full border border-gray-200 inline-block">Project estimate & invoice</p>
           </div>
           
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
             <button
               type="button"
-              onClick={handleDownload}
+              aria-label="Download invoice PDF" title="Download invoice PDF" onClick={handleDownload}
               disabled={downloading}
               className="px-5 py-2.5 bg-gray-50 hover:bg-white text-[#2d2d2d] rounded-xl flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm border border-gray-200 disabled:opacity-50"
             >
               {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-              <span className="hidden sm:inline">Render PDF</span>
+              <span className="hidden sm:inline">Download PDF</span>
             </button>
             <button
-              onClick={onClose}
+              aria-label="Close invoice" title="Close invoice" onClick={onClose}
               className="p-2.5 bg-gray-50 hover:bg-white text-[#8a8a8a] hover:text-[#2d2d2d] rounded-full transition-all hover:rotate-90 border border-transparent hover:border-gray-200 hover:shadow-sm"
             >
               <X size={18} />
@@ -201,7 +189,7 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
                         className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-[#2d2d2d] focus:ring-4 focus:ring-black/5 transition-all shadow-sm"
                       />
                     </div>
-
+                    <label className="space-y-2 block"><span className="text-[10px] uppercase font-bold tracking-[0.15em] text-[#786d7d] ml-1">Invoice date</span><input required aria-label="Invoice date" type="date" value={invoiceDate} onChange={(event) => setInvoiceDate(event.target.value)} className="w-full bg-white border border-gray-200 rounded-xl px-5 py-3 text-sm focus:outline-none focus:border-[#2b2030]" /></label>
                     <div className="space-y-2">
                       <label className="text-[10px] uppercase font-bold tracking-[0.15em] text-[#9a9a9a] ml-1">Hero Cover Image (Optional)</label>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
@@ -306,7 +294,7 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
                     </div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4">
                       <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-red-600">Administrative Gesture (Discount ₹)</span>
-                      <input type="number" className="w-full sm:w-40 bg-white border text-left sm:text-right border-red-100 rounded-xl px-5 py-3 text-[13px] font-black focus:outline-none focus:border-red-400 text-red-600 shadow-inner" value={discount} onChange={e => setDiscount(Number(e.target.value))} placeholder="0" />
+                      <input type="number" className="w-full sm:w-40 bg-white border text-left sm:text-right border-red-100 rounded-xl px-5 py-3 text-[13px] font-black focus:outline-none focus:border-red-400 text-red-600 shadow-inner" min="0" step="0.01" max={eventsTotal + Number(deliverablesPrice)} aria-label="Invoice discount in rupees" value={discount} onChange={e => setDiscount(Number(e.target.value))} placeholder="0" />
                     </div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4">
                       <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-blue-700">Auxiliary Provisions / Tax (₹)</span>

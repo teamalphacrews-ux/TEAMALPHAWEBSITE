@@ -4,8 +4,11 @@ const Invoice = require('../models/Invoice');
 const Lead = require('../models/Lead');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
 
 const router = express.Router();
+
+router.use(auth, requireAdmin);
 
 const calculateFinanceStats = async () => {
     const paidInvoices = await Invoice.find({ status: 'Paid' });
@@ -46,7 +49,7 @@ const calculateFinanceStats = async () => {
 };
 
 // Get Finance Overview (Stats)
-router.get('/overview', auth, async (req, res) => {
+router.get('/overview', async (req, res) => {
     try {
         const stats = await calculateFinanceStats();
         res.json(stats);
@@ -56,7 +59,7 @@ router.get('/overview', auth, async (req, res) => {
 });
 
 // Get Treasury Allocation (Expenses by Category)
-router.get('/allocation', auth, async (req, res) => {
+router.get('/allocation', async (req, res) => {
     try {
         const aggregation = await Finance.aggregate([
             { $match: { type: 'expense' } },
@@ -100,7 +103,7 @@ function getColorForCategory(category) {
 }
 
 // Add Generic Finance Entry
-router.post('/', auth, async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const entry = new Finance(req.body);
         await entry.save();
@@ -111,7 +114,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Get Recent Transactions (Combined Invoices & Expenses)
-router.get('/transactions', auth, async (req, res) => {
+router.get('/transactions', async (req, res) => {
     try {
         // Fetch last 10 invoices (Paid or Pending)
         const recentInvoices = await Invoice.find()
@@ -173,7 +176,7 @@ router.get('/transactions', auth, async (req, res) => {
 });
 
 // Add New Expense
-router.post('/expense', auth, async (req, res) => {
+router.post('/expense', async (req, res) => {
     try {
         const { title, amount, category, date, status } = req.body;
 
@@ -208,7 +211,7 @@ router.post('/expense', auth, async (req, res) => {
 });
 
 // Update Expense
-router.put('/expense/:id', auth, async (req, res) => {
+router.put('/expense/:id', async (req, res) => {
     try {
         const { title, amount, category, date, status } = req.body;
         // PRESERVE EXISTING VALUES: Only overwrite changed fields
@@ -241,18 +244,19 @@ router.put('/expense/:id', auth, async (req, res) => {
 });
 
 // Delete Expense
-router.delete('/expense/:id', auth, async (req, res) => {
+router.delete('/expense/:id', async (req, res) => {
     try {
-        await Finance.findByIdAndDelete(req.params.id);
+        await require('../services/studioRecovery').recoverableDelete({ Model: Finance, filter: { _id: req.params.id, type: 'expense' }, actorId: req.user.id });
         res.json({ message: "Expense deleted" });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(err.status || 503).json({ error: err.status ? err.message : 'The expense could not be removed.' });
     }
 });
 
 // Safe Deletion for Income (Handled via Lead Payment resetting or Invoice deletion)
-router.delete('/income/:incomeType/:id', auth, async (req, res) => {
+router.delete('/income/:incomeType/:id', async (req, res) => {
     try {
+        await require('../services/studioSecurity').assertPermission(req.user.id, 'deletion');
         const { incomeType, id } = req.params;
 
         if (incomeType === 'Lead') {
@@ -266,19 +270,21 @@ router.delete('/income/:incomeType/:id', auth, async (req, res) => {
         }
 
         if (incomeType === 'Invoice') {
-            const deletedInvoice = await Invoice.findByIdAndDelete(id);
+            const current = await Invoice.findById(id);
+            if (current?.sourceQuotation) return res.status(409).json({ error: 'Use invoice cancellation for an invoice linked to an accepted quotation.' });
+            const deletedInvoice = await require('../services/studioRecovery').recoverableDelete({ Model: Invoice, filter: { _id: id }, actorId: req.user.id });
             if (!deletedInvoice) return res.status(404).json({ error: 'Invoice not found' });
             return res.json({ message: 'Invoice deleted successfully' });
         }
 
         return res.status(400).json({ error: 'Invalid income type' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(err.status || 503).json({ error: err.status ? err.message : 'The income record could not be removed.' });
     }
 });
 
 // Get Payment Plans (Pending Invoices)
-router.get('/pending-payments', auth, async (req, res) => {
+router.get('/pending-payments', async (req, res) => {
     try {
         const pendingInvoices = await Invoice.find({ status: { $ne: 'Paid' } }).sort({ invoiceDate: -1 }).lean();
         const pendingLeads = await Lead.find({ paymentStatus: { $in: ['Unpaid', 'Deposit Paid'] } }).sort({ createdAt: -1 }).lean();
@@ -313,7 +319,7 @@ router.get('/pending-payments', auth, async (req, res) => {
 });
 
 // Get Monthly Performance Data (Revenue vs Expenses vs Cash Flow)
-router.get('/monthly-performance', auth, async (req, res) => {
+router.get('/monthly-performance', async (req, res) => {
     try {
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const now = new Date();

@@ -1,0 +1,193 @@
+/* Opted into only by native iPhone identity (or the isolated iPhone app preview). */
+.studio-app.studio-native-phone .studio-menu-button { display: none !important; }
+.studio-app.studio-native-phone .studio-workspace { margin-left: 0 !important; }
+.studio-app.studio-native-phone .studio-iphone-navigation.is-more-open > .studio-mobile-navigation { visibility: hidden; }
+.studio-app.studio-app.studio-native-phone .studio-iphone-navigation > .studio-mobile-navigation {
+  position: fixed;
+  inset: auto max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+  z-index: 65;
+  display: grid;
+  grid-template-columns: repeat(5,minmax(0,1fr));
+  width: auto;
+  max-width: 540px;
+  margin-inline: auto;
+  min-height: 66px;
+  padding: 4px;
+  gap: 2px;
+  border: 1px solid var(--studio-border);
+  border-radius: 22px;
+  background: var(--studio-surface);
+}
+.studio-app.studio-app.studio-native-phone .studio-mobile-navigation > :is(a,button) { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 56px; padding: 4px 1px; gap: 3px; border: 0; border-radius: 18px; background: transparent; color: var(--studio-muted); font-size: 10px; line-height: 1.2; }
+.studio-app.studio-app.studio-native-phone .studio-mobile-navigation > .is-active { color: var(--studio-text); background: var(--studio-control-tint); }
+.studio-app.studio-native-phone:not(.studio-focus-mode) .studio-workspace { padding-bottom: calc(86px + env(safe-area-inset-bottom,0px)); }
+html[data-studio-keyboard] .studio-app.studio-app.studio-native-phone .studio-iphone-navigation > .studio-mobile-navigation { display: none; }
+.studio-app.studio-native-phone.studio-iphone-more-overlay {
+  position: fixed;
+  top: var(--studio-visible-top, 0px);
+  left: 0;
+  width: 100%;
+  height: var(--studio-visible-height, 100dvh);
+  min-height: 0;
+  z-index: 160;
+  background: transparent;
+  pointer-events: none;
+}
+.studio-iphone-more-overlay .studio-more-scrim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: #0007;
+  pointer-events: auto;
+  animation: studio-more-dim .2s ease both;
+}
+.studio-iphone-more-overlay .studio-more-dialog {
+  position: absolute;
+  bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  left: max(10px, env(safe-area-inset-left, 0px));
+  right: max(10px, env(safe-area-inset-right, 0px));
+  width: auto;
+  max-width: 540px;
+  max-height: calc(100% - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  color: var(--studio-text);
+  pointer-events: auto;
+  outline: none;
+  animation: studio-more-arrive .26s cubic-bezier(.2,.8,.2,1) both;
+}
+.studio-iphone-more-overlay .studio-more-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--studio-border);
+  border-radius: 26px;
+  background: var(--studio-surface);
+  box-shadow: 0 16px 55px #0003;
+}
+.studio-iphone-more-overlay .studio-more-handle {
+  flex-shrink: 0;
+  width: 32px;
+  height: 4px;
+  margin: 8px auto 0;
+  border-radius: 9px;
+  background: var(--studio-muted);
+  opacity: .35;
+}
+.studio-iphone-more-overlay .studio-more-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 12px;
+  padding: 9px 14px 9px 18px;
+}
+.studio-iphone-more-overlay .studio-more-header h2 { font-size: 19px; letter-spacing: -.035em; line-height: 1.3; }
+.studio-iphone-more-overlay .studio-more-header p { margin: 2px 0 0; color: var(--studio-muted); font-size: 11px; line-height: 1.4; }
+.studio-iphone-more-overlay .studio-more-close {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--studio-control-tint);
+  color: var(--studio-text);
+}
+.studio-iphone-more-overlay .studio-more-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 12px 10px;
+}
+.studio-iphone-more-overlay .studio-more-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  padding: 3px 0 13px;
+}
+.studio-iphone-more-overlay .studio-more-shortcut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 76px;
+  padding: 9px 2px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--studio-text);
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 500;
+}
+.studio-iphone-more-overlay .studio-more-shortcut > span:last-child { max-width: 100%; overflow-wrap: anywhere; }
+.studio-iphone-more-overlay .studio-more-shortcut.is-active { background: var(--studio-control-tint); border-color: var(--studio-border); }
+.studio-iphone-more-overlay .studio-more-shortcut:active { background: var(--studio-control-tint); }
+.studio-iphone-more-overlay .studio-more-categories { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid var(--studio-border); }
+.studio-iphone-more-overlay .studio-more-group-button {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 48px;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--studio-border);
+  border-radius: 13px;
+  color: var(--studio-text);
+  background: var(--studio-surface);
+  font-size: 12px;
+  font-weight: 550;
+  text-align: left;
+}
+.studio-iphone-more-overlay .studio-more-group-button > svg { flex-shrink: 0; color: var(--studio-muted); }
+.studio-iphone-more-overlay .studio-more-group-button > span { min-width: 0; overflow-wrap: anywhere; }
+.studio-iphone-more-overlay .studio-more-group-button > svg:last-child { margin-left: auto; transition: transform .2s ease; }
+.studio-iphone-more-overlay .studio-more-group-button.is-selected { background: var(--studio-control-tint); }
+.studio-iphone-more-overlay .studio-more-group-button.is-selected > svg:last-child { transform: rotate(180deg); }
+.studio-iphone-more-overlay .studio-more-group-pages { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; padding-block: 9px; }
+.studio-iphone-more-overlay .studio-more-studio-tools { margin-top: 8px; }
+.studio-iphone-more-overlay .studio-more-studio-tools > button { width: 100%; }
+.studio-iphone-more-overlay .studio-more-settings { display: flex; align-items: center; gap: 10px; min-height: 52px; margin-top: 10px; padding: 10px 4px; color: var(--studio-text); border-block: 1px solid var(--studio-border); font-size: 14px; font-weight: 550; }
+.studio-iphone-more-overlay .studio-more-settings > svg { margin-left: auto; color: var(--studio-muted); }
+.studio-iphone-more-overlay .studio-more-account { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; padding-top: 10px; }
+.studio-iphone-more-overlay .studio-more-profile { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 48px; color: var(--studio-text); }
+.studio-iphone-more-overlay .studio-more-avatar { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; color: var(--studio-text); background: var(--studio-control-tint); font-size: 11px; font-weight: 600; }
+.studio-iphone-more-overlay .studio-more-profile > span:last-child { min-width: 0; }
+.studio-iphone-more-overlay .studio-more-profile strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; }
+.studio-iphone-more-overlay .studio-more-profile small { display: block; color: var(--studio-muted); font-size: 10px; margin-top: 2px; }
+.studio-iphone-more-overlay .studio-more-signout { display: flex; align-items: center; gap: 7px; min-height: 44px; padding: 9px 10px; border: 1px solid var(--studio-border); border-radius: 12px; color: var(--studio-text); background: transparent; font-size: 11px; }
+.studio-iphone-more-overlay .studio-more-workspace-switch { margin-top: 10px; }
+.studio-iphone-more-overlay .saas-switcher-panel { position: fixed; inset: 20px 18px auto; width: auto; max-height: calc(var(--studio-visible-height,100dvh) - 120px); overflow-y: auto; }
+.studio-app.studio-app.studio-personal-workspace.studio-iphone-more-overlay .studio-more-dialog > .studio-mobile-navigation {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5,minmax(0,1fr));
+  flex-shrink: 0;
+  inset: auto;
+  width: 100%;
+  max-width: none;
+  min-height: 66px;
+  margin: 0;
+  padding: 4px;
+  gap: 2px;
+  border-radius: 22px;
+  background: var(--studio-surface);
+}
+.studio-app.studio-app.studio-personal-workspace.studio-iphone-more-overlay .studio-mobile-navigation > :is(a,button) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; min-height: 56px; padding: 4px 1px; font-size: 10px; line-height: 1.2; }
+.studio-iphone-more-overlay :focus-visible { outline: 2px solid var(--studio-control-accent,#4f7ded); outline-offset: 2px; }
+@keyframes studio-more-arrive { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes studio-more-dim { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .studio-iphone-more-overlay :is(.studio-more-dialog,.studio-more-scrim) { animation: none; } .studio-iphone-more-overlay .studio-more-group-button > svg { transition: none; } }

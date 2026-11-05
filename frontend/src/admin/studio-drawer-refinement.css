@@ -1,0 +1,93 @@
+/* The fixed drawer owns its surface; only its navigation list scrolls. */
+@media (max-width: 1100px) {
+  #studio-navigation-drawer {
+    position: fixed;
+    inset: var(--studio-visible-top, 0px) auto auto 0;
+    width: min(340px, calc(100vw - 28px));
+    height: var(--studio-visible-height, 100dvh);
+    max-height: var(--studio-visible-height, 100dvh);
+    min-height: 0;
+    border-radius: 0 24px 24px 0;
+    overflow: hidden;
+    isolation: isolate;
+    background: var(--studio-nav-surface, var(--studio-surface));
+    border-right: 1px solid var(--studio-border);
+    box-shadow: 18px 0 64px #00000024;
+  }
+  #studio-navigation-drawer .studio-sidebar {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    width: 100%; height: 100%; max-height: 100%; min-height: 0;
+    box-sizing: border-box;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(8px, env(safe-area-inset-bottom));
+    border: 0; border-radius: 0; overflow: hidden;
+    background: var(--studio-nav-surface, var(--studio-surface));
+  }
+  #studio-navigation-drawer .studio-brand-row {
+    min-height: 48px; min-width: 0; gap: 8px;
+    margin: 0 0 10px; padding: 0 2px;
+  }
+  #studio-navigation-drawer .studio-brand { gap: 10px; min-width: 0; }
+  #studio-navigation-drawer .studio-brand-mark { width: 38px; height: 38px; flex: 0 0 38px; border-radius: 11px; }
+  #studio-navigation-drawer .studio-brand strong { font-size: 15px; line-height: 1.3; }
+  #studio-navigation-drawer .studio-brand small { margin-top: 2px; font-size: 10px; line-height: 1.4; letter-spacing: .03em; }
+  #studio-navigation-drawer .studio-nav-close {
+    display: inline-grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px;
+    margin: 0; padding: 0; border: 0; border-radius: 12px;
+    background: transparent; color: var(--studio-muted);
+  }
+  #studio-navigation-drawer .studio-nav-close > svg { width: 18px; height: 18px; }
+  #studio-navigation-drawer .studio-menu-search {
+    min-width: 0; min-height: 44px; margin: 0 2px 12px;
+    padding: 0 11px; gap: 8px; border-radius: 12px; box-shadow: none;
+  }
+  #studio-navigation-drawer .studio-menu-search input {
+    height: 42px; min-height: 0; padding: 0; border: 0; border-radius: 0;
+    background: transparent; box-shadow: none; font-size: 16px; font-weight: 400;
+  }
+  #studio-navigation-drawer .studio-nav {
+    min-height: 0; min-width: 0; height: auto;
+    overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    margin: 0; padding: 0 2px 12px; scrollbar-width: thin;
+  }
+  #studio-navigation-drawer .studio-nav-section-label { padding: 2px 10px 6px; font-size: 10px; line-height: 1.5; letter-spacing: .08em; }
+  #studio-navigation-drawer .studio-nav-primary { padding: 0 0 8px; margin: 0; border: 0; }
+  #studio-navigation-drawer .studio-nav-item {
+    display: flex; align-items: center; min-height: 46px;
+    padding: 7px 10px; margin: 2px 0; gap: 10px; border-radius: 12px;
+    font-size: 14px; font-weight: 500; line-height: 1.35;
+    color: var(--studio-muted); background: transparent;
+    box-shadow: none; border-color: transparent; transform: none; translate: none;
+  }
+  #studio-navigation-drawer .studio-nav-item.is-active {
+    background: var(--studio-control-tint); color: var(--studio-text);
+    font-weight: 650; border-color: transparent; box-shadow: none;
+  }
+  #studio-navigation-drawer .studio-nav-item .studio-symbol-tile {
+    width: 28px !important; height: 28px !important; flex: 0 0 28px !important;
+    border-radius: 9px; transform: none;
+    box-shadow: inset 0 1px 0 #ffffff30, 0 1px 2px #0000000a;
+  }
+  #studio-navigation-drawer .studio-nav-item .studio-symbol-tile > svg { width: 17px !important; height: 17px !important; filter: none; }
+  #studio-navigation-drawer .studio-nav-text { min-width: 0; overflow-wrap: anywhere; }
+  #studio-navigation-drawer .studio-nav-group + .studio-nav-group { margin-top: 4px; }
+  #studio-navigation-drawer .studio-nav-group-toggle {
+    min-height: 44px; padding: 9px 10px; margin: 0;
+    font-size: 10px; font-weight: 650; letter-spacing: .07em; border-radius: 10px;
+  }
+  #studio-navigation-drawer .studio-sidebar-bottom {
+    min-width: 0; margin: 0; padding: 6px 2px 0;
+    border-top: 1px solid var(--studio-border);
+    background: var(--studio-nav-surface, var(--studio-surface));
+  }
+  #studio-navigation-drawer .studio-sidebar-utilities { gap: 4px; }
+  #studio-navigation-drawer .studio-sidebar-profile { min-width: 0; padding: 8px 2px 0; gap: 9px; }
+  #studio-navigation-drawer .studio-sidebar-profile .studio-avatar { width: 36px; height: 36px; flex: 0 0 36px; font-size: 11px; }
+  #studio-navigation-drawer .studio-sidebar-profile strong {
+    display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 12px; line-height: 1.4;
+  }
+  #studio-navigation-drawer .studio-sidebar-profile small { margin-top: 2px; font-size: 10px; line-height: 1.4; }
+  #studio-navigation-drawer .studio-sidebar-profile button { width: 44px; min-width: 44px; height: 44px; padding: 0; margin: 0; }
+}

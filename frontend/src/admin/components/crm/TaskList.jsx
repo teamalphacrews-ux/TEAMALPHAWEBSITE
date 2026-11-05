@@ -127,7 +127,7 @@ export default function TaskList({ leadId, tasks: initialTasks = [] }) {
           </p>
         </div>
         <button
-          onClick={() => setIsAdding(!isAdding)}
+          aria-label={isAdding ? "Close new task" : "Add task"} aria-expanded={isAdding} onClick={() => setIsAdding(!isAdding)}
           className={`p-2 rounded-xl transition-all shadow-sm ${isAdding ? 'bg-charcoal text-white' : 'bg-ivory text-warmgray hover:bg-charcoal hover:text-white'}`}
         >
           {isAdding ? <X size={18} /> : <Plus size={18} />}
@@ -159,7 +159,7 @@ export default function TaskList({ leadId, tasks: initialTasks = [] }) {
         {tasks.length > 0 ? tasks.map((task) => (
           <div key={task._id} className="flex items-center gap-4 group/item p-3 hover:bg-ivory/30 rounded-2xl transition-all border border-transparent hover:border-ivory/50">
             <button
-              onClick={() => toggleTask(task._id)}
+              aria-label={task.status === "completed" ? `Reopen task: ${task.title}` : `Complete task: ${task.title}`} aria-pressed={task.status === "completed"} onClick={() => toggleTask(task._id)}
               className={`transition-all transform active:scale-90 ${task.status === "completed" ? "text-green-500" : "text-warmgray hover:text-charcoal"}`}
             >
               {task.status === "completed" ? (
@@ -178,8 +178,8 @@ export default function TaskList({ leadId, tasks: initialTasks = [] }) {
                     onChange={(e) => setEditValue(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && saveEdit(task._id)}
                   />
-                  <button onClick={() => saveEdit(task._id)} className="text-green-600 p-1"><Check size={16} /></button>
-                  <button onClick={() => setEditingId(null)} className="text-red-400 p-1"><X size={16} /></button>
+                  <button aria-label="Save task title" title="Save task title" onClick={() => saveEdit(task._id)} className="text-green-600 p-1"><Check size={16} /></button>
+                  <button aria-label="Cancel task editing" title="Cancel task editing" onClick={() => setEditingId(null)} className="text-red-400 p-1"><X size={16} /></button>
                 </div>
               ) : (
                 <div>
@@ -198,13 +198,13 @@ export default function TaskList({ leadId, tasks: initialTasks = [] }) {
             {!editingId && (
               <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-all">
                 <button
-                  onClick={() => startEdit(task)}
+                  aria-label="Edit task" title="Edit task" onClick={() => startEdit(task)}
                   className="p-1.5 text-warmgray hover:text-charcoal transition-all"
                 >
                   <Edit3 size={14} />
                 </button>
                 <button
-                  onClick={() => deleteTask(task._id)}
+                  aria-label="Delete task" title="Delete task" onClick={() => deleteTask(task._id)}
                   className="p-1.5 text-warmgray hover:text-red-500 transition-all"
                 >
                   <Trash2 size={14} />

@@ -1,10 +1,12 @@
+import StudioButton from '../common/StudioButton';
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Upload, Link as LinkIcon, Info, Loader2, Calendar } from "lucide-react";
+import { motion as Motion, AnimatePresence } from "framer-motion";
+import { X, Upload, Link as LinkIcon, Info, Calendar } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../../../utils/apiConfig";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 
 export default function CreateEventModal({ isOpen, onClose, clientId, onEventCreated }) {
   const [name, setName] = useState("");
@@ -28,6 +30,7 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!name || !driveLink) return toast.error("Event Name and Drive Link are required.");
 
     setIsSubmitting(true);
@@ -42,7 +45,7 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
 
     try {
       const res = await axios.post(`${API_BASE_URL}/api/drive-gallery/${clientId}/events`, formData, {
-        headers: { 
+        headers: {
           'x-auth-token': token,
           'Content-Type': 'multipart/form-data'
         }
@@ -72,13 +75,13 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
-        <motion.div 
+        <Motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose}
           className="absolute inset-0 bg-white/40 backdrop-blur-md"
         />
-        
-        <motion.div 
+
+        <Motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
@@ -89,7 +92,7 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
           <div className="p-8 border-b border-black/5 bg-linear-to-br from-white/50 to-transparent shrink-0">
             <h2 className="page-title text-3xl font-bold">Add New Event</h2>
             <p className="text-[10px] uppercase font-bold tracking-[0.4em] text-[#cfe8d5] mt-2">Initialize Collection</p>
-            <button onClick={onClose} className="absolute top-8 right-8 p-3 hover:bg-black/5 rounded-full transition-all">
+            <button aria-label="Close event form" title="Close event form" onClick={onClose} className="absolute top-8 right-8 p-3 hover:bg-black/5 rounded-full transition-all">
               <X size={20} className="text-[#8a8a8a]" />
             </button>
           </div>
@@ -97,7 +100,7 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
           <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto custom-scrollbar">
             <div className="space-y-3">
               <label className="text-[10px] uppercase font-bold tracking-widest text-[#8a8a8a] ml-1">Event Name</label>
-              <input 
+              <input
                 type="text" placeholder="e.g. Wedding Ceremony, Engagement..."
                 value={name} onChange={(e) => setName(e.target.value)}
                 className="search-bar w-full py-4 px-6 focus:ring-4 focus:ring-[#cfe8d5]/40 outline-none transition-all placeholder:text-[#8a8a8a] text-sm"
@@ -110,8 +113,8 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
                 {thumbnailPreview ? (
                   <div className="relative aspect-[4/3] rounded-3xl overflow-hidden border-2 border-dashed border-[#cfe8d5] group-hover:border-[#cfe8d5]/80 transition-all">
                     <img src={thumbnailPreview} className="w-full h-full object-cover" alt="Preview" />
-                    <button 
-                      type="button" onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); }}
+                    <button
+                      type="button" aria-label="Remove selected event thumbnail" title="Remove thumbnail" onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); }}
                       className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black transition-all backdrop-blur-md"
                     >
                       <X size={14} />
@@ -132,7 +135,7 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <label className="text-[10px] uppercase font-bold tracking-widest text-[#8a8a8a] ml-1 flex items-center gap-2"><Calendar size={12}/> Event Date</label>
-                <input 
+                <input
                   type="date"
                   value={eventDate} onChange={(e) => setEventDate(e.target.value)}
                   className="search-bar w-full py-4 px-6 outline-none transition-all text-sm"
@@ -140,7 +143,7 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
               </div>
               <div className="space-y-3">
                 <label className="text-[10px] uppercase font-bold tracking-widest text-[#8a8a8a] ml-1 flex items-center gap-2"><LinkIcon size={12}/> Drive Content</label>
-                <input 
+                <input
                   type="url" placeholder="Paste Drive Folder Link"
                   value={driveLink} onChange={(e) => setDriveLink(e.target.value)}
                   className="search-bar w-full py-4 px-6 outline-none transition-all text-sm"
@@ -155,14 +158,9 @@ export default function CreateEventModal({ isOpen, onClose, clientId, onEventCre
               </p>
             </div>
 
-            <button 
-              type="submit" disabled={isSubmitting}
-              className="add-btn w-full py-5 text-sm tracking-[0.4em] shadow-xl shadow-[#cfe8d5]/30 disabled:opacity-50"
-            >
-              {isSubmitting ? <Loader2 className="animate-spin mx-auto" /> : "Deploy Event Collection"}
-            </button>
+            <StudioButton type="submit" variant="primary" fullWidth icon={Calendar} loading={isSubmitting} loadingLabel="Creating event collection">Create event collection</StudioButton>
           </form>
-        </motion.div>
+        </Motion.div>
       </div>
     </AnimatePresence>
   );

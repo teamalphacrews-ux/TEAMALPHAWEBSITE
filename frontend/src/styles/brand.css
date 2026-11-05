@@ -1,0 +1,13 @@
+:root {
+  --brand-ink: #141414;
+  --brand-paper: #f6f3ed;
+  --brand-surface: #faf9f6;
+  --brand-champagne: #c4ae8a;
+  --brand-stone: #d8d3ca;
+  --brand-muted: #766b58;
+  --brand-accent: #80623b;
+  --brand-focus: #96784b;
+  --brand-serif: "Playfair Display", "Iowan Old Style", Georgia, serif;
+  --brand-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --brand-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}

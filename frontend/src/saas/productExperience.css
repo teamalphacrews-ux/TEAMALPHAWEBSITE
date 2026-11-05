@@ -1,0 +1,138 @@
+/* Product storytelling and interaction layer. Kept inside the public product site. */
+.sos-product .sos-preview-tools{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;background:#161923;color:#d5d8e4;border-bottom:1px solid #34394b}
+.sos-preview-tools>[role=tablist]{display:flex;gap:4px;min-width:0}
+.sos-product .sos-preview-tools button{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:8px;min-height:40px;padding:8px 12px;font-size:12px;background:transparent;color:#a6aec5;white-space:nowrap}
+.sos-product .sos-preview-tools button[aria-selected=true]{background:#eef0f8;color:#1a2030;box-shadow:0 2px 8px #0002}
+.sos-product .sos-preview-tools button:hover{border-color:#67718c;color:#f8f9ff}
+.sos-product .sos-preview-tools button[aria-selected=true]:hover{color:#1a2030}
+.sos-product .sos-preview-tools .sos-preview-theme{border-color:#47516a;color:#e0e5f5}
+.sos-product-preview>[role=tabpanel]{outline-offset:-4px}
+@media(max-width:600px){.sos-product .sos-preview-tools{padding:7px;gap:5px}.sos-product .sos-preview-tools button{font-size:10px;padding:8px;gap:5px;min-height:42px}.sos-preview-tools>[role=tablist]{gap:1px}.sos-preview-tools .sos-preview-theme>span{display:none}.sos-product .sos-preview-tools .sos-preview-theme{width:36px;min-width:36px;padding:7px}.sos-preview-tools>[role=tablist] button>svg{width:13px;height:13px}}
+.sos-product{--sos-line:#2a2b34;background:#08090c;color:#f5f5fa}
+.sos-product .sos-header{background:#08090cdd;border-bottom-color:#ffffff0b}
+.sos-product .sos-brand>strong{letter-spacing:-.05em}
+.sos-brand-ultra{font-size:8px;letter-spacing:.14em;padding:4px 6px;border:1px solid #8588b951;border-radius:5px;margin-left:1px;color:#b4bcff}
+.sos-product #sos-main{scroll-margin-top:90px}
+.sos-launch{position:relative;isolation:isolate;overflow:clip;padding:85px 0 25px}
+.sos-launch-halo{position:absolute;z-index:-1;inset:0;pointer-events:none;overflow:hidden}
+.sos-launch-halo:before{content:"";position:absolute;inset:0;background-image:linear-gradient(#ffffff03 1px,transparent 1px),linear-gradient(90deg,#ffffff03 1px,transparent 1px);background-size:90px 90px;mask-image:linear-gradient(#000,transparent 70%)}
+.sos-launch-halo i{position:absolute;width:800px;height:400px;right:-300px;top:150px;background:radial-gradient(ellipse,#4c4fff24,transparent 66%);transform:rotate(-30deg)}
+.sos-launch-halo i:last-child{width:750px;height:500px;right:auto;left:-400px;top:550px;background:radial-gradient(ellipse,#4b83ff24,transparent 65%)}
+.sos-launch-kicker{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:32px;font-size:10px;letter-spacing:.13em;color:#a2a4b8}
+.sos-launch-kicker>span{display:flex;align-items:center;gap:9px}
+.sos-launch-kicker i,.sos-showcase-label i{width:6px;height:6px;border-radius:50%;background:#9fafff;box-shadow:0 0 12px #8197ff80}
+.sos-launch-kicker>small{font-size:9px;color:#b4b7c9;letter-spacing:.09em;border:1px solid #32343e;border-radius:6px;padding:4px 8px;white-space:nowrap}
+.sos-launch-intro{display:flex;flex-direction:column;align-items:center;gap:27px;text-align:center}
+.sos-launch-headline{position:relative;isolation:isolate;width:100%;max-width:1100px}
+.sos-headline-glow{position:absolute;z-index:-1;inset:-85px -12% -90px;pointer-events:none}
+.sos-headline-glow i{position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse at 50% 50%,#245dff70 0%,#1746bd40 32%,#10256118 53%,transparent 72%);opacity:.9}
+.sos-headline-glow i:nth-child(2){inset:8% 25% 0 3%;background:radial-gradient(ellipse,#458aff64 0%,#2968ed36 32%,transparent 68%);opacity:.8;transform:translate3d(-5%,5%,0) scale(.9)}
+.sos-headline-glow i:nth-child(3){inset:20% 5% 12% 35%;background:radial-gradient(ellipse,#387aff68 0%,#1c4fdc30 38%,transparent 70%);opacity:.7;transform:translate3d(4%,-6%,0)}
+@media(prefers-reduced-motion:no-preference){
+  .sos-headline-glow i{animation:sos-blue-glow-breathe 12s ease-in-out infinite alternate}
+  .sos-headline-glow i:nth-child(2){animation:sos-blue-glow-drift 15s -5s ease-in-out infinite alternate}
+  .sos-headline-glow i:nth-child(3){animation:sos-blue-glow-flow 10s -3s ease-in-out infinite alternate}
+  @keyframes sos-blue-glow-breathe{from{transform:scale(.9,.88);opacity:.7}to{transform:scale(1.07,1.13);opacity:1}}
+  @keyframes sos-blue-glow-drift{from{transform:translate3d(-8%,8%,0) scale(.9);opacity:.6}to{transform:translate3d(18%,-7%,0) scale(1.12);opacity:.95}}
+  @keyframes sos-blue-glow-flow{from{transform:translate3d(7%,-12%,0) scale(1.08);opacity:.55}to{transform:translate3d(-17%,12%,0) scale(.94);opacity:.9}}
+}
+@media(max-width:600px){.sos-headline-glow{inset:-55px -20% -55px}.sos-headline-glow i{background:radial-gradient(ellipse,#245dff60 0%,#1746bd30 35%,transparent 70%)}}
+.sos-product .sos-launch h1{font-size:clamp(52px,5.5vw,88px);font-weight:550;letter-spacing:-.065em;line-height:1.04;max-width:1100px;margin-inline:auto}
+.sos-launch h1>span{background:linear-gradient(115deg,#fcfdff 0%,#b2c1ff 48%,#c8b0fc 100%);color:transparent;background-clip:text;-webkit-background-clip:text}
+.sos-launch-pitch{padding-bottom:7px;max-width:640px;margin-inline:auto}
+.sos-product .sos-launch-pitch>p{color:#a4a7b6;font-size:17px;line-height:1.8;max-width:590px;margin-inline:auto}
+.sos-launch-actions{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;margin-top:25px}
+.sos-launch-actions>.sos-button{font-size:13px!important;padding:14px 17px;gap:18px;background:#f3f4ff;min-height:47px;box-shadow:0 4px 20px #ffffff12}
+.sos-launch-tour{display:flex;align-items:center;gap:9px;font-size:12px;color:#b5b8cb!important;padding-block:8px}
+.sos-launch-tour>svg{border:1px solid #575b76;width:27px;height:27px;padding:7px;border-radius:50%}
+.sos-launch-tour:hover{color:white!important}
+.sos-launch-audiences{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;max-width:1000px;margin:48px auto 0;padding-top:23px;border-top:1px solid #ffffff12}
+.sos-launch-audiences>a{display:flex;align-items:center;gap:13px;min-height:53px;padding:7px 10px;border-radius:9px;transition:background .2s,color .2s}
+.sos-launch-audiences>a:hover{background:#ffffff06}
+.sos-launch-audiences>a>svg:first-child{color:#a2adc9;width:22px;height:22px}
+.sos-launch-audiences>a>svg:last-child{margin-left:auto;color:#767d94}
+.sos-launch-audiences>a>span{font-size:12px;color:#838b9f;line-height:1.7}
+.sos-launch-audiences strong{display:block;color:#d6d8e3;font-size:13px;font-weight:400}
+.sos-launch-audiences>a.sos-launch-mobile{display:block;font-size:13px;line-height:1.7;padding-left:25px;border-left:1px solid #ffffff12;border-radius:0}
+.sos-launch-mobile>span{display:flex;align-items:center;gap:12px;color:#8b91a5;font-size:12px}
+.sos-showcase-frame{position:relative;margin-top:0;padding:1px 16px 0;border:1px solid #617ab35c;border-radius:22px;background:radial-gradient(ellipse at 50% -50%,#517aff66,transparent 75%),linear-gradient(135deg,#171d30,#10101d 60%,#29203d);box-shadow:0 0 80px #2b3fba16,0 25px 60px #0005}
+.sos-showcase-frame:after{content:"";position:absolute;pointer-events:none;inset:-1px 20% auto;height:1px;background:linear-gradient(90deg,transparent,#b1c2ff,transparent)}
+.sos-showcase-frame{isolation:isolate;perspective:1600px;padding:1px 28px 0;background:radial-gradient(ellipse at 52% -30%,#588cffaa,transparent 68%),radial-gradient(ellipse at 0 90%,#5556e154,transparent 52%),linear-gradient(130deg,#17264b,#202248 60%,#422d5f);border-color:#99adf760;box-shadow:0 -25px 100px #3566ff15,0 30px 100px #0009}
+.sos-showcase-frame:before{content:"";position:absolute;pointer-events:none;inset:0;z-index:-1;border-radius:inherit;background:radial-gradient(500px circle at var(--light-x,50%) var(--light-y,0%),#8eb7ff4d,transparent 75%)}
+.sos-showcase-frame .sos-demo{transform:rotateX(var(--scene-x,0deg)) rotateY(var(--scene-y,0deg));transition:transform .4s ease-out;transform-origin:center;box-shadow:0 22px 65px #040824aa,0 0 0 1px #b0b9ff1f}
+.sos-showcase-beams{position:absolute;inset:-12% 0 0;overflow:hidden;border-radius:25px;z-index:-1;pointer-events:none;mask-image:linear-gradient(transparent,#000 20%,#000 75%,transparent)}
+.sos-showcase-beams i{position:absolute;left:12%;top:0;width:35%;height:130%;transform:rotate(-35deg);background:linear-gradient(90deg,transparent,#97b0ff12,transparent);animation:sos-beam-shift 14s ease-in-out infinite alternate}
+.sos-showcase-beams i:nth-child(2){left:45%;animation-delay:-6s;background:linear-gradient(90deg,transparent,#daa5ff14,transparent)}
+.sos-showcase-beams i:nth-child(3){left:80%;animation-delay:-10s}
+.sos-showcase-label{padding-block:22px}.sos-showcase-caption{padding-block:20px}
+@keyframes sos-beam-shift{to{transform:translateX(55%) rotate(-20deg);opacity:.5}}
+/* The outer stage stays still while the screen unfolds in either scroll direction. */
+.sos-showcase-stage{position:relative;margin-top:clamp(110px,11vw,170px);perspective:1800px}
+.sos-showcase-scroll-cue{position:absolute;bottom:calc(100% + 36px);inset-inline:0;display:flex;flex-direction:column;align-items:center;gap:14px;color:#9ca9ce;font-size:9px;letter-spacing:.2em;pointer-events:none}
+.sos-showcase-scroll-cue:before{content:"";width:1px;height:28px;background:linear-gradient(transparent,#8a9eea80)}
+.sos-showcase-stage .sos-showcase-frame{transform:translate3d(0,var(--showcase-lift,0px),0) rotateX(var(--showcase-tilt,0deg)) scale(var(--showcase-scale,1));opacity:var(--showcase-opacity,1);transform-origin:50% var(--showcase-origin,0%);transition:transform .18s ease-out,opacity .18s ease-out}
+.sos-showcase-stage .sos-showcase-frame:after{opacity:calc(.25 + var(--showcase-progress,1)*.75);box-shadow:0 0 24px #9cbaff80}
+.sos-showcase-stage:focus-within .sos-showcase-frame{transform:none;opacity:1}
+@media(max-width:600px){.sos-showcase-stage{margin-top:105px;perspective:1200px}.sos-showcase-scroll-cue{bottom:calc(100% + 25px);font-size:8px;gap:10px}.sos-showcase-scroll-cue:before{height:20px}}
+@media(prefers-reduced-motion:reduce){.sos-showcase-stage .sos-showcase-frame{transform:none!important;opacity:1;transition:none}}
+
+.sos-showcase-label{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:17px 6px;font-size:10px;letter-spacing:.06em;color:#9eacc9}
+.sos-showcase-label>span,.sos-showcase-label>a{display:flex;align-items:center;gap:8px}
+.sos-showcase-label>a{color:#c7cee2;letter-spacing:0;font-size:11px}
+.sos-showcase-frame .sos-demo{margin:0;border-radius:12px;border-color:#424c6d;box-shadow:0 15px 40px #0004}
+.sos-showcase-caption{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:15px 5px;color:#a3adc5;font-size:10px}
+.sos-showcase-caption>span:last-child{color:#8b91ad}
+.sos-product .sos-demo-chrome>small{font-size:9px}
+.sos-demo-reset{font-size:10px!important;background:transparent;border:0;color:var(--demo-muted);text-decoration:underline;text-underline-offset:3px;padding:6px}
+.sos-product .sos-demo-pulses article{cursor:pointer;transition:transform .25s,box-shadow .25s}
+.sos-demo-pulses article:hover{transform:translateY(-4px);box-shadow:0 8px 20px #0002}
+.sos-demo-pulse-link{position:absolute;inset:0;z-index:3;border:0;border-radius:inherit;background:transparent}
+.sos-demo-pulse-link:focus-visible{outline-offset:-4px!important;outline-color:#26385a!important}
+.sos-demo-task>button{display:grid;place-items:center;min-width:28px;min-height:28px;padding:0;border:1px solid var(--demo-muted);border-radius:8px;color:var(--demo-text);background:transparent}
+.sos-demo-task.is-done>button{background:#acb9ff;border-color:#acb9ff;color:#202444}
+.sos-demo-task.is-done strong{text-decoration:line-through;color:var(--demo-muted)}
+.sos-demo-task>button:hover{border-color:#acb9ff;background:#9cabf42e}
+.sos-demo-feedback{min-height:18px;font-size:9px;color:var(--demo-muted);margin-top:10px!important}
+.sos-demo-bottom{animation:sos-panel-enter .35s ease-out}
+.sos-workflow-description{animation:sos-panel-enter .4s ease-out}
+.sos-workflow-advance{display:flex;gap:10px;align-items:center;color:#d2d9ff;border:1px solid #5b6693;background:#333e5c55;border-radius:8px;font-size:12px!important;padding:12px 15px;margin-top:22px;transition:background .2s,transform .2s}
+.sos-workflow-advance:hover{background:#3c4a7866;transform:translateX(2px)}
+.sos-product .sos-workflow-section{padding-top:35px}
+.sos-workflow-tabs>button[aria-selected=true]{box-shadow:inset 0 -2px 0 #9baeff}
+.sos-workflow-visual{transition:box-shadow .3s,transform .3s}
+.sos-workflow-panel:hover .sos-workflow-visual{box-shadow:0 25px 65px #0005;transform:translateY(-3px)}
+.sos-product .sos-smart-copy h2{font-size:clamp(38px,4.1vw,58px)}
+.sos-smart-copy .sos-smart-subheading{font-size:17px;font-weight:500;color:#deddf3;margin-bottom:15px}
+.sos-client-demo{position:relative}
+.sos-client-step-action{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;padding:13px 15px;margin-top:16px;border:1px solid #515474;background:#2d3049;color:#cfd6ff;border-radius:8px;font-size:11px!important;text-align:left;transition:background .2s}
+.sos-client-step-action:hover{background:#404869}
+.sos-product .sos-client-support{border:1px solid #626882;min-height:33px;border-radius:7px;cursor:pointer;font-size:10px;padding:7px 10px;gap:6px;display:flex;align-items:center}
+.sos-client-chat{position:absolute;right:18px;bottom:65px;width:min(320px,calc(100% - 36px));padding:18px;background:#292c40;border:1px solid #6a6f95;border-radius:15px;box-shadow:0 16px 50px #0009;z-index:5;animation:sos-panel-enter .25s ease-out}
+.sos-client-chat>header{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.sos-client-chat{scroll-margin-top:95px;scroll-margin-bottom:25px}.sos-client-chat:focus{outline:none}
+.sos-client-chat>header>button{background:transparent;color:#c3c8e0;border:0;display:grid;place-items:center;padding:7px}
+.sos-product .sos-client-chat>p{font-size:12px;line-height:1.7;border-radius:10px;padding:11px 13px;background:#41465e;margin-top:14px;color:#e1e4f6}
+.sos-product .sos-client-chat>p:nth-of-type(2){background:#303649;color:#b7c0db;margin-left:20px}
+.sos-client-chat>small{display:block;font-size:10px;color:#a1aac7;margin-top:15px}
+.sos-client-chat>a{display:inline-flex;font-size:11px;gap:8px;align-items:center;color:#cdd7ff;margin-top:13px}
+.sos-product .sos-client-panel{animation:sos-panel-enter .35s ease-out}
+.sos-product .sos-toolkit-grid>article{transition:transform .35s,border-color .35s,box-shadow .35s}
+.sos-toolkit-grid>article:hover{transform:translateY(-5px);border-color:#666780;box-shadow:0 25px 65px #0004}
+.sos-feature-art>div{transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+.sos-toolkit-grid>article:hover .sos-feature-art>div{transform:translateY(-8px) rotate(-1deg)}
+.sos-integrations-grid>article{transition:background .25s,border-color .25s}
+.sos-integrations-grid>article:hover{background:#ffffff04;border-color:#6b6c85}
+.sos-integration-icon{transition:transform .25s}
+.sos-integrations-grid>article:hover .sos-integration-icon{transform:rotate(-6deg) scale(1.06)}
+.sos-plan-cards>article{transition:transform .25s,border-color .25s}
+.sos-plan-cards>article:hover{transform:translateY(-5px);border-color:#9fa6ca}
+.sos-product .sos-final-section{background:radial-gradient(ellipse at 50% 150%,#343d793b,transparent 70%),#101117}
+.sos-product .sos-final-section h2>span{background:linear-gradient(110deg,#cfdfff,#b3a9ed);color:transparent;background-clip:text;-webkit-background-clip:text}
+.sos-reveal{animation:sos-panel-enter .65s cubic-bezier(.2,.7,.2,1) both}
+@keyframes sos-panel-enter{from{opacity:.45;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:no-preference){.sos-launch h1{animation:sos-headline-arrive .8s cubic-bezier(.16,1,.3,1) both}.sos-launch-pitch{animation:sos-panel-enter .8s .15s both}.sos-launch-audiences{animation:sos-panel-enter .8s .25s both}.sos-launch-halo i{animation:sos-halo-drift 18s ease-in-out infinite alternate}.sos-launch-halo i:last-child{animation-delay:-9s}@keyframes sos-headline-arrive{from{opacity:0;transform:translateY(24px);filter:blur(7px)}to{opacity:1;transform:none;filter:blur(0)}}@keyframes sos-halo-drift{to{transform:translate(50px,-30px) rotate(0deg)}}}
+@media(min-width:1700px){.sos-product .sos-launch h1{font-size:88px}.sos-launch{padding-top:85px}}
+@media(max-width:1100px){.sos-launch{padding-top:45px}.sos-launch-intro{gap:25px}.sos-product .sos-launch h1{font-size:59px}.sos-product .sos-launch-pitch>p{font-size:15px}.sos-launch-actions{gap:13px}.sos-launch-audiences{gap:15px}.sos-launch-audiences>a.sos-launch-mobile{padding-left:15px}.sos-launch-audiences strong{font-size:12px}}
+@media(max-width:850px){.sos-launch-intro{gap:23px}.sos-product .sos-launch h1{font-size:70px;max-width:720px}.sos-product .sos-launch-pitch>p{max-width:600px;font-size:16px}.sos-launch-actions{margin-top:19px}.sos-launch-audiences{grid-template-columns:1fr 1fr;margin-top:27px}.sos-launch-audiences>a.sos-launch-mobile{grid-column:1/-1;padding:5px 10px;border:0;display:flex;justify-content:space-between}.sos-demo-topline>div{gap:6px}}
+@media(max-width:600px){.sos-launch{padding-top:35px}.sos-launch-kicker{gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:26px}.sos-launch-kicker>span{font-size:8px;line-height:1.7;letter-spacing:.08em}.sos-launch-kicker>small{font-size:7px;padding:4px 6px}.sos-product .sos-launch h1{font-size:clamp(43px,11vw,60px);letter-spacing:-.055em;line-height:1.08}.sos-launch-intro{gap:22px}.sos-product .sos-launch-pitch>p{font-size:15px;line-height:1.75}.sos-launch-actions{gap:18px}.sos-launch-actions>.sos-button{min-height:46px;font-size:12px!important;padding:12px 15px;gap:13px}.sos-launch-tour{font-size:11px}.sos-launch-audiences{gap:7px;margin-top:25px;padding-top:15px}.sos-launch-audiences>a{gap:9px;padding:9px 3px;align-items:start}.sos-launch-audiences>a>svg:first-child{width:17px;height:20px;margin-top:3px}.sos-launch-audiences>a>svg:last-child{display:none}.sos-launch-audiences>a>span{font-size:11px}.sos-launch-audiences strong{font-size:11px;max-width:140px}.sos-launch-audiences>a.sos-launch-mobile{display:block;padding:12px 3px 0;font-size:13px}.sos-launch-mobile>span{font-size:12px}.sos-showcase-frame{padding:1px 8px 0;border-radius:16px}.sos-showcase-label{font-size:8px;padding:13px 3px}.sos-showcase-label>a{font-size:9px;gap:5px}.sos-showcase-label>a>svg:first-child{display:none}.sos-showcase-label>span{max-width:150px;font-size:7px;gap:5px}.sos-showcase-caption{display:block;padding:13px 3px;font-size:9px;line-height:1.7}.sos-showcase-caption>span{display:block}.sos-product .sos-demo-chrome>small{font-size:7px}.sos-showcase-frame .sos-demo-main{padding-inline:11px}.sos-demo-reset{font-size:9px!important;padding:5px}.sos-demo-feedback{font-size:10px}.sos-product .sos-smart-copy h2{font-size:42px}.sos-smart-copy .sos-smart-subheading{font-size:16px}.sos-brand-ultra{font-size:6px;padding:3px 4px}.sos-product .sos-brand{gap:7px}.sos-product .sos-header-actions>.sos-button>svg{display:none}}
+@media(prefers-reduced-motion:reduce){.sos-product .sos-reveal,.sos-product .sos-client-chat,.sos-product .sos-client-panel,.sos-product .sos-demo-bottom,.sos-product .sos-workflow-description,.sos-showcase-beams i{animation:none}.sos-product :is(.sos-toolkit-grid>article,.sos-feature-art>div,.sos-integration-icon,.sos-workflow-visual,.sos-plan-cards>article,.sos-demo-pulses article,.sos-showcase-frame .sos-demo){transition:none;transform:none!important}}

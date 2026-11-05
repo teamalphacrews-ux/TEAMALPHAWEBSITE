@@ -64,15 +64,8 @@ const GoogleDriveService = {
                 fields: 'id, name, mimeType, createdTime, thumbnailLink, webViewLink, webContentLink',
             });
 
-            // Make the file publicly accessible so thumbnails/previews work
-            await drive.permissions.create({
-                fileId: response.data.id,
-                requestBody: {
-                    role: 'reader',
-                    type: 'anyone',
-                },
-            });
-
+            // Preserve Drive's existing/default access. Studio previews use
+            // authenticated streaming rather than granting anonymous access.
             return response.data;
         } catch (error) {
             console.error('Google Drive Upload Error:', error.message);
