@@ -12,6 +12,7 @@ import {formatWorkspaceDate,formatWorkspaceTime,resolveWorkspaceTimezone} from '
 import {shiftDayKey,studioDayKey} from '../../utils/studioTime';
 import {recordId,eventProjectContext,crewContact,phoneHref,emailHref,directionsHref,validDay,shootEvents} from '../../utils/projectWorkspace';
 import '../components/projects/projectWorkspace.css';
+import './schedulingRefinement.css';
 export default function ShootDay(){
  const {user}=useAuth();
  const [params,setParams]=useSearchParams(),{preferences}=useStudioPreferences(),{identity}=useStudioIdentity(),timezone=resolveWorkspaceTimezone(preferences,identity?.timezone),displayPreferences={...preferences,timezone};

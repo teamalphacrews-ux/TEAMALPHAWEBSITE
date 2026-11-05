@@ -36,6 +36,7 @@ import {
 } from "../components/operations/operationsUtils";
 import "./studioOperations.css";
 import ApplyProductionTemplate from '../components/settings/ApplyProductionTemplate';
+import './financeProductionRefinement.css';
 
 const getLeadId = (task) =>
   typeof task.lead === "object" ? task.lead?._id : task.lead;
@@ -328,13 +329,13 @@ export default function PostProduction() {
   };
 
   return (
-    <div className="studio-ops">
+    <div className="studio-ops production-workspace-refined">
       <div className="studio-page-heading">
         <div>
-          <p className="studio-eyebrow">Production workspace</p>
+
           <h1>Post-production</h1>
           <p className="studio-muted">
-            A clear path from the last frame to the final delivery.
+            Assign the next step, track deadlines and keep client updates clear.
           </p>
         </div>
         <div className="studio-heading-actions"><ApplyProductionTemplate onApplied={fetchWorkspace} initialProject={projectFilter === 'all' || projectFilter === 'unassigned' ? '' : projectFilter} /><button className="studio-button primary" onClick={() => openEditor()}>
@@ -398,7 +399,7 @@ export default function PostProduction() {
                 </span>
               </h2>
               <p className="studio-muted">
-                The work that moves each story forward.
+                Open a task to edit its brief, assignment or client update.
               </p>
             </div>
             <ListChecks size={19} className="ops-quiet-icon" />
@@ -432,6 +433,7 @@ export default function PostProduction() {
                 aria-label="Search tasks or projects"
               />
             </label>
+            <label className="production-project-filter"><span className="ops-sr-only">Project</span>
             <StudioSelect
               className="studio-input ops-select"
               value={projectFilter}
@@ -446,6 +448,7 @@ export default function PostProduction() {
                 </option>
               ))}
             </StudioSelect>
+            </label>
             <label className="ops-sort">
               <ArrowDownWideNarrow size={15} />
               <StudioSelect
@@ -458,6 +461,7 @@ export default function PostProduction() {
               </StudioSelect>
             </label>
           </div>
+          {(query || projectFilter !== "all" || filter !== "all") && <div className="production-filter-feedback"><span>Filtered task view</span><StudioButton variant="ghost" onClick={() => { setQuery(""); setProjectFilter("all"); setFilter("all"); }}>Clear filters</StudioButton></div>}
           {loading ? (
             <OperationsLoading label="Loading production tasks…" />
           ) : loadError && !tasks.length ? (
@@ -487,6 +491,7 @@ export default function PostProduction() {
                     return (
                       <tr role="row"
                         key={task._id}
+                        aria-busy={busyId === task._id}
                         className={done ? "ops-task-done" : ""}
                       >
                         <td role="cell" data-label="Task & project">
@@ -601,12 +606,12 @@ export default function PostProduction() {
               <h3>
                 {tasks.length
                   ? "No tasks match this view"
-                  : "Make room for your next great delivery"}
+                  : "No production tasks yet"}
               </h3>
               <p>
                 {tasks.length
                   ? "Try another search or filter to find your task."
-                  : "Add editing, review and delivery tasks to keep the whole studio on track."}
+                  : "Add editing, review and delivery tasks, or start with a workflow template."}
               </p>
               {tasks.length ? (
                 <button
@@ -639,7 +644,7 @@ export default function PostProduction() {
         </section>
         <aside className="ops-rail">
           <section className="studio-card ops-focus-card">
-            <p className="studio-eyebrow">Keep the momentum</p>
+
             <h2>Delivery focus</h2>
             <p className="studio-muted">The closest deadlines in your queue.</p>
             <div className="ops-next-tasks">
@@ -688,7 +693,7 @@ export default function PostProduction() {
             <span className="ops-progress-icon">
               <Check size={19} />
             </span>
-            <p className="studio-eyebrow">The bigger picture</p>
+
             <h3>
               {loading || loadError
                 ? "Progress unavailable"
@@ -735,7 +740,7 @@ export default function PostProduction() {
           <form
             id="production-task-form"
             onSubmit={saveTask}
-            className="ops-form"
+            className="ops-form production-task-editor"
           >
             {formError && <OperationsError>{formError}</OperationsError>}
             <label className="studio-field">

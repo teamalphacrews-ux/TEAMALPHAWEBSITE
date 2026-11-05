@@ -278,7 +278,7 @@
 .studio-app.studio-app .studio-enquiries-page .studio-crm-table td strong { font-size:13px; line-height:1.5; font-weight:550; color:var(--studio-text); }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-table td small { margin-top:4px; font-size:12px; line-height:1.55; color:var(--studio-muted); }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-table td[data-label="Project value"] { font-variant-numeric:tabular-nums; white-space:nowrap; }
-.studio-app.studio-app .studio-enquiries-page .studio-crm-table td[data-label="Actions"] { width:124px; }
+.studio-app.studio-app .studio-enquiries-page .studio-crm-table td[data-label="Actions"] { width:208px; }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-client { gap:12px; min-width:180px; }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-client strong { font-size:14px !important; font-weight:600; }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-client small { max-width:235px; text-overflow:ellipsis; overflow:hidden; }
@@ -289,7 +289,9 @@
 .studio-app.studio-app .studio-enquiries-page .studio-crm-followup-cell.overdue { color:var(--control-danger-ink, #b34c49); }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-clickable-row:hover { background:var(--enquiry-row-hover); outline:0; }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-clickable-row:focus-visible { outline:2px solid var(--control-accent, #245bd8); outline-offset:-2px; background:var(--enquiry-row-hover); }
-.studio-app.studio-app .studio-enquiries-page .studio-crm-row-actions { justify-content:flex-end; gap:4px; }
+.studio-app.studio-app .studio-enquiries-page .studio-crm-row-actions { justify-content:flex-end; gap:8px; }
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-enquiries-page .studio-crm-remove-enquiry { min-height:44px; padding:10px 12px; white-space:nowrap; font-size:12px; }
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-enquiries-page .studio-crm-remove-enquiry[data-action="delete"] { color:var(--studio-danger-ink); }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-table-footer { min-height:56px; padding:12px 20px; gap:12px; color:var(--studio-muted); font-size:12px; }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-table-footer > span { display:block; }
 .studio-app.studio-app .studio-enquiries-page > .studio-details-section { margin-top:20px; }
@@ -340,6 +342,9 @@
  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-enquiries-page .studio-crm-client strong { font-size:15px !important; }
  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-enquiries-page .studio-crm-client small { max-width:none; overflow-wrap:anywhere; white-space:normal; }
  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-enquiries-page .studio-crm-table td[data-label="Actions"] { width:auto; padding-top:12px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-enquiries-page .studio-crm-row-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:stretch; gap:8px; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-enquiries-page .studio-crm-row-actions > button { width:100%; min-width:0; height:100%; min-height:44px; padding:10px 8px; white-space:normal; }
+ .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-enquiries-page .studio-crm-row-actions > button:only-child { grid-column:1/-1; }
  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-enquiries-page .studio-crm-table-footer { padding:12px 2px; border:0; }
  .studio-crm-overlay.studio-crm-overlay .studio-crm-enquiry-detail .studio-crm-detail-grid { display:flex; flex-direction:column; gap:16px; }
  .studio-crm-overlay.studio-crm-overlay .studio-crm-enquiry-detail .studio-crm-detail-grid > .studio-crm-detail-stack { display:contents; }

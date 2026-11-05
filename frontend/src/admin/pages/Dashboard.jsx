@@ -1,7 +1,8 @@
 import { hasFullModuleAccess, canAccessStudioPath } from '../../utils/moduleAccess';
 import { workspacePrimaryItems, workspaceNavigationGroups } from '../components/common/workspaceNavigation';
 import StudioButton from '../components/common/StudioButton';
-import { Fragment, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { motion as Motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -11,10 +12,12 @@ import StudioAppIcon from '../components/common/StudioAppIcon';
 import { useStudioPreferences } from '../components/common/StudioPreferences';
 import OverviewCustomizer from '../components/common/OverviewCustomizer';
 import OverviewFinanceCard from '../components/finance/OverviewFinanceCard';
+import useReducedStudioMotion from '../components/operations/useReducedStudioMotion';
 import { useStudioIdentity } from '../../utils/studioIdentity';
 import { formatWorkspaceDate, formatWorkspaceTime, formatWorkspaceNumber, resolveWorkspaceTimezone } from '../../utils/workspaceLocale';
 import { studioText } from '../../utils/studioTranslations';
 import { dashboardWork, taskIsOverdue } from '../../utils/dashboardData';
+import { buildOverviewGridLayout } from '../../utils/overviewGridLayout';
 import { recordDestination } from '../../utils/studioNavigation';
 import { leadStatusLabel } from '../components/studio/leadUtils';
 import { OverviewWelcome, BookingInsight, RhythmInsight, ActivityInsight, PipelineRings, WeekStrip } from '../components/overview/OverviewInsights';
@@ -23,6 +26,7 @@ import './overviewDashboard.css';
 import './overviewReference.css';
 import './overviewPhone.css';
 import './overviewRecovery.css';
+import './overviewReflow.css';
 
 const API = import.meta.env.VITE_API_URL || '';
 const statusClass = status => status === 'Converted' ? 'green' : ['Meeting', 'Negotiation'].includes(status) ? 'gold' : '';
@@ -37,6 +41,8 @@ export default function Dashboard() {
 function FullDashboard() {
   const { user, logout } = useAuth();
   const { preferences, toggleCard, resetCards, update } = useStudioPreferences();
+  const observedReducedMotion = useReducedStudioMotion();
+  const reducedMotion = preferences.reduceMotion || observedReducedMotion;
   const { identity } = useStudioIdentity();
   const timezone = resolveWorkspaceTimezone(preferences, identity?.timezone);
   const t = text => studioText(preferences.language, text);
@@ -237,22 +243,31 @@ function FullDashboard() {
     financePulse: (<OverviewFinanceCard refreshKey={refreshKey} motionActive={true} remove={remove('financePulse', 'Finance pulse')} />),
   };
 
-  const savedOrder = preferences.cardOrder.filter(id => preferences.visibleCards.includes(id) && cardContent[id]);
   const todayMode = preferences.overviewMode === 'today';
   const overviewContext = todayMode && overview
     ? `${work.todayEvents} ${work.todayEvents === 1 ? 'event' : 'events'} remaining today · ${work.overdueTasks} overdue ${work.overdueTasks === 1 ? 'task' : 'tasks'}`
     : dateFormat(today, { weekday: 'long', day: 'numeric', month: 'short' });
-  const visibleOrder = todayMode ? ['upcomingSchedule','actionQueue','financePulse','recentEnquiries','quickActions'].filter(id=>savedOrder.includes(id)) : savedOrder;
-  const displayOrder=todayMode?['upcomingSchedule','actionQueue','financePulse','recentEnquiries','inspiration','quickActions'].filter(id=>id==='inspiration'?preferences.showInspiration:visibleOrder.includes(id)):[...(preferences.showInspiration?['inspiration']:[]),...visibleOrder];
-  const welcome=<div className={'ov-welcome-slot' + (visibleOrder[0] === 'upcomingSchedule' ? '' : ' is-wide')}><OverviewWelcome key={ideaRevision} name={user?.firstName || identity?.name || 'your studio'} greeting={greeting} date={dateFormat(today, { day: 'numeric', month: 'short', year: 'numeric' })} todayCount={overview ? work.todayEvents : null} pending={summary.pendingTasks} /></div>;
-  const lastInsight = visibleOrder.filter(id => ['bookingMomentum', 'productionPulse', 'activityMap', 'enquiryPipeline'].includes(id)).at(-1);
+  const { visibleOrder, items: layoutItems } = buildOverviewGridLayout(preferences.cardOrder, preferences.visibleCards, {
+    todayMode, showInspiration: preferences.showInspiration, showActivityStreak: preferences.showActivityStreak,
+  });
+  const welcome = <OverviewWelcome key={ideaRevision} name={user?.firstName || identity?.name || 'your studio'} greeting={greeting} date={dateFormat(today, { day: 'numeric', month: 'short', year: 'numeric' })} todayCount={overview ? work.todayEvents : null} pending={summary.pendingTasks} />;
+  const layoutRevision = `${todayMode ? 'today' : 'insights'}:${layoutItems.map(item => item.id).join(',')}`;
   return (
     <div className="studio-overview studio-overview-modern overview-organized studio-overview-reference overview-phone-refined">
       <div className="ov-page-toolbar"><div><span className="ov-page-eyebrow">YOUR CREATIVE WORKSPACE</span><h1>Studio overview</h1><p className="ov-page-context">{overviewContext}</p></div></div>
       {error && <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={() => setRefreshKey(value => value + 1)}><RefreshCw size={14} />Retry</button></div>}
       <div className="ov-view-controls"><div role="group" aria-label="Overview view"><button type="button" aria-pressed={todayMode} onClick={()=>update({overviewMode:'today'})}>Today</button><button type="button" aria-pressed={!todayMode} onClick={()=>update({overviewMode:'insights'})}>Insights</button></div><div className="ov-view-tools">{!todayMode && visibleOrder.includes('actionQueue') && <a className="ov-phone-work-link" href="#overview-work">Jump to work<ArrowDown size={14} aria-hidden="true" /></a>}<Link className="studio-button ov-shoot-day-link" to="/admin/shoot-day" aria-label="Open Shoot day" title="Shoot day"><CalendarDays size={15}/><span>Shoot day</span></Link><button type="button" className="studio-button ov-customize-button" aria-label="Customize overview" title="Customize overview" onClick={() => setCustomizing(true)}><GripVertical size={17}/><span>Customize</span></button></div></div>
       <div className={'ov-reference-grid'+(todayMode?' is-today':'')}>
-        {displayOrder.map(id => id==='inspiration'?<Fragment key={id}>{welcome}</Fragment>:<Fragment key={id}><div className={'ov-reference-slot ov-slot-' + id}>{cardContent[id]}</div>{!todayMode && preferences.showActivityStreak && id === lastInsight && <div className="ov-week-slot"><WeekStrip insights={overview?.insights} /></div>}</Fragment>)}
+        {layoutItems.map(({ id, spans }) => <Motion.div
+          key={id}
+          className={'ov-layout-slot ' + (id === 'inspiration' ? 'ov-welcome-slot' : id === 'activityStreak' ? 'ov-week-slot' : 'ov-reference-slot ov-slot-' + id)}
+          data-overview-slot={id}
+          style={{ '--ov-span-desktop': spans.desktop, '--ov-span-tablet': spans.tablet, '--ov-span-phone': spans.phone }}
+          layout={reducedMotion ? false : 'position'}
+          layoutDependency={layoutRevision}
+          initial={false}
+          transition={{ layout: { duration: reducedMotion ? 0 : 0.28, ease: [0.16, 1, 0.3, 1] } }}
+        >{id === 'inspiration' ? welcome : id === 'activityStreak' ? <WeekStrip insights={overview?.insights} /> : cardContent[id]}</Motion.div>)}
       </div>
 
       {!visibleOrder.length && <div className="studio-card overview-empty"><Sparkles size={24} /><h2>{preferences.visibleCards.length ? 'Choose your daily workspace.' : 'Make room for what matters.'}</h2><p>{preferences.visibleCards.length ? 'Your saved cards are in Insights. Add a schedule or action queue for Today.' : 'Add the cards you need, or restore the default layout.'}</p><div><button type="button" className="studio-button" onClick={() => setCustomizing(true)}>Choose cards</button>{preferences.visibleCards.length ? <button type="button" className="studio-button primary" onClick={() => update({ overviewMode: 'insights' })}>View Insights</button> : <button type="button" className="studio-button primary" onClick={resetCards}>Reset to default</button>}</div></div>}

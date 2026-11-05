@@ -1,0 +1,18 @@
+/* Every rendered row fills the canvas while keeping DOM, focus and visual order aligned. */
+.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .ov-reference-grid > .ov-layout-slot {
+  grid-column: span var(--ov-span-desktop);
+  min-width: 0;
+  order: 0;
+}
+
+@media (max-width: 850px) {
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .ov-reference-grid > .ov-layout-slot {
+    grid-column: span var(--ov-span-tablet);
+  }
+}
+
+@media (max-width: 768px) {
+  .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .studio-overview-reference.overview-organized .ov-reference-grid > .ov-layout-slot {
+    grid-column: span var(--ov-span-phone);
+  }
+}

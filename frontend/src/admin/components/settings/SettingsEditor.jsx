@@ -3,13 +3,14 @@ import StudioButton from '../common/StudioButton';
 import StudioSelect from '../common/StudioSelect';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Upload, Plus, Trash2, ExternalLink, Instagram, Facebook, MessageCircle, CalendarDays, UsersRound, Webhook, Mail } from 'lucide-react';
+import { Upload, Plus, Trash2, ExternalLink, Instagram, Facebook, MessageCircle, UsersRound, Webhook, Mail } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { WorkspaceField, WorkspaceError } from '../operations/WorkspaceUI';
 import { recordError } from '../operations/workspaceData';
 import { operationAuth } from '../operations/operationsUtils';
 import StudioAppIcon from '../common/StudioAppIcon';
+import IntegrationLogo from '../integrations/IntegrationLogo';
 import API from '../../../utils/apiConfig';
 import { studioImageUrl, studioImageFallback, whatsappContactUrl } from '../../../utils/studioIdentity';
 import { confirmProfileImage, isStudioProfileImagePath, profilePhotoRemoval } from '../../../utils/studioProfileImage';
@@ -170,10 +171,14 @@ export default function SettingsEditor({ tab, values, change, changeNested, begi
     <SettingsGroup title="Link lifetime" description="Control how long a new shared client link remains accessible.">{field('Shared link expires after (days)', 'linkExpiryDays', { type: 'number', min: 0, max: 3650, help: '0 keeps a link open until revoked. Separate from the quote acceptance deadline.' }, 'clientLinkDefaults')}<Help>Defaults are saved with new client documents. Manage an existing link’s expiry or revoke it from that document’s sharing controls.</Help></SettingsGroup>
   </>;
   return <><div className="settings-connection-grid">{[
-    ['/admin/email', 'Gmail & Email', 'Review Gmail setup and open your mailbox once connected.', Mail, 'rose'],
-    ['/admin/whatsapp', 'WhatsApp Business', 'Open manual client sharing and your existing WhatsApp workspace.', MessageCircle, 'green'],
-    ['/admin/calendar', 'Google Calendar', 'Manage your connection and sync studio events.', CalendarDays, 'blue'],
-    ['/admin/integrations', 'Website enquiries', 'Review the enquiry webhook and Gmail connection.', Webhook, 'violet'],
+    ['/admin/integrations#assistants', 'ChatGPT', 'Draft client replies, quotation wording and project updates with the OpenAI API.', null, null, 'openai'],
+    ['/admin/integrations#assistants', 'Claude', 'Write and review studio messages with the Anthropic API.', null, null, 'claude'],
+    ['/admin/integrations#assistants', 'OpenClaw', 'Check your private assistant gateway. Drafting requires a restricted agent.', null, null, 'openclaw'],
+    ['/admin/integrations#drive', 'Google Drive', 'Connect your own Drive for encrypted studio recovery copies.', null, null, 'drive'],
+    ['/admin/email', 'Gmail & Email', 'Review Gmail setup and open your mailbox once connected.', null, null, 'gmail'],
+    ['/admin/whatsapp', 'WhatsApp Business', 'Open manual client sharing and your existing WhatsApp workspace.', null, null, 'whatsapp-business'],
+    ['/admin/calendar', 'Google Calendar', 'Manage your connection and sync studio events.', null, null, 'google-calendar'],
+    ['/admin/integrations', 'Website enquiries', 'Review your website enquiry webhook and connected services.', Webhook, 'violet'],
     ['/admin/users', 'Team & access', 'Manage studio team accounts.', UsersRound, 'cyan'],
-  ].filter(([to]) => canAccessStudioPath(user, to)).map(([to, title, copy, icon, tone]) => <Link className="settings-connection" to={to} key={to}><StudioAppIcon icon={icon} tone={tone} size={38} /><h3>{title}</h3><p>{copy}</p><span>Open<ExternalLink size={13} /></span></Link>)}</div><Help>WhatsApp Business, Instagram and Facebook contact links are managed in Studio profile.</Help></>;
+  ].filter(([to]) => canAccessStudioPath(user, to.split('#')[0])).map(([to, title, copy, icon, tone, brand]) => <Link className="settings-connection" to={to} key={title}>{brand ? <IntegrationLogo brand={brand} size={38} /> : <StudioAppIcon icon={icon} tone={tone} size={38} />}<h3>{title}</h3><p>{copy}</p><span>Open<ExternalLink size={13} /></span></Link>)}</div><Help>Assistant drafts are reviewed in Integrations. WhatsApp Business, Instagram and Facebook contact links are managed in Studio profile.</Help></>;
 }

@@ -37,6 +37,7 @@ import {
   ContactConversations,
 } from "../components/contacts/ContactRelatedTables";
 import "./referenceContacts.css";
+import "./projectContactRefinement.css";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 import {ProjectOverview,ProjectOperations} from '../components/projects/ProjectOperations';
 import {useOfflineDraft,OfflineDraftStatus} from '../../offline/OfflineDrafts';
@@ -74,7 +75,7 @@ function StudioProjectWorkspace({id}){
   const noteDraft=useOfflineDraft({kind:'project-note',recordId:id,value:{body:note},dirty:Boolean(note.trim()),onRestore:value=>setNote(value.body||'')});
   if (!detail?.project || String(detail.project._id) !== id)
     return (
-      <div className="reference-workspace">
+      <div className="reference-workspace project-contact-workspace">
         <Link to="/admin/studio-projects" className="reference-back">
           <ArrowLeft size={17} />
           Projects
@@ -153,7 +154,7 @@ function StudioProjectWorkspace({id}){
   const actions = [
     {
       label: "Invoice",
-      description: "Get paid for your services.",
+      description: "Prepare an invoice and payment schedule.",
       icon: ReceiptText,
       action: () => navigate("/admin/invoices/new?" + query),
     },
@@ -171,18 +172,18 @@ function StudioProjectWorkspace({id}){
     },
     {
       label: "Quote",
-      description: "Get your client acceptance before sending an invoice.",
+      description: "Prepare a quote for your client to review.",
       icon: FileText,
       action: () => navigate("/admin/quotations?" + query),
     },
   ];
   return (
-    <div className="reference-workspace project-hub">
+    <div className="reference-workspace project-hub project-contact-workspace project-contact-detail">
       <div className="reference-heading">
         <Link
           to={hasModuleAccess(user, 'contacts') && contact._id ? `/admin/contacts/${contact._id}` : '/admin/studio-projects'}
           className="reference-back"
-          aria-label="Back to client"
+          aria-label={hasModuleAccess(user, 'contacts') && contact._id ? "Back to client" : "Back to projects"}
         >
           <ArrowLeft size={18} />
         </Link>
@@ -199,7 +200,7 @@ function StudioProjectWorkspace({id}){
           ))}
         </StudioSelect>
         <div className="reference-heading-spacer" />
-        <WorkspaceActionMenu label="More">
+        <WorkspaceActionMenu label="Project actions">
             <button onClick={() => setEditing(true)}>Edit project</button>
             <button
               onClick={() => {
@@ -221,12 +222,12 @@ function StudioProjectWorkspace({id}){
         /></div>
       </div>
       <WorkspaceError error={error} retry={reload} />
-      <div className="project-hub-tabs" role="tablist" aria-label="Project sections" onKeyDown={navigateTabs}>{tabs.map(([value,label])=><button type="button" key={value} role="tab" id={`${tabsId}-tab-${value}`} aria-controls={`${tabsId}-panel-${value}`} aria-selected={tab===value} tabIndex={tab===value?0:-1} onClick={()=>setTab(value)}>{label}</button>)}</div>
+      <div className="project-hub-tabs project-contact-detail-tabs" style={{ '--project-contact-tab-count': tabs.length }} role="tablist" aria-label="Project sections" onKeyDown={navigateTabs}>{tabs.map(([value,label])=><button type="button" key={value} role="tab" id={`${tabsId}-tab-${value}`} aria-controls={`${tabsId}-panel-${value}`} aria-selected={tab===value} tabIndex={tab===value?0:-1} onClick={()=>setTab(value)}>{label}</button>)}</div>
       <div className={'reference-detail-grid project'+(tab==='overview'?'':' project-hub-wide')}>
         <div style={{ minWidth: 0 }}>
           {tabs.map(([value])=><div key={value} role="tabpanel" id={`${tabsId}-panel-${value}`} aria-labelledby={`${tabsId}-tab-${value}`} hidden={tab!==value} tabIndex={0}>{tab===value&&<>
           {tab==='overview'&&<ProjectOverview detail={detail} onTab={setTab}/>}
-          {tab==='documents'&&<ReferenceSection title={hasDocuments ? "Documents" : "Get Started"}>
+          {tab==='documents'&&<ReferenceSection title="Documents">
             {hasDocuments && (
               <ContactDocuments
                 quotations={quotations}
@@ -235,7 +236,7 @@ function StudioProjectWorkspace({id}){
                 onDraft={openDocument}
               />
             )}
-            <p className="reference-group-label">Send documents</p>
+            <p className="reference-group-label">Create a document</p>
             <div className="reference-action-list">
               {actions.filter(option => hasModuleAccess(user, actionModules[option.label])).map((option) => {
                 const Icon = option.icon;
@@ -292,7 +293,7 @@ function StudioProjectWorkspace({id}){
           </>}</div>)}
         </div>
         {tab==='overview'&&<aside>
-          <ReferenceSection title="Project Details">
+          <ReferenceSection title="Project details">
             <button
               className="reference-info-edit reference-icon-button"
               aria-label="Edit project details"
@@ -301,7 +302,7 @@ function StudioProjectWorkspace({id}){
               <Pencil size={17} />
             </button>
             <dl className="reference-details">
-              <dt>Primary Client</dt>
+              <dt>Primary client</dt>
               <dd>
                 <Link
                   to={hasModuleAccess(user, 'contacts') && contact._id ? `/admin/contacts/${contact._id}` : '/admin/studio-projects'}
@@ -312,7 +313,7 @@ function StudioProjectWorkspace({id}){
                 <span className="reference-address-line">{contact.email}</span>
                 <span className="reference-address-line">{contact.phone}</span>
               </dd>
-              <dt>Additional Clients</dt>
+              <dt>Other clients</dt>
               <dd>
                 {project.additionalClients?.length
                   ? project.additionalClients.map((client) => (
@@ -326,11 +327,11 @@ function StudioProjectWorkspace({id}){
                     ))
                   : "—"}
               </dd>
-              <dt>Project Type</dt>
+              <dt>Project type</dt>
               <dd>{project.type}</dd>
-              <dt>Project Date</dt>
+              <dt>Project date</dt>
               <dd>
-                {project.startDate ? recordDate(project.startDate) : "TBD"}
+                {project.startDate ? recordDate(project.startDate) : "To be confirmed"}
                 {project.endDate && " — " + recordDate(project.endDate)}
               </dd>
               <dt>Location</dt>

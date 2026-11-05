@@ -41,6 +41,7 @@ import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMen
 import "./studioOperations.css";
 import "./invoiceWorkspaceRefinement.css";
 import "./documentWorkflowRepair.css";
+import "./financeProductionRefinement.css";
 const addressOf = (c) =>
   [
     c?.addressLine1,
@@ -242,7 +243,7 @@ export default function InvoiceWorkspace() {
       sendCopy: true,
       scheduledAt: "",
     }),
-    [saveState, setSaveState] = useState("Unsaved draft");
+    [saveState, setSaveState] = useState("Not saved to studio");
   const version = useRef(0),
     savedVersion = useRef(0),
     savedId = useRef(id),
@@ -363,7 +364,7 @@ export default function InvoiceWorkspace() {
           setDraft(invoice);
           setLoaded(true);
           initialized.current = true;
-          setSaveState(id ? "All changes saved" : "Unsaved draft");
+          setSaveState(id ? "Saved to studio" : "Not saved to studio");
           savedId.current = id;
           dirty.current = false;
         }
@@ -381,7 +382,7 @@ export default function InvoiceWorkspace() {
   const change = (key, value) => {
     version.current++;
     dirty.current = true;
-    setSaveState("Unsaved changes");
+    setSaveState("Changes not saved to studio");
     setDraft((d) => key === 'paymentScheduleEnabled' ? invoiceScheduleToggle(d, value) : ({ ...d, [key]: value, ...(key === 'paymentSchedule' ? { _useDefaultPaymentSchedule: false } : {}) }));
   };
   const subtotal = draft.items.reduce(
@@ -422,7 +423,7 @@ export default function InvoiceWorkspace() {
     const v = version.current;
     setBusy(true);
     setError("");
-    setSaveState("Saving…");
+    setSaveState("Saving to studio…");
     try {
       const result = await workspaceRequest(
         savedId.current ? "put" : "post",
@@ -433,7 +434,7 @@ export default function InvoiceWorkspace() {
       savedVersion.current = v;
       if (version.current === v) {
         dirty.current = false;
-        setSaveState("All changes saved");
+        setSaveState("Saved to studio");
         setDraft((d) => ({
           ...d,
           _id: result._id,
@@ -448,7 +449,7 @@ export default function InvoiceWorkspace() {
       return version.current === v ? result : null;
     } catch (e) {
       setError(recordError(e));
-      setSaveState("Changes not saved");
+      setSaveState("Changes not saved to studio");
       savedVersion.current = v;
       return null;
     } finally {
@@ -677,12 +678,12 @@ export default function InvoiceWorkspace() {
   };
   if (!loaded)
     return (
-      <div className="invoice-editor">
+      <div className="invoice-editor invoice-workspace-refined">
         <p role="status">Loading invoice workspace…</p>
       </div>
     );
   return (
-    <div className="invoice-editor">
+    <div className="invoice-editor invoice-workspace-refined">
       <header className="invoice-editor-toolbar">
         <Link to={returnPath} aria-label="Back to invoices">
           <ArrowLeft size={21} />
@@ -695,21 +696,20 @@ export default function InvoiceWorkspace() {
           </strong>
           {draft.studioProjectId && (
             <Link to={`/admin/studio-projects/${draft.studioProjectId}`}>
-              Linked project
+              {context.projects.find(project => project._id === draft.studioProjectId)?.name || "Linked project"}
             </Link>
           )}
+          <small className="invoice-save-feedback" role="status" aria-live="polite" data-saving={saveState === "Saving to studio…"}>{saveState}</small>
         </div>
         <span className="invoice-status">
-          {draft.documentStatus === "Sent" ? "ISSUED" : draft.documentStatus.toUpperCase()}
+          {draft.documentStatus === "Sent" ? "Issued" : draft.documentStatus}
         </span>
-        <small role="status">{saveState}</small>
         <div className="invoice-toolbar-actions">
           <WorkspaceActionMenu label="Actions" className="invoice-menu" menuClassName="invoice-action-dropdown" open={actions} onOpenChange={setActions} disabled={busy}>
             <>
-                {draft.documentStatus === "Draft" && <button className="studio-phone-menu-action" disabled={busy} onClick={() => { setActions(false); setModal("approve"); }}>Approve & issue</button>}
-                <button className="studio-phone-menu-action" disabled={busy || draft.documentStatus === "Cancelled"} onClick={async () => { setActions(false); const invoice = await save(); if (invoice) setModal("confirm-link"); }}><Link2 size={15} /> Share link</button>
-                <button className="studio-phone-menu-action" onClick={() => { setActions(false); setModal("design"); }}>Edit design</button>
-                <button className="studio-phone-menu-action" onClick={() => { setActions(false); setModal("preview"); }}>Preview</button>
+                <button disabled={busy} onClick={() => { setActions(false); return save(); }}><Save size={15}/>Save invoice</button>
+                <button disabled={busy || draft.documentStatus === "Cancelled"} onClick={() => { setActions(false); return openSend(); }}><Send size={15}/>Email invoice</button>
+                <button onClick={() => { setActions(false); setModal("design"); }}>Edit design</button>
                 <button onClick={() => action("duplicate")}>Duplicate</button>
                 <button
                   onClick={() => {
@@ -748,23 +748,9 @@ export default function InvoiceWorkspace() {
                 </button>
             </>
           </WorkspaceActionMenu>
-          <button
-            className="studio-desktop-toolbar-action"
-            disabled={busy || draft.documentStatus === "Cancelled"}
-            onClick={async () => {
-              const invoice = await save();
-              if (invoice) setModal("confirm-link");
-            }}
-          >
-            <Link2 size={15} /> Share link
-          </button>
-          {draft.documentStatus === "Draft" && (
-            <StudioButton type="button" variant="outline" className="studio-desktop-toolbar-action" icon={ShieldCheck} disabled={busy} onClick={() => setModal("approve")}>Approve & issue</StudioButton>
-          )}
-          <button className="studio-desktop-toolbar-action" onClick={() => setModal("design")}>Edit design</button>
-          <button className="studio-desktop-toolbar-action" onClick={() => setModal("preview")}>Preview</button>
-          <StudioButton type="button" icon={Save} onClick={save} disabled={busy} loadingLabel="Saving invoice">Save</StudioButton>
-          <StudioButton type="button" variant="primary" className="invoice-primary" icon={Send} onClick={openSend} disabled={busy} loadingLabel="Preparing invoice delivery">Send invoice</StudioButton>
+          <StudioButton type="button" variant="outline" onClick={() => setModal("preview")}>Preview</StudioButton>
+          <StudioButton type="button" variant={draft.documentStatus === "Sent" ? "primary" : "outline"} className={draft.documentStatus === "Sent" ? "invoice-primary" : ""} icon={Link2} disabled={busy || draft.documentStatus === "Cancelled"} onClick={async () => { const invoice = await save(); if (invoice) setModal("confirm-link"); }}>Share link</StudioButton>
+          {draft.documentStatus === "Draft" && <StudioButton type="button" variant="primary" className="invoice-primary" icon={ShieldCheck} disabled={busy} onClick={() => setModal("approve")}>Approve & issue</StudioButton>}
         </div>
       </header>
       {error && (
@@ -849,7 +835,7 @@ export default function InvoiceWorkspace() {
             }
           />
           {draft.paymentReminders && (
-            <div className="invoice-checkboxes">
+            <details className="invoice-reminder-schedule"><summary>{draft.reminderOffsets.length} reminder {draft.reminderOffsets.length === 1 ? "date" : "dates"} selected<span>Edit schedule</span></summary><div className="invoice-checkboxes">
               {[...new Set([-7, 0, 3, 7, 14, ...draft.reminderOffsets])].sort((a, b) => a - b).map(n => [n, n === 0 ? 'On due date' : `${Math.abs(n)} days ${n < 0 ? 'before' : 'after'}`]).map(([n, label]) => (
                 <label key={n}>
                   <input
@@ -867,7 +853,7 @@ export default function InvoiceWorkspace() {
                   {label}
                 </label>
               ))}
-            </div>
+            </div></details>
           )}
 
           <div className="invoice-rail-summary">
@@ -892,6 +878,7 @@ export default function InvoiceWorkspace() {
           >
             Edit document design
           </button>
+          <p className="invoice-issue-guidance">{draft.documentStatus === "Draft" ? "Review and issue this invoice before its payment schedule becomes visible to the client." : draft.documentStatus === "Sent" ? "This invoice is issued. Share its link so your client can review the payment details." : "This invoice is cancelled and client access is closed."}</p>
         </DocumentSettingsPanel>
 </aside>
         <div className="invoice-editor-content">
@@ -1340,7 +1327,7 @@ export default function InvoiceWorkspace() {
             )}
           </section>
           <section className="invoice-editor-section">
-            <h2>Advanced options</h2>
+            <h2>Payment options</h2>
             <div className="invoice-option">
               <strong>Accepted Payment Methods</strong>
               <div className="invoice-checkboxes">

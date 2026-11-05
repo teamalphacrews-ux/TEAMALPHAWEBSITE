@@ -1,6 +1,7 @@
 import { hasModuleAccess } from '../../utils/moduleAccess';
 import StudioIcon from '../components/common/StudioIcon';
 import StudioSelect from '../components/common/StudioSelect';
+import StudioButton from '../components/common/StudioButton';
 import { useEffect, useState, useRef } from "react";
 import {
   Plus,
@@ -37,6 +38,7 @@ import API from '../../utils/apiConfig';
 import ReceiptCapture from '../components/finance/ReceiptCapture';
 import {WorkspaceActionMenu} from '../components/operations/WorkspaceActionMenu';
 import {useAuth} from '../../context/AuthContext';
+import './financeProductionRefinement.css';
 export default function Finance() {
   const navigate=useNavigate();
   const {token,user}=useAuth();
@@ -212,24 +214,20 @@ export default function Finance() {
       .toLowerCase()
       .includes(query.trim().toLowerCase()),
   );
+  const viewContent = {
+    bookings: { title: 'Booking payments', description: 'Project values, payments received and balances for confirmed enquiries.', search: 'Search clients or payment status…', empty: 'No confirmed bookings yet', hint: 'Confirmed enquiries and their payment records will appear here.' },
+    due: { title: 'Due now', description: 'Issued invoice payments due today or overdue, with the earliest deadline first.', search: 'Search due invoices or clients…' },
+    invoices: { title: 'Invoices', description: 'Review invoice balances and update payment records after receiving payment.', search: 'Search invoices by client or status…', empty: 'No invoices yet', hint: 'Create an invoice or accept a quotation to prepare your first invoice.' },
+    ledger: { title: 'Cash ledger', description: 'Income and expenses recorded by your studio.', search: 'Search descriptions, categories or status…', empty: 'No transactions yet', hint: 'Record income or an expense to begin your studio cash ledger.' },
+  }[tab];
   return (
-    <div>
+    <div className="finance-workspace-refined">
       <WorkspaceHeader
-        eyebrow="A CONSIDERED VIEW OF YOUR BUSINESS"
         title="Finance"
-        description="Bookings, invoices and your cash ledger, each with a clear purpose."
+        description="Track what is received, what is due and what your studio spends."
       >
-        {hasModuleAccess(user, 'invoices') && <button className="studio-button" onClick={() => navigate("/admin/invoices/new")}>
-          <FileText size={14} />
-          New invoice
-        </button>}
-        <button
-          className="studio-button primary"
-          onClick={() => openEntry(null)}
-        >
-          <Plus size={14} />
-          Record transaction
-        </button>
+        {hasModuleAccess(user, 'invoices') && <StudioButton icon={FileText} onClick={() => navigate("/admin/invoices/new")}>New invoice</StudioButton>}
+        <StudioButton variant="primary" icon={Plus} onClick={() => openEntry(null)}>Record transaction</StudioButton>
       </WorkspaceHeader>
       <WorkspaceMetrics
         loading={loading || (!!error && !data.length)}
@@ -265,7 +263,7 @@ export default function Finance() {
         </p>
       </details>
       <div className={tab === 'due' ? 'finance-due-layout' : 'workspace-two-column'}>
-        <section className="studio-card">
+        <section className="studio-card finance-register" aria-label={viewContent.title}>
           <div className="studio-phone-filter finance-view-filter"><StudioSelect aria-label="View finance records" value={tab} onChange={event=>{setTab(event.target.value);setQuery("");}}>{[["bookings","Booking payments"],["due","Due now"],["invoices","Invoices"],["ledger","Cash ledger"]].filter(([key]) => !['due','invoices'].includes(key) || hasModuleAccess(user, 'invoices')).map(([key,label])=><option key={key} value={key}>{label}</option>)}</StudioSelect></div><div className="studio-tabs finance-register-tabs">
             {[
               ["bookings", "Booking payments"],
@@ -286,18 +284,23 @@ export default function Finance() {
               </button>
             ))}
           </div>
-          <div className="studio-toolbar">
+          <div className="finance-register-context">
+            <div><h2>{viewContent.title}</h2><p>{viewContent.description}</p></div>
+            {!loading && !error && <span className="finance-record-count" role="status">{tab === 'due' ? dueRows.length : visible.length} {tab === 'due' ? 'payments' : 'records'}</span>}
+          </div>
+          <div className="studio-toolbar finance-register-toolbar">
             <WorkspaceSearch
               value={query}
               onChange={setQuery}
-              placeholder="Search financial records…"
+              placeholder={viewContent.search}
             />
+            {query.trim() && <StudioButton variant="ghost" onClick={() => setQuery('')}>Clear search</StudioButton>}
           </div>
           {tab === 'due' ? <DuePayments rows={dueRows} loading={loading || (!!error && !data.length)} query={query} timezone={timezone} /> : loading || !visible.length ? (
             <WorkspaceEmpty
               loading={loading}
-              title={query.trim() ? "No matching financial records" : "A clear ledger starts here"}
-              description={query.trim() ? "Try another client, category or status." : "Your existing studio records will appear in this view."}
+              title={query.trim() ? "No matching financial records" : viewContent.empty}
+              description={query.trim() ? "Try another client, category or status." : viewContent.hint}
             />
           ) : (
             <div className="studio-table-wrap">

@@ -31,6 +31,7 @@ import {
   ContactConversations,
 } from "../components/contacts/ContactRelatedTables";
 import "./referenceContacts.css";
+import "./projectContactRefinement.css";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 export default function ContactDetail() {
   const { user } = useAuth();
@@ -61,7 +62,7 @@ export default function ContactDetail() {
   };
   if (!detail || String(detail.contact?._id) !== id)
     return (
-      <div className="reference-workspace">
+      <div className="reference-workspace project-contact-workspace">
         <Link to="/admin/contacts" className="reference-back">
           <ArrowLeft size={17} />
           Contacts
@@ -126,7 +127,7 @@ export default function ContactDetail() {
     }
   };
   return (
-    <div className="reference-workspace contact-detail-workspace">
+    <div className="reference-workspace contact-detail-workspace project-contact-workspace project-contact-detail">
       <div className="reference-heading reference-contact-heading">
         <Link
           to="/admin/contacts"
@@ -150,7 +151,7 @@ export default function ContactDetail() {
         </StudioSelect>
         </div>
         <div className="reference-contact-actions">
-        <WorkspaceActionMenu label="More">
+        <WorkspaceActionMenu label="Contact actions">
             <button onClick={() => setEditing(true)}>Edit contact</button>
             <button onClick={archive}>
               {contact.archived ? "Restore contact" : "Archive contact"}
@@ -170,7 +171,7 @@ export default function ContactDetail() {
       <WorkspaceError error={error} retry={reload} />
       <div className="reference-detail-grid">
         <div style={{ minWidth: 0 }}>
-          <div className="reference-tabs" role="tablist" aria-label="Contact sections" onKeyDown={navigateTabs}>
+          <div className="reference-tabs project-contact-detail-tabs" style={{ '--project-contact-tab-count': tabs.length }} role="tablist" aria-label="Contact sections" onKeyDown={navigateTabs}>
             {tabs.map((label) => (
               <button
                 className={label === tab ? "active" : ""}
@@ -207,7 +208,7 @@ export default function ContactDetail() {
                             {project.type} ·{" "}
                             {project.startDate
                               ? recordDate(project.startDate)
-                              : "Date TBD"}
+                              : "Date to be confirmed"}
                           </small>
                         </span>
                         <span
@@ -220,12 +221,12 @@ export default function ContactDetail() {
                   </div>
                 ) : (
                   <p className="reference-empty">
-                    No projects from this contact yet.
+                    No projects yet. Use Create new to start one for this contact.
                   </p>
                 )}
               </ReferenceSection>}
               <ReferenceSection
-                title="Recent Conversations"
+                title="Recent conversations"
                 action={() => openDocument("Message")}
               >
                 <ContactConversations
@@ -262,7 +263,7 @@ export default function ContactDetail() {
           )}</div>}
         </div>
         <aside className="reference-contact-sidebar">
-          <ReferenceSection title="Contact Info">
+          <ReferenceSection title="Contact details">
             <button
               className="reference-info-edit reference-icon-button"
               aria-label="Edit contact info"
