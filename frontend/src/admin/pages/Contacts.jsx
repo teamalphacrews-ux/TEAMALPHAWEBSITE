@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, MoreHorizontal } from "lucide-react";
+import { Pencil, Plus, Search, X } from "lucide-react";
 import { ContactForm } from "../components/contacts/ContactWorkflowUI";
 import { CompactContacts } from "../components/contacts/CompactWorkspaceRecords";
 import {
@@ -12,6 +12,7 @@ import {
   WorkspaceEmpty,
 } from "../components/operations/WorkspaceUI";
 import "./referenceContacts.css";
+import "./projectContactRefinement.css";
 export default function Contacts() {
   const { data, loading, error, reload } = useWorkspaceData(["/api/contacts"]),
     [contacts = []] = data;
@@ -36,11 +37,14 @@ export default function Contacts() {
         .includes(query.toLowerCase()),
   );
   return (
-    <div className="reference-workspace">
-      <div className="reference-heading">
-        <h1>Contacts</h1>
+    <div className="reference-workspace project-contact-workspace project-contact-register">
+      <div className="reference-heading project-contact-heading">
+        <div className="project-contact-heading-copy"><h1>Contacts</h1><p>Find a client, open their projects or update their details.</p></div>
+        <div className="project-contact-heading-actions"><button className="reference-button" onClick={() => setEditing(null)}><Plus size={17} aria-hidden="true" />New contact</button></div>
+      </div>
+      <div className="project-contact-register-tools">
         <label className="reference-search">
-          <Search size={16} />
+          <Search size={17} aria-hidden="true" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -48,11 +52,10 @@ export default function Contacts() {
             aria-label="Search contacts"
           />
         </label>
-        <button className="reference-button" onClick={() => setEditing(null)}>
-          New Contact
-        </button>
+        {query && <button type="button" className="reference-icon-button" aria-label="Clear contact search" onClick={() => setQuery("")}><X size={17} aria-hidden="true" /></button>}
+        <p className="project-contact-result-count" role="status">{loading ? "Loading contacts…" : `${visible.length} of ${contacts.length} contacts`}</p>
       </div>
-      <div className="reference-tabs">
+      <div className="reference-tabs project-contact-filters" aria-label="Filter contacts by type">
         {["All Contacts", "Clients", "Leads", "Other"].map((label) => (
           <button
             key={label}
@@ -60,7 +63,7 @@ export default function Contacts() {
             aria-pressed={tab === label}
             onClick={() => setTab(label)}
           >
-            {label}
+            <span>{label === "All Contacts" ? "All contacts" : label}</span><span className="project-contact-filter-count">{label === "All Contacts" ? contacts.length : contacts.filter(contact => contact.contactType === { Clients: "Client", Leads: "Lead", Other: "Other" }[label]).length}</span>
           </button>
         ))}
       </div>
@@ -106,15 +109,16 @@ export default function Contacts() {
                   <td>
                     <a href={`mailto:${contact.email}`}>{contact.email}</a>
                   </td>
-                  <td>{contact.phone || "—"}</td>
+                  <td>{contact.phone ? <a href={`tel:${contact.phone}`}>{contact.phone}</a> : "—"}</td>
                   <td>{recordDate(contact.createdAt)}</td>
                   <td>
                     <button
                       className="reference-icon-button"
                       aria-label={`Edit ${contact.firstName} ${contact.lastName || ""}`}
+                      title="Edit contact"
                       onClick={() => setEditing(contact)}
                     >
-                      <MoreHorizontal size={17} />
+                      <Pencil size={17} aria-hidden="true" />
                     </button>
                   </td>
                 </tr>
@@ -126,13 +130,15 @@ export default function Contacts() {
       ) : (
         <WorkspaceEmpty
           loading={loading}
-          title={query ? "No matching contacts" : "No contacts yet"}
+          title={query ? "No matching contacts" : tab !== "All Contacts" ? `No ${tab.toLowerCase()} here yet` : "No contacts yet"}
           description={
             query
               ? "Try another name, email, or phone number."
-              : "Add a contact to start a project, prepare documents, and keep their details together."
+              : tab !== "All Contacts" ? "Choose another contact type or add a new contact." : "Add a contact to start a project, prepare documents, and keep their details together."
           }
-        />
+        >
+          {(query || tab !== "All Contacts") && <button type="button" className="studio-button" onClick={() => { setQuery(""); setTab("All Contacts"); }}>View all contacts</button>}
+        </WorkspaceEmpty>
       )}
       {editing !== undefined && (
         <ContactForm

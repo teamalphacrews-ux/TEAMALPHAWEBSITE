@@ -253,9 +253,13 @@ export default function Quotations() {
       return currentRef.current;
     const snapshot = formRef.current, record = currentRef.current;
     const version = versionRef.current, generation = generationRef.current;
-    if (!snapshot.clientName?.trim() || !snapshot.email?.trim() || !snapshot.items?.length ||
-        snapshot.items.some(i => !i.title?.trim() && !i.description?.trim())) {
-      const error = new Error("Complete the client name, email and quotation items before continuing.");
+    const emptyItemIndex = snapshot.items?.findIndex(i => !i.title?.trim() && !i.description?.trim()) ?? -1;
+    const validationMessage = !snapshot.clientName?.trim() ? 'Add the client’s name in Quote settings before continuing.'
+      : !snapshot.email?.trim() ? 'Add the client’s email in Quote settings before continuing.'
+      : !snapshot.items?.length ? 'Add at least one item to this quote before continuing.'
+      : emptyItemIndex !== -1 ? `Add a title or description to item ${emptyItemIndex + 1} before continuing.` : '';
+    if (validationMessage) {
+      const error = new Error(validationMessage);
       setSaveError(error.message);
       throw error;
     }
@@ -391,11 +395,16 @@ export default function Quotations() {
     setDeletedItem(null);
     change('items', restored);
   };
-  const saveState = saving ? 'Saving…'
+  const linkedProject = projects.find(project => String(project._id) === String(form.studioProjectId));
+  const linkedProjectName = linkedProject?.name || current?.studioProjectId?.name || 'View linked project';
+  const needsDraftRecovery = !offline.online || !!offline.candidate || ['uncertain', 'unavailable'].includes(offline.status);
+  const reminderSummary = !form.remindersEnabled ? 'Off' : form.reminderDays?.length
+    ? `${form.reminderDays.length} email reminder${form.reminderDays.length === 1 ? '' : 's'}` : 'On · choose reminder days';
+  const saveState = saving ? 'Saving to studio…'
     : offline.candidate ? 'Device draft available'
     : !dirty && current ? 'Saved to studio'
     : offline.status === 'uncertain' ? 'Studio save not confirmed'
-    : dirty && offline.isCurrent ? 'Saved on this device — waiting to sync'
+    : dirty && offline.isCurrent ? 'Saved on this device · not saved to studio'
     : dirty ? 'Changes not saved to studio' : 'Not saved to studio';
   const act = async (action) => {
     if (action === 'share' && !fullAccess) return;
@@ -585,7 +594,7 @@ export default function Quotations() {
           setActionMenu(false);
         }}
       >
-        Delete
+        Archive quote
       </button>
       <button
         onClick={async () => {
@@ -735,7 +744,7 @@ export default function Quotations() {
       {mode === "list" && (
         <>
           <header className="qw-list-header">
-            <div><h1>Quotations</h1><p>Create proposals and follow every client decision.</p></div>
+            <div><h1>Quotations</h1><p>Prepare quotes, share them with clients and follow their decisions.</p></div>
             <div className="qw-list-actions">
               <Link className="studio-button" to="/admin/quote-templates"><Copy size={15} />Templates</Link>
               <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>
@@ -749,18 +758,18 @@ export default function Quotations() {
             </div>
             <div className="qw-list-filters" role="group" aria-label="Filter quotations by status">{quoteFilters.map(value => <button type="button" key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value}</button>)}</div>
             {error ? <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={reload}>Retry</button></div> : loading ? <div className="qw-list-empty" role="status"><span className="studio-loader" />Loading quotations…</div> : visible.length ? <>
-              <div className="qw-list-columns" aria-hidden="true"><span>Client / proposal</span><div className="qw-quote-metadata"><span>Reference</span><span>Amount</span><span>Expires</span><span>Status</span></div><span /></div>
+              <div className="qw-list-columns" aria-hidden="true"><span>Client / quote</span><div className="qw-quote-metadata"><span>Reference</span><span>Amount</span><span>Accept by</span><span>Status</span></div><span /></div>
               <div className="qw-quote-records">{visible.map(quote => <article className="qw-quote-row" key={quote._id} aria-labelledby={'quote-list-' + quote._id}>
                 <div className="qw-quote-description"><h2 id={'quote-list-' + quote._id}><button className="qw-quote-title" aria-label={`Open quote ${quoteNumber(quote)} for ${quote.clientName || 'client to be confirmed'}`} onClick={() => openListQuote(quote)}>{quote.clientName || 'Client to be confirmed'}</button></h2>{quote.title && <p>{quote.title}</p>}</div>
                 <dl className="qw-quote-metadata">
                   <div className="qw-quote-reference"><dt>Reference</dt><dd>{quoteNumber(quote)}</dd></div>
                   <div className="qw-quote-amount"><dt>Amount</dt><dd>{rupees(quote.totalPaise / 100)}</dd></div>
-                  <div><dt>Expires</dt><dd>{quote.expiryEnabled === false ? 'No expiry' : recordDate(quote.validUntil)}</dd></div>
+                  <div><dt>Accept by</dt><dd>{quote.expiryEnabled === false ? 'No deadline' : recordDate(quote.validUntil)}</dd></div>
                   <div><dt>Status</dt><dd><span className="qw-badge" data-status={status(quote).toLowerCase()}>{status(quote)}</span></dd></div>
                 </dl>
                 <button className="studio-icon-button qw-quote-open" aria-label={`Open quote ${quoteNumber(quote)} for ${quote.clientName || 'client to be confirmed'}`} onClick={() => openListQuote(quote)}><ArrowUpRight size={18} /></button>
               </article>)}</div>
-            </> : <div className="qw-list-empty" role="status"><h2>{search.trim() || filter !== 'All' ? 'No matching quotations' : 'Your next proposal starts here'}</h2><p>{search.trim() || filter !== 'All' ? 'Try another client name or choose a different status.' : 'Create a quotation to start a new client conversation.'}</p>{search.trim() || filter !== 'All' ? <button className="studio-button" onClick={() => { setSearch(''); setFilter('All'); }}>Reset filters</button> : <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>}</div>}
+            </> : <div className="qw-list-empty" role="status"><h2>{search.trim() || filter !== 'All' ? 'No matching quotations' : 'Your next quote starts here'}</h2><p>{search.trim() || filter !== 'All' ? 'Try another client name or choose a different status.' : 'Create a quotation to start a new client conversation.'}</p>{search.trim() || filter !== 'All' ? <button className="studio-button" onClick={() => { setSearch(''); setFilter('All'); }}>Reset filters</button> : <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>}</div>}
           </section>
         </>
       )}
@@ -780,7 +789,7 @@ export default function Quotations() {
             <h1>
               {step === 0
                 ? "How would you like to start?"
-                : "Who’s this new Quote for?"}
+                : "Who is this quote for?"}
             </h1>
             {step === 0 ? (
               <>
@@ -924,7 +933,7 @@ export default function Quotations() {
                 <div className="qw-quote-meta">
                   <small>
                     {form.studioProjectId ? (
-                      <Link to={`/admin/studio-projects/${form.studioProjectId}`}>Linked project ↗</Link>
+                      <Link to={`/admin/studio-projects/${form.studioProjectId}`}>{linkedProjectName} ↗</Link>
                     ) : form.title}
                   </small>
                   <span className="qw-save-state" role="status" aria-live="polite">{saveState}</span>
@@ -946,7 +955,7 @@ export default function Quotations() {
               <small>
                 {form.studioProjectId ? (
                   <Link to={`/admin/studio-projects/${form.studioProjectId}`}>
-                    Linked project ↗
+                    {linkedProjectName} ↗
                   </Link>
                 ) : (
                   form.title
@@ -1003,7 +1012,7 @@ export default function Quotations() {
           {mode === "editor" ? (
             <div className="qw-editor">
               <aside className="qw-settings">
-<DocumentSettingsPanel title="Quote settings" description="Expiry, reminders, currency and quote date">
+<DocumentSettingsPanel title="Quote settings" description={`${form.clientName || 'Client'} · ${form.expiryEnabled && form.validUntil ? `Accept by ${recordDate(form.validUntil)}` : 'No acceptance deadline'}`}>
                 <h3>Client</h3>
                 <div className="qw-client">
                   <span>{form.clientName?.[0]}</span>
@@ -1021,38 +1030,34 @@ export default function Quotations() {
                     •••
                   </button>
                 </div>
-                <h3>Settings</h3>
-{hasModuleAccess(user, 'invoices') && <Toggle
-                  label="Auto create invoice"
-                  checked={form.autoCreateInvoice}
-                  onChange={(v) => change("autoCreateInvoice", v)}
-                  help="Automatically generate a draft invoice once the quote is accepted."
-                />}
                 <Toggle
-                  label="Document Expiry"
+                  label="Acceptance deadline"
                   checked={form.expiryEnabled}
                   onChange={(v) => change("expiryEnabled", v)}
                 />
                 {form.expiryEnabled && (
-                  <>
+                  <Field label="Accept by">
                     <input
                       aria-label="Quote expiry date"
                       type="date"
                       value={form.validUntil}
                       onChange={(e) => change("validUntil", e.target.value)}
                     />
-                    <p>
-                      This document cannot be accepted after{" "}
-                      {recordDate(form.validUntil)}. Expiry is at 11:59 PM IST.
-                    </p>
-                  </>
+                    <small>Clients can accept until 11:59 pm IST on this date.</small>
+                  </Field>
                 )}
+                {hasModuleAccess(user, 'invoices') && <Toggle
+                  label="Create draft invoice"
+                  checked={form.autoCreateInvoice}
+                  onChange={(v) => change("autoCreateInvoice", v)}
+                  help="Created when the client accepts. Your team reviews and issues it before the client sees it."
+                />}
                 <div className="qw-reminder-summary">
-                  <div><strong>Quote reminders</strong><p>{form.remindersEnabled ? form.reminderDays?.length ? `${[...form.reminderDays].sort((a,b)=>a-b).join(', ')} days after sending` : 'On · no days selected' : 'Off'}</p></div>
-                  <button type="button" aria-expanded={remindersOpen} aria-controls="quote-reminder-options" onClick={()=>setRemindersOpen(!remindersOpen)}>{remindersOpen?'Done':'Edit'}</button>
+                  <div><strong>Email reminders</strong><p>{reminderSummary}</p></div>
+                  <button type="button" aria-label={remindersOpen ? 'Close reminder settings' : 'Edit email reminders'} aria-expanded={remindersOpen} aria-controls="quote-reminder-options" onClick={()=>setRemindersOpen(!remindersOpen)}>{remindersOpen?'Done':'Edit'}</button>
                 </div>
                 {remindersOpen && <div id="quote-reminder-options" className="qw-reminder-options"><Toggle
-                  label="Enable quote reminders"
+                  label="Enable email reminders"
                   checked={form.remindersEnabled}
                   onChange={(v) => change("remindersEnabled", v)}
                 />
@@ -1072,21 +1077,17 @@ export default function Quotations() {
                             )
                           }
                         />
-                        {day} days after sending
+                        Day {day}
                       </label>
                     ))}
                     <p>
-                      Automatically email contacts who have not accepted.
-                      Requires configured studio email.
+                      Days after the client link is prepared. Reminders stop after acceptance or expiry. Outgoing studio email must be configured.
                     </p>
                   </div>
                 )}
                 </div>}
-                <Field label="Currency">
-                  <StudioSelect title="Currency" value="INR" onChange={() => {}}>
-                    <option value="INR">INR · Indian Rupee</option>
-                  </StudioSelect>
-                </Field>
+                <details className="qw-secondary-settings">
+                  <summary><span>Date & currency<small>{recordDate(form.issueDate)} · INR</small></span><ChevronDown size={16} aria-hidden="true" /></summary>
                 <Field label="Quote date">
                   <input
                     type="date"
@@ -1094,9 +1095,12 @@ export default function Quotations() {
                     onChange={(e) => change("issueDate", e.target.value)}
                   />
                 </Field>
+                  <div className="qw-currency-info"><span>Currency</span><strong>INR · Indian Rupee</strong></div>
+                </details>
               </DocumentSettingsPanel>
 </aside>
-              <section className="qw-editor-scroll"><OfflineDraftStatus draft={offline} compact/>
+              <section className="qw-editor-scroll">
+                {needsDraftRecovery && <OfflineDraftStatus draft={offline} compact/>}
                 <div className="qw-paper">
                   <Field label="Quote title">
                     <input
@@ -1105,7 +1109,7 @@ export default function Quotations() {
                       onChange={(e) => change("title", e.target.value)}
                     />
                   </Field>
-                  <h2>Items</h2>
+                  <h2>Items <span className="qw-item-count">{form.items?.length || 0}</span></h2>
                   {deletedItem && <div className="qw-item-undo"><span role="status">Removed “{deletedItem.item.title || 'Quotation item'}”.</span><button type="button" onClick={undoDeleteItem}><Undo2 size={16}/>Undo</button><button type="button" className="qw-undo-dismiss" aria-label="Dismiss item undo" onClick={()=>setDeletedItem(null)}><X size={16}/></button></div>}
                   <div className="qw-item-labels">
                     <span>ITEMS</span>
@@ -1153,7 +1157,7 @@ export default function Quotations() {
                           })
                         }
                       /></label>
-                      <label className="studio-document-number-field"><span className="studio-phone-field-label">Price (₹)</span><input
+                      <label className="studio-document-number-field"><span className="studio-phone-field-label">Unit price (₹)</span><input
                         aria-label={`Price ${index + 1}`}
                         type="number"
                         min="0"
@@ -1215,7 +1219,7 @@ export default function Quotations() {
                       disabled={form.items?.length >= 40}
                       onClick={() => { setDeletedItem(null); change("items", [...form.items, blankItem()]); }}
                     >
-                      + Add Item
+                      + Add item
                     </button>
                     <dl>
                       <dt>Subtotal</dt>
@@ -1255,7 +1259,9 @@ export default function Quotations() {
                       </dd>
                     </dl>
                   </div>
-                  <Field label="Notes">
+                  <details className="qw-editor-notes">
+                    <summary><span>Notes & terms<small>Shown on the client’s quote</small></span><ChevronDown size={18} aria-hidden="true" /></summary>
+                  <Field label="Notes for the client">
                     <textarea
                       value={form.notes || ""}
                       onChange={(e) => change("notes", e.target.value)}
@@ -1269,6 +1275,8 @@ export default function Quotations() {
                       rows={5}
                     />
                   </Field>
+                  </details>
+                  {!needsDraftRecovery && <OfflineDraftStatus draft={offline} compact/>}
                 </div>
               </section>
             </div>
@@ -1408,7 +1416,7 @@ export default function Quotations() {
               <p>
                 Select a unique cover image for this document. Set default
                 cover, color and font in{" "}
-                <Link to="/admin/settings">Settings → Branding</Link>.
+                <Link to="/admin/settings?section=branding">Settings → Brand & documents</Link>.
               </p>
               <Field label="Color theme">
                 <input
@@ -1459,7 +1467,7 @@ export default function Quotations() {
           </header>
           <div className="qw-send">
             <section>
-              <div className="document-send-intro"><h1>Share your quotation</h1><p>Your client uses one link to review their quote, invoice, payments and project updates.</p><StudioButton type="button" icon={Link2} disabled={busy} onClick={openClientLink} loadingLabel="Preparing client link">Share client link</StudioButton></div>
+              <div className="document-send-intro"><h1>Email your quote</h1><p>Send the client a link to review and accept. Issued invoices and published project updates appear on the same link.</p><StudioButton type="button" icon={Link2} disabled={busy} onClick={openClientLink} loadingLabel="Preparing client link">Share client link instead</StudioButton></div>
               {!emailConfigured && <div className="document-mail-notice" role="status"><strong>{mail.loading ? 'Checking email sending…' : mail.error ? 'Email status is unavailable' : 'Set up email sending when you’re ready'}</strong><p>{mail.error ? 'You can still share your client link. Retry the email check before sending.' : 'Client links work now. Outgoing email needs its own sender setup; connecting a read-only Gmail inbox does not enable sending.'}</p><Link to="/admin/settings?section=communication">Review email settings <ArrowUpRight size={14} /></Link>{mail.error && <button type="button" className="qw-button" onClick={mail.reload}>Check again</button>}</div>}
               <p>
                 To: <strong>{current.clientName}</strong> · {current.email}
@@ -1486,11 +1494,11 @@ export default function Quotations() {
                 onClick={() =>
                   setEmail({
                     ...email,
-                    message: `Hi ${current.clientName},\n\nYour quote is ready to review. Please review and accept by ${recordDate(current.validUntil)}.\n\nThanks,\n${settings.studioName || "TEAM ALPHA"}`,
+                    message: `Hi ${current.clientName},\n\nYour quote is ready to review.${current.expiryEnabled !== false && current.validUntil ? ` Please review and accept by ${recordDate(current.validUntil)}.` : ' Please review it using the client link below.'}\n\nThanks,\n${settings.studioName || "TEAM ALPHA"}`,
                   })
                 }
               >
-                Insert email template
+                Use default message
               </button>
               <div className="qw-send-footer">
                 <button disabled={!emailConfigured || busy} onClick={() => setModal("schedule")}>Schedule email</button>
@@ -1517,8 +1525,8 @@ export default function Quotations() {
               <div>
                 Your quote is ready for review
                 <strong>Quote #{quoteNumber(current)}</strong>
-                {current.expiryEnabled !== false && (
-                  <span>Complete by {recordDate(current.validUntil)}</span>
+                {current.expiryEnabled !== false && current.validUntil && (
+                  <span>Accept by {recordDate(current.validUntil)}</span>
                 )}
               </div>
               <p>{email.message}</p>
@@ -1538,12 +1546,12 @@ export default function Quotations() {
               number: "Edit quote number",
               project: "Link to project",
               photo: "Add photo",
-              link: "Smart client link",
+              link: "Client link ready",
               manual: "Share smart client link",
-              schedule: "Schedule Quote",
+              schedule: "Schedule email",
               history: "Email history",
               cancel: "Cancel quote",
-              archive: "Delete Quote",
+              archive: "Archive quote",
               leave: "Unsaved changes",
             }[modal]
           }
@@ -1562,7 +1570,7 @@ export default function Quotations() {
                       setModal("");
                     }}
                   >
-                    Delete
+                    Remove discount
                   </button>
                   <button
                     className="qw-primary"
@@ -1572,7 +1580,7 @@ export default function Quotations() {
                       setModal("");
                     }}
                   >
-                    Apply
+                    Apply discount
                   </button>
                 </>
               ) : modal === "link" ? (
@@ -1702,11 +1710,7 @@ export default function Quotations() {
                       }
                     }}
                   >
-                    {["cancel", "archive", "manual", "leave"].includes(modal)
-                      ? "Confirm"
-                      : modal === "schedule"
-                        ? "Schedule"
-                        : "Save"}
+                    {{ cancel: 'Cancel quote', archive: 'Archive quote', manual: 'Prepare client link', leave: 'Leave editor', schedule: 'Schedule email', template: 'Save template', project: 'Save project link', number: 'Save quote number', photo: 'Use photo', tax: 'Apply tax' }[modal] || 'Save'}
                   </button>
                 )
               )}
@@ -1790,8 +1794,7 @@ export default function Quotations() {
             </>
           ) : modal === "link" ? (
             <>
-              <p>Share one link for your client’s quotation, invoice, payments and post-production updates.</p>
-              <p>The client can review and accept the quotation here. After your studio reviews and issues the invoice, the same link can show the invoice and payment schedule. Published production updates appear as work progresses.</p>
+              <p>Copy the link or share it via WhatsApp. Preparing this link does not send an email.</p>
               <input
                 className="qw-link-input"
                 aria-label="Smart client link"
@@ -1810,11 +1813,11 @@ export default function Quotations() {
                   Open smart client link ↗
                 </a>
               </div>
-              <p>Only information enabled in the saved client-visibility settings is shared. Quote acceptance deadlines and client-link expiry still apply.</p>
+              <p>Your client can review and accept the quote here. Issued invoices, payments and published updates appear on this same link, according to your client-visibility settings.</p>
             </>
           ) : modal === "manual" ? (
             <p>
-              This quotation will be marked as sent. Copy or share the smart client link yourself; no email is sent automatically. Your client can return to this same link for an issued invoice, payments and published production updates, according to the saved visibility settings.
+              This prepares the quote for client review and starts its reminder schedule, if enabled. Copy or share the link yourself; no email is sent automatically.
             </p>
           ) : modal === "schedule" ? (
             <Field label="Send date and time">
@@ -1843,10 +1846,10 @@ export default function Quotations() {
           ) : ["cancel", "archive", "leave"].includes(modal) ? (
             <p>
               {modal === "cancel"
-                ? "Cancel this quotation and revoke client acceptance access?"
+                ? "Clients will no longer be able to accept this quote. Its history is kept. Cancel this quote?"
                 : modal === "archive"
                   ? "Archive this quotation and remove it from active quotes? Its history is retained."
-                  : "Leave without saving these changes?"}
+                  : "Leave without saving these changes to your studio? Any existing device backup remains in Offline drafts."}
             </p>
           ) : modal === "project" ? (
             <Field label="Project">

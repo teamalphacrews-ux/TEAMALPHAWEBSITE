@@ -1,10 +1,13 @@
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
 import StudioSelect from '../components/common/StudioSelect';
-import { useCallback, useEffect, useRef, useState } from "react";
+import StudioButton from '../components/common/StudioButton';
+import useReducedStudioMotion from '../components/operations/useReducedStudioMotion';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { AnimatePresence, motion as Motion, useIsPresent } from 'framer-motion';
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
-import { Plus, Search, ArrowUpRight, Users, RefreshCw, CalendarDays, X } from "lucide-react";
+import { Plus, Search, ArrowUpRight, Users, RefreshCw, CalendarDays, X, Trash2, Archive } from "lucide-react";
 import toast from "react-hot-toast";
 import { invoiceForLead, invoiceDestination } from "../components/operations/invoiceNavigation";
 import StudioLeadForm from "../components/studio/StudioLeadForm";
@@ -12,9 +15,61 @@ import StudioLeadDetails from "../components/studio/StudioLeadDetails";
 import { studioApi, studioAuth, LEAD_STATUSES, money, displayDate, initials, statusClass, leadStatusLabel, matchesLead, matchesLeadStage, mergeLead } from "../components/studio/leadUtils";
 import "../studio-crm.css";
 import { safeStudioReturn } from '../../utils/studioNavigation';
-import {WorkspaceActionMenu} from '../components/operations/WorkspaceActionMenu';
 import { quotationStatus } from '../../utils/quotationStatus';
 import { enquiryProjectId, enquiryQuoteId, enquiryProjectDestination, enquiryQuoteDestination } from '../../utils/enquiryWorkflow';
+
+function EnquiryRowActions({ lead, onSelect, onDelete }) {
+  const openButton = useRef(null);
+  const archiveHadFocus = useRef(false);
+  const linkedProject = Boolean(lead.studioProjectId);
+  const actionLabel = linkedProject ? 'Archive enquiry' : 'Delete enquiry';
+  useLayoutEffect(() => {
+    if (lead.status === 'Archived' && archiveHadFocus.current) {
+      archiveHadFocus.current = false;
+      if (document.hasFocus() && document.activeElement === document.body) openButton.current?.focus({ preventScroll: true });
+    }
+  }, [lead.status]);
+  return <div className="studio-crm-row-actions">
+    <button ref={openButton} type="button" className="studio-icon-button" aria-label={`Open ${lead.name}`} onClick={event => { event.stopPropagation(); onSelect(lead); }}>
+      <ArrowUpRight size={18} aria-hidden="true" /><span className="studio-phone-action-label">Open enquiry</span>
+    </button>
+    {!(linkedProject && lead.status === 'Archived') && <StudioButton
+      type="button" variant="outline" size="sm"
+      className="studio-crm-remove-enquiry"
+      data-action={linkedProject ? 'archive' : 'delete'}
+      aria-label={`${actionLabel} for ${lead.name}`}
+      loadingLabel={`${linkedProject ? 'Archiving' : 'Deleting'} enquiry for ${lead.name}`}
+      icon={linkedProject ? Archive : Trash2}
+      onClick={event => { event.stopPropagation(); archiveHadFocus.current = linkedProject && document.activeElement === event.currentTarget; return onDelete(lead); }}
+    >{actionLabel}</StudioButton>}
+  </div>;
+}
+
+function EnquiryRow({ lead, onSelect, reducedMotion, children }) {
+  const rowRef = useRef(null);
+  const focusWithin = useRef(false);
+  const isPresent = useIsPresent();
+  useLayoutEffect(() => {
+    const row = rowRef.current;
+    if (isPresent || !row || !focusWithin.current || !document.hasFocus()) return;
+    if (document.activeElement !== document.body && !row.contains(document.activeElement)) return;
+    const rows = [...row.parentElement.querySelectorAll('[data-enquiry-id]')];
+    const index = rows.indexOf(row);
+    const next = [...rows.slice(index + 1), ...rows.slice(0, index).reverse()].find(item => item.dataset.exiting !== 'true');
+    const target = next?.querySelector('.studio-crm-row-actions button') || row.closest('.studio-enquiries-page')?.querySelector('input[aria-label="Search enquiries"]');
+    target?.focus({ preventScroll: true });
+  }, [isPresent]);
+  return <Motion.tr ref={rowRef} role="row" data-enquiry-id={lead._id} data-exiting={!isPresent || undefined}
+    layout={reducedMotion ? false : 'position'} initial={false} animate={{ opacity: 1, x: 0 }}
+    exit={{ opacity: 0, x: reducedMotion ? 0 : 10 }}
+    transition={{ opacity: { duration: reducedMotion ? 0 : .16 }, x: { duration: reducedMotion ? 0 : .16 }, layout: { duration: reducedMotion ? 0 : .24, ease: [.16, 1, .3, 1] } }}
+    inert={!isPresent || undefined} tabIndex={isPresent ? 0 : -1}
+    onFocusCapture={() => { focusWithin.current = true; }}
+    onBlurCapture={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) focusWithin.current = false; }}
+    onClick={() => { if (isPresent) onSelect(lead); }}
+    onKeyDown={event => { if (isPresent && event.key === 'Enter' && event.target === event.currentTarget) onSelect(lead); }}
+    className="studio-crm-clickable-row">{children}</Motion.tr>;
+}
 
 function ProjectCell({ lead }) {
   const { user } = useAuth();
@@ -33,6 +88,7 @@ function QuoteState({ lead }) {
 
 export function EnquiriesView({ leads = [], loading = false, error = "", query = "", onQuery = () => {}, status = "All", onStatus = () => {}, sort = "newest", onSort = () => {}, onSelect = () => {}, onCreate = () => {}, onDelete = () => {}, onRefresh = () => {}, navigation = null }) {
   const { user } = useAuth();
+  const reducedMotion = useReducedStudioMotion();
   const finance = hasModuleAccess(user, 'finance');
   const open = leads.filter((lead) => !["Converted", "Archived"].includes(lead.status));
   const converted = leads.filter((lead) => lead.status === "Converted");
@@ -62,7 +118,7 @@ export function EnquiriesView({ leads = [], loading = false, error = "", query =
       </div>
       <div className="studio-crm-stage-filters" role="group" aria-label="Filter by enquiry stage">{stages.map(stage => <button type="button" key={stage} aria-pressed={status === stage} onClick={() => onStatus(stage)} className={status === stage ? "active" : ""}>{stage === "All" ? "All enquiries" : leadStatusLabel(stage)}<span>{countForStage(stage)}</span></button>)}</div>
       {error ? <div className="studio-error studio-crm-load-error" role="alert"><p>{error}</p><button className="studio-button small" onClick={onRefresh}>Try again</button></div> : <div className="studio-crm-table-scroll"><table role="table" aria-label="Enquiries" className="studio-table studio-crm-table studio-phone-record-table"><thead role="rowgroup"><tr role="row"><th role="columnheader">Client</th><th role="columnheader">Project & date</th><th role="columnheader">Stage</th>{finance && <th role="columnheader">Project value</th>}<th role="columnheader">Next follow-up</th><th role="columnheader"><span className="studio-crm-sr-only">Actions</span></th></tr></thead><tbody role="rowgroup">
-        {loading ? <tr role="row"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><RefreshCw size={25} className="studio-crm-spin" /><h3>Loading your enquiries…</h3><p>Bringing the latest conversations into view.</p></div></td></tr> : filtered.length ? filtered.map((lead) => <tr role="row" key={lead._id} onClick={() => onSelect(lead)} tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter" && event.target === event.currentTarget) onSelect(lead); }} className="studio-crm-clickable-row"><td role="cell" data-label="Client"><div className="studio-crm-client"><span className="studio-crm-avatar">{initials(lead.name)}</span><div><strong>{lead.name}</strong><small>{lead.email}</small></div></div></td><td role="cell" data-label="Project & date"><ProjectCell lead={lead} /></td><td role="cell" data-label="Stage"><span className={`studio-badge studio-crm-badge ${statusClass(lead.status)}`}>{leadStatusLabel(lead.status)}</span><QuoteState lead={lead} /></td>{finance && <td role="cell" data-label="Project value"><strong>{money(lead.totalAmount)}</strong><small>{lead.paymentStatus || "Unpaid"}</small></td>}<td role="cell" data-label="Follow-up"><span className={`studio-crm-followup-cell ${lead.followUpDate && new Date(lead.followUpDate) < new Date() ? "overdue" : ""}`}>{lead.followUpDate && <CalendarDays size={13} />}{displayDate(lead.followUpDate, "Not scheduled")}</span></td><td role="cell" data-label="Actions"><div className="studio-crm-row-actions"><button className="studio-icon-button" aria-label={`Open ${lead.name}`} onClick={(event) => { event.stopPropagation(); onSelect(lead); }}><ArrowUpRight size={18} /><span className="studio-phone-action-label">Open enquiry</span></button>{!(lead.studioProjectId&&lead.status==='Archived')&&<span onClick={event=>event.stopPropagation()}><WorkspaceActionMenu label="More" ariaLabel={`Options for ${lead.name}`}><button type="button" onClick={()=>onDelete(lead)}>{lead.studioProjectId?'Archive enquiry':'Delete enquiry'}</button></WorkspaceActionMenu></span>}</div></td></tr>) : <tr role="row"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><Users size={28} /><h3>{leads.length ? "No matching enquiries" : "No enquiries yet"}</h3><p>{leads.length ? "Try a different search or clear your filters." : "Add your first enquiry and keep every detail in one place."}</p>{leads.length ? <button type="button" className="studio-button" onClick={clearFilters}>Clear filters</button> : <button type="button" className="studio-button primary" onClick={onCreate}><Plus size={16} />Add an enquiry</button>}</div></td></tr>}
+        <AnimatePresence initial={false}>{loading ? <tr role="row" key="loading"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><RefreshCw size={25} className="studio-crm-spin" /><h3>Loading your enquiries…</h3><p>Bringing the latest conversations into view.</p></div></td></tr> : filtered.length ? filtered.map((lead) => <EnquiryRow key={lead._id} lead={lead} onSelect={onSelect} reducedMotion={reducedMotion}><td role="cell" data-label="Client"><div className="studio-crm-client"><span className="studio-crm-avatar">{initials(lead.name)}</span><div><strong>{lead.name}</strong><small>{lead.email}</small></div></div></td><td role="cell" data-label="Project & date"><ProjectCell lead={lead} /></td><td role="cell" data-label="Stage"><AnimatePresence initial={false} mode="wait"><Motion.span key={lead.status} className={`studio-badge studio-crm-badge ${statusClass(lead.status)}`} initial={{ opacity: reducedMotion ? 1 : .35 }} animate={{ opacity: 1 }} exit={{ opacity: reducedMotion ? 1 : .35 }} transition={{ duration: reducedMotion ? 0 : .1 }}>{leadStatusLabel(lead.status)}</Motion.span></AnimatePresence><QuoteState lead={lead} /></td>{finance && <td role="cell" data-label="Project value"><strong>{money(lead.totalAmount)}</strong><small>{lead.paymentStatus || "Unpaid"}</small></td>}<td role="cell" data-label="Follow-up"><span className={`studio-crm-followup-cell ${lead.followUpDate && new Date(lead.followUpDate) < new Date() ? "overdue" : ""}`}>{lead.followUpDate && <CalendarDays size={13} />}{displayDate(lead.followUpDate, "Not scheduled")}</span></td><td role="cell" data-label="Actions"><EnquiryRowActions lead={lead} onSelect={onSelect} onDelete={onDelete} /></td></EnquiryRow>) : <tr role="row" key="empty"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><Users size={28} /><h3>{leads.length ? "No matching enquiries" : "No enquiries yet"}</h3><p>{leads.length ? "Try a different search or clear your filters." : "Add your first enquiry and keep every detail in one place."}</p>{leads.length ? <button type="button" className="studio-button" onClick={clearFilters}>Clear filters</button> : <button type="button" className="studio-button primary" onClick={onCreate}><Plus size={16} />Add an enquiry</button>}</div></td></tr>}</AnimatePresence>
       </tbody></table></div>}
       {!loading && !error && <div className="studio-crm-table-footer"><span role="status">{hasFilters ? `${filtered.length} of ${leads.length}` : leads.length} {leads.length === 1 ? "enquiry" : "enquiries"}{status !== "All" && ` · ${leadStatusLabel(status)}`}</span>{hasFilters && <button type="button" className="studio-crm-text-link" onClick={clearFilters}>Clear filters</button>}</div>}
     </section>
