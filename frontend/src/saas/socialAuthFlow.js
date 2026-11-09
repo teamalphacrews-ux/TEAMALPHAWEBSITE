@@ -1,11 +1,13 @@
+import { signupPlanId } from './signupIntent.js';
+
 export const SOCIAL_FLOW_KEY = 'studio-os-social-signin';
 const FLOW_MAX_AGE = 10 * 60 * 1000;
 export const validSocialCode = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 export function readSocialFlow(raw, now = Date.now()) {
   try {
     const flow = JSON.parse(raw);
-    if (!validSocialCode(flow?.browserProof) || !['login', 'signup'].includes(flow.purpose) || !Number.isFinite(flow.createdAt) || flow.createdAt > now || now - flow.createdAt > FLOW_MAX_AGE) return null;
-    return { browserProof: flow.browserProof, purpose: flow.purpose, createdAt: flow.createdAt, ...(['google', 'apple'].includes(flow.provider) ? { provider: flow.provider } : {}), ...(validSocialCode(flow.ticket) ? { ticket: flow.ticket } : {}) };
+    if (!validSocialCode(flow?.browserProof) || !['login', 'signup'].includes(flow.purpose) || !Number.isFinite(flow.createdAt) || flow.createdAt > now || now - flow.createdAt >= FLOW_MAX_AGE) return null;
+    return { browserProof: flow.browserProof, purpose: flow.purpose, createdAt: flow.createdAt, ...(['google', 'apple'].includes(flow.provider) ? { provider: flow.provider } : {}), ...(validSocialCode(flow.ticket) ? { ticket: flow.ticket } : {}), ...(signupPlanId(flow.plan) ? { plan: flow.plan } : {}) };
   } catch { return null; }
 }
 
@@ -38,4 +40,17 @@ export function callbackParameters(fragment) {
   if (code) return { error: messages[code] || messages.verification_failed };
   const ticket = params.get('ticket');
   return validSocialCode(ticket) ? { ticket } : {};
+}
+
+export function socialCallbackState(raw, fragment, now = Date.now()) {
+  const flow = readSocialFlow(raw, now);
+  const context = flow ? { purpose: flow.purpose, ...(flow.plan ? { plan: flow.plan } : {}) } : {};
+  const result = callbackParameters(fragment);
+  if (result.error) return { ...context, ...result };
+  const ticket = result.ticket || flow?.ticket;
+  if (!flow || !validSocialCode(ticket)) return {
+    ...context,
+    error: 'This sign-in must finish in the same tab where it started. Please start again.',
+  };
+  return { ...flow, ticket };
 }

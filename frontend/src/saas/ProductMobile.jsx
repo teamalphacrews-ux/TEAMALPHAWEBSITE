@@ -107,7 +107,7 @@ export default function ProductMobile() {
         </div>
         <a className="sos-text-link" href="#smart-link">See the client side<ArrowUpRight size={16}/></a>
       </div>
-      <div className={'sos-mobile-stage stage-' + active} id="sos-mobile-panel" role="tabpanel" tabIndex={0} aria-labelledby={'sos-mobile-tab-' + active}>
+      <div data-motion-unit="mobile-device" className={'sos-mobile-stage stage-' + active} id="sos-mobile-panel" role="tabpanel" tabIndex={0} aria-labelledby={'sos-mobile-tab-' + active}>
         <div className="sos-mobile-aura" aria-hidden="true"><i/><i/></div>
         <div className="sos-mobile-context"><i/><span>{stage.moment}</span><Smartphone size={14}/></div>
         <div className="sos-mobile-phone">

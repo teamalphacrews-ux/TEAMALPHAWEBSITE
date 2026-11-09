@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { ArrowRight, LoaderCircle, LockKeyhole, RefreshCw, ShieldCheck } from 'lucide-react';
+import { ArrowRight, LoaderCircle, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { SignupFrame, PasswordField } from './AuthFrame';
 import { isWorkspaceSession, openWorkspaceSession, saasRequest } from './api';
-import { callbackParameters, readSocialFlow, safeAuthorizationUrl, SOCIAL_FLOW_KEY, validSocialCode, validateWorkspaceDetails } from './socialAuthFlow';
+import { socialCallbackState, safeAuthorizationUrl, SOCIAL_FLOW_KEY, validSocialCode, validateWorkspaceDetails } from './socialAuthFlow';
 import { socialProviderState } from './publicAuthConfig';
-import { usePublicAuthConfig } from './usePublicAuthConfig';
+import { usePublicConfig } from './usePublicConfig';
+import PublicConfigStatus from './PublicConfigStatus';
+import { useSignupPlan } from './useSignupPlan';
+import { SIGNUP_PLAN_NAMES, signupHref, signupPlanId } from './signupIntent';
 import { IS_COMMERCIAL_DEPLOYMENT } from './release';
 
 function clearFlow() { try { sessionStorage.removeItem(SOCIAL_FLOW_KEY); } catch { /* No retained flow is needed after completion. */ } }
@@ -26,15 +29,7 @@ async function completeSocialSignIn(body) {
   } finally { window.clearTimeout(timeout); }
 }
 
-export function AuthAvailability({ loading, error, retry }) {
-  if (!loading && !error) return null;
-  return <div className={'saas-auth-availability' + (error ? ' has-error' : '')}>
-    <p role={error ? 'alert' : 'status'}>{loading ? <><LoaderCircle className="saas-auth-spinner" size={16} aria-hidden="true" />Checking secure sign-in…</> : error}</p>
-    {error && <button className="saas-auth-retry" type="button" onClick={retry}><RefreshCw size={15} aria-hidden="true" />Try again</button>}
-  </div>;
-}
-
-export function SocialAuthButtons({ config, loading = false, purpose = 'signup', disabled = false, onStart, onFinish }) {
+export function SocialAuthButtons({ config, loading = false, purpose = 'signup', plan = 'starter', disabled = false, onStart, onFinish }) {
   const [busy, setBusy] = useState(''), [error, setError] = useState('');
   const statusId = useId();
   const actionLock = useRef(false);
@@ -62,7 +57,7 @@ export function SocialAuthButtons({ config, loading = false, purpose = 'signup',
       const result = await saasRequest('/oauth/' + provider + '/start', { method: 'POST', publicRequest: true, body: { purpose }, signal: controller.signal });
       const url = safeAuthorizationUrl(result.authorizationUrl, provider);
       if (!url || !validSocialCode(result.browserProof)) throw new Error('The sign-in service returned an unexpected response. Please try again.');
-      saveFlow({ browserProof: result.browserProof, purpose, provider, createdAt: Date.now() });
+      saveFlow({ browserProof: result.browserProof, purpose, provider, createdAt: Date.now(), ...(signupPlanId(plan) ? { plan } : {}) });
       window.location.assign(url);
     } catch (failure) {
       clearFlow(); setError(failure.name === 'AbortError' ? 'Sign-in took too long to open. Check your connection and try again.' : errorMessage(failure)); actionLock.current = false; setBusy(''); onFinish?.();
@@ -89,7 +84,8 @@ export function SocialAuthButtons({ config, loading = false, purpose = 'signup',
 }
 
 export function ProductLoginPage() {
-  const { user, token } = useAuth(), availability = usePublicAuthConfig();
+  const { user, token } = useAuth(), availability = usePublicConfig();
+  const plan = useSignupPlan();
   const { config, loading } = availability;
   const [form, setForm] = useState({ email: '', password: '' }), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [providerBusy, setProviderBusy] = useState(false);
@@ -106,9 +102,9 @@ export function ProductLoginPage() {
       setForm(previous => ({ ...previous, password: '' })); await openWorkspaceSession(result);
     } catch (failure) { setError(errorMessage(failure)); } finally { submitting.current = false; setBusy(false); }
   };
-  return <SignupFrame signIn title="Back to your best work." description="Sign in to your Studio OS account to open your private workspace.">
-    <AuthAvailability {...availability} />
-    <SocialAuthButtons config={config} loading={loading} purpose="login" disabled={busy || providerBusy} onStart={beginProvider} onFinish={finishProvider} />
+  return <SignupFrame signIn plan={plan} title="Back to your best work." description="Sign in to your Studio X OS account to open your private workspace.">
+    <PublicConfigStatus {...availability} />
+    <SocialAuthButtons config={config} loading={loading} plan={plan} purpose="login" disabled={busy || providerBusy} onStart={beginProvider} onFinish={finishProvider} />
     <div className="saas-auth-divider"><span>or sign in with email</span></div>
     {error && <p className="saas-error" role="alert">{error}</p>}
     <form className="saas-auth-form" onSubmit={submit}><fieldset disabled={busy || providerBusy || loading || config?.authEnabled !== true}>
@@ -122,13 +118,8 @@ export function ProductLoginPage() {
 }
 
 function callbackState() {
-  let flow;
-  try { flow = readSocialFlow(sessionStorage.getItem(SOCIAL_FLOW_KEY)); } catch { return { error: 'Allow session storage in this browser to sign in, then try again.' }; }
-  const result = callbackParameters(window.location.hash);
-  if (result.error) return result;
-  const ticket = result.ticket || flow?.ticket;
-  if (!flow || !validSocialCode(ticket)) return { error: 'This sign-in must finish in the same tab where it started. Please start again.' };
-  return { ...flow, ticket };
+  try { return socialCallbackState(sessionStorage.getItem(SOCIAL_FLOW_KEY), window.location.hash); }
+  catch { return { error: 'Allow session storage in this browser to sign in, then try again.' }; }
 }
 export function SocialCallbackPage() {
   const [flow] = useState(callbackState), [profile, setProfile] = useState(null), [error, setError] = useState(flow.error || ''), [busy, setBusy] = useState(false);
@@ -176,12 +167,13 @@ export function SocialCallbackPage() {
     setForm(previous => ({ ...previous, [name]: value }));
     setFieldErrors(previous => ({ ...previous, [name]: '' }));
   };
-  const restartPath = flow.purpose === 'signup' ? '/signup' : '/studio-os/login';
+  const restartPath = flow.purpose === 'signup' ? signupHref(flow.plan) : '/studio-os/login';
   const providerName = flow.provider === 'google' ? 'Google' : flow.provider === 'apple' ? 'Apple' : '';
-  return <SignupFrame title={profile ? 'Make it your studio.' : error ? 'Let’s try that again.' : 'Opening your workspace.'} description={profile ? 'Your identity is verified. Give your new workspace a name to finish setting up.' : 'Secure sign-in for your creative team.'}>
+  return <SignupFrame plan={flow.plan} title={profile ? 'Make it your studio.' : error ? 'Let’s try that again.' : 'Opening your workspace.'} description={profile ? 'Your identity is verified. Give your new workspace a name to finish setting up.' : 'Secure sign-in for your creative team.'}>
     {error && <p className="saas-error" role="alert">{error}</p>}
+    {profile && signupPlanId(flow.plan) && <div className="saas-invite-summary" aria-label="Selected plan"><span>Plan you’re exploring: {SIGNUP_PLAN_NAMES[flow.plan]}</span><small>Your new workspace starts with a Starter trial for up to 5 team members. Your plan preference is kept; no paid plan is activated here.</small></div>}
     {profile ? <>
-      <div className="saas-verified-account"><ShieldCheck size={22} aria-hidden="true" /><div><strong>{providerName ? `Verified with ${providerName}` : 'Verified account'}</strong><span>{profile.email}</span></div></div>
+      <div className="saas-invite-summary"><span>{profile.email}</span><small><ShieldCheck size={13} aria-hidden="true" />{providerName ? `Verified with ${providerName}` : 'Verified account'}</small></div>
       {flow.provider === 'apple' && <p className="saas-form-help saas-identity-help">Using Hide My Email? This private address is your Studio X OS account email. You can add your studio’s public contact email in Settings later.</p>}
       <form className="saas-auth-form" onSubmit={complete} noValidate><fieldset disabled={busy}>
         <label className="saas-field"><span id={formId + "-studioName-label"}>Studio name</span><input aria-labelledby={formId + "-studioName-label"} name="studioName" required minLength={2} maxLength={120} autoComplete="organization" value={form.studioName} onChange={change} placeholder="Your creative studio" aria-invalid={Boolean(fieldErrors.studioName)} aria-describedby={fieldErrors.studioName ? formId + '-studioName' : undefined} />{fieldErrors.studioName && <small className="saas-field-error" id={formId + '-studioName'}>{fieldErrors.studioName}</small>}</label>

@@ -1,0 +1,321 @@
+{
+  "purpose": "Current Studio X OS interface captures for the commercial homepage",
+  "sourceCommit": "c087e3290ccf360c59d9135f50c66a669b982685",
+  "sourceStateSha256": "43f3d5a10eeff3d09fba001bd8b69a12767e87face5141ab3efb3e9c6e40396b",
+  "data": "Entirely synthetic records in the fictional Frame & Field studio. No live account or data.",
+  "method": "Unmodified viewport captures of current admin components. Only size and WebP compression change for delivery.",
+  "origin": "Owner project interface, supplied Studio X OS branding and existing owner photography. Existing Inter typography.",
+  "routes": {
+    "overview": "/admin",
+    "finance": "/admin/finance?view=due",
+    "production": "/admin/post-production"
+  },
+  "assets": [
+    {
+      "file": "overview-light-desktop.webp",
+      "view": "overview",
+      "theme": "light",
+      "device": "desktop",
+      "width": 1440,
+      "height": 960,
+      "bytes": 86560,
+      "sha256": "62da2df450a7f62ed5222a8ab8c41724377a9521eb14582600bd9db794b8768d",
+      "rawCapture": "overview-light-desktop.png",
+      "rawSha256": "5fe8e2250d263db5bb6f3e666501d81a1bb25fa5e1fbb91b9e885ddde39b1f08",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "overview-light-desktop@2x.webp",
+      "view": "overview",
+      "theme": "light",
+      "device": "desktop",
+      "width": 2880,
+      "height": 1920,
+      "bytes": 197172,
+      "sha256": "40a83d0fef9d88a15b8bf05de154b1616513f563ccb015855244a3486792bb44",
+      "rawCapture": "overview-light-desktop.png",
+      "rawSha256": "5fe8e2250d263db5bb6f3e666501d81a1bb25fa5e1fbb91b9e885ddde39b1f08",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "overview-light-mobile@2x.webp",
+      "view": "overview",
+      "theme": "light",
+      "device": "mobile",
+      "width": 780,
+      "height": 1688,
+      "bytes": 82084,
+      "sha256": "e0e71c3e3d4700869610a96c7dba6d69cbf3a1ba0c41da522529dc4d55684ef4",
+      "rawCapture": "overview-light-mobile.png",
+      "rawSha256": "21a4668ffde6908b3573d432ed5e389106eacd81153214b655125272507e91ff",
+      "viewport": [
+        390,
+        844
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "overview-dark-desktop.webp",
+      "view": "overview",
+      "theme": "dark",
+      "device": "desktop",
+      "width": 1440,
+      "height": 960,
+      "bytes": 87540,
+      "sha256": "8563720d7f95e84a7dc5755cbcc137d60458120bb0826545ea45aaaacabee231",
+      "rawCapture": "overview-dark-desktop.png",
+      "rawSha256": "8e74e0964972978bcf4879f8a0c80f1ae05396de4498e136926d18d186a5795c",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "overview-dark-desktop@2x.webp",
+      "view": "overview",
+      "theme": "dark",
+      "device": "desktop",
+      "width": 2880,
+      "height": 1920,
+      "bytes": 196052,
+      "sha256": "b7f0375fd7fe17d2dd7a4c73347eaaa09ffe494ceea42ed9d552e85d1920bbde",
+      "rawCapture": "overview-dark-desktop.png",
+      "rawSha256": "8e74e0964972978bcf4879f8a0c80f1ae05396de4498e136926d18d186a5795c",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "overview-dark-mobile@2x.webp",
+      "view": "overview",
+      "theme": "dark",
+      "device": "mobile",
+      "width": 780,
+      "height": 1688,
+      "bytes": 81424,
+      "sha256": "a101ba60a3e40aac7d0bfebfe2775e5bf93ec27085c8cafc6d8fd6f784245d76",
+      "rawCapture": "overview-dark-mobile.png",
+      "rawSha256": "dbd420ad14c346b03dcd3676e9b2debcf951b27452bf84cd601e070ea687b348",
+      "viewport": [
+        390,
+        844
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "finance-light-desktop.webp",
+      "view": "finance",
+      "theme": "light",
+      "device": "desktop",
+      "width": 1440,
+      "height": 960,
+      "bytes": 64292,
+      "sha256": "e95a34af980d29628c5162296c18fafdc9e578b9523a7a82dd88aebf273d64e8",
+      "rawCapture": "finance-light-desktop.png",
+      "rawSha256": "7368b4261054e6448522702addc53b58df18924d818050560bbc79c4a1dc47e1",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "finance-light-desktop@2x.webp",
+      "view": "finance",
+      "theme": "light",
+      "device": "desktop",
+      "width": 2880,
+      "height": 1920,
+      "bytes": 150968,
+      "sha256": "8f8ce225acda4a7203083da34f046281164b0a429dcc44a9e0d499ece3990339",
+      "rawCapture": "finance-light-desktop.png",
+      "rawSha256": "7368b4261054e6448522702addc53b58df18924d818050560bbc79c4a1dc47e1",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "finance-light-mobile@2x.webp",
+      "view": "finance",
+      "theme": "light",
+      "device": "mobile",
+      "width": 780,
+      "height": 1688,
+      "bytes": 64842,
+      "sha256": "ee82c9144bafac3e7b6f93b4c72bf1e237fe4dadf493a71df414ace0fc814827",
+      "rawCapture": "finance-light-mobile.png",
+      "rawSha256": "a6d8cb13d5e5f5b4cb10b4367732427b71586eef37de9ead76b2d439ec75339b",
+      "viewport": [
+        390,
+        844
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "finance-dark-desktop.webp",
+      "view": "finance",
+      "theme": "dark",
+      "device": "desktop",
+      "width": 1440,
+      "height": 960,
+      "bytes": 62430,
+      "sha256": "ab5b892fe1b5eb0bb58e6a597910aa46030d8727b81ecc8a9fde1dfdd92da5cf",
+      "rawCapture": "finance-dark-desktop.png",
+      "rawSha256": "82afa09b634b442c50bd918cf7584ed17300a4f205abc9263f18f3148bb4745b",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "finance-dark-desktop@2x.webp",
+      "view": "finance",
+      "theme": "dark",
+      "device": "desktop",
+      "width": 2880,
+      "height": 1920,
+      "bytes": 137526,
+      "sha256": "d0603de6476261082d21305264ded296ea01b8370d97e27dc54284d73daec55d",
+      "rawCapture": "finance-dark-desktop.png",
+      "rawSha256": "82afa09b634b442c50bd918cf7584ed17300a4f205abc9263f18f3148bb4745b",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "finance-dark-mobile@2x.webp",
+      "view": "finance",
+      "theme": "dark",
+      "device": "mobile",
+      "width": 780,
+      "height": 1688,
+      "bytes": 60132,
+      "sha256": "652752c7251c88d36910d857b5d862be0f1dc2b176a7af9aada76b9dd44a1164",
+      "rawCapture": "finance-dark-mobile.png",
+      "rawSha256": "dba3dd04679ce6218bb90c2119f4f2382e079ee111b660bb60a81b7e51ea1826",
+      "viewport": [
+        390,
+        844
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "production-light-desktop.webp",
+      "view": "production",
+      "theme": "light",
+      "device": "desktop",
+      "width": 1440,
+      "height": 960,
+      "bytes": 73596,
+      "sha256": "366d12fcb4ec37f0588ac3a546c6627632d9f1bd74503cff6f0c114c3e27b607",
+      "rawCapture": "production-light-desktop.png",
+      "rawSha256": "d7f761e52f61b5578b28859b73f5599c568fd6e7161a6e06d8884cff318c14af",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "production-light-desktop@2x.webp",
+      "view": "production",
+      "theme": "light",
+      "device": "desktop",
+      "width": 2880,
+      "height": 1920,
+      "bytes": 171552,
+      "sha256": "24ae6e0bd1055f8c6d317dda78fee6ae9584f1d0a543e2ea757b4c08daee581d",
+      "rawCapture": "production-light-desktop.png",
+      "rawSha256": "d7f761e52f61b5578b28859b73f5599c568fd6e7161a6e06d8884cff318c14af",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "production-light-mobile@2x.webp",
+      "view": "production",
+      "theme": "light",
+      "device": "mobile",
+      "width": 780,
+      "height": 1688,
+      "bytes": 58292,
+      "sha256": "becbded34f794b8ab0be3f9ab8643c69f4a57a2dc40e1ce03b735afb3155b156",
+      "rawCapture": "production-light-mobile.png",
+      "rawSha256": "72476c4fb836cc7d5c3153879a8f8d619b1ddb34cc457602f455c33af3def930",
+      "viewport": [
+        390,
+        844
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "production-dark-desktop.webp",
+      "view": "production",
+      "theme": "dark",
+      "device": "desktop",
+      "width": 1440,
+      "height": 960,
+      "bytes": 72432,
+      "sha256": "5d5ca998073a03e1efd2a29ae276e914432fef59c938166c94735d114b23a537",
+      "rawCapture": "production-dark-desktop.png",
+      "rawSha256": "3d970f91c013b1d890dc779c01d97f15db6860f52c251ec1512283e606abadf3",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "production-dark-desktop@2x.webp",
+      "view": "production",
+      "theme": "dark",
+      "device": "desktop",
+      "width": 2880,
+      "height": 1920,
+      "bytes": 158830,
+      "sha256": "a9f5ee39bf98f2a8a994c259aa618e434aad7fc83a52c8cbaeb153e65204019a",
+      "rawCapture": "production-dark-desktop.png",
+      "rawSha256": "3d970f91c013b1d890dc779c01d97f15db6860f52c251ec1512283e606abadf3",
+      "viewport": [
+        1440,
+        960
+      ],
+      "captureDpr": 2
+    },
+    {
+      "file": "production-dark-mobile@2x.webp",
+      "view": "production",
+      "theme": "dark",
+      "device": "mobile",
+      "width": 780,
+      "height": 1688,
+      "bytes": 54834,
+      "sha256": "136b2fba080cb97dbc7aec85871e6ad1b1a2914a83d96b61bf3dfad1075ed244",
+      "rawCapture": "production-dark-mobile.png",
+      "rawSha256": "eaf1c4b6cecd94e5a922cf6661f83008bf268997329556fc80ca0ef7d0e015fd",
+      "viewport": [
+        390,
+        844
+      ],
+      "captureDpr": 2
+    }
+  ]
+}

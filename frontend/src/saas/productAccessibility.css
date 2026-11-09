@@ -1,0 +1,259 @@
+/* Audit fixes for the commercial product surface. The hero rhythm is unchanged. */
+.sos-product { --sos-focus: #b8c8ff; }
+.sos-product ::selection { background: #bccaff; color: #101423; }
+.sos-product :is(a, button, summary):not([inert] *) { min-height: 44px; min-width: 44px; }
+.sos-product :is(a, button, summary):focus-visible { outline: 3px solid var(--sos-focus); outline-offset: 4px; }
+.sos-product :is(.sos-desktop-nav a, .sos-signin, .sos-launch-tour, .sos-text-link, .sos-social-signup a) { align-items: center; }
+.sos-product .sos-desktop-nav a { display: inline-flex; }
+.sos-product .sos-header-actions > .sos-button { min-height: 44px; }
+.sos-product .sos-menu-button,
+.sos-product .sos-demo-topline button,
+.sos-product .sos-client-chat header button { width: 44px; height: 44px; flex-shrink: 0; }
+.sos-product .sos-preview-tools button { min-height: 44px; }
+.sos-product .sos-client-support { font-size: 12px; padding: 10px 12px; }
+.sos-product .sos-demo-reset { padding: 10px 12px; font-size: 12px; }
+.sos-product .sos-footer-help { display: flex; flex-wrap: wrap; gap: 8px 28px; padding-bottom: 20px; }
+.sos-product .sos-footer-help a { display: inline-flex; align-items: center; gap: 7px; color: #b7bbcf; font-size: 13px; }
+.sos-product .sos-journey-chapter:not(.is-active) h3 { color: #c6cce0; }
+.sos-product .sos-journey-chapter-detail { color: #96a3c3; }
+.sos-product .sos-overview-preview:not(.is-dark) { --studio-muted: #626873; }
+
+@media (min-width: 601px) {
+  .sos-product .sos-signin { display: inline-flex; }
+}
+
+@media (max-width: 600px) {
+  .sos-product :is(.sos-demo-reset, .sos-client-step-action) { font-size: 12px !important; }
+  /* Only label selectors are raised; display type and data values keep their scale. */
+  .sos-product .sos-preview-pill,
+  .sos-product .sos-preview-pill>span,
+  .sos-product .sos-demo-caption,
+  .sos-product .sos-demo-chrome,
+  .sos-product .sos-demo-chrome>small,
+  .sos-product .sos-demo-studio small,
+  .sos-product .sos-demo-navigation button,
+  .sos-product .sos-demo-sidebar-note p,
+  .sos-product .sos-demo-person,
+  .sos-product .sos-demo-person>i,
+  .sos-product .sos-demo-person small,
+  .sos-product .sos-demo-topline,
+  .sos-product .sos-demo-search,
+  .sos-product .sos-demo-avatar,
+  .sos-product .sos-demo-heading small,
+  .sos-product .sos-demo-heading>span,
+  .sos-product .sos-demo-pulses article>div:first-child,
+  .sos-product .sos-demo-pulses article>p,
+  .sos-product .sos-demo-card-title h4,
+  .sos-product .sos-demo-event>span>small,
+  .sos-product .sos-demo-event strong,
+  .sos-product .sos-demo-event>div>small,
+  .sos-product .sos-demo-event em,
+  .sos-product .sos-demo-task strong,
+  .sos-product .sos-demo-task small,
+  .sos-product .sos-demo-task>span,
+  .sos-product .sos-demo-task>b,
+  .sos-product .sos-demo-totals>div,
+  .sos-product .sos-demo-progress>div,
+  .sos-product .sos-demo-progress small,
+  .sos-product .sos-sample,
+  .sos-product .sos-client-demo>header>div,
+  .sos-product .sos-client-demo>header small,
+  .sos-product .sos-client-welcome>span,
+  .sos-product .sos-client-welcome p,
+  .sos-product .sos-client-stages button>span,
+  .sos-product .sos-client-stages button>small,
+  .sos-product .sos-client-amount>span:first-child,
+  .sos-product .sos-client-status,
+  .sos-product .sos-client-rows>div,
+  .sos-product .sos-client-rows strong,
+  .sos-product .sos-client-panel-note h4,
+  .sos-product .sos-client-panel-note p,
+  .sos-product .sos-client-demo>footer,
+  .sos-product .sos-demo-chrome>span:nth-child(2),
+  .sos-product .sos-demo-caption>span:last-child,
+  .sos-product .sos-client-support,
+  .sos-product .sos-demo-navigation>button,
+  .sos-product .sos-preview-tools button,
+  .sos-product .sos-demo-reset,
+  .sos-product .sos-demo-feedback,
+  .sos-product .sos-client-step-action,
+  .sos-product .sos-client-chat>small,
+  .sos-product .sos-client-chat>a,
+  .sos-product .sos-journey-navigation>button>span,
+  .sos-product .sos-journey-chapter-number>span,
+  .sos-product .sos-journey-eyebrow,
+  .sos-product .sos-journey-chapter-detail,
+  .sos-product .sos-journey-preview-label,
+  .sos-product .sos-journey-screenbar>div>span,
+  .sos-product .sos-journey-screenbar>div>span>span,
+  .sos-product .sos-journey-screenbar>span,
+  .sos-product .sos-journey-monogram,
+  .sos-product .sos-journey-project>div>span,
+  .sos-product .sos-journey-message>span,
+  .sos-product .sos-journey-message>small,
+  .sos-product .sos-journey-details span,
+  .sos-product .sos-journey-details strong,
+  .sos-product .sos-journey-followup>div>p,
+  .sos-product .sos-journey-followup>p,
+  .sos-product .sos-journey-connected,
+  .sos-product .sos-journey-paper>header>span:first-of-type,
+  .sos-product .sos-journey-paper>header small,
+  .sos-product .sos-journey-paper>header>span:last-child,
+  .sos-product .sos-journey-paper>p,
+  .sos-product .sos-journey-paper-row,
+  .sos-product .sos-journey-paper-row small,
+  .sos-product .sos-journey-paper-row>span:last-child,
+  .sos-product .sos-journey-paper-total,
+  .sos-product .sos-journey-accepted small,
+  .sos-product .sos-journey-event>span>small,
+  .sos-product .sos-journey-event p,
+  .sos-product .sos-journey-event>div>span,
+  .sos-product .sos-journey-mini-heading,
+  .sos-product .sos-journey-crew-grid>div>span,
+  .sos-product .sos-journey-crew-grid strong,
+  .sos-product .sos-journey-crew-grid small,
+  .sos-product .sos-journey-crew-grid p,
+  .sos-product .sos-journey-invoice-top,
+  .sos-product .sos-journey-invoice-top small,
+  .sos-product .sos-journey-invoice-top>span:last-child,
+  .sos-product .sos-journey-invoice-value>span,
+  .sos-product .sos-journey-payment-list>div>span,
+  .sos-product .sos-journey-payment-list strong,
+  .sos-product .sos-journey-payment-list small,
+  .sos-product .sos-journey-payment-note p,
+  .sos-product .sos-journey-delivery-heading>span,
+  .sos-product .sos-journey-delivery-heading p,
+  .sos-product .sos-journey-deliveries small,
+  .sos-product .sos-journey-deliveries p,
+  .sos-product .sos-journey-preview>footer>span:first-child,
+  .sos-product .sos-journey-preview>footer>span:last-child,
+  .sos-product .sos-journey-scroll-hint,
+  .sos-product .sos-journey-navigation>button strong,
+  .sos-product .sos-journey-outcome,
+  .sos-product .sos-journey-followup strong,
+  .sos-product .sos-journey-accepted strong,
+  .sos-product .sos-journey-payment-list b,
+  .sos-product .sos-journey-deliveries strong,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-brand>strong,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-brand small,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-nav-label,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-pages>span,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-nav-group,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-sidebar-bottom>span,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-sidebar-bottom strong,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-sidebar-bottom small,
+  .sos-product .sos-overview-preview:not(.is-compact) :is(.pov-topbar i,.pov-sidebar-bottom i),
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-topbar>strong,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-search,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-search small,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-sample,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-heading>span>small,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-heading>div>span,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-welcome-copy>small,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-welcome-copy>p,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-welcome-copy>span,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-note>small,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-note>span,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-planner>div:first-child>strong,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-planner>div:first-child>span,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-planner>small,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-planner-empty>strong,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-planner-empty>span,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-planner>footer,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-card-heading p,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-period,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-number-row small,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-change,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-number-note,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-chart-days button,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-card-bottom,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-chart-toolbar,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-chart-selector button,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-rhythm-days,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-axis-label,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-chart-legend,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-heatmap-foot p,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-heatmap-foot span,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-chart-data,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-ring small,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-rings a>span,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-ring-caption,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-week-strip p,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-week-days small,
+  .sos-product .sos-overview-preview:not(.is-compact) .ov-week-strip>a,
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-preview-foot,
+  .sos-product .sos-mobile-tabs>button>small,
+  .sos-product .sos-mobile-context,
+  .sos-product .sos-mobile-status-bar,
+  .sos-product .sos-mobile-browser,
+  .sos-product .sos-mobile-app-heading>span,
+  .sos-product .sos-mobile-app-heading p,
+  .sos-product .sos-mobile-form-fields>div>span,
+  .sos-product .sos-mobile-field-pair>div>span,
+  .sos-product .sos-mobile-form-fields strong,
+  .sos-product .sos-mobile-form-fields strong>small,
+  .sos-product .sos-mobile-field-pair strong,
+  .sos-product .sos-mobile-preview-action,
+  .sos-product .sos-mobile-screen-note,
+  .sos-product .sos-mobile-document-top,
+  .sos-product .sos-mobile-collection>span,
+  .sos-product .sos-mobile-collection>strong,
+  .sos-product .sos-mobile-collection>small,
+  .sos-product .sos-mobile-document-lines>div,
+  .sos-product .sos-mobile-document-lines small,
+  .sos-product .sos-mobile-document-lines .sos-mobile-discount,
+  .sos-product .sos-mobile-total,
+  .sos-product .sos-mobile-acceptance,
+  .sos-product .sos-mobile-acceptance>span,
+  .sos-product .sos-mobile-invoice-total>span,
+  .sos-product .sos-mobile-invoice-total>small,
+  .sos-product .sos-mobile-milestones>span,
+  .sos-product .sos-mobile-milestones>div,
+  .sos-product .sos-mobile-milestones i,
+  .sos-product .sos-mobile-client-view,
+  .sos-product .sos-mobile-client-view>span,
+  .sos-product .sos-mobile-payment-amount>span,
+  .sos-product .sos-mobile-payment-amount>span:nth-of-type(2),
+  .sos-product .sos-mobile-payment-methods p,
+  .sos-product .sos-mobile-payment-methods small,
+  .sos-product .sos-mobile-payment-note,
+  .sos-product .sos-mobile-payment-note p>span,
+  .sos-product .sos-mobile-stage-caption>span,
+  .sos-product .sos-mobile-stage-caption>small,
+  .sos-product .sos-mobile-tabs>button,
+  .sos-product .sos-mobile-stage-caption>p { font-size: 12px; }
+  .sos-product .sos-preview-tools { gap: 5px; padding: 7px; }
+  .sos-product .sos-preview-tools > [role=tablist] { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex: 1; gap: 1px; }
+  .sos-product .sos-preview-tools [role=tab] { padding: 8px 2px; gap: 0; }
+  .sos-product .sos-preview-tools [role=tab] > svg { display: none; }
+  .sos-product .sos-preview-tools .sos-preview-theme { width: 44px; min-width: 44px; }
+  .sos-product .sos-client-stages { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .sos-product .sos-client-stages button { min-height: 100px; padding: 13px; }
+  .sos-product .sos-client-stages button > small { opacity: 1; }
+  .sos-product .sos-client-demo > footer { flex-wrap: wrap; gap: 8px; }
+  .sos-product .sos-client-demo > footer > span { max-width: none; flex: 1 1 180px; }
+  .sos-product .sos-journey-navigation > button { padding-inline: 3px; }
+  .sos-product .sos-journey-preview-label { flex-wrap: wrap; gap: 6px; }
+  .sos-product .sos-journey-screenbar { flex-wrap: wrap; gap: 10px; }
+  .sos-product .sos-journey-preview > footer { flex-wrap: wrap; gap: 8px; }
+  .sos-product .sos-journey-paper :is(p, small, header > span:last-child),
+  .sos-product .sos-journey-paper-row > span:last-child { color: #65586f; }
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-heading { flex-wrap: wrap; }
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-sample { letter-spacing: .02em; }
+  .sos-product .sos-overview-preview:not(.is-compact) :is(.ov-card-heading h2, .ov-week-strip h2) { font-size: 14px; }
+  .sos-product .sos-overview-preview:not(.is-compact) :is(.ov-week-strip p, .ov-heatmap-time, .ov-heatmap-hours, .ov-number-row small) { font-size: 12px; }
+  .sos-product .sos-overview-preview:not(.is-compact) .pov-welcome-copy > p { max-width: 26ch; }
+  .sos-product .sos-mobile-screen { height: auto; min-height: 610px; }
+  .sos-product .sos-mobile-phone { transform: none; }
+  .sos-product .sos-mobile-document-top,
+  .sos-product .sos-mobile-acceptance,
+  .sos-product .sos-mobile-client-view { flex-wrap: wrap; gap: 6px; }
+  .sos-product .sos-mobile-screen :is(small, .sos-mobile-browser, .sos-mobile-screen-note) { color: #596781; }
+  .sos-product .sos-mobile-payment-note,
+  .sos-product .sos-mobile-payment-note p > span { color: #755768; }
+  .sos-product .sos-footer-bottom { align-items: center; }
+}
+@media (max-width: 380px) {
+  .sos-product .sos-brand > .studio-x-brand-art { width: 110px; }
+  .sos-product .sos-header-actions > .sos-button { gap: 5px; padding-inline: 9px; }
+}

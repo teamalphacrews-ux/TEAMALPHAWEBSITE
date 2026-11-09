@@ -1,0 +1,117 @@
+/* The bolder composition uses the same charcoal, blue and lavender material system. */
+.sos-bold .sos-header { background: transparent; border: 0; backdrop-filter: none; }
+.sos-bold .sos-header .sos-header-inner { height: 70px; width: min(1400px,calc(100% - 48px)); padding-inline: 24px; margin-block: 6px; border: 1px solid #a0baff2b; border-radius: 17px; background: #0c1424e8; box-shadow: 0 12px 40px #02071335; backdrop-filter: blur(20px); }
+.sos-bold .sos-header .sos-mobile-nav { width: min(1400px,calc(100% - 48px)); margin: 0 auto 6px; border: 1px solid #4b608a; border-radius: 14px; background: #101b2e; }
+.sos-bold .sos-audience { padding-top: 140px; }
+.sos-bold .sos-audience-heading h2 { font-size: clamp(46px,5.2vw,76px); line-height: 1.07; }
+.sos-bold .sos-audience-panel { grid-template-columns: .8fr 1.2fr; gap: 72px; align-items: center; }
+.sos-bold .sos-audience-stage { padding: 20px; background: linear-gradient(145deg,#24385c,#172239 55%,#393252); box-shadow: 0 35px 70px #02040c55; }
+.sos-bold .sos-audience-stage-caption { color: #c0d1f3; }
+.sos-bold .sos-audience-screen { min-height: 470px; }
+.sos-bold .sos-audience-visual-title h4 { font-size: 29px; }
+.sos-bold .sos-audience-cases > button { padding-block: 26px; }
+
+/* The client scene is a deliberate shift from the studio's dark workspace to paper and opal. */
+.sos-bold .sos-client-chapter { background: #edf2f9; color: #172b4a; padding-block: 145px; border-block: 1px solid #cfdaeb; position: relative; isolation: isolate; overflow: clip; }
+.sos-bold .sos-client-chapter::before { background: radial-gradient(ellipse at 85% 10%,#b7c9ef55,transparent 60%),linear-gradient(110deg,transparent 35%,#d6e0f23b); opacity: 1; }
+.sos-bold .sos-client-chapter .sos-smart-grid { grid-template-columns: .86fr 1.14fr; gap: 90px; align-items: center; }
+.sos-bold .sos-client-chapter .sos-smart-copy h2 { font-size: clamp(44px,5vw,72px); color: #192f51; line-height: 1.07; }
+.sos-bold .sos-client-chapter .sos-smart-copy h2 > span { color: #5d6c95; }
+.sos-bold .sos-client-chapter .sos-smart-copy .sos-smart-subheading { color: #263d62; font-size: 21px; }
+.sos-bold .sos-client-chapter .sos-smart-copy > p { color: #52698b; font-size: 16px; }
+.sos-bold .sos-client-chapter .sos-smart-benefits > span { color: #3e587f; }
+.sos-bold .sos-client-chapter .sos-smart-benefits svg { color: #496b9b; }
+.sos-bold .sos-client-chapter .sos-text-link { color: #2e4c7e; }
+.sos-bold .sos-client-chapter .sos-client-demo { background: #fff; border: 1px solid #b9c7dc; color: #203759; border-radius: 18px; padding: 26px; box-shadow: 0 35px 70px #314f7c2b; }
+.sos-bold .sos-client-chapter .sos-client-demo > header { border-color: #dce4f0; }
+.sos-bold .sos-client-chapter .sos-client-demo > header > div { color: #324d74; }
+.sos-bold .sos-client-chapter .sos-client-demo > header small { color: #5c7395; font-size: 12px; }
+.sos-bold .sos-client-chapter .sos-sample { color: #4e668b; background: #eef2f9; border-color: #c7d3e5; font-size: 12px; }
+.sos-bold .sos-client-chapter .sos-client-mark { background: #e1e9f6; color: #3f5c8b; }
+.sos-bold .sos-client-chapter .sos-client-welcome > span { color: #5e7395; font-size: 12px; }
+.sos-bold .sos-client-chapter .sos-client-welcome h3 { color: #243c61; font-family: var(--sos-display); font-size: 34px; letter-spacing: -.035em; }
+.sos-bold .sos-client-chapter .sos-client-welcome p { color: #61779a; font-size: 14px; }
+.sos-bold .sos-client-chapter .sos-client-stages button { min-height: 108px; }
+.sos-bold .sos-client-chapter .sos-client-stages button.quote { background: #dce7fa; color: #2d4c78; }
+.sos-bold .sos-client-chapter .sos-client-stages button.invoice { background: #e8def4; color: #593d76; }
+.sos-bold .sos-client-chapter .sos-client-stages button.payments { background: #d9ebf2; color: #2b556e; }
+.sos-bold .sos-client-chapter .sos-client-stages button.production { background: #e0e5f5; color: #3e527b; }
+.sos-bold .sos-client-chapter .sos-client-stages button[aria-selected=true] { border-color: #617caa; box-shadow: 0 0 0 3px #697fa81c; }
+.sos-bold .sos-client-chapter .sos-client-panel { background: #f6f8fc; border-color: #d1dced; padding: 22px; }
+.sos-bold .sos-client-chapter .sos-client-amount > span:first-child { color: #4f678d; font-size: 13px; }
+.sos-bold .sos-client-chapter .sos-client-amount strong { color: #243d64; font-size: 39px; }
+.sos-bold .sos-client-chapter .sos-client-status { color: #285b49; background: #e1efe6; border-color: #c1d9cc; font-size: 12px; }
+.sos-bold .sos-client-chapter .sos-client-rows > div { color: #526b90; border-color: #dae3f0; }
+.sos-bold .sos-client-chapter .sos-client-rows strong { color: #2c4b79; }
+.sos-bold .sos-client-chapter .sos-client-panel-note { background: #e9eff8; }
+.sos-bold .sos-client-chapter .sos-client-panel-note h4 { color: #304d77; }
+.sos-bold .sos-client-chapter .sos-client-panel-note p { color: #4d678e; }
+.sos-bold .sos-client-chapter .sos-client-step-action { color: #f7f9ff; background: #2d4f82; border-color: #2d4f82; font-size: 13px !important; }
+.sos-bold .sos-client-chapter .sos-client-demo > footer { color: #526d94; font-size: 12px; }
+.sos-bold .sos-client-chapter .sos-client-support { background: #e1eafa; color: #365785; }
+.sos-bold .sos-client-chapter .sos-client-chat { color: #e1eaff; }
+.sos-bold .sos-client-chapter :is(a,button):focus-visible { outline-color: #385e9b; }
+
+/* Actual client data surfaces share identity across view changes. */
+@media (prefers-reduced-motion:no-preference) {
+  .sos-bold .sos-client-welcome h3 { view-transition-name: sos-client-project; }
+  .sos-bold .sos-client-amount strong { view-transition-name: sos-client-amount; }
+  .sos-bold .sos-client-panel { view-transition-name: sos-client-surface; }
+}
+:root:has(.sos-bold)::view-transition-old(root),
+:root:has(.sos-bold)::view-transition-new(root) { animation: none; }
+::view-transition-group(sos-client-project),
+::view-transition-group(sos-client-amount),
+::view-transition-group(sos-client-surface) { animation-duration: 380ms; animation-timing-function: cubic-bezier(.16,1,.3,1); }
+::view-transition-old(sos-client-surface),
+::view-transition-new(sos-client-surface) { animation-duration: 220ms; }
+
+.sos-bold .sos-integrations-section { padding-top: 140px; background: #101729; }
+.sos-bold .sos-connections { height: 420px; }
+.sos-bold .sos-connections-core { width: 170px; height: 170px; padding: 37px; border-radius: 36px; background: linear-gradient(140deg,#3c517c,#172239 65%,#514164); border-color: #8e9ec7; box-shadow: 0 35px 65px #03061066; }
+.sos-bold .sos-connections-lines { color: #718bbc; }
+.sos-bold .sos-connection-node > span { width: 62px; height: 62px; border-radius: 16px; background: #182641; border-color: #6379a4; }
+.sos-bold .sos-connections > p { font-size: 13px; }
+.sos-bold .sos-final-section { background: linear-gradient(140deg,#1d2d4e,#17233d 50%,#312a4a); }
+.sos-bold .sos-final-brand { opacity: .065; }
+.sos-bold .sos-footer-wordmark { margin-block: 45px 58px; }
+
+@media (max-width:1100px) {
+  .sos-bold .sos-client-chapter .sos-smart-grid { gap: 45px; }
+  .sos-bold .sos-audience-panel { gap: 40px; }
+}
+@media (max-width:850px) {
+  .sos-bold .sos-audience-panel { grid-template-columns: 1fr; gap: 36px; }
+  .sos-bold .sos-audience-screen { min-height: 0; }
+  .sos-bold .sos-client-chapter .sos-smart-grid { grid-template-columns: 1fr; gap: 46px; }
+  .sos-bold .sos-client-chapter .sos-smart-copy { max-width: 650px; }
+  .sos-bold .sos-client-chapter .sos-client-demo { max-width: 660px; margin-inline: auto; width: 100%; }
+}
+@media (max-width:600px) {
+  .sos-bold .sos-header .sos-header-inner { height: 60px; width: calc(100% - 24px); padding-inline: 13px; border-radius: 12px; }
+  .sos-bold .sos-header .sos-mobile-nav { width: calc(100% - 24px); }
+  .sos-bold .sos-audience { padding-top: 82px; }
+  .sos-bold .sos-audience-heading h2 { font-size: 42px; }
+  .sos-bold .sos-audience-stage { padding: 13px; }
+  .sos-bold .sos-audience-visual-title h4 { font-size: 25px; }
+  .sos-bold .sos-client-chapter { padding-block: 85px; }
+  .sos-bold .sos-client-chapter .sos-smart-copy h2 { font-size: 43px; line-height: 1.1; }
+  .sos-bold .sos-client-chapter .sos-smart-copy > p { font-size: 15px; }
+  .sos-bold .sos-client-chapter .sos-client-demo { padding: 17px; border-radius: 16px; }
+  .sos-bold .sos-client-chapter .sos-client-welcome h3 { font-size: 29px; }
+  .sos-bold .sos-client-chapter .sos-client-panel { padding: 16px; }
+  .sos-bold .sos-client-chapter .sos-client-amount strong { font-size: 33px; }
+  .sos-bold .sos-client-chapter .sos-client-amount > span:first-child { font-size: 12px; }
+  .sos-bold .sos-integrations-section { padding-top: 80px; }
+  .sos-bold .sos-connections { height: 305px; }
+  .sos-bold .sos-connections-core { width: 100px; height: 100px; padding: 22px; border-radius: 24px; }
+  .sos-bold .sos-connection-node > span { width: 44px; height: 44px; border-radius: 12px; }
+  .sos-bold .sos-connections > p { font-size: 12px; }
+}
+@media (max-width:380px) {
+  .sos-bold .sos-client-chapter .sos-smart-copy h2 { font-size: 37px; }
+  .sos-bold .sos-client-chapter .sos-client-demo { padding: 13px; }
+  .sos-bold .sos-audience-people { grid-template-columns: 1fr; }
+  .sos-bold .sos-audience-people > span { flex-direction: row; align-items: center; gap: 10px; }
+  .sos-bold .sos-audience-people strong { overflow-wrap: normal; }
+}

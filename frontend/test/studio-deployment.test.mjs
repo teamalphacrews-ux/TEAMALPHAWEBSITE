@@ -34,6 +34,8 @@ test('commercial HTML starts with product identity and does not preload personal
   assert.doesNotMatch(html, /team-alpha-(?:favicon|apple-touch)|The Wedding Artist|assets\/banner\//);
   assert.match(html, /name="viewport"/);
   assert.match(html, /src="\/src\/main.jsx"/);
+  assert.match(html, /rel="preload" as="font" type="font\/woff2" href="\/assets\/fonts\/manrope-latin-variable\.woff2" crossorigin="anonymous"/);
+  assert.equal((html.match(/manrope-latin-variable\.woff2/g) || []).length, 1);
   assert.equal((html.match(/property="og:title"/g) || []).length, 1);
   assert.equal(transformDeploymentHtml(html, { VITE_STUDIO_DEPLOYMENT: 'commercial' }), html);
 });

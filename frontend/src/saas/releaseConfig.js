@@ -35,5 +35,9 @@ export function transformDeploymentHtml(html, env = {}) {
   result = setMeta(result, 'property', 'og:type', 'website');
   result = result.replace(/<link\b(?=[^>]*\brel=["']icon["'])[^>]*>/i, `<link rel="icon" type="image/png" sizes="64x64" href="${STUDIO_X_FAVICON}" />`);
   result = result.replace(/<link\b(?=[^>]*\brel=["']apple-touch-icon["'])[^>]*>/i, `<link rel="apple-touch-icon" sizes="180x180" href="${STUDIO_X_TOUCH_ICON}" />`);
+  const displayFont = '/assets/fonts/manrope-latin-variable.woff2';
+  if (!result.includes(`href="${displayFont}"`)) {
+    result = result.replace('</head>', `  <link rel="preload" as="font" type="font/woff2" href="${displayFont}" crossorigin="anonymous" />\n  </head>`);
+  }
   return result.replace(/<link\b(?=[^>]*\brel=["']preload["'])(?=[^>]*\bas=["']image["'])(?=[^>]*\bhref=["']\/assets\/banner\/)[^>]*>\s*/gi, '');
 }
