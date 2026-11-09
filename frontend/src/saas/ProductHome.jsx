@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, CalendarDays, Camera, Check, CircleCheck, Clapperboard, CreditCard, FileCheck2, FileText, FolderOpen, Layers3, Link2, Mail, Menu, MessageCircle, Plus, ShieldCheck, Wallet, X } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Camera, Check, CircleCheck, Clapperboard, FileCheck2, FileText, Link2, Menu, MessageCircle, Plus, ShieldCheck, Wallet, X } from 'lucide-react';
 import './productHome.css';
 import ProductScreens from "./ProductScreens";
 import ProductHero from './ProductHero';
@@ -13,8 +13,8 @@ import ProductJourney from './ProductJourney';
 import { PRODUCT_METADATA } from './releaseConfig';
 import { PRODUCT_HELP_LINKS } from './productLinks';
 import { signupHref } from './signupIntent';
-import { PRODUCT_BRAND, integrationArtwork } from './productBrandAssets';
-import ProductConnections from './ProductConnections';
+import { PRODUCT_BRAND } from './productBrandAssets';
+import ProductIntegrations from './ProductIntegrations';
 import useProductMotion from './useProductMotion';
 import './productExperience.css';
 import './productAccessibility.css';
@@ -28,14 +28,6 @@ const clientViews = [
   { id:'invoice', name:'Invoice', icon:FileText, status:'Issued', amount:'₹1,80,000', caption:'Your project invoice', heading:'One link. Even after the yes.', copy:'Once your studio reviews and issues the invoice, the same client link shows it alongside the accepted quote.', rows:[['Invoice #DEMO-001','Issued'],['Studio branding & details','Included'],['Payment schedule','Ready to view']] },
   { id:'payments', name:'Payments', icon:Wallet, status:'Scheduled', amount:'₹45,000', caption:'Next payment milestone', heading:'Make the next payment feel simple.', copy:'Clients see their payment milestones and your configured bank or UPI details. Your team records and verifies receipts in Studio X OS.', rows:[['Booking payment','Recorded'],['Before the wedding','Next milestone'],['Final delivery','Scheduled']] },
   { id:'production', name:'Production', icon:Clapperboard, status:'In progress', amount:'3 / 4', caption:'Deliverables in progress', heading:'Fewer “any update?” messages.', copy:'Show clients where their photos, films and album stand, who is working on them, and where to find approved delivery links.', rows:[['Photographs','Editing'],['Cinematic film','In progress'],['Album','Design review']] },
-];
-const integrations = [
-  { icon:CalendarDays, name:'Google Calendar', mode:'Per-studio setup planned', copy:'Keep studio events alongside your Google calendar. Independent connections for each SaaS studio are still being prepared.' },
-  { icon:Mail, name:'Gmail', mode:'Per-studio setup planned', copy:'Bring email into the studio workflow. The read-only inbox integration needs configuration before it is available to SaaS studios.' },
-  { icon:MessageCircle, name:'WhatsApp Business', mode:'Manual sharing', copy:'Share quotes and client smart links through WhatsApp. Messages open in your app; an automatic WhatsApp inbox is not included.' },
-  { icon:CreditCard, name:'UPI & bank details', mode:'Client payment instructions', copy:'Show your configured payment details from the client link. Your studio confirms receipts; transfers are not automatically verified.' },
-  { icon:Layers3, name:'Razorpay', mode:'Subscription setup pending', copy:'Planned for monthly Studio X OS subscriptions in INR. This is separate from the payments your clients make to your studio.' },
-  { icon:FolderOpen, name:'Delivery links', mode:'Project-based sharing', copy:'Keep approved photo, film and album delivery links with the project, ready for clients when the work is ready to share.' },
 ];
 const faqs = [
   ['Is Studio X OS ready for new studios?','The commercial version is currently in preview. Private workspaces, team roles, invitations and subscription screens are being developed and tested. Registration, provider connections and paid plans will open after launch checks are complete.'],
@@ -117,7 +109,7 @@ export default function ProductHome(){
   <SmartLinkDemo/>
   <ProductWorkbench/>
   <ProductReminders/>
-  <section className="sos-integrations-section" id="integrations"><div className="sos-container"><div className="sos-section-heading"><div><span className="sos-eyebrow">YOUR WORKFLOW, CONNECTED THOUGHTFULLY</span><h2>Keep the tools<br/>you know.</h2></div><p>Useful connections, with clear boundaries.<br/>Here’s what is available and what needs setup.</p></div><ProductConnections/><div className="sos-integrations-grid">{integrations.map(item=><article key={item.name}><span className="sos-integration-icon">{integrationArtwork[item.name] ? <img src={integrationArtwork[item.name]} alt="" width="28" height="28" loading="lazy"/> : <item.icon size={22} strokeWidth={1.6}/>}</span><div><h3>{item.name}</h3><span className="sos-integration-status">{item.mode}</span><p>{item.copy}</p></div></article>)}</div></div></section>
+  <ProductIntegrations/>
   <section className="sos-plans sos-container" id="plans"><div className="sos-section-heading"><div><h2>Start with your people.<br/>Grow at your pace.</h2></div><p>Monthly INR plans are being prepared.<br/>Pricing will be published before paid subscriptions open.</p></div><div className="sos-plan-cards">{productPlans.map((plan,index)=><article key={plan.name} className={index===0?'is-featured':''}><div className="sos-plan-identity"><header><span>{plan.name}</span>{index===0&&<small>YOUR STARTING POINT</small>}</header><p>{plan.label}</p></div><div className="sos-plan-seats"><strong>{plan.seats}</strong><span>team members<br/>in your studio</span></div><ul>{plan.features.map(feature=><li key={feature}><Check size={15}/>{feature}</li>)}</ul><div className="sos-plan-next"><div className="sos-plan-pricing"><span>Pricing to be announced</span><small>Monthly subscription · INR</small></div><Link to={signupHref(plan.name.toLowerCase())} className={'sos-button '+(index===0?'dark':'outline')}>Choose {plan.name}<ArrowUpRight size={15}/></Link></div></article>)}</div><p className="sos-plans-note"><ShieldCheck size={14}/>A 14-day trial is planned for new studios. Registration is currently in preview; no payment is collected here.</p></section>
   <section className="sos-faq sos-container" id="questions"><div><span className="sos-eyebrow">A FEW THINGS, MADE CLEAR</span><h2>Before your<br/>next chapter.</h2><p>The details matter.<br/>Here are the ones worth knowing.</p></div><div className="sos-faq-list">{faqs.map(([question,answer])=><details key={question}><summary>{question}<Plus size={18}/></summary><p>{answer}</p></details>)}</div></section>
   <section className="sos-final-section" id="start"><div className="sos-container"><span className="sos-eyebrow">LESS ADMIN. MORE ART.</span><h2>Your best work.<br/><span>Your strongest business.</span></h2><p>Supercharge your photography business with Studio X OS.</p><div className="sos-final-actions"><a className="sos-button light" href="#plans">Choose your plan<ArrowUpRight size={17}/></a><Link className="sos-button ghost" to="/signup">Create your studio<ArrowUpRight size={17}/></Link></div><div className="sos-social-signup"><span>Choose how you’d like to join</span><div><Link to="/signup?provider=google">Continue with Google<ArrowRight size={13}/></Link><Link to="/signup?provider=apple">Continue with Apple<ArrowRight size={13}/></Link></div><small>Provider sign-in becomes available after secure setup and registration opens.</small></div></div><div className="sos-final-brand" aria-hidden="true"><img src={PRODUCT_BRAND.symbolWhite} alt="" width="512" height="512" loading="lazy" decoding="async"/></div></section>
