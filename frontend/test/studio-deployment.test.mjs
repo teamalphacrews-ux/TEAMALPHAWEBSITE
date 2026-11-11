@@ -39,3 +39,25 @@ test('commercial HTML starts with product identity and does not preload personal
   assert.equal((html.match(/property="og:title"/g) || []).length, 1);
   assert.equal(transformDeploymentHtml(html, { VITE_STUDIO_DEPLOYMENT: 'commercial' }), html);
 });
+
+test('commercial font loading is local while personal typography stays independent', () => {
+  const html = transformDeploymentHtml(personalHtml, { VITE_STUDIO_DEPLOYMENT: 'commercial' });
+  assert.doesNotMatch(html, /https:\/\/fonts\.(?:googleapis|gstatic)\.com|Playfair/);
+  assert.match(html, /font-family:Inter;font-style:normal;font-weight:100 900;font-display:swap/);
+  assert.match(html, /src:url\('\/assets\/fonts\/inter-latin-ext-variable\.woff2'\)/);
+  assert.equal((html.match(/id="studio-commercial-fonts"/g) || []).length, 1);
+  assert.equal((html.match(/href="\/assets\/fonts\/inter-latin-variable\.woff2"/g) || []).length, 1);
+
+  for (const path of ['inter-latin-variable.woff2', 'inter-latin-ext-variable.woff2']) {
+    const bytes = readFileSync(new URL(`../public/assets/fonts/${path}`, import.meta.url));
+    assert.equal(bytes.subarray(0, 4).toString(), 'wOF2', `${path} must be a WOFF2 asset`);
+  }
+  assert.match(readFileSync(new URL('../public/assets/fonts/Inter-OFL.txt', import.meta.url), 'utf8'), /SIL OPEN FONT LICENSE Version 1\.1/);
+  assert.equal(transformDeploymentHtml(personalHtml), personalHtml);
+});
+
+test('commercial font cleanup leaves unrelated third-party resources intact', () => {
+  const source = personalHtml.replace('</head>', '<link rel="preconnect" href="https://images.example.com" />\n</head>');
+  const html = transformDeploymentHtml(source, { VITE_STUDIO_DEPLOYMENT: 'commercial' });
+  assert.match(html, /href="https:\/\/images\.example\.com"/);
+});

@@ -1,0 +1,27 @@
+/* A photographic shutter connects real workspace captures, after they decode. */
+.sos-screen-feedback {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px 20px;
+  min-height: 44px; padding: 8px 18px; color: var(--sos-text-secondary, #b7c3dd);
+  background: var(--sos-surface, #101729); font-size: 14px; line-height: 1.6;
+}
+.sos-screen-feedback > button {
+  display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0;
+  min-height: 44px; padding: 8px 12px; border: 1px solid currentColor; border-radius: 8px;
+  background: transparent; color: inherit; font: inherit;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sos-screen-panel > .sos-product-screen-image { view-transition-name: sos-workspace-screen; }
+  ::view-transition-group(sos-workspace-screen) { animation-duration: 420ms; animation-timing-function: cubic-bezier(.16, 1, .3, 1); }
+  ::view-transition-old(sos-workspace-screen) { animation: sos-shutter-close 150ms ease-out both; }
+  ::view-transition-new(sos-workspace-screen) { animation: sos-shutter-open 360ms 60ms cubic-bezier(.16, 1, .3, 1) both; }
+}
+@keyframes sos-shutter-close {
+  to { opacity: 0; clip-path: inset(49.5% 0); }
+}
+@keyframes sos-shutter-open {
+  from { clip-path: inset(49.5% 0); filter: brightness(1.15); }
+  to { clip-path: inset(0); filter: brightness(1); }
+}
+@media (max-width: 600px) {
+  .sos-screen-feedback { flex-wrap: wrap; padding-inline: 14px; }
+}

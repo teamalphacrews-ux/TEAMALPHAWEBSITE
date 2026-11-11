@@ -14,7 +14,7 @@ import './saas.css';
 const failureMessage = error => error?.message === 'Failed to fetch' ? 'We could not reach Studio OS. Check your connection and try again.' : error?.message || 'Please try again.';
 export function SignupPage() {
   const { user, token } = useAuth();
-  const { config, loading, error: configError, retry } = usePublicConfig();
+  const { config, loading, slow, error: configError, retry } = usePublicConfig();
   const plan = useSignupPlan();
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const [providerBusy, setProviderBusy] = useState(false);
@@ -43,7 +43,7 @@ export function SignupPage() {
       <small>Your choice stays with you during signup. All new studios start with a Starter trial for up to 5 team members; paid plans are not activated here.</small>
       <Link to="/studio-os#plans">Compare plans <ArrowRight size={13} /></Link>
     </div>
-    <PublicConfigStatus loading={loading} error={configError} retry={retry} />
+    <PublicConfigStatus loading={loading} slow={slow} error={configError} retry={retry} />
     {error && <p className="saas-error" role="alert">{error}</p>}
     {config && <SocialAuthButtons config={config} loading={loading} plan={plan} purpose="signup" disabled={busy || providerBusy} onStart={beginProvider} onFinish={finishProvider} />}
     {!loading && !configError && (config?.enabled !== true || config?.authEnabled !== true) ? <div className="saas-info">

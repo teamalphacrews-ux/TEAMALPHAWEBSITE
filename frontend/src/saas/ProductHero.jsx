@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowUpRight, Camera, Link2, Pause, Play, UsersRound } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, Camera, Images, Link2, Pause, Play, UsersRound } from 'lucide-react';
 import { PRODUCT_BRAND } from './productBrandAssets';
 import PrismaticField from './PrismaticField';
 import HeroLightning from './HeroLightning';
+import EmblemDust from './EmblemDust';
 import './prismaticHero.css';
 
 const bounded = value => Math.max(0, Math.min(1, value));
@@ -63,12 +64,14 @@ export default function ProductHero({ children }) {
     const surface = launch.current;
     const runway = heroRunway.current;
     const pin = heroPin.current;
+    const introduction = pin.querySelector('.sos-launch-intro');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const desktop = window.matchMedia('(min-width: 851px) and (pointer: fine)');
     const shortViewport = window.matchMedia('(max-height: 699px)');
     const header = surface.closest('.sos-product')?.querySelector('.sos-header');
     let frame = 0;
     let stickyTop = 82;
+    let contentHeight = 0;
     let geometryDirty = true;
     let previousHeroProgress = -1;
     let previousHeroMode = '';
@@ -80,22 +83,24 @@ export default function ProductHero({ children }) {
     let previousDirection = 0;
     let previousDepth = null;
 
-    function updateHero(timestamp) {
+    function updateHero(timestamp, measurements) {
       const remeasured = geometryDirty;
       if (geometryDirty) {
-        stickyTop = header?.getBoundingClientRect().height || (window.innerWidth <= 600 ? 72 : 82);
+        stickyTop = measurements.headerHeight || (window.innerWidth <= 600 ? 72 : 82);
+        contentHeight = measurements.contentHeight;
         surface.style.setProperty('--hero-sticky-top', `${stickyTop}px`);
         geometryDirty = false;
       }
       // The runway never transforms. The header-sized preamble also keeps
       // a direct #sos-main visit at zero instead of starting mid-spin.
-      const bounds = runway.getBoundingClientRect();
-      const canPin = !reducedMotion.matches && !shortViewport.matches;
+      const bounds = measurements.runway;
+      // Expanded text and narrow screens must remain in ordinary document flow
+      // whenever the whole message, actions and scroll cue cannot fit together.
+      const canPin = !reducedMotion.matches && !shortViewport.matches && contentHeight + 50 <= window.innerHeight - stickyTop;
       const pausedMotion = surface.dataset.heroPaused === 'true';
-      const focus = document.activeElement;
-      const keyboardFocus = pin.contains(focus) && focus?.matches?.(':focus-visible');
-      const mode = reducedMotion.matches ? 'reduced' : shortViewport.matches ? 'compact' : pausedMotion ? 'paused' : keyboardFocus ? 'focus' : 'pinned';
-      const travel = Math.max(1, bounds.height - pin.offsetHeight - stickyTop);
+      const keyboardFocus = measurements.keyboardFocus;
+      const mode = reducedMotion.matches ? 'reduced' : !canPin ? 'compact' : pausedMotion ? 'paused' : keyboardFocus ? 'focus' : 'pinned';
+      const travel = Math.max(1, bounds.height - measurements.pinHeight - stickyTop);
       const target = canPin && !pausedMotion && !keyboardFocus ? bounded(-bounds.top / travel) : 0;
       const inView = bounds.bottom > stickyTop && bounds.top < window.innerHeight;
       const now = typeof timestamp === 'number' ? timestamp : performance.now();
@@ -145,12 +150,23 @@ export default function ProductHero({ children }) {
     function updateReveal(timestamp) {
       frame = 0;
       if (document.hidden) return;
-      if (updateHero(timestamp)) scheduleReveal();
+      // Read both stages before changing any inline CSS. The showcase must
+      // never force a fresh layout after the aperture has already been written.
+      const focus = document.activeElement;
+      const measurements = {
+        headerHeight: geometryDirty ? header?.getBoundingClientRect().height : stickyTop,
+        runway: runway.getBoundingClientRect(),
+        pinHeight: pin.offsetHeight,
+        contentHeight: geometryDirty ? introduction.getBoundingClientRect().bottom - pin.getBoundingClientRect().top : contentHeight,
+        keyboardFocus: pin.contains(focus) && focus?.matches?.(':focus-visible'),
+        showcase: stage.getBoundingClientRect(),
+      };
+      if (updateHero(timestamp, measurements)) scheduleReveal();
       let progress = 1;
       let direction = 1;
       const depth = desktop.matches && !reducedMotion.matches;
       if (!reducedMotion.matches && !stage.contains(document.activeElement)) {
-        const { top, bottom, height } = stage.getBoundingClientRect();
+        const { top, bottom, height } = measurements.showcase;
         const viewport = window.innerHeight;
         const travel = Math.max(1, Math.min(height, viewport) * 0.6);
         const visible = Math.max(0, Math.min(1, (viewport - top) / travel, bottom / travel));
@@ -176,8 +192,7 @@ export default function ProductHero({ children }) {
       window.cancelAnimationFrame(frame);
       frame = 0;
       previousHeroTime = 0;
-      if (document.hidden) updateHero(performance.now());
-      else scheduleReveal();
+      if (!document.hidden) scheduleReveal();
     }
 
     updateReveal();
@@ -194,6 +209,8 @@ export default function ProductHero({ children }) {
     resizeObserver?.observe(stage);
     resizeObserver?.observe(runway);
     resizeObserver?.observe(pin);
+    resizeObserver?.observe(introduction);
+    if (header) resizeObserver?.observe(header);
     return () => {
       window.cancelAnimationFrame(frame);
       window.cancelAnimationFrame(pointerFrame.current);
@@ -248,6 +265,7 @@ export default function ProductHero({ children }) {
         <div className="sos-emblem-turntable">
           <div className="sos-emblem-sculpture">
             <img className="sos-emblem-solid" src={PRODUCT_BRAND.symbol} width="768" height="768" alt="" fetchPriority="high" decoding="async" />
+            <EmblemDust />
             <div className="sos-emblem-assembly">{[0, 1, 2, 3].map(index => <i key={index} className={'sos-emblem-fragment fragment-' + index}><img src={PRODUCT_BRAND.symbol} width="768" height="768" alt="" decoding="async" /></i>)}</div>
             <span className="sos-emblem-sheen" style={{ maskImage: `url(${PRODUCT_BRAND.symbol})`, WebkitMaskImage: `url(${PRODUCT_BRAND.symbol})` }}><i/></span>
           </div>
@@ -266,8 +284,9 @@ export default function ProductHero({ children }) {
           <p><span>One photographer. Or an entire studio.</span><br/>Bring your clients, crew, money and delivery into one connected workspace.</p>
           <div className="sos-launch-actions">
             <a href="#plans" className="sos-button dark">Explore plans<ArrowUpRight size={17}/></a>
-            <a href="#product-demo" className="sos-launch-tour"><Play size={13} fill="currentColor"/>Experience the workspace</a>
+            <a href="#product-demo" className="sos-launch-tour"><Images size={17}/>Explore product screens</a>
           </div>
+          <p className="sos-preview-readiness">Commercial preview · Registration & pricing are being prepared.</p>
         </div>
       </div>
     </div>
@@ -280,7 +299,7 @@ export default function ProductHero({ children }) {
         <a href="#for-photographers"><UsersRound size={18}/><span>Leading a team?<strong>Keep every hand-off connected.</strong></span><ArrowUpRight size={16}/></a>
         <a href="#on-the-go" className="sos-launch-mobile">Create. Quote. Invoice. Collect.<span>Wherever the work takes you.<ArrowDown size={15}/></span></a>
       </div>
-      <div className="sos-showcase-stage" ref={showcase}>
+      <div className="sos-showcase-stage" id="product-demo" ref={showcase} tabIndex={-1}>
         <div className="sos-showcase-scroll-cue" aria-hidden="true"><span>Your next chapter, in view</span><ArrowDown size={16}/></div>
         <div className="sos-showcase-frame" onPointerMove={moveLight} onPointerLeave={resetLight}>
           <div className="sos-showcase-label"><span><i/>A workspace that works with you</span><a href="#smart-link">Explore the client side<Link2 size={14}/><ArrowUpRight size={13}/></a></div>

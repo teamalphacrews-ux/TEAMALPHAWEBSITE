@@ -13,6 +13,7 @@ uniform vec2 u_resolution;
 uniform vec2 u_pointer;
 uniform float u_time;
 uniform float u_scroll;
+uniform float u_heroProgress;
 uniform float u_apertureScale;
 uniform float u_motion;
 uniform float u_hasLogo;
@@ -28,16 +29,29 @@ float edgeFootprint(float value, float analyticFootprint) {
 
 vec3 illumination(vec3 direction) {
   float phase = u_time * 0.21;
-  vec3 blueLight = normalize(vec3(-0.62 + sin(phase) * 0.35, 0.72, 0.86));
-  vec3 opalLight = normalize(vec3(0.62, 0.48 + cos(phase * 0.78) * 0.2, 0.9));
+  vec3 blueLight = normalize(vec3(-0.62 + sin(phase) * 0.35 + u_pointer.x * 0.48, 0.72 - u_pointer.y * 0.3, 0.86));
+  vec3 opalLight = normalize(vec3(0.62 - u_pointer.x * 0.28, 0.48 + cos(phase * 0.78) * 0.2 + u_pointer.y * 0.22, 0.9));
   vec3 travellingLight = normalize(vec3(cos(phase + 0.4) * 0.85, sin(phase + 0.4) * 0.55, 0.65));
-  float blue = pow(max(dot(direction, blueLight), 0.0), 18.0);
-  float violet = pow(max(dot(direction, opalLight), 0.0), 28.0);
+  float blue = pow(max(dot(direction, blueLight), 0.0), 14.0);
+  float violet = pow(max(dot(direction, opalLight), 0.0), 22.0);
   float strip = pow(max(dot(direction, travellingLight), 0.0), 90.0);
   return vec3(0.035, 0.045, 0.075)
     + vec3(0.25, 0.48, 1.0) * blue * 1.35
     + vec3(0.73, 0.55, 1.0) * violet * 1.18
     + vec3(0.65, 0.81, 1.0) * strip * 1.8;
+}
+
+// A broad studio light seen through the curved dielectric. Separating its
+// wavelengths produces restrained blue/opal dispersion, without another pass.
+vec3 transmittedLight(vec3 ray, float thickness, float hue) {
+  vec2 projected = ray.xy / max(abs(ray.z), 0.24);
+  float phase = u_time * 0.21;
+  vec2 source = vec2(sin(phase) * 0.3 + u_pointer.x * 0.32, 0.28 - u_pointer.y * 0.24);
+  vec3 wavelength = vec3(projected.x - source.x) + vec3(-0.038, 0.0, 0.038) * thickness;
+  vec3 window = 1.0 / (1.0 + wavelength * wavelength * 32.0);
+  float vertical = projected.y - source.y;
+  float softbox = 1.0 / (1.0 + vertical * vertical * 5.0);
+  return mix(vec3(0.22, 0.53, 1.0), vec3(0.7, 0.56, 1.0), hue) * window * softbox;
 }
 
 vec3 stageMaterial(vec3 ro, vec3 rd, vec3 point) {
@@ -48,18 +62,30 @@ vec3 stageMaterial(vec3 ro, vec3 rd, vec3 point) {
   color += mix(vec3(0.06, 0.13, 0.32), vec3(0.19, 0.09, 0.3), smoothstep(-3.0, 3.0, point.x)) * spread * 0.35;
   float travel = (-0.15 - point.z) / reflected.z;
   vec3 imagePoint = point + reflected * travel;
-  vec2 logoUV = (imagePoint.xy - vec2(0.0, 0.36)) / 3.65 + 0.5;
-  if (travel > 0.0 && logoUV.x > 0.0 && logoUV.x < 1.0 && logoUV.y > 0.0 && logoUV.y < 1.0) {
+  float spin = clamp(u_heroProgress / 0.52, 0.0, 1.0);
+  float angle = spin * 9.42477796;
+  vec2 logoPoint = (imagePoint.xy - vec2(0.0, 0.36)) / (3.65 * (1.0 - spin * 0.22));
+  vec2 logoUV = mat2(cos(angle), sin(angle), -sin(angle), cos(angle)) * logoPoint + 0.5;
+  float logoVisibility = 1.0 - smoothstep(0.1, 0.3, u_heroProgress);
+  if (u_hasLogo > 0.5 && logoVisibility > 0.0 && travel > 0.0 && logoUV.x > 0.0 && logoUV.x < 1.0 && logoUV.y > 0.0 && logoUV.y < 1.0) {
     vec4 logo = texture2D(u_logo, logoUV);
     logo += texture2D(u_logo, logoUV + vec2(0.006, 0.0));
     logo += texture2D(u_logo, logoUV - vec2(0.006, 0.0));
     logo /= 3.0;
     float fresnel = 0.1 + 0.18 * pow(1.0 - clamp(dot(normalize(ro - point), vec3(0.0, 1.0, 0.0)), 0.0, 1.0), 3.0);
-    color = mix(color, logo.rgb * 0.5, logo.a * fresnel * u_hasLogo);
+    color = mix(color, logo.rgb * 0.56, logo.a * fresnel * logoVisibility);
   }
   // A low polished platform has a physical bevel, without adding UI linework.
   float platform = length(point.xz * vec2(0.48, 0.25));
   color += vec3(0.12, 0.2, 0.38) * exp(-abs(platform - 1.0) * 38.0) * 0.35;
+  // The same aperture light resolves onto the polished floor as one soft
+  // caustic, rather than an independent glowing decoration.
+  vec2 focus = (point.xz - vec2(u_pointer.x * 0.18, -0.2)) * vec2(0.48, 0.27);
+  float arc = atan(focus.y, focus.x);
+  float focalRadius = 1.02 + u_scroll * 0.12 + sin(arc * 2.0 + u_time * 0.21) * 0.045;
+  float focalLine = exp(-abs(length(focus) - focalRadius) * 28.0);
+  float apertureLight = pow(max(0.0, cos(arc - u_time * 0.21 + 0.45)), 6.0);
+  color += mix(vec3(0.12, 0.35, 0.9), vec3(0.57, 0.37, 0.86), smoothstep(-0.6, 0.6, focus.x)) * focalLine * apertureLight * 0.65;
   return color;
 }
 
@@ -84,15 +110,16 @@ vec4 engineCavity(vec3 ro, vec3 rd, vec3 center) {
   float angle = atan(point.y, point.x);
   float depth = clamp((point.z + 3.3) / 3.05, 0.0, 1.0);
   vec3 pigment = mix(vec3(0.06, 0.1, 0.2), vec3(0.15, 0.08, 0.23), smoothstep(-1.0, 1.0, sin(angle)));
-  vec3 color = pigment * (0.24 + depth * 0.4);
-  color += illumination(reflect(rd, normal)) * (0.08 + depth * 0.12);
+  vec3 color = pigment * (0.12 + depth * 0.33);
+  color += illumination(reflect(rd, normal)) * (0.045 + depth * 0.16);
+  color *= 0.62 + 0.38 * smoothstep(0.02, 0.8, depth);
   float lightDistance = (point.z + 2.65 + sin(u_time * 0.18) * 0.25) * 5.0;
   float lightWell = exp(-lightDistance * lightDistance);
   color += vec3(0.13, 0.28, 0.65) * lightWell * 0.48;
   return vec4(color, coverage);
 }
 
-vec4 opticalRing(vec3 ro, vec3 rd, vec3 center, vec3 normal, float radius, float width, float hue, float energy) {
+vec4 opticalRing(vec3 ro, vec3 rd, vec3 center, vec3 normal, float radius, float width, float hue, float energy, vec3 behind) {
   normal = normalize(normal);
   vec3 tangent = normalize(cross(vec3(0.0, 1.0, 0.0), normal));
   vec3 bitangent = cross(normal, tangent);
@@ -111,19 +138,29 @@ vec4 opticalRing(vec3 ro, vec3 rd, vec3 center, vec3 normal, float radius, float
 
   float crossSection = clamp(distance / width, -1.0, 1.0);
   vec3 outward = (tangent * q.x + bitangent * q.y) / max(radial, 0.001);
-  vec3 curvedNormal = normalize(normal * sqrt(max(0.001, 1.0 - crossSection * crossSection)) + outward * crossSection * 0.88);
+  float thickness = sqrt(max(0.001, 1.0 - crossSection * crossSection));
+  vec3 curvedNormal = normalize(normal * thickness + outward * crossSection * 0.88);
   vec3 reflected = reflect(rd, curvedNormal);
-  float fresnel = 0.08 + 0.92 * pow(max(0.0, 1.0 - abs(dot(-rd, curvedNormal))), 4.0);
+  vec3 refracted = refract(rd, curvedNormal, 0.685);
+  float facing = clamp(abs(dot(-rd, curvedNormal)), 0.0, 1.0);
+  float fresnel = 0.045 + 0.955 * pow(1.0 - facing, 5.0);
   vec3 pigment = mix(vec3(0.075, 0.13, 0.25), vec3(0.18, 0.11, 0.26), hue);
-  vec3 color = pigment * (0.38 + 0.4 * max(dot(curvedNormal, normalize(vec3(-0.6, 0.9, 1.0))), 0.0));
-  color += illumination(reflected) * (0.28 + fresnel * 0.85) * energy;
+  vec3 absorption = exp(-mix(vec3(1.4, 0.7, 0.24), vec3(0.55, 0.95, 0.3), hue) * thickness * 1.15);
+  vec3 transmitted = behind * absorption * 0.74 + transmittedLight(refracted, thickness, hue) * (0.28 + thickness * 0.5);
+  vec3 coat = illumination(reflected) * energy;
+  vec3 color = mix(transmitted + pigment * 0.28, coat + pigment * 0.18, 0.2 + fresnel * 0.72);
+  // A broad specular shoulder and darker inner contact describe glass volume.
+  float shoulderDistance = (crossSection + 0.24) * 4.4;
+  float shoulder = exp(-shoulderDistance * shoulderDistance);
+  color += mix(vec3(0.25, 0.48, 0.94), vec3(0.66, 0.54, 0.93), hue) * shoulder * (0.12 + facing * 0.2) * energy;
+  color *= 0.72 + 0.28 * smoothstep(-0.92, -0.48, crossSection);
   float bevel = 1.0 - smoothstep(-aa, max(0.018, aa * 2.0), edge);
-  color += mix(vec3(0.2, 0.46, 0.91), vec3(0.68, 0.46, 0.94), hue) * bevel * 0.52;
+  color += mix(vec3(0.3, 0.58, 1.0), vec3(0.74, 0.58, 1.0), hue) * bevel * (0.38 + fresnel * 0.4);
 
   // Light travels across a solid curved body, rather than drawing neon outlines.
   float angle = atan(q.y, q.x);
   float caustic = pow(max(0.0, cos(angle - u_time * 0.23 - hue * 2.8)), 26.0);
-  color += mix(vec3(0.23, 0.52, 1.0), vec3(0.76, 0.55, 1.0), hue) * caustic * (0.15 + fresnel * 0.5) * energy;
+  color += mix(vec3(0.23, 0.52, 1.0), vec3(0.76, 0.55, 1.0), hue) * caustic * (0.2 + fresnel * 0.55) * energy;
   return vec4(color, alpha);
 }
 
@@ -156,10 +193,10 @@ void main() {
 
   vec3 engine = vec3(0.0, 0.44, -0.62);
   color = composite(color, engineCavity(ro, rd, engine));
-  color = composite(color, opticalRing(ro, rd, engine + vec3(0.0, 0.0, -1.28), vec3(0.04, 0.12, 1.0), 1.57 * opening, 0.28, 0.45, 0.5));
-  color = composite(color, opticalRing(ro, rd, engine + vec3(0.0, 0.0, -0.5), vec3(0.18, -0.24, 1.0), 1.76 * opening, 0.18, 0.1, 0.84));
-  color = composite(color, opticalRing(ro, rd, engine + vec3(0.0, 0.0, 0.25), vec3(-0.25, 0.33, 1.0), 1.91 * opening, 0.105, 0.82, 0.95));
-  color = composite(color, opticalRing(ro, rd, engine + vec3(0.0, 0.02, 0.6), vec3(0.42 + sin(phase) * 0.06, -0.17 + cos(phase) * 0.12, 1.0), 1.48 * opening, 0.075, 0.28, 1.12));
+  color = composite(color, opticalRing(ro, rd, engine + vec3(0.0, 0.0, -1.28), vec3(0.04, 0.12, 1.0), 1.57 * opening, 0.28, 0.45, 0.5, color));
+  color = composite(color, opticalRing(ro, rd, engine + vec3(0.0, 0.0, -0.5), vec3(0.18, -0.24, 1.0), 1.76 * opening, 0.18, 0.1, 0.84, color));
+  color = composite(color, opticalRing(ro, rd, engine + vec3(0.0, 0.0, 0.25), vec3(-0.25, 0.33, 1.0), 1.91 * opening, 0.105, 0.82, 0.95, color));
+  color = composite(color, opticalRing(ro, rd, engine + vec3(0.0, 0.02, 0.6), vec3(0.42 + sin(phase) * 0.06, -0.17 + cos(phase) * 0.12, 1.0), 1.48 * opening, 0.075, 0.28, 1.12, color));
 
   // Keep the lower reading plane quiet while the material remains luminous above.
   float readingPlane = smoothstep(-0.31, 0.2, uv.y);
@@ -282,7 +319,7 @@ export default function PrismaticField() {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      resources = { program, buffer, texture, hasLogo: false, uniforms: Object.fromEntries(['resolution', 'pointer', 'time', 'scroll', 'apertureScale', 'motion', 'hasLogo', 'logo'].map(name => [name, gl.getUniformLocation(program, `u_${name}`)])) };
+      resources = { program, buffer, texture, hasLogo: false, uniforms: Object.fromEntries(['resolution', 'pointer', 'time', 'scroll', 'heroProgress', 'apertureScale', 'motion', 'hasLogo', 'logo'].map(name => [name, gl.getUniformLocation(program, `u_${name}`)])) };
       uploadLogo();
       return true;
     }
@@ -294,6 +331,7 @@ export default function PrismaticField() {
       gl.uniform2f(resources.uniforms.pointer, pointer.currentX, pointer.currentY);
       gl.uniform1f(resources.uniforms.time, elapsed / 1000);
       gl.uniform1f(resources.uniforms.scroll, currentProgress);
+      gl.uniform1f(resources.uniforms.heroProgress, progress);
       const nativeAperture = desktop.matches && !reduced.matches;
       gl.uniform1f(resources.uniforms.apertureScale, nativeAperture ? apertureScale : 1);
       gl.uniform1f(resources.uniforms.motion, desktop.matches && !reduced.matches ? 1 : 0);
@@ -305,7 +343,16 @@ export default function PrismaticField() {
       surface.dataset.apertureScale = (nativeAperture ? apertureScale : 1).toFixed(4);
     }
 
-    function animated() { return desktop.matches && !reduced.matches && scene.dataset.heroPaused !== 'true' && scene.dataset.heroScrubVisible !== 'false' && visible && !document.hidden && !lost && resources; }
+    function applyPointerPose() {
+      scene.style.setProperty('--prism-shift', `${currentProgress * -85}px`);
+      scene.style.setProperty('--prism-turn', `${currentProgress * -10}deg`);
+      scene.style.setProperty('--prism-pointer-x', `${pointer.currentX * 6}deg`);
+      scene.style.setProperty('--prism-pointer-y', `${pointer.currentY * -5}deg`);
+      scene.style.setProperty('--prism-light-x', `${50 + pointer.currentX * 28}%`);
+      scene.style.setProperty('--prism-light-y', `${30 + pointer.currentY * 24}%`);
+    }
+
+    function animated() { return desktop.matches && !reduced.matches && scene.dataset.heroPaused !== 'true' && scene.dataset.heroScrubMode !== 'focus' && scene.dataset.heroScrubVisible !== 'false' && visible && !document.hidden && !lost && resources; }
     function render(timestamp) {
       frame = 0;
       if (!animated()) return;
@@ -315,10 +362,7 @@ export default function PrismaticField() {
         pointer.currentX += (pointer.x - pointer.currentX) * 0.11;
         pointer.currentY += (pointer.y - pointer.currentY) * 0.11;
         currentProgress += (progress - currentProgress) * 0.1;
-        scene.style.setProperty('--prism-shift', `${currentProgress * -85}px`);
-        scene.style.setProperty('--prism-turn', `${currentProgress * -10}deg`);
-        scene.style.setProperty('--prism-pointer-x', `${pointer.currentX * 6}deg`);
-        scene.style.setProperty('--prism-pointer-y', `${pointer.currentY * -5}deg`);
+        applyPointerPose();
         draw();
       }
       frame = window.requestAnimationFrame(render);
@@ -332,7 +376,7 @@ export default function PrismaticField() {
         pointer.currentX = 0;
         pointer.currentY = 0;
         currentProgress = 0;
-        for (const property of ['--prism-shift', '--prism-turn', '--prism-pointer-x', '--prism-pointer-y', '--prism-transfer']) scene.style.removeProperty(property);
+        for (const property of ['--prism-shift', '--prism-turn', '--prism-pointer-x', '--prism-pointer-y', '--prism-light-x', '--prism-light-y', '--prism-transfer']) scene.style.removeProperty(property);
         draw();
       } else if (animated()) frame = window.requestAnimationFrame(render);
     }
@@ -384,7 +428,14 @@ export default function PrismaticField() {
         lastTime = 0;
         // A visitor pause exposes the static composition once, without replaying
         // the engine clock. An invisible scrubbed aperture needs no GPU draw.
-        if (scene.dataset.heroPaused === 'true' && scene.dataset.heroScrubVisible !== 'false' && !document.hidden) {
+        const focused = scene.dataset.heroScrubMode === 'focus';
+        if (focused) {
+          pointer.x = pointer.currentX = 0;
+          pointer.y = pointer.currentY = 0;
+          currentProgress = progress;
+          applyPointerPose();
+        }
+        if ((scene.dataset.heroPaused === 'true' || focused) && scene.dataset.heroScrubVisible !== 'false' && visible && !document.hidden) {
           currentProgress = progress;
           draw();
         }
@@ -394,7 +445,7 @@ export default function PrismaticField() {
       }
     }
     function move(event) {
-      if (event.pointerType !== 'mouse' || !desktop.matches || reduced.matches) return;
+      if (event.pointerType !== 'mouse' || !desktop.matches || reduced.matches || scene.dataset.heroScrubMode === 'focus') return;
       pointer.x = Math.max(-1, Math.min(1, event.clientX / window.innerWidth * 2 - 1));
       pointer.y = Math.max(-1, Math.min(1, event.clientY / window.innerHeight * 2 - 1));
     }
@@ -455,7 +506,7 @@ export default function PrismaticField() {
       reduced.removeEventListener('change', syncMotion);
       desktop.removeEventListener('change', resize);
       clearResources();
-      for (const property of ['--prism-shift', '--prism-turn', '--prism-pointer-x', '--prism-pointer-y', '--prism-transfer']) scene.style.removeProperty(property);
+      for (const property of ['--prism-shift', '--prism-turn', '--prism-pointer-x', '--prism-pointer-y', '--prism-light-x', '--prism-light-y', '--prism-transfer']) scene.style.removeProperty(property);
     };
   }, []);
 

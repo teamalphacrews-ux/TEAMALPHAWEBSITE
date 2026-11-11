@@ -5,7 +5,7 @@
 .sos-reactor .sos-brand-lockup > .sos-signature { position: relative; }
 .sos-reactor .sos-brand-lockup > i { position: absolute; inset: 0; pointer-events: none; mask: var(--brand-mask) center / contain no-repeat; background: linear-gradient(105deg,transparent 32%,#a7c6ff 44%,#fff 49%,#c5a7ff 54%,transparent 65%); background-size: 350% 100%; background-position: 100% 50%; opacity: 0; }
 .sos-reactor .sos-header .sos-brand-lockup { animation: sos-brand-arrive 900ms cubic-bezier(.16,1,.3,1) both; }
-.sos-reactor .sos-header-actions > .sos-button { background: #e9edff; color: #14213b; border: 1px solid #b4caff; box-shadow: 0 6px 22px #02061350; }
+.sos-reactor .sos-header-actions > .sos-button { background: var(--sos-action-fill); color: #14213b; border: 1px solid #b4caff; box-shadow: 0 6px 22px #02061350; }
 .sos-reactor .sos-header-actions > .sos-button:hover { background: #fff; }
 .sos-reactor .sos-plans { padding-block: 140px 105px; }
 .sos-reactor .sos-plans .sos-section-heading { margin-bottom: 60px; align-items: flex-end; }
@@ -14,30 +14,33 @@
 .sos-reactor .sos-plan-cards > article { display: grid; grid-template-columns: 1fr .65fr 1.15fr .9fr; gap: 36px; align-items: center; padding: 45px 28px; border: 0; border-bottom: 1px solid #364b6f; border-radius: 0; background: transparent; box-shadow: none; position: relative; overflow: hidden; }
 .sos-reactor .sos-plan-cards > article::before { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg,#1b31534d,transparent 50%,#70589d16); opacity: 0; pointer-events: none; transition: opacity .35s; }
 .sos-reactor .sos-plan-cards > article:is(:hover,:focus-within)::before { opacity: 1; }
-.sos-reactor .sos-plan-cards > article.is-featured { background: #111c31; }
+.sos-reactor .sos-plan-cards > article.is-featured { background: var(--sos-plan-surface); }
 .sos-reactor .sos-plan-cards > article > * { position: relative; }
 .sos-reactor .sos-plan-identity header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-.sos-reactor .sos-plan-identity header > span { font-size: 32px; color: #f0f3ff; letter-spacing: -.03em; }
-.sos-reactor .sos-plan-identity header > small { padding: 0; background: transparent; border: 0; font-size: 12px; color: #bed0f6; letter-spacing: .05em; margin: 0; line-height: 1.8; }
-.sos-reactor .sos-plan-identity > p { color: #adbfdf; font-size: 14px; line-height: 1.8; max-width: 25ch; margin-top: 12px; }
+.sos-reactor .sos-plan-identity header > span { font-size: 32px; color: var(--sos-heading); letter-spacing: -.03em; }
+.sos-reactor .sos-plan-identity header > small { padding: 0; background: transparent; border: 0; font-size: 14px; color: var(--sos-link); letter-spacing: .05em; margin: 0; line-height: 1.8; }
+.sos-reactor .sos-plan-identity > p { color: var(--sos-plan-copy); font-size: 14px; line-height: 1.8; max-width: 25ch; margin-top: 12px; }
 .sos-reactor .sos-plan-cards .sos-plan-seats { margin: 0; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
-.sos-reactor .sos-plan-seats > strong { font-family: var(--sos-display); font-size: 70px; line-height: 1; color: #d5defa; font-weight: 500; letter-spacing: -.035em; }
-.sos-reactor .sos-plan-seats > span { color: #a9bedf; font-size: 12px; line-height: 1.7; margin: 0; }
+.sos-reactor .sos-plan-seats > strong { font-family: var(--sos-display); font-size: 70px; line-height: 1; color: var(--sos-plan-ink); font-weight: 500; letter-spacing: -.035em; }
+.sos-reactor .sos-plan-seats > span { color: var(--sos-text-secondary); font-size: 14px; line-height: 1.7; margin: 0; }
+.sos-reactor .sos-plan-seats > small { color: var(--sos-text-secondary); font-size: 14px; line-height: 1.5; }
+.sos-reactor #availability { scroll-margin-top: 110px; }
 .sos-reactor .sos-plan-cards ul { border: 0; margin: 0; padding: 0; gap: 13px; }
-.sos-reactor .sos-plan-cards li { color: #c9d6f0; font-size: 13px; line-height: 1.7; }
+.sos-reactor .sos-plan-cards li { color: var(--sos-text-strong); font-size: 14px; line-height: 1.7; }
 .sos-reactor .sos-plan-cards li > svg { color: #9fc0ff; flex-shrink: 0; }
 .sos-reactor .sos-plan-next { display: flex; flex-direction: column; gap: 19px; }
 .sos-reactor .sos-plan-next .sos-plan-pricing { padding: 0; margin: 0; }
-.sos-reactor .sos-plan-next .sos-plan-pricing > span { font-size: 14px; color: #e1e9ff; }
-.sos-reactor .sos-plan-next .sos-plan-pricing > small { font-size: 12px; color: #a8bcde; line-height: 1.7; }
-.sos-reactor .sos-plan-next .sos-button { margin: 0; min-height: 48px; width: 100%; justify-content: space-between; font-size: 13px !important; padding: 13px 18px; border-color: #647eaa; color: #e1eaff; background: #17263e; }
-.sos-reactor .sos-plan-cards .is-featured .sos-button { background: #e7edff; color: #172a49; border-color: #e7edff; }
-.sos-reactor .sos-plan-next .sos-button:hover { background: #263c60; }
+.sos-reactor .sos-plan-next .sos-plan-pricing > span { font-size: 14px; color: var(--sos-text-strong); }
+.sos-reactor .sos-plan-next .sos-plan-pricing > small { font-size: 14px; color: var(--sos-text-secondary); line-height: 1.7; }
+.sos-reactor .sos-plan-next .sos-button { margin: 0; min-height: 48px; width: 100%; justify-content: space-between; font-size: 14px !important; padding: 13px 18px; border-color: var(--sos-plan-action-boundary); color: var(--sos-plan-action-ink); background: var(--sos-plan-action-fill); }
+.sos-reactor .sos-plan-cards .is-featured .sos-button { background: var(--sos-plan-featured-fill); color: var(--sos-plan-featured-ink); border-color: var(--sos-plan-featured-fill); }
+.sos-reactor .sos-plan-next .sos-button:hover { background: var(--sos-plan-action-hover); }
 .sos-reactor .sos-plan-cards .is-featured .sos-button:hover { background: #fff; }
-.sos-reactor .sos-plans-note { color: #a8bad9; margin-top: 27px; line-height: 1.85; }
+.sos-reactor .sos-plans-note { color: var(--sos-text-secondary); margin-top: 27px; line-height: 1.85; }
 .sos-reactor .sos-final-section { background: radial-gradient(ellipse at 78% 50%,#3f417c66,transparent 60%),linear-gradient(125deg,#12213b,#101a2d); padding-block: 135px; overflow: clip; }
 .sos-reactor .sos-final-brand { opacity: .16; right: -4%; width: min(54vw,760px); height: min(54vw,760px); }
 .sos-reactor .sos-final-section h2 { max-width: 1050px; }
+.sos-reactor .sos-final-section .sos-registration-note { max-width: 62ch; margin: 28px auto 0; color: var(--sos-text-secondary); font-size: 14px; line-height: 1.8; }
 @media (prefers-reduced-motion:no-preference) {
   .sos-reactor .sos-brand-lockup > i { animation: sos-brand-light 1600ms 350ms cubic-bezier(.16,1,.3,1) both; }
   .sos-reactor.sos-motion-ready[data-motion=full] .sos-final-brand { translate: calc((1 - var(--scene-enter,1)) * 100px) 0; rotate: calc((1 - var(--scene-enter,1)) * 8deg); }
@@ -50,19 +53,19 @@
   .sos-reactor .sos-plan-next .sos-button { width: 240px; }
 }
 @media (max-width:600px) {
-  .sos-reactor .sos-header-actions > .sos-button { font-size: 12px !important; padding-inline: 12px; }
+  .sos-reactor .sos-header-actions > .sos-button { font-size: 14px !important; padding-inline: 12px; }
   .sos-reactor .sos-plans { padding-block: 80px 70px; }
   .sos-reactor .sos-plans .sos-section-heading { margin-bottom: 32px; }
   .sos-reactor .sos-plans .sos-section-heading h2 { font-size: 40px; }
   .sos-reactor .sos-plan-cards > article { grid-template-columns: 1fr 85px; gap: 24px 16px; padding: 29px 19px; }
   .sos-reactor .sos-plan-identity header > span { font-size: 30px; }
-  .sos-reactor .sos-plan-identity header > small { font-size: 12px; }
-  .sos-reactor .sos-plan-identity > p { font-size: 13px; margin-top: 9px; }
+  .sos-reactor .sos-plan-identity header > small { font-size: 14px; }
+  .sos-reactor .sos-plan-identity > p { font-size: 16px; margin-top: 9px; }
   .sos-reactor .sos-plan-seats > strong { font-size: 59px; }
   .sos-reactor .sos-plan-cards ul { grid-column: 1 / -1; gap: 10px; }
   .sos-reactor .sos-plan-next { display: flex; flex-direction: column; align-items: stretch; gap: 18px; padding-top: 20px; }
   .sos-reactor .sos-plan-next .sos-button { width: 100%; }
-  .sos-reactor .sos-plans-note { font-size: 12px; }
+  .sos-reactor .sos-plans-note { font-size: 14px; }
   .sos-reactor .sos-final-section { padding-block: 88px; }
   .sos-reactor .sos-final-brand { width: 550px; height: 550px; right: -270px; opacity: .1; }
 }
@@ -72,7 +75,7 @@
   .sos-reactor .sos-final-brand { translate: none; rotate: none; }
 }
 @media (max-width:380px) {
-  .sos-reactor .sos-header .sos-header-inner { gap: 8px; }
+  .sos-reactor .sos-header .sos-header-inner { gap: 6px; padding-inline: 10px; }
   .sos-reactor :is(.sos-brand,.sos-signature) { width: 100px; }
   .sos-reactor .sos-header-actions > .sos-button > svg { display: none; }
 }

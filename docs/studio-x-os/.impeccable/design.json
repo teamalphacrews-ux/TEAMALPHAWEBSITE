@@ -1,0 +1,637 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-10T03:17:42.854215+00:00",
+  "title": "Design System: Studio X OS commercial homepage",
+  "extensions": {
+    "colorMeta": {
+      "charcoal-paper": {
+        "role": "neutral",
+        "displayName": "Charcoal Paper",
+        "canonical": "#090b12",
+        "tonalRamp": [
+          "#090b12",
+          "#22252d",
+          "#3f424a",
+          "#5e616a",
+          "#7f828c",
+          "#a1a5af",
+          "#c5c9d4",
+          "#ebeef9"
+        ]
+      },
+      "opal-ink": {
+        "role": "neutral",
+        "displayName": "Opal Ink",
+        "canonical": "#f4f5fb",
+        "tonalRamp": [
+          "#0a0b0f",
+          "#242529",
+          "#414246",
+          "#606166",
+          "#818287",
+          "#a4a5aa",
+          "#c8c9ce",
+          "#edeef4"
+        ]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#a9b2ca",
+        "tonalRamp": [
+          "#060a1a",
+          "#1e2437",
+          "#3a4155",
+          "#596176",
+          "#798298",
+          "#9ca5bc",
+          "#c0c9e1",
+          "#e8eeff"
+        ]
+      },
+      "secondary-ink": {
+        "role": "neutral",
+        "displayName": "Secondary Ink",
+        "canonical": "#aeb8d0",
+        "tonalRamp": [
+          "#050a1a",
+          "#1d2437",
+          "#3a4256",
+          "#586176",
+          "#798299",
+          "#9ba5bc",
+          "#bfc9e1",
+          "#e7eeff"
+        ]
+      },
+      "heading-ink": {
+        "role": "neutral",
+        "displayName": "Heading Ink",
+        "canonical": "#f1f4fc",
+        "tonalRamp": [
+          "#090b10",
+          "#23252b",
+          "#3f4248",
+          "#5f6168",
+          "#7f8289",
+          "#a2a5ac",
+          "#c6c9d1",
+          "#ebeef6"
+        ]
+      },
+      "studio-line": {
+        "role": "neutral",
+        "displayName": "Studio Line",
+        "canonical": "#2a3043",
+        "tonalRamp": [
+          "#060a1a",
+          "#1f2436",
+          "#3b4155",
+          "#596176",
+          "#7a8298",
+          "#9ca4bc",
+          "#c0c9e1",
+          "#e8eeff"
+        ]
+      },
+      "lavender-focus": {
+        "role": "primary",
+        "displayName": "Lavender Focus",
+        "canonical": "#c3d1ff",
+        "tonalRamp": [
+          "#040626",
+          "#1a2245",
+          "#363f65",
+          "#545f87",
+          "#7480aa",
+          "#96a3cf",
+          "#bac7f5",
+          "#e9eeff"
+        ]
+      },
+      "action-opal": {
+        "role": "primary",
+        "displayName": "Action Opal",
+        "canonical": "#e9edff",
+        "tonalRamp": [
+          "#080a15",
+          "#222431",
+          "#3e414f",
+          "#5d6070",
+          "#7e8191",
+          "#a0a4b5",
+          "#c4c8da",
+          "#eaeeff"
+        ]
+      },
+      "action-ink": {
+        "role": "primary",
+        "displayName": "Action Ink",
+        "canonical": "#111727",
+        "tonalRamp": [
+          "#060a19",
+          "#1e2535",
+          "#3a4254",
+          "#596175",
+          "#7a8297",
+          "#9ca5bb",
+          "#c0c9e0",
+          "#e7eeff"
+        ]
+      },
+      "action-hover": {
+        "role": "primary",
+        "displayName": "Action Hover",
+        "canonical": "#cdd9ff",
+        "tonalRamp": [
+          "#050821",
+          "#1c233f",
+          "#38405f",
+          "#566080",
+          "#7681a3",
+          "#99a4c8",
+          "#bcc8ed",
+          "#e8eeff"
+        ]
+      },
+      "raised-charcoal": {
+        "role": "secondary",
+        "displayName": "Raised Charcoal",
+        "canonical": "#121824",
+        "tonalRamp": [
+          "#060b16",
+          "#1f2532",
+          "#3b4250",
+          "#5a6170",
+          "#7a8392",
+          "#9da5b6",
+          "#c1c9da",
+          "#e6efff"
+        ]
+      },
+      "raised-hover": {
+        "role": "secondary",
+        "displayName": "Raised Hover",
+        "canonical": "#24304b",
+        "tonalRamp": [
+          "#030920",
+          "#19243e",
+          "#35415e",
+          "#53617f",
+          "#7382a2",
+          "#95a5c6",
+          "#b9c9ec",
+          "#e7efff"
+        ]
+      },
+      "raised-ink": {
+        "role": "secondary",
+        "displayName": "Raised Ink",
+        "canonical": "#e1e8fc",
+        "tonalRamp": [
+          "#070a17",
+          "#202433",
+          "#3c4151",
+          "#5b6172",
+          "#7c8294",
+          "#9ea5b7",
+          "#c2c9dc",
+          "#e8eeff"
+        ]
+      },
+      "raised-line": {
+        "role": "secondary",
+        "displayName": "Raised Line",
+        "canonical": "#485575",
+        "tonalRamp": [
+          "#030822",
+          "#192440",
+          "#354160",
+          "#536081",
+          "#7382a4",
+          "#96a5c9",
+          "#b9c9ee",
+          "#e7eeff"
+        ]
+      },
+      "raised-line-hover": {
+        "role": "secondary",
+        "displayName": "Raised Line Hover",
+        "canonical": "#7f94c8",
+        "tonalRamp": [
+          "#02042c",
+          "#13214c",
+          "#2f3f6d",
+          "#4d5f90",
+          "#6d81b4",
+          "#8ea4d9",
+          "#b2c8ff",
+          "#e7eeff"
+        ]
+      },
+      "client-opal": {
+        "role": "neutral",
+        "displayName": "Client Opal",
+        "canonical": "#edf2f9",
+        "tonalRamp": [
+          "#080b10",
+          "#22252a",
+          "#3e4248",
+          "#5d6267",
+          "#7e8389",
+          "#a1a5ac",
+          "#c5cad0",
+          "#eaeff6"
+        ]
+      },
+      "client-paper": {
+        "role": "neutral",
+        "displayName": "Client Paper",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "client-ink": {
+        "role": "neutral",
+        "displayName": "Client Ink",
+        "canonical": "#203759",
+        "tonalRamp": [
+          "#000a22",
+          "#0e2545",
+          "#2b4265",
+          "#496287",
+          "#6984ab",
+          "#8ba7cf",
+          "#afcbf5",
+          "#e5efff"
+        ]
+      },
+      "client-secondary": {
+        "role": "neutral",
+        "displayName": "Client Secondary",
+        "canonical": "#52698b",
+        "tonalRamp": [
+          "#000a22",
+          "#112542",
+          "#2d4362",
+          "#4c6284",
+          "#6c84a7",
+          "#8ea7cc",
+          "#b1cbf1",
+          "#e5efff"
+        ]
+      },
+      "client-focus": {
+        "role": "secondary",
+        "displayName": "Client Focus",
+        "canonical": "#385e9b",
+        "tonalRamp": [
+          "#000923",
+          "#002156",
+          "#1b407a",
+          "#3a619e",
+          "#5b83c3",
+          "#7ca6e9",
+          "#aacbff",
+          "#e5efff"
+        ]
+      },
+      "client-line": {
+        "role": "neutral",
+        "displayName": "Client Line",
+        "canonical": "#b9c7dc",
+        "tonalRamp": [
+          "#040b19",
+          "#1b2535",
+          "#374354",
+          "#566274",
+          "#768397",
+          "#99a6ba",
+          "#bccadf",
+          "#e5efff"
+        ]
+      },
+      "client-action": {
+        "role": "secondary",
+        "displayName": "Client Action",
+        "canonical": "#2d4f82",
+        "tonalRamp": [
+          "#000a22",
+          "#022251",
+          "#204173",
+          "#3f6296",
+          "#5f83ba",
+          "#80a7e0",
+          "#a9cbff",
+          "#e5efff"
+        ]
+      },
+      "client-action-ink": {
+        "role": "secondary",
+        "displayName": "Client Action Ink",
+        "canonical": "#f7f9ff",
+        "tonalRamp": [
+          "#0a0b0f",
+          "#232529",
+          "#404247",
+          "#5f6166",
+          "#808287",
+          "#a3a5aa",
+          "#c7c9cf",
+          "#eceef4"
+        ]
+      },
+      "preview-daylight": {
+        "role": "neutral",
+        "displayName": "Preview Daylight",
+        "canonical": "#f6f8fc",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#242528",
+          "#404245",
+          "#5f6165",
+          "#808286",
+          "#a3a5a9",
+          "#c7c9cd",
+          "#eceef2"
+        ]
+      },
+      "preview-dark": {
+        "role": "neutral",
+        "displayName": "Preview Dark",
+        "canonical": "#101728",
+        "tonalRamp": [
+          "#050a1a",
+          "#1d2537",
+          "#394255",
+          "#586176",
+          "#788298",
+          "#9ba5bc",
+          "#bec9e1",
+          "#e7efff"
+        ]
+      },
+      "preview-daylight-ink": {
+        "role": "neutral",
+        "displayName": "Preview Daylight Ink",
+        "canonical": "#384b6a",
+        "tonalRamp": [
+          "#000923",
+          "#142541",
+          "#304261",
+          "#4e6282",
+          "#6e83a5",
+          "#90a6ca",
+          "#b4caef",
+          "#e5efff"
+        ]
+      },
+      "preview-dark-ink": {
+        "role": "neutral",
+        "displayName": "Preview Dark Ink",
+        "canonical": "#bdcde8",
+        "tonalRamp": [
+          "#030a1c",
+          "#192539",
+          "#354258",
+          "#546279",
+          "#74839c",
+          "#97a6c0",
+          "#bacae5",
+          "#e6efff"
+        ]
+      },
+      "preview-daylight-focus": {
+        "role": "neutral",
+        "displayName": "Preview Daylight Focus",
+        "canonical": "#2354c4",
+        "tonalRamp": [
+          "#00062b",
+          "#001966",
+          "#0532a1",
+          "#2657c7",
+          "#467bee",
+          "#75a3ff",
+          "#aecaff",
+          "#e6efff"
+        ]
+      },
+      "preview-dark-focus": {
+        "role": "neutral",
+        "displayName": "Preview Dark Focus",
+        "canonical": "#bfcaff",
+        "tonalRamp": [
+          "#06042a",
+          "#1c2049",
+          "#373e6a",
+          "#555d8c",
+          "#757fb0",
+          "#97a2d5",
+          "#bbc6fb",
+          "#eaeeff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Optical display",
+        "purpose": "The commercial hero and signature display hierarchy."
+      },
+      "headline": {
+        "displayName": "Editorial headline",
+        "purpose": "Commercial chapter headings."
+      },
+      "body": {
+        "displayName": "Working-interface body",
+        "purpose": "Product explanations and readable supporting copy."
+      },
+      "label": {
+        "displayName": "Control label",
+        "purpose": "Navigation, actions and secondary descriptions."
+      }
+    },
+    "shadows": [
+      {
+        "name": "action-lift",
+        "value": "0 6px 20px #080c2c24",
+        "purpose": "Shallow ambient lift on the opal primary action."
+      },
+      {
+        "name": "product-stage",
+        "value": "0 35px 70px #02040c55",
+        "purpose": "A demonstration surface sits ahead of the charcoal canvas."
+      },
+      {
+        "name": "client-preview",
+        "value": "0 35px 70px #314f7c2b",
+        "purpose": "Soft paper depth on the opal client material."
+      }
+    ],
+    "motion": [
+      {
+        "name": "optical-ease",
+        "value": "cubic-bezier(.16,1,.3,1)",
+        "purpose": "Arrival, optical settling and native client transitions."
+      },
+      {
+        "name": "logo-assembly",
+        "value": "1500ms",
+        "purpose": "Four portions of the supplied X settle into the intact source artwork."
+      },
+      {
+        "name": "logo-random-dust",
+        "value": "progress .12–.56; dust 1300ms; glitter 4200ms",
+        "purpose": "The clean supplied X hands off to source-coloured points that release in irregular random groups, becoming luminous, independently scattered grains with varied direction, speed and depth. A separate sparse glint pass has independently phased bright stars with clear cores and tapered rays, using the same source origins and trajectories with its own finite afterglow. A shared smooth fragment field controls release; reduced motion, pause and graphics failure keep the native image."
+      },
+      {
+        "name": "headline-arrival",
+        "value": "820ms",
+        "purpose": "Word arrivals, with authored stagger, complete into readable copy."
+      },
+      {
+        "name": "client-transition",
+        "value": "380ms",
+        "purpose": "Project, amount and surface continuity when View Transitions are available."
+      },
+      {
+        "name": "hero-scroll-follow",
+        "value": "85ms time constant",
+        "purpose": "Time-correct exponential follow of scroll targets."
+      },
+      {
+        "name": "reduced-feedback",
+        "value": "140ms",
+        "purpose": "Brief colour feedback while spatial motion is removed."
+      },
+      {
+        "name": "screenshot-shutter-close",
+        "value": "150ms ease-out",
+        "purpose": "The old workspace capture closes only after its replacement decodes."
+      },
+      {
+        "name": "screenshot-shutter-open",
+        "value": "360ms 60ms cubic-bezier(.16,1,.3,1)",
+        "purpose": "The decoded workspace capture opens as a photographic shutter."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-phone",
+        "value": "380px"
+      },
+      {
+        "name": "phone",
+        "value": "600px"
+      },
+      {
+        "name": "linear-scenes",
+        "value": "850px"
+      },
+      {
+        "name": "compact-desktop",
+        "value": "1100px"
+      },
+      {
+        "name": "pin-height",
+        "value": "760px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Opal action on the studio charcoal material.",
+      "html": "<button class=\"ds-primary\">Explore plans <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M7 17 17 7M7 7h10v10\"/></svg></button>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:14px;min-height:48px;padding:13px 20px;border:1px solid transparent;border-radius:10px;background:var(--sos-action-fill,#e9edff);color:var(--sos-action-ink,#111727);font:500 14px/1.5 Inter,system-ui,sans-serif;letter-spacing:-.01em;cursor:pointer;transition:background .2s,transform .35s cubic-bezier(.16,1,.3,1)}.ds-primary:hover{background:var(--sos-action-fill-hover,#cdd9ff);transform:translateY(-2px)}.ds-primary:active{transform:translateY(0)}.ds-primary:focus-visible{outline:3px solid var(--sos-focus,#c3d1ff);outline-offset:4px}.ds-primary:disabled{opacity:.55;cursor:not-allowed;transform:none}@media(prefers-reduced-motion:reduce){.ds-primary,.ds-primary:hover{transform:none;transition:background 140ms}}"
+    },
+    {
+      "name": "Secondary action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A bounded charcoal action with visible hover and keyboard states.",
+      "html": "<button class=\"ds-secondary\">Create your studio</button>",
+      "css": ".ds-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:13px 20px;border:1px solid var(--sos-boundary-strong,#485575);border-radius:10px;background:var(--sos-surface-control,#121824);color:var(--sos-text-strong,#e1e8fc);font:500 14px/1.5 Inter,system-ui,sans-serif;cursor:pointer;transition:background .2s,border-color .2s}.ds-secondary:hover{background:var(--sos-action-outline-hover,#24304b);border-color:var(--sos-action-boundary-hover,#7f94c8)}.ds-secondary:focus-visible{outline:3px solid var(--sos-focus,#c3d1ff);outline-offset:4px}.ds-secondary:active{background:var(--sos-surface-control,#121824)}.ds-secondary:disabled{opacity:.55;cursor:not-allowed}"
+    },
+    {
+      "name": "Product navigation",
+      "kind": "nav",
+      "description": "Wide-screen section links; the actual homepage switches to a labelled menu on narrow screens.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Product navigation\"><a href=\"#for-photographers\">Why Studio X OS</a><a href=\"#on-the-go\">On the go</a><a href=\"#smart-link\">Client smart link</a><a href=\"#plans\">Plans</a></nav>",
+      "css": ".ds-nav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 28px;padding:12px 20px;border:1px solid var(--sos-boundary,#34415b);border-radius:17px;background:var(--sos-paper,#090b12);font:400 14px/1.5 Inter,system-ui,sans-serif}.ds-nav a{display:inline-flex;align-items:center;min-height:44px;color:var(--sos-text-secondary,#aeb8d0);text-decoration:none;text-underline-offset:.25em}.ds-nav a:hover{color:var(--sos-ink,#f4f5fb)}.ds-nav a:focus-visible{outline:3px solid var(--sos-focus,#c3d1ff);outline-offset:4px;border-radius:3px}"
+    },
+    {
+      "name": "Client stage tab",
+      "kind": "chip",
+      "description": "A sample client quotation stage; the real tablist supplies selection, keyboard navigation and its matching panel.",
+      "html": "<button class=\"ds-client-stage\" type=\"button\" aria-label=\"Quotation Accepted\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 15l2 2 5-5\"/></svg><span>Quotation</span><small>Accepted</small></button>",
+      "css": ".ds-client-stage{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:112px;min-height:108px;padding:16px;border:1px solid #617caa;border-radius:10px;background:#dce7fa;color:#2d4c78;font:500 14px/1.5 Inter,system-ui,sans-serif;box-shadow:0 0 0 3px #697fa81c;cursor:pointer;transition:background .18s}.ds-client-stage small{font:400 14px/1.5 Inter,system-ui,sans-serif}.ds-client-stage:hover{background:#cddcf5}.ds-client-stage:focus-visible{outline:3px solid var(--sos-opal-focus,#385e9b);outline-offset:4px}.ds-client-stage:active{background:#c3d6f3}"
+    },
+    {
+      "name": "Opal client preview",
+      "kind": "card",
+      "refersTo": "client-preview",
+      "description": "A lighter material for the client-facing project rather than a global homepage theme.",
+      "html": "<article class=\"ds-client-preview\" aria-label=\"Sample client project\"><span class=\"ds-sample\">Sample data</span><h3>Anika &amp; Rohan</h3><p>Your wedding, thoughtfully together.</p><a href=\"#smart-link\">Explore the client smart link <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M7 17 17 7M7 7h10v10\"/></svg></a></article>",
+      "css": ".ds-client-preview{max-width:440px;padding:26px;border:1px solid #b9c7dc;border-radius:18px;background:var(--sos-opal-paper,#ffffff);color:var(--sos-opal-heading,#192f51);box-shadow:0 35px 70px #314f7c2b;font:400 16px/1.8 Inter,system-ui,sans-serif}.ds-client-preview .ds-sample{display:inline-flex;padding:4px 8px;border-radius:6px;background:var(--sos-opal-panel,#f6f8fc);color:var(--sos-opal-copy,#52698b);font-size:14px}.ds-client-preview h3{margin:20px 0 8px;font:500 34px/1.1 \"Studio Manrope\",Inter,sans-serif;letter-spacing:-.035em}.ds-client-preview p{margin:0;color:var(--sos-opal-copy,#52698b)}.ds-client-preview a{display:inline-flex;align-items:center;gap:10px;min-height:44px;margin-top:16px;color:var(--sos-opal-action,#2d4f82);text-underline-offset:.25em}.ds-client-preview a:hover{color:var(--sos-opal-heading,#192f51)}.ds-client-preview a:focus-visible{outline:3px solid var(--sos-opal-focus,#385e9b);outline-offset:4px}"
+    },
+    {
+      "name": "Screenshot theme control",
+      "kind": "button",
+      "description": "Controls the daylight/dark image preview only; the surrounding commercial material stays fixed.",
+      "html": "<button class=\"ds-preview-theme\" type=\"button\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><path d=\"M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z\"/></svg>Show dark preview</button>",
+      "css": ".ds-preview-theme{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 12px;border:1px solid #47516a;border-radius:8px;background:#161923;color:#e0e5f5;font:400 14px/1.5 Inter,system-ui,sans-serif;cursor:pointer;transition:border-color .2s,color .2s}.ds-preview-theme:hover{border-color:#67718c;color:#f8f9ff}.ds-preview-theme:focus-visible{outline:2px solid var(--sos-preview-dark-focus,#bfcaff);outline-offset:-4px}.ds-preview-theme:active{background:var(--sos-preview-dark,#101728)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Prismatic light lab",
+    "overview": "Studio X OS brings photography's physical light, optical depth and considered composition into a commercial software introduction. Charcoal working surfaces, blue/lavender light and opal display type carry the supplied Studio X OS marks. The personality is futuristic and confident, with the real product remaining legible beneath the spectacle.\n\nThis is the commercial homepage's scoped visual authority. It does not replace, merge into or redefine the personal Team Alpha system in [`frontend/DESIGN.md`](../../frontend/DESIGN.md) or its product context. The homepage's Persuade strategy, centered composition, intentional hero-to-dashboard gap and detailed scene choreography remain in the [surface brief](../STUDIO_X_OS_HOMEPAGE_MOTION.md). This document records reusable visual decisions; it does not turn one page's arrangement into a rule for every Studio X OS screen.",
+    "keyCharacteristics": [
+      "Physical optical materials around the exact supplied X artwork.",
+      "Distinct display and working-interface typography.",
+      "Open editorial chapters interrupted by truthful sample product surfaces.",
+      "Responsive and keyboard-stable alternatives to cinematic motion.",
+      "Clear preview, sample-data and coming-soon qualifications."
+    ],
+    "rules": [
+      {
+        "name": "The Material Roles Rule",
+        "body": "Resolve text, controls, boundaries and focus through the semantic recipe for the surface they sit on. Do not copy the dark studio focus or muted ink into the opal client material without checking contrast.",
+        "section": "colors"
+      },
+      {
+        "name": "The Display Pairing Rule",
+        "body": "Use Manrope for commercial display hierarchy and Inter for working controls. Do not introduce the personal site's Playfair Display as a commercial heading face.",
+        "section": "typography"
+      },
+      {
+        "name": "The Optical Priority Rule",
+        "body": "Spend the strongest depth on the identity and real product demonstrations. Do not add a competing blur, particle field or halo around every section.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** preserve the supplied marks, charcoal/blue/lavender identity and intentional opal client material.",
+      "**Do** use the semantic roles belonging to the current material and verify normal-text, control and focus contrast.",
+      "**Do** keep plan intent, honest readiness labels, sample-data descriptions and recovery paths intact.",
+      "**Do** make every cinematic scene readable and operable with keyboard, touch, reduced motion and a static fallback.",
+      "**Do** treat rendering limits as implementation budgets and distinguish them from physical-device measurements."
+    ],
+    "donts": [
+      "**Don't** merge this commercial visual system into the personal Team Alpha design files or tenant-owned branding.",
+      "**Don't** replace the supplied X with a generated mark, distort its proportions or crop its artwork to imitate depth.",
+      "**Don't** collapse the approved hero-to-dashboard gap or introduce competing extraordinary moments across every chapter.",
+      "**Don't** hide required copy or controls until an animation completes.",
+      "**Don't** invent prices, testimonials, app-store availability, AI readiness or live actions inside sample screenshots."
+    ]
+  }
+}

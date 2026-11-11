@@ -1,11 +1,14 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Suspense, lazy } from "react";
-import { AnimatePresence } from "framer-motion";
+import { Fragment, Suspense, lazy } from "react";
 import { useAuth } from './context/AuthContext';
 import { StudioPreviewStart, StudioPreviewNavigation } from './native/StudioPreview';
 import { IS_COMMERCIAL_DEPLOYMENT, SAAS_RELEASE_ENABLED } from './saas/release';
 import StudioProductMetadata from './components/StudioProductMetadata';
 import StudioProductBrand from './components/StudioProductBrand';
+
+// The marketing surface authors its own motion. Load the personal site's route
+// transition runtime only when that deployment is actually rendered.
+const RoutePresence = IS_COMMERCIAL_DEPLOYMENT ? Fragment : lazy(() => import('./public/RoutePresence'));
 
 // Public website pages load independently of internal Studio OS routes.
 const PublicLayout = lazy(() => import("./public/PublicLayout"));
@@ -98,7 +101,7 @@ function App() {
           isStudioPage ? <div className="studio-product-loading" role="status"><StudioProductBrand /><p>Opening your workspace…</p></div> : <div className="flex h-screen w-full items-center justify-center text-xl">Loading...</div>
         }
       >
-        <AnimatePresence mode="wait">
+        <RoutePresence>
           <Routes location={location}>
             <Route path="/quote/:token" element={<SharedQuotation />} />
             <Route path="/invoice/:token" element={<PublicInvoice />} />
@@ -198,7 +201,7 @@ function App() {
               </Route>
             </Route>
           </Routes>
-        </AnimatePresence>
+        </RoutePresence>
       </Suspense>
     </div>
   );
