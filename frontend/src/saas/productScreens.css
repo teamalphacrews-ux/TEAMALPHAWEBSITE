@@ -1,23 +1,23 @@
-.sos-product .sos-screen-preview { margin: 0; overflow: hidden; background: #f6f8fc; }
-.sos-product .sos-screen-preview.is-dark { background: #101728; }
+.sos-product .sos-screen-preview { margin: 0; overflow: hidden; background: var(--sos-preview-daylight); color-scheme: light; }
+.sos-product .sos-screen-preview.is-dark { background: var(--sos-preview-dark); color-scheme: dark; }
 .sos-product .sos-screen-preview .sos-preview-tools { gap: 16px; padding: 12px 16px; }
 .sos-product .sos-screen-preview .sos-preview-tools button { min-height: 44px; font-size: 14px; }
-.sos-product .sos-screen-preview .sos-screen-tools-note { margin-left: auto; color: #b9c9e7; font-size: 12px; }
-.sos-product .sos-screen-preview .sos-preview-tools button:focus-visible { outline: 2px solid #bfcaff; outline-offset: -4px; }
-.sos-product .sos-screen-preview .sos-preview-tools [role=tab][aria-selected=true]:focus-visible { outline-color: #2354c4; }
+.sos-product .sos-screen-preview .sos-screen-tools-note { margin-inline-start: auto; color: #b9c9e7; font-size: 14px; }
+.sos-product .sos-screen-preview .sos-preview-tools button:focus-visible { outline: 2px solid var(--sos-preview-dark-focus); outline-offset: -4px; }
+.sos-product .sos-screen-preview .sos-preview-tools [role=tab][aria-selected=true]:focus-visible { outline-color: var(--sos-preview-daylight-focus); }
 .sos-product .sos-screen-preview .sos-screen-panel:focus-visible,
-.sos-product .sos-screen-preview .sos-screen-expand:focus-visible { outline: 2px solid #2354c4; outline-offset: -4px; }
+.sos-product .sos-screen-preview .sos-screen-expand:focus-visible { outline: 2px solid var(--sos-preview-daylight-focus); outline-offset: -4px; }
 .sos-product .sos-screen-preview.is-dark .sos-screen-panel:focus-visible,
-.sos-product .sos-screen-preview.is-dark .sos-screen-expand:focus-visible { outline-color: #bfcaff; }
+.sos-product .sos-screen-preview.is-dark .sos-screen-expand:focus-visible { outline-color: var(--sos-preview-dark-focus); }
 .sos-product-screen-image { display: block; width: 100%; aspect-ratio: 3 / 2; background: #eef2f8; }
 .sos-product-screen-image > img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: contain; }
 .sos-screen-panel { min-width: 0; }
-.sos-screen-caption { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; padding: 16px 22px; border-top: 1px solid #d8e0ef; background: #f6f8fc; color: #384b6a; }
+.sos-screen-caption { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; padding: 16px 22px; border-top: 1px solid var(--sos-preview-daylight-boundary); background: var(--sos-preview-daylight); color: var(--sos-preview-daylight-copy); }
 .sos-product .sos-screen-caption p { margin: 0; font-size: 14px; line-height: 1.6; color: inherit; }
-.sos-screen-caption span { font-size: 12px; line-height: 1.6; }
-.sos-screen-expand { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; min-height: 44px; font-size: 13px; color: inherit; text-decoration: underline; text-underline-offset: 4px; }
+.sos-screen-caption span { font-size: 14px; line-height: 1.6; }
+.sos-screen-expand { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; min-height: 44px; font-size: 14px; color: inherit; text-decoration: underline; text-underline-offset: 4px; }
 .sos-screen-expand.mobile { display: none; }
-.is-dark .sos-screen-caption { color: #bdcde8; background: #101728; border-top-color: #33445f; }
+.is-dark .sos-screen-caption { color: var(--sos-preview-dark-copy); background: var(--sos-preview-dark); border-top-color: var(--sos-preview-dark-boundary); }
 .sos-prismatic .sos-workbench .sos-workbench-screen { display: block; width: 96%; margin: auto; border-radius: 14px; overflow: hidden; transform: perspective(1500px) rotateY(-8deg) rotateZ(1.5deg); box-shadow: 0 35px 65px #02040c66; }
 @media (max-width: 850px) {
   .sos-product .sos-screen-preview .sos-screen-tools-note { display: none; }
@@ -26,10 +26,10 @@
 @media (max-width: 600px) {
   .sos-product .sos-screen-preview .sos-preview-tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 10px; }
   .sos-product .sos-screen-preview .sos-preview-tools > [role=tablist] { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-  .sos-product .sos-screen-preview .sos-preview-tools [role=tab] { padding: 8px 6px; font-size: 12px; }
+  .sos-product .sos-screen-preview .sos-preview-tools [role=tab] { padding: 8px 6px; font-size: 14px; }
   .sos-product .sos-screen-preview .sos-preview-tools [role=tab] > svg { display: none; }
   .sos-product .sos-screen-preview .sos-screen-tools-note { display: block; margin: 0; }
-  .sos-product .sos-screen-preview .sos-preview-tools .sos-preview-theme { width: auto; min-width: 112px; padding: 8px 12px; font-size: 12px; }
+  .sos-product .sos-screen-preview .sos-preview-tools .sos-preview-theme { width: auto; min-width: 112px; padding: 8px 12px; font-size: 14px; }
   .sos-product .sos-screen-preview .sos-preview-theme > span { display: inline; }
   .sos-product-screen-image.has-phone-source,
   .sos-product-screen-image.has-phone-source > img { aspect-ratio: 390 / 844; }

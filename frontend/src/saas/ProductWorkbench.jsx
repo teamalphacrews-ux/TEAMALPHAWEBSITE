@@ -34,8 +34,8 @@ export default function ProductWorkbench() {
   }, []);
   useEffect(() => {
     const element = root.current;
-    element.dataset.workbench = compact ? 'linear' : 'pinned';
-    if (compact) return () => element.removeAttribute('data-workbench');
+    navigation.current = null;
+    if (compact) return;
     let frame = 0;
     const update = () => {
       frame = 0;
@@ -69,17 +69,13 @@ export default function ProductWorkbench() {
       window.removeEventListener('scroll', schedule); window.removeEventListener('resize', schedule);
       document.removeEventListener('visibilitychange', schedule);
       element.removeEventListener('focusin', schedule); element.removeEventListener('focusout', schedule);
-      element.removeAttribute('data-workbench');
       element.style.removeProperty('--workbench-shift'); element.style.removeProperty('--workbench-progress');
     };
   }, [compact]);
   const choose = index => {
     const next = Math.max(0, Math.min(3, index));
     activeRef.current = next; setActive(next);
-    if (compact) {
-      panels.current[next]?.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
-      return;
-    }
+    if (compact) return;
     const bounds = runway.current.getBoundingClientRect();
     const top = parseFloat(getComputedStyle(pin.current).top) || 0;
     navigation.current = { index: next, until: 0 };
@@ -92,19 +88,19 @@ export default function ProductWorkbench() {
     choose(next);
     event.currentTarget.querySelectorAll('button')[next]?.focus({ preventScroll: true });
   };
-  return <section ref={root} className="sos-workbench sos-container" id="features">
+  return <section ref={root} className="sos-workbench sos-container" id="features" data-workbench={compact ? 'tabbed' : 'pinned'}>
     <div className="sos-section-heading"><h2>Built for<br/>the whole picture.</h2><p>From a photographer’s first independent studio<br/>to a team with several projects in motion.</p></div>
     <div className="sos-workbench-runway" ref={runway}>
       <div className="sos-workbench-pin" ref={pin}>
         <div className="sos-workbench-controls">
-          <div className="sos-workbench-tabs" role={compact ? 'group' : 'tablist'} aria-label="Explore studio capabilities" onKeyDown={keys}>
-            {capabilities.map((item,index) => <button key={item.name} type="button" role={compact ? undefined : 'tab'} id={'workbench-tab-'+index} aria-selected={compact ? undefined : active===index} aria-controls={'workbench-panel-'+index} tabIndex={compact || active===index ? 0 : -1} onClick={()=>choose(index)}>{item.name}</button>)}
+          <div className="sos-workbench-tabs" role="tablist" aria-label="Explore studio capabilities" onKeyDown={keys}>
+            {capabilities.map((item,index) => <button key={item.name} type="button" role="tab" id={'workbench-tab-'+index} aria-selected={active===index} aria-controls={'workbench-panel-'+index} tabIndex={active===index ? 0 : -1} onClick={()=>choose(index)}>{item.name}</button>)}
           </div>
           <div className="sos-workbench-arrows"><button type="button" aria-label="Previous capability" disabled={active===0} onClick={()=>choose(active-1)}><ArrowLeft size={18}/></button><button type="button" aria-label="Next capability" disabled={active===3} onClick={()=>choose(active+1)}><ArrowRight size={18}/></button></div>
         </div>
         <div className="sos-workbench-viewport" ref={viewport}>
           <div className="sos-workbench-rail" ref={rail}>
-            {capabilities.map((item,index) => <article key={item.name} ref={node=>{panels.current[index]=node;}} className={'sos-workbench-plate plate-'+index} id={'workbench-panel-'+index} role={compact ? 'region' : 'tabpanel'} aria-labelledby={'workbench-tab-'+index} aria-hidden={!compact && active!==index ? true : undefined} inert={!compact && active!==index} tabIndex={compact || active===index ? 0 : -1}>
+            {capabilities.map((item,index) => <article key={item.name} ref={node=>{panels.current[index]=node;}} className={'sos-workbench-plate plate-'+index} id={'workbench-panel-'+index} role="tabpanel" aria-labelledby={'workbench-tab-'+index} aria-hidden={active!==index ? true : undefined} hidden={compact && active!==index} inert={active!==index} tabIndex={active===index ? 0 : -1}>
               <div className="sos-workbench-copy"><span className="sos-workbench-symbol">{createElement(item.icon,{size:27,strokeWidth:1.4})}</span><h3>{item.title}</h3><p>{item.copy}</p><span className="sos-workbench-label">{item.label}</span></div><CapabilityArt index={index}/>
             </article>)}
           </div>

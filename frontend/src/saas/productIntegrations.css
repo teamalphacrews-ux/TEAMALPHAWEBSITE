@@ -3,7 +3,7 @@
   grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
   align-items: end;
   gap: 64px;
-  margin-bottom: 72px;
+  margin-bottom: 56px;
 }
 
 .sos-prismatic .sos-integrations-heading h2 {
@@ -15,92 +15,44 @@
 }
 
 .sos-product .sos-integrations-intro > p {
-  color: #b7c3dd;
+  color: var(--sos-tools-text);
   font-size: 17px;
   line-height: 1.75;
-  max-width: 35ch;
+  max-width: 39ch;
   margin: 0;
 }
 
 .sos-product .sos-integrations-intro .sos-ai-availability {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-top: 24px;
-  color: #c5c7ef;
+  margin-top: 20px;
+  color: var(--sos-pending-text);
   font-size: 14px;
   line-height: 1.6;
 }
 
-.sos-ai-availability > svg { flex: 0 0 auto; margin-top: 2px; }
-.sos-ai-availability strong { display: block; font-weight: 600; }
+.sos-ai-availability strong { font-weight: 600; white-space: nowrap; }
 
-.sos-product .sos-studio-features {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  column-gap: 80px;
-  border-top: 1px solid #35415b;
-  border-bottom: 1px solid #35415b;
-  margin-bottom: 64px;
-}
-
-.sos-studio-feature-lead,
-.sos-experience-features { padding-block: 44px 48px; }
-
-.sos-product .sos-studio-feature-lead h3 {
-  color: #f1f4fc;
-  font-size: clamp(32px, 3vw, 46px);
-  font-weight: 500;
-  line-height: 1.15;
-  letter-spacing: -.035em;
-  margin: 0 0 24px;
-}
-
-.sos-product .sos-studio-feature-lead > p {
-  color: #b7c3dd;
-  font-size: 17px;
-  line-height: 1.8;
-  max-width: 37ch;
-  margin: 0;
-}
-
-.sos-experience-features { display: grid; gap: 27px; }
-.sos-product .sos-experience-features h3,
-.sos-product :is(.sos-feature-client, .sos-feature-apps) h3 {
-  color: #eef2ff;
-  font-size: 21px;
-  font-weight: 500;
-  letter-spacing: -.025em;
-  line-height: 1.35;
-  margin: 0 0 10px;
-}
-
-.sos-product .sos-experience-features p,
-.sos-product :is(.sos-feature-client, .sos-feature-apps) p {
-  color: #b7c3dd;
-  font-size: 15px;
-  line-height: 1.8;
+.sos-product .sos-mobile-availability p {
+  color: var(--sos-tools-text);
+  font-size: 16px;
+  line-height: 1.7;
   max-width: 54ch;
   margin: 0;
 }
 
-.sos-product :is(.sos-feature-client, .sos-feature-apps) {
+.sos-product .sos-mobile-availability {
   display: flex;
-  align-items: flex-start;
-  gap: 18px;
-  border-top: 1px solid #35415b;
-  padding-block: 36px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px 40px;
+  padding-block: 24px;
+  margin-block: 28px 56px;
+  border-block: 1px solid var(--sos-boundary);
 }
 
-:is(.sos-feature-client, .sos-feature-apps) > svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: #b8c8f2;
+.sos-product .sos-mobile-availability strong {
+  color: var(--sos-heading);
+  font-weight: 500;
 }
-
-.sos-apps-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 15px; margin-bottom: 10px; }
-.sos-product .sos-apps-heading h3 { margin-bottom: 0; }
-.sos-apps-heading > span { color: #c5c7ef; font-size: 13px; line-height: 1.6; }
 
 .sos-product a.sos-feature-link {
   display: inline-flex;
@@ -108,43 +60,74 @@
   gap: 15px;
   min-height: 44px;
   padding-block: 10px;
-  margin-top: 17px;
-  color: #eef2ff;
-  border-bottom: 1px solid #8597c3;
+  margin-top: 12px;
+  color: var(--sos-heading);
+  border-bottom: 1px solid var(--sos-text-secondary);
   font-size: 14px;
   line-height: 1.5;
   text-decoration: none;
   transition: color 180ms ease-out, border-color 180ms ease-out;
 }
 
-.sos-product a.sos-feature-link:hover { color: #c8d5ff; border-color: #c8d5ff; }
-.sos-product a.sos-feature-link:focus-visible { outline: 2px solid #c8d5ff; outline-offset: 5px; border-radius: 2px; }
+.sos-product .sos-mobile-availability .sos-feature-link { flex-shrink: 0; margin-top: 0; }
+.sos-product a.sos-feature-link:hover { color: var(--sos-link-hover); border-color: var(--sos-link-hover); }
+.sos-product a.sos-feature-link:focus-visible { outline: 2px solid var(--sos-link-hover); outline-offset: 5px; border-radius: 2px; }
 .sos-feature-link > svg { flex: 0 0 auto; }
+
+.sos-product .sos-connection-details { margin: 0; }
+
+.sos-product .sos-connection-details > div {
+  display: grid;
+  grid-template-columns: minmax(220px, .7fr) minmax(0, 1.3fr);
+  gap: 24px 64px;
+  padding-block: 24px;
+  border-top: 1px solid var(--sos-boundary);
+}
+
+.sos-product .sos-connection-details dt {
+  color: var(--sos-heading);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -.02em;
+  line-height: 1.4;
+}
+
+.sos-product .sos-connection-details dt span {
+  display: block;
+  color: var(--sos-text-secondary);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1.6;
+  margin-top: 5px;
+}
+
+.sos-product .sos-connection-details dd {
+  color: var(--sos-tools-text);
+  font-size: 16px;
+  line-height: 1.7;
+  margin: 0;
+  max-width: 65ch;
+}
 
 @media (max-width: 1100px) {
   .sos-prismatic .sos-integrations-heading { gap: 36px; }
-  .sos-product .sos-studio-features { column-gap: 42px; }
+  .sos-product .sos-connection-details > div { column-gap: 40px; }
 }
 
 @media (max-width: 850px) {
-  .sos-prismatic .sos-integrations-heading { grid-template-columns: 1fr; gap: 28px; margin-bottom: 42px; }
+  .sos-prismatic .sos-integrations-heading { grid-template-columns: 1fr; gap: 24px; margin-bottom: 36px; }
   .sos-product .sos-integrations-intro > p { max-width: 52ch; }
-  .sos-product .sos-studio-features { column-gap: 32px; }
-  .sos-product .sos-studio-feature-lead h3 { font-size: 34px; }
-  .sos-product .sos-studio-feature-lead > p { font-size: 16px; }
+  .sos-product .sos-mobile-availability { align-items: flex-start; flex-direction: column; gap: 8px; margin-bottom: 40px; }
+  .sos-product .sos-connection-details > div { grid-template-columns: minmax(180px, .7fr) minmax(0, 1.3fr); gap: 24px; }
 }
 
 @media (max-width: 600px) {
   .sos-prismatic .sos-integrations-heading h2 { font-size: clamp(31px, 8.6vw, 43px); }
   .sos-product .sos-integrations-intro > p { font-size: 16px; }
-  .sos-product .sos-integrations-intro .sos-ai-availability { margin-top: 20px; }
-  .sos-product .sos-studio-features { grid-template-columns: 1fr; margin-bottom: 36px; }
-  .sos-studio-feature-lead { padding-block: 32px; }
-  .sos-product .sos-studio-feature-lead h3 { font-size: 34px; margin-bottom: 18px; }
-  .sos-experience-features { padding-block: 0 32px; gap: 24px; }
-  .sos-product :is(.sos-feature-client, .sos-feature-apps) { gap: 14px; padding-block: 28px; }
-  .sos-product .sos-experience-features h3,
-  .sos-product :is(.sos-feature-client, .sos-feature-apps) h3 { font-size: 20px; }
+  .sos-product .sos-integrations-intro .sos-ai-availability { margin-top: 16px; }
+  .sos-product .sos-mobile-availability { padding-block: 24px; margin-top: 28px; }
+  .sos-product .sos-connection-details > div { grid-template-columns: 1fr; gap: 10px; padding-block: 22px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

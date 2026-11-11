@@ -66,7 +66,7 @@ export function SocialAuthButtons({ config, loading = false, purpose = 'signup',
   return <div className="saas-social-auth">
     <div className="saas-social-buttons">
       <button className="saas-social-button is-google" type="button" disabled={disabled || !available('google') || Boolean(busy)} onClick={() => start('google')} aria-describedby={statusId} aria-busy={busy === 'google'}>
-        <img src="https://developers.google.com/static/identity/images/g-logo.png" alt="" width="20" height="20" referrerPolicy="no-referrer" />
+        <img src="/assets/studio-x-os/google-signin-g.png" alt="" width="20" height="20" onError={event => { event.currentTarget.style.display = 'none'; }} />
         <span>{busy === 'google' ? 'Opening Google…' : 'Continue with Google'}</span>
         {busy === 'google' && <LoaderCircle className="saas-auth-spinner saas-provider-progress" size={16} aria-hidden="true" />}
       </button>

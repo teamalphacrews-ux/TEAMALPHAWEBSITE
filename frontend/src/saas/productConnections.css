@@ -1,0 +1,123 @@
+.sos-product .sos-connections.sos-connections-expanded {
+  height: auto;
+  max-width: 1000px;
+  margin: 0 auto 56px;
+}
+
+.sos-connections-expanded .sos-connections-map {
+  position: relative;
+  height: 500px;
+}
+
+.sos-product .sos-connections-expanded .sos-connections-lines {
+  inset: 0;
+  height: 100%;
+}
+
+.sos-product .sos-connections-expanded .sos-connections-core {
+  top: 50%;
+  width: 160px;
+  height: 160px;
+  padding: 34px;
+  border-radius: 32px;
+}
+
+.sos-connections-list { list-style: none; margin: 0; padding: 0; }
+
+.sos-product .sos-connections-expanded .sos-connection-node {
+  left: var(--connection-x);
+  top: var(--connection-y);
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.sos-product .sos-connections-expanded .sos-connection-art {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+}
+
+.sos-product .sos-connections-expanded .sos-connection-copy {
+  display: block;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.sos-product .sos-connections-expanded .sos-connection-copy strong {
+  display: block;
+  color: var(--sos-heading);
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 500;
+  text-wrap: balance;
+}
+
+.sos-product .sos-connections-expanded .sos-connection-copy small {
+  display: block;
+  margin-top: 4px;
+  color: var(--sos-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.sos-product .sos-connections-expanded .sos-connection-node img { width: 32px; height: 32px; }
+.sos-product .sos-connections-expanded .connection-chatgpt .sos-connection-art { background: #f2f2f7; border-color: #d8deef; }
+.sos-product .sos-connections-expanded .connection-chatgpt img { width: 45px; height: 45px; }
+
+.sos-connections-expanded figcaption {
+  color: var(--sos-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+  margin-top: 30px;
+}
+
+@media (max-width: 850px) {
+  .sos-product .sos-connections-expanded .sos-connection-node { width: 150px; }
+}
+
+@media (min-width: 651px) {
+  .sos-product .sos-connections-expanded .sos-connection-node:nth-child(-n+4) { flex-direction: column-reverse; }
+}
+
+@media (max-width: 650px) {
+  .sos-product .sos-connections.sos-connections-expanded { margin-bottom: 32px; }
+  .sos-connections-expanded .sos-connections-map { height: auto; }
+  .sos-product .sos-connections-expanded .sos-connections-lines { display: none; }
+  .sos-product .sos-connections-expanded .sos-connections-core {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 104px;
+    height: 104px;
+    padding: 22px;
+    border-radius: 24px;
+    transform: none;
+    margin: 0 auto 40px;
+  }
+  .sos-connections-expanded .sos-connections-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px 16px;
+  }
+  .sos-product .sos-connections-expanded .sos-connection-node {
+    position: static;
+    width: auto;
+    transform: none;
+    gap: 10px;
+  }
+  .sos-product .sos-connections-expanded .sos-connection-node:last-child { grid-column: 1 / -1; }
+  .sos-product .sos-connections-expanded .sos-connection-art { width: 56px; height: 56px; border-radius: 14px; }
+  .sos-product .sos-connections-expanded .sos-connection-copy strong { font-size: 15px; }
+  .sos-connections-expanded figcaption { margin-top: 32px; text-wrap: balance; }
+}
