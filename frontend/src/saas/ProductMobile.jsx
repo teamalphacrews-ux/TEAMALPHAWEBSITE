@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowRight, ArrowUpRight, Banknote, CalendarDays, Check, CheckCheck, ChevronLeft, CreditCard, FileText, FolderPlus, Link2, MapPin, MoreHorizontal, Plus, ShieldCheck, Smartphone, Wallet } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowDown, ArrowRight, ArrowUpRight, Banknote, CalendarDays, Check, CheckCheck, ChevronLeft, CreditCard, FileText, FolderPlus, Link2, MapPin, MoreHorizontal, Plus, ShieldCheck, Smartphone, Wallet } from 'lucide-react';
 import './productMobile.css';
 
 const mobileStages = [
@@ -79,45 +79,90 @@ const screens = { create: PhoneProject, quote: PhoneQuote, invoice: PhoneInvoice
 
 export default function ProductMobile() {
   const [active, setActive] = useState('create');
+  const [hasMore, setHasMore] = useState(false);
+  const [frameAvailable, setFrameAvailable] = useState(true);
+  const tabsRef = useRef(null);
+  const screenRef = useRef(null);
   const stage = mobileStages.find(item => item.id === active);
   const Screen = screens[active];
+
+  useEffect(() => {
+    const screen = screenRef.current;
+    if (!screen) return;
+    screen.scrollTop = 0;
+    const measure = () => setHasMore(screen.scrollHeight - screen.clientHeight - screen.scrollTop > 3);
+    const observer = new ResizeObserver(measure);
+    observer.observe(screen);
+    if (screen.firstElementChild) observer.observe(screen.firstElementChild);
+    screen.addEventListener('scroll', measure, { passive: true });
+    measure();
+    return () => {
+      observer.disconnect();
+      screen.removeEventListener('scroll', measure);
+    };
+  }, [active]);
+
+  function selectStage(id) {
+    setActive(id);
+    if (!window.matchMedia('(max-width: 850px)').matches) return;
+    window.requestAnimationFrame(() => {
+      if (!tabsRef.current) return;
+      const headerBottom = Math.max(0, document.querySelector('.sos-header')?.getBoundingClientRect().bottom ?? 0);
+      const distance = tabsRef.current.getBoundingClientRect().top - headerBottom - 12;
+      if (Math.abs(distance) < 8) return;
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      window.scrollTo({
+        top: Math.max(0, Math.min(window.scrollY + distance, maxScroll)),
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      });
+    });
+  }
 
   function moveTab(event) {
     if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     const current = mobileStages.findIndex(item => item.id === active);
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? mobileStages.length - 1 : (current + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : mobileStages.length - 1)) % mobileStages.length;
-    setActive(mobileStages[next].id);
+    selectStage(mobileStages[next].id);
     event.currentTarget.querySelectorAll('[role="tab"]')[next]?.focus();
   }
 
   return <section className="sos-mobile-section" id="on-the-go" aria-labelledby="sos-mobile-title">
-    <div className="sos-container sos-mobile-grid">
+    <div className="sos-container sos-mobile-layout">
       <div className="sos-mobile-copy">
         <span className="sos-eyebrow"><Smartphone size={15}/>YOUR STUDIO GOES WITH YOU</span>
         <h2 id="sos-mobile-title">Create. Quote.<br/>Invoice. <span>Collect.</span><br/>On the go.</h2>
         <p>Your business doesn’t pause when you leave the desk. Move the next project forward from your mobile browser, whether you work solo or lead a crew.</p>
-        <div className="sos-mobile-tabs" role="tablist" aria-label="Explore the mobile studio workflow" onKeyDown={moveTab}>
-          {mobileStages.map((item, index) => <button type="button" key={item.id} role="tab" id={'sos-mobile-tab-' + item.id} tabIndex={active === item.id ? 0 : -1} aria-selected={active === item.id} aria-controls="sos-mobile-panel" onClick={() => setActive(item.id)}>
-            <span className="sos-mobile-tab-icon"><item.icon size={17}/></span><span>{item.label}</span><small>0{index + 1}</small><ArrowRight size={16}/>
-          </button>)}
-        </div>
-        <div className="sos-mobile-benefit" key={active}>
-          <h3>{stage.title}</h3><p>{stage.copy}</p>
-        </div>
-        <a className="sos-text-link" href="#smart-link">See the client side<ArrowUpRight size={16}/></a>
       </div>
-      <div className={'sos-mobile-stage stage-' + active} id="sos-mobile-panel" role="tabpanel" tabIndex={0} aria-labelledby={'sos-mobile-tab-' + active}>
+      <div ref={tabsRef} className="sos-mobile-tabs" role="tablist" aria-label="Explore the mobile studio workflow" onKeyDown={moveTab}>
+        {mobileStages.map((item, index) => <button type="button" key={item.id} role="tab" id={'sos-mobile-tab-' + item.id} tabIndex={active === item.id ? 0 : -1} aria-selected={active === item.id} aria-controls="sos-mobile-panel" onClick={() => selectStage(item.id)}>
+          <span className="sos-mobile-tab-icon"><item.icon size={17}/></span><span>{item.label}</span><small>0{index + 1}</small><ArrowRight size={16}/>
+        </button>)}
+      </div>
+      <div className="sos-mobile-selection-summary" id="sos-mobile-selection-summary">
+        <h3>{stage.title}</h3>
+        <p><span>{stage.moment}</span><small>Sample workflow</small></p>
+      </div>
+      <div data-motion-unit="mobile-device" className={'sos-mobile-stage stage-' + active} id="sos-mobile-panel" role="tabpanel" tabIndex={0} aria-labelledby={'sos-mobile-tab-' + active} aria-describedby="sos-mobile-selection-summary sos-mobile-qualification">
         <div className="sos-mobile-aura" aria-hidden="true"><i/><i/></div>
-        <div className="sos-mobile-context"><i/><span>{stage.moment}</span><Smartphone size={14}/></div>
+        <div className="sos-mobile-context" id="sos-mobile-context"><i/><span>{stage.moment}</span><Smartphone size={14}/></div>
         <div className="sos-mobile-phone">
-          <div className="sos-mobile-status-bar" aria-hidden="true"><span>9:41</span><i/><svg width="43" height="11" viewBox="0 0 43 11" fill="none"><path d="M1 9V7M5 9V5M9 9V2" stroke="currentColor" strokeWidth="2"/><path d="M15 3Q20 -1 25 3M17 5Q20 2 23 5M19 7L20 8L21 7" stroke="currentColor" strokeWidth="1.5"/><rect x="29" y="2" width="11" height="7" rx="1.5" stroke="currentColor"/><path d="M41 4V7" stroke="currentColor"/><path d="M31 4H38V7H31Z" fill="currentColor"/></svg></div>
-          <div className="sos-mobile-browser"><ShieldCheck size={10}/><span>Studio OS · Mobile workspace</span></div>
-          <div className="sos-mobile-app-bar" aria-hidden="true"><ChevronLeft size={17}/><span>studio<span>os</span></span><MoreHorizontal size={18}/></div>
-          <div className="sos-mobile-screen" key={active}><Screen/></div>
-          <div className="sos-mobile-home-indicator" aria-hidden="true"/>
+          <div className="sos-mobile-device-display">
+            <div className="sos-mobile-status-bar" aria-hidden="true"><span>9:41</span><svg width="43" height="11" viewBox="0 0 43 11" fill="none"><path d="M1 9V7M5 9V5M9 9V2" stroke="currentColor" strokeWidth="2"/><path d="M15 3Q20 -1 25 3M17 5Q20 2 23 5M19 7L20 8L21 7" stroke="currentColor" strokeWidth="1.5"/><rect x="29" y="2" width="11" height="7" rx="1.5" stroke="currentColor"/><path d="M41 4V7" stroke="currentColor"/><path d="M31 4H38V7H31Z" fill="currentColor"/></svg></div>
+            <div className="sos-mobile-browser"><ShieldCheck size={10}/><span>Studio X OS · Mobile browser</span></div>
+            <div className="sos-mobile-app-bar" aria-hidden="true"><ChevronLeft size={17}/><span>studio<span>xos</span></span><MoreHorizontal size={18}/></div>
+            <div ref={screenRef} className="sos-mobile-screen" key={active} role="region" tabIndex={0} aria-label={stage.label + ' sample screen'} aria-describedby="sos-mobile-scroll-help"><Screen/></div>
+            <div className="sos-mobile-home-indicator" aria-hidden="true"/>
+          </div>
+          {frameAvailable && <img className="sos-mobile-device-frame" src="/assets/studio-x-os/devices/iphone-18-pro-2026.png" width="389" height="800" alt="" aria-hidden="true" loading="lazy" decoding="async" onError={() => setFrameAvailable(false)}/>}
         </div>
-        <div className="sos-mobile-stage-caption"><span>SAMPLE WORKFLOW</span><p>{stage.detail}</p><small>Interactive illustration · No live account or payment</small></div>
+        <div className="sos-mobile-scroll-cue" aria-hidden="true" data-visible={hasMore}><ArrowDown size={13}/><span>Scroll inside the phone to explore</span></div>
+        <span className="sos-mobile-scroll-help" id="sos-mobile-scroll-help">Scroll inside this sample screen, or use the arrow and Page Down keys, to explore the full illustration.</span>
+        <div className="sos-mobile-stage-caption"><span>SAMPLE WORKFLOW</span><p>{stage.detail}</p><small id="sos-mobile-qualification">Interactive illustration · No live account or payment</small></div>
+      </div>
+      <div className="sos-mobile-benefit" key={active}>
+        <p>{stage.copy}</p>
+        <a className="sos-text-link" href="#smart-link">See the client side<ArrowUpRight size={16}/></a>
       </div>
     </div>
   </section>;

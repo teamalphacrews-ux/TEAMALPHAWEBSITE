@@ -57,7 +57,7 @@ export default function NativeDeviceSettings(){
  return <div>{error&&<p className="studio-error" role="alert">{error}</p>}
   <SettingsGroup defaultOpen title="App privacy" description="Keep your studio private when you leave the iPhone app.">
    <p className="studio-muted"><ShieldCheck size={16}/> Face ID, Touch ID or your device passcode protects the app when it returns from the background.</p>
-   <SettingsToggle label="Lock Studio OS" description={native?'Your iPhone asks you to authenticate before changing this setting.':'Available in the installed iOS app.'} disabled={!native||!status||busy||(!status?.canAuthenticate&&!status?.privacyLockEnabled)} value={Boolean(status?.privacyLockEnabled)} onChange={value=>change(()=>window.StudioOSNative.setPrivacyLock(value))}/>
+   <SettingsToggle label="Lock Studio X OS" description={native?'Your iPhone asks you to authenticate before changing this setting.':'Available in the installed iOS app.'} disabled={!native||!status||busy||(!status?.canAuthenticate&&!status?.privacyLockEnabled)} value={Boolean(status?.privacyLockEnabled)} onChange={value=>change(()=>window.StudioOSNative.setPrivacyLock(value))}/>
    {native&&status&&!status.canAuthenticate&&<p className="studio-muted">Set an iPhone passcode before enabling app lock.</p>}
   </SettingsGroup>
   <SettingsGroup title="Push notifications" description="Open the exact enquiry, event or document from an alert.">

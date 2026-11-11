@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Building2, Check, Copy, CreditCard, Layers3, MailPlus, RefreshCw, ShieldCheck, Trash2, UsersRound } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Building2, Check, Copy, CreditCard, MailPlus, RefreshCw, ShieldCheck, Trash2, UsersRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { WorkspaceDialog, WorkspaceEmpty, WorkspaceError, WorkspaceHeader } from '../admin/components/operations/WorkspaceUI';
 import { loadRazorpayCheckout, planPrice, roleLabel, saasRequest, safeDate, statusLabel, trialDaysLeft, workspaceId } from './api';
 import { createWorkspacePreview } from './previewData';
 import './saas.css';
+import StudioProductBrand from '../components/StudioProductBrand';
 
 const tabs = [{ id: 'overview', label: 'Studio workspace', icon: Building2 }, { id: 'team', label: 'Team & invitations', icon: UsersRound }, { id: 'subscription', label: 'Plan & subscription', icon: CreditCard }];
 const memberName = member => [member.firstName, member.lastName].filter(Boolean).join(' ') || member.email;
@@ -82,7 +83,7 @@ export default function WorkspacePage({ initialTab = 'overview' }) {
       if (!mounted.current) { finish(); return; }
       let verifying = false;
       const payment = new Razorpay({
-        key: subscription.keyId, subscription_id: subscription.subscriptionId, name: subscription.studioName || 'Studio OS', description: plan.name + ' subscription',
+        key: subscription.keyId, subscription_id: subscription.subscriptionId, name: subscription.studioName || 'Studio X OS', description: plan.name + ' subscription',
         prefill: { name: memberName(user), email: user.email || '' }, theme: { color: '#272e23' },
         handler: async response => {
           verifying = true;
@@ -100,7 +101,7 @@ export default function WorkspacePage({ initialTab = 'overview' }) {
     } catch (failure) { if (mounted.current) setError(failure.message); finish(); }
   };
 
-  if (!activeWorkspace) return <div className="saas-workspace-page"><WorkspaceHeader eyebrow="Studio OS for teams" title="Your studio, ready to grow." description="Manage separate studio workspaces, people and subscriptions in one place." /><section className="studio-card saas-legacy-state"><span className="saas-workspace-emblem"><Layers3 size={28} /></span><h2>Your current studio remains available.</h2><p>This account uses your existing Studio OS. New multi-studio accounts are available when SaaS registration is configured. Your existing clients and projects stay in your current studio.</p><div><Link className="studio-button primary" to="/admin">Open your overview<ArrowRight size={15} /></Link><Link className="studio-button" to="/signup">Create a separate studio<ArrowUpRight size={15} /></Link></div></section></div>;
+  if (!activeWorkspace) return <div className="saas-workspace-page"><WorkspaceHeader eyebrow="Studio X OS for teams" title="Your studio, ready to grow." description="Manage separate studio workspaces, people and subscriptions in one place." /><section className="studio-card saas-legacy-state"><span className="saas-workspace-emblem"><StudioProductBrand compact /></span><h2>Your current studio remains available.</h2><p>This account uses your existing Studio X OS. New multi-studio accounts are available when SaaS registration is configured. Your existing clients and projects stay in your current studio.</p><div><Link className="studio-button primary" to="/admin">Open your overview<ArrowRight size={15} /></Link><Link className="studio-button" to="/signup">Create a separate studio<ArrowUpRight size={15} /></Link></div></section></div>;
   const workspace = data?.workspace;
   const owner = data?.role === 'owner';
   const members = data?.members || [], invitations = data?.invitations || [], plans = data?.plans || [];
@@ -129,7 +130,7 @@ export default function WorkspacePage({ initialTab = 'overview' }) {
               return <article className="saas-member" key={workspaceId(member)}><span className="saas-member-avatar" aria-hidden="true">{(member.firstName?.[0] || member.email?.[0] || '?').toUpperCase()}</span><div className="saas-member-identity"><strong>{memberName(member)}{self && <small>You</small>}</strong><span>{member.email}</span></div>{editable ? <select className="studio-input saas-member-role" aria-label={'Role for ' + memberName(member)} value={member.role} disabled={previewMode || Boolean(busy)} onChange={event => { setFormError(''); setDialog({ type: 'role', member, role: event.target.value }); }}><option value="admin">Administrator</option><option value="staff">Team member</option></select> : <span className="saas-member-role-label">{roleLabel(member.role)}</span>}{editable && <button type="button" className="studio-icon-button" aria-label={'Remove access for ' + memberName(member)} disabled={previewMode || Boolean(busy)} onClick={() => { setFormError(''); setDialog({ type: 'remove', member, role: 'removed' }); }}><Trash2 size={16} /></button>}</article>;
             })}</div>
           </section>
-          {invitationLink && <section className="studio-card saas-created-invite" role="status"><div><Check size={19} /><h3>Your invitation is ready.</h3></div><p>Share this private link with the invited person. They’ll use their own Studio OS password to join. This link is only shown when the invitation is created.</p><label className="studio-field">Private invitation link<input readOnly className="studio-input" value={invitationLink} onFocus={event => event.target.select()} /></label><button className="studio-button" type="button" onClick={copyInvitation}><Copy size={15} />Copy invitation link</button></section>}
+          {invitationLink && <section className="studio-card saas-created-invite" role="status"><div><Check size={19} /><h3>Your invitation is ready.</h3></div><p>Share this private link with the invited person. They’ll use their own Studio X OS password to join. This link is only shown when the invitation is created.</p><label className="studio-field">Private invitation link<input readOnly className="studio-input" value={invitationLink} onFocus={event => event.target.select()} /></label><button className="studio-button" type="button" onClick={copyInvitation}><Copy size={15} />Copy invitation link</button></section>}
           <section className="studio-card saas-content-card"><div className="saas-section-heading"><div><h3>Pending invitations <span className="saas-count">{invitations.length}</span></h3><p>Invitations reserve access until they’re accepted, expire or are revoked.</p></div></div>{invitations.length ? <div className="saas-member-list">{invitations.map(invitation => <article className="saas-member saas-invitation" key={workspaceId(invitation)}><span className="saas-member-avatar" aria-hidden="true"><MailPlus size={17} /></span><div className="saas-member-identity"><strong>{invitation.email}</strong><span>Expires {safeDate(invitation.expiresAt)}</span></div><span className="saas-member-role-label">{roleLabel(invitation.role)}</span>{owner && <button type="button" className="studio-button small" disabled={previewMode || Boolean(busy)} onClick={() => { setFormError(''); setDialog({ type: 'revoke', invitation }); }}>Revoke</button>}</article>)}</div> : <div className="saas-empty"><MailPlus size={23} /><p>No invitations waiting.</p><small>Your team’s next chapter starts with an invitation.</small></div>}</section>
         </>}
         {currentTab === 'subscription' && <>

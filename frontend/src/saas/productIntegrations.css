@@ -1,0 +1,135 @@
+.sos-prismatic .sos-integrations-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
+  align-items: end;
+  gap: 64px;
+  margin-bottom: 56px;
+}
+
+.sos-prismatic .sos-integrations-heading h2 {
+  max-width: 18ch;
+  font-size: clamp(38px, 4.5vw, 66px);
+  line-height: 1.1;
+  letter-spacing: -.04em;
+  text-wrap: balance;
+}
+
+.sos-product .sos-integrations-intro > p {
+  color: var(--sos-tools-text);
+  font-size: 17px;
+  line-height: 1.75;
+  max-width: 39ch;
+  margin: 0;
+}
+
+.sos-product .sos-integrations-intro .sos-ai-availability {
+  margin-top: 20px;
+  color: var(--sos-pending-text);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.sos-ai-availability strong { font-weight: 600; white-space: nowrap; }
+
+.sos-product .sos-mobile-availability p {
+  color: var(--sos-tools-text);
+  font-size: 16px;
+  line-height: 1.7;
+  max-width: 54ch;
+  margin: 0;
+}
+
+.sos-product .sos-mobile-availability {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px 40px;
+  padding-block: 24px;
+  margin-block: 28px 56px;
+  border-block: 1px solid var(--sos-boundary);
+}
+
+.sos-product .sos-mobile-availability strong {
+  color: var(--sos-heading);
+  font-weight: 500;
+}
+
+.sos-product a.sos-feature-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 15px;
+  min-height: 44px;
+  padding-block: 10px;
+  margin-top: 12px;
+  color: var(--sos-heading);
+  border-bottom: 1px solid var(--sos-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  text-decoration: none;
+  transition: color 180ms ease-out, border-color 180ms ease-out;
+}
+
+.sos-product .sos-mobile-availability .sos-feature-link { flex-shrink: 0; margin-top: 0; }
+.sos-product a.sos-feature-link:hover { color: var(--sos-link-hover); border-color: var(--sos-link-hover); }
+.sos-product a.sos-feature-link:focus-visible { outline: 2px solid var(--sos-link-hover); outline-offset: 5px; border-radius: 2px; }
+.sos-feature-link > svg { flex: 0 0 auto; }
+
+.sos-product .sos-connection-details { margin: 0; }
+
+.sos-product .sos-connection-details > div {
+  display: grid;
+  grid-template-columns: minmax(220px, .7fr) minmax(0, 1.3fr);
+  gap: 24px 64px;
+  padding-block: 24px;
+  border-top: 1px solid var(--sos-boundary);
+}
+
+.sos-product .sos-connection-details dt {
+  color: var(--sos-heading);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -.02em;
+  line-height: 1.4;
+}
+
+.sos-product .sos-connection-details dt span {
+  display: block;
+  color: var(--sos-text-secondary);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1.6;
+  margin-top: 5px;
+}
+
+.sos-product .sos-connection-details dd {
+  color: var(--sos-tools-text);
+  font-size: 16px;
+  line-height: 1.7;
+  margin: 0;
+  max-width: 65ch;
+}
+
+@media (max-width: 1100px) {
+  .sos-prismatic .sos-integrations-heading { gap: 36px; }
+  .sos-product .sos-connection-details > div { column-gap: 40px; }
+}
+
+@media (max-width: 850px) {
+  .sos-prismatic .sos-integrations-heading { grid-template-columns: 1fr; gap: 24px; margin-bottom: 36px; }
+  .sos-product .sos-integrations-intro > p { max-width: 52ch; }
+  .sos-product .sos-mobile-availability { align-items: flex-start; flex-direction: column; gap: 8px; margin-bottom: 40px; }
+  .sos-product .sos-connection-details > div { grid-template-columns: minmax(180px, .7fr) minmax(0, 1.3fr); gap: 24px; }
+}
+
+@media (max-width: 600px) {
+  .sos-prismatic .sos-integrations-heading h2 { font-size: clamp(31px, 8.6vw, 43px); }
+  .sos-product .sos-integrations-intro > p { font-size: 16px; }
+  .sos-product .sos-integrations-intro .sos-ai-availability { margin-top: 16px; }
+  .sos-product .sos-mobile-availability { padding-block: 24px; margin-top: 28px; }
+  .sos-product .sos-connection-details > div { grid-template-columns: 1fr; gap: 10px; padding-block: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sos-product a.sos-feature-link { transition: none; }
+}

@@ -4,6 +4,7 @@ import process from "node:process";
 import { hostname } from "node:os";
 import { createWebsiteRouter } from "./website-server.mjs";
 import react from "@vitejs/plugin-react";
+import { transformDeploymentHtml } from "./src/saas/releaseConfig.js";
 
 // https://vite.dev/config/
 function websiteGateway(env) {
@@ -24,6 +25,10 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     websiteGateway({ ...loadEnv(mode, process.cwd(), ""), ...process.env }),
+    {
+      name: "studio-deployment-identity",
+      transformIndexHtml: html => transformDeploymentHtml(html, { ...loadEnv(mode, process.cwd(), "VITE_"), ...process.env }),
+    },
   ],
   server: {
     proxy: {
@@ -41,13 +46,19 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
-          "vendor-motion": ["framer-motion"],
-          "vendor-icons": ["lucide-react"],
-          "vendor-http": ["axios"],
-          "vendor-dates": ["date-fns"],
-          "vendor-realtime": ["socket.io-client"],
+        // Keep shared React helpers out of an optional animation vendor chunk.
+        // Otherwise Rollup's automatic dependency merging can preload motion
+        // even when the commercial route never imports it.
+        onlyExplicitManualChunks: true,
+        manualChunks(id) {
+          // Match package files, not just entry points: the production JSX
+          // runtime is a React submodule and must never live inside motion.
+          if (/\/node_modules\/(?:react|react-dom|react-router|react-router-dom|scheduler)\//.test(id)) return "vendor-react";
+          if (/\/node_modules\/(?:framer-motion|motion-dom|motion-utils)\//.test(id)) return "vendor-motion";
+          if (id.includes("/node_modules/lucide-react/")) return "vendor-icons";
+          if (id.includes("/node_modules/axios/")) return "vendor-http";
+          if (id.includes("/node_modules/date-fns/")) return "vendor-dates";
+          if (id.includes("/node_modules/socket.io-client/")) return "vendor-realtime";
         },
       },
     },

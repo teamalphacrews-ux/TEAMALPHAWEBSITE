@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { appPreviewDestination } from './studioAppRoutes';
+import StudioProductBrand from '../components/StudioProductBrand';
 
 const enabled = import.meta.env.DEV && import.meta.env.VITE_STUDIO_IOS_PREVIEW === 'true';
 export function StudioPreviewStart() {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const started = useRef(false);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -18,10 +20,12 @@ export function StudioPreviewStart() {
         const data = await response.json();
         if (!response.ok || data.user?.isPreview !== true || data.user?.role !== 'admin' || data.token !== 'local-sample-data-only') throw new Error('The disposable sample workspace could not be confirmed.');
         await login(data.user, data.token);
+        const destination = appPreviewDestination(new URLSearchParams(window.location.search).get('returnTo'));
+        if (destination) navigate(destination, { replace: true });
       }).catch(() => setError('The isolated app preview is unavailable. Start the dedicated sample server and retry.'));
-  }, [login]);
+  }, [login, navigate]);
   if (!enabled) return <p>This preview entry is available only on the dedicated local development server.</p>;
-  return <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24, background: '#111319', color: '#f4f5fa', fontFamily: 'system-ui' }}><div style={{ textAlign: 'center', maxWidth: 320 }}><p style={{ fontSize: 22, marginBottom: 12 }}>Opening Studio OS</p><p role={error ? 'alert' : 'status'} style={{ fontSize: 13, color: '#b4bdce', lineHeight: 1.8 }}>{error || 'Preparing your isolated sample workspace…'}</p>{error && <button type="button" onClick={() => window.location.reload()} style={{ marginTop: 20, padding: '10px 20px' }}>Retry preview</button>}</div></div>;
+  return <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24, background: '#111319', color: '#f4f5fa', fontFamily: 'system-ui' }}><div style={{ textAlign: 'center', maxWidth: 320 }}><StudioProductBrand tone="inverse" /><p style={{ fontSize: 22, marginBottom: 12 }}>Opening Studio X OS</p><p role={error ? 'alert' : 'status'} style={{ fontSize: 13, color: '#b4bdce', lineHeight: 1.8 }}>{error || 'Preparing your isolated sample workspace…'}</p>{error && <button type="button" onClick={() => window.location.reload()} style={{ marginTop: 20, padding: '10px 20px' }}>Retry preview</button>}</div></div>;
 }
 
 export function StudioPreviewNavigation() {

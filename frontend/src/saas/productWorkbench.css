@@ -1,0 +1,101 @@
+.sos-prismatic .sos-workbench { padding-block: 125px 40px; }
+.sos-prismatic .sos-workbench .sos-section-heading { align-items: flex-end; margin-bottom: 55px; }
+.sos-prismatic .sos-workbench .sos-section-heading h2 { font-size: clamp(48px,5.4vw,78px); line-height: 1.06; }
+.sos-workbench-controls { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-bottom: 20px; }
+.sos-workbench-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.sos-workbench-tabs button { border: 1px solid #3d4c6a; background: #111b2c; color: #b8c8e9; border-radius: 9px; min-height: 46px; padding: 11px 20px; font-size: 14px; transition: color .2s,background .2s; }
+.sos-workbench-tabs button[aria-selected=true] { background: #e6edff; border-color: #e6edff; color: #17213a; }
+.sos-workbench-arrows { display: flex; gap: 8px; }
+.sos-workbench-arrows button { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; border: 1px solid #52688f; background: #152039; color: #dbe6ff; }
+.sos-workbench-arrows button:disabled { opacity: .35; cursor: default; }
+.sos-workbench-rail { display: grid; gap: 28px; }
+.sos-workbench-plate { display: grid; grid-template-columns: .78fr 1.22fr; position: relative; isolation: isolate; min-width: 0; overflow: hidden; border: 1px solid #5d7199; border-radius: 22px; background: #151f33; color: #ecf1ff; }
+.sos-workbench-plate[hidden] { display: none; }
+.sos-workbench-plate::before { content: ''; position: absolute; z-index: -1; width: 70%; height: 140%; right: -5%; top: -20%; background: linear-gradient(140deg,#4d70bd44,transparent 60%),radial-gradient(ellipse at 90% 10%,#8c76bb45,transparent 65%); transform: rotate(-12deg); pointer-events: none; }
+.sos-workbench-copy { display: flex; flex-direction: column; padding: clamp(30px,3.7vw,56px); align-items: flex-start; justify-content: center; }
+.sos-workbench-symbol { color: #bfd0ff; display: grid; place-items: center; width: 58px; height: 58px; border: 1px solid #5c77a8; border-radius: 16px; margin-bottom: 35px; background: #1c2f50; }
+.sos-prismatic .sos-workbench-copy h3 { font-family: var(--sos-display); font-size: clamp(32px,3.4vw,48px); line-height: 1.1; letter-spacing: -.035em; color: #f3f6ff; }
+.sos-prismatic .sos-workbench-copy > p { color: #b4c5e5; font-size: 16px; line-height: 1.85; margin-top: 24px; max-width: 39ch; }
+.sos-workbench-label { color: #bfd1f4; font-size: 12px; line-height: 1.6; margin-top: 35px; }
+.sos-prismatic .sos-workbench .sos-feature-art { grid-column: auto; grid-row: auto; width: 100%; height: 100%; min-height: 480px; margin: 0; border-radius: 0; background: transparent; overflow: hidden; }
+.sos-prismatic .sos-workbench .sos-art-team { width: min(85%,500px); max-width: none; padding: 30px; background: #111b2d; border-color: #647ea8; border-radius: 18px; box-shadow: 0 40px 60px #02040c55; transform: perspective(1400px) rotateY(-10deg) rotateZ(2deg); }
+.sos-prismatic .sos-workbench .sos-art-team > div { font-size: 12px; padding-bottom: 24px; color: #b7cae9; }
+.sos-prismatic .sos-workbench .sos-art-team p { padding-block: 22px; font-size: 15px; gap: 14px; border-color: #354c73; }
+.sos-prismatic .sos-workbench .sos-art-team p > i { width: 38px; height: 38px; font-size: 12px; }
+.sos-prismatic .sos-workbench .sos-art-team p > strong { font-size: 15px; }
+.sos-prismatic .sos-workbench .sos-art-team p > small { font-size: 12px; padding: 6px 9px; }
+.sos-prismatic .sos-workbench .sos-overview-preview.is-compact { width: 96%; height: 88%; border-radius: 14px; transform: perspective(1500px) rotateY(-8deg) rotateZ(1.5deg); box-shadow: 0 35px 65px #02040c66; }
+.sos-prismatic .sos-workbench .sos-art-document { width: 66%; padding: 34px; background: #e7edf5; transform: perspective(1300px) rotateY(-10deg) rotateZ(-4deg); box-shadow: 0 36px 55px #03051255; }
+.sos-prismatic .sos-workbench .sos-art-document > div:first-child { font-size: 12px; color: #52698b; }
+.sos-prismatic .sos-workbench .sos-art-document h4 { font-family: var(--sos-display); font-size: 34px; line-height: 1.12; letter-spacing: -.04em; }
+.sos-prismatic .sos-workbench .sos-art-document > p { font-size: 14px !important; color: #52698b !important; }
+.sos-prismatic .sos-workbench .sos-art-document > strong { font-size: 12px; color: #52698b; }
+.sos-prismatic .sos-workbench .sos-art-workspaces { width: min(80%,500px); max-width: none; gap: 16px; }
+.sos-prismatic .sos-workbench .sos-art-workspaces > span { width: 70px; height: 70px; margin-bottom: 18px; background: #2a3359; color: #d2d1ff; }
+.sos-prismatic .sos-workbench .sos-art-workspaces p { padding: 26px; font-size: 17px !important; border-color: #65719e; box-shadow: 0 20px 30px #02040c33; }
+.sos-prismatic .sos-workbench .sos-art-workspaces p:nth-of-type(2) { transform: translateX(24px); }
+.sos-prismatic .sos-workbench .sos-art-workspaces i { font: 500 12px/1.5 Inter,sans-serif; letter-spacing: .02em; color: #bdc5eb; }
+.sos-workbench-plate.plate-1 { background: #1a1c34; border-color: #7c7ab0; }
+.sos-workbench-plate.plate-2 { background: #182537; border-color: #667e9e; }
+.sos-workbench-plate.plate-3 { background: #221e37; border-color: #8479a7; }
+.sos-workbench-bottom { display: flex; justify-content: space-between; gap: 24px; color: #aabfe0; font-size: 12px; padding-top: 20px; }
+.sos-workbench[data-workbench=tabbed] .sos-workbench-rail { gap: 0; }
+.sos-workbench[data-workbench=tabbed] .sos-workbench-arrows { display: none; }
+.sos-workbench[data-workbench=pinned] .sos-workbench-runway { height: 340svh; position: relative; }
+.sos-workbench[data-workbench=pinned] .sos-workbench-pin { position: sticky; top: 108px; height: min(750px,calc(100svh - 140px)); display: flex; flex-direction: column; }
+.sos-workbench[data-workbench=pinned] .sos-workbench-viewport { flex: 1; min-height: 0; overflow: clip; border-radius: 22px; }
+.sos-workbench[data-workbench=pinned] .sos-workbench-rail { display: flex; gap: 32px; height: 100%; transform: translate3d(var(--workbench-shift,0px),0,0); }
+.sos-workbench[data-workbench=pinned] .sos-workbench-plate { flex: 0 0 100%; height: 100%; }
+.sos-workbench[data-workbench=pinned] .sos-feature-art { min-height: 0; }
+.sos-workbench[data-workbench=pinned] .sos-workbench-plate:focus-visible { outline-offset: -6px; }
+@media (max-width:1100px) {
+  .sos-prismatic .sos-workbench-copy h3 { font-size: 35px; }
+  .sos-workbench-copy { padding: 32px; }
+  .sos-prismatic .sos-workbench .sos-art-team { padding: 22px; }
+  .sos-prismatic .sos-workbench .sos-art-team p > strong { font-size: 13px; }
+  .sos-prismatic .sos-workbench .sos-art-workspaces p { padding: 21px; font-size: 15px !important; }
+}
+@media (max-width:850px), (max-height:760px) {
+  .sos-prismatic .sos-workbench { padding-block: 85px 40px; }
+  .sos-workbench-plate { min-height: 430px; }
+  .sos-workbench-arrows { display: none; }
+  .sos-prismatic .sos-workbench .sos-feature-art { min-height: 400px; }
+}
+@media (max-width:600px) {
+  .sos-prismatic .sos-workbench { padding-block: 75px 30px; }
+  .sos-prismatic .sos-workbench .sos-section-heading h2 { font-size: 42px; }
+  .sos-workbench-tabs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; }
+  .sos-workbench-tabs button { padding: 10px 12px; font-size: 13px; }
+  .sos-workbench-plate:not([hidden]) { display: flex; flex-direction: column-reverse; border-radius: 16px; }
+  .sos-workbench-copy { padding: 27px; }
+  .sos-workbench-symbol { width: 46px; height: 46px; margin-bottom: 20px; }
+  .sos-prismatic .sos-workbench-copy h3 { font-size: 32px; }
+  .sos-prismatic .sos-workbench-copy > p { font-size: 15px; margin-top: 18px; }
+  .sos-workbench-label { margin-top: 24px; }
+  .sos-prismatic .sos-workbench .sos-feature-art { height: 350px; min-height: 350px; border-bottom: 1px solid #6e83ac55; }
+  .sos-prismatic .sos-workbench .sos-art-team { width: 84%; transform: none; padding: 18px; }
+  .sos-prismatic .sos-workbench .sos-art-team > div { font-size: 12px; padding-bottom: 18px; }
+  .sos-prismatic .sos-workbench .sos-art-team p { padding-block: 17px; gap: 10px; }
+  .sos-prismatic .sos-workbench .sos-art-team p > i { width: 30px; height: 30px; font-size: 12px; }
+  .sos-prismatic .sos-workbench .sos-art-team p > strong { font-size: 12px; }
+  .sos-prismatic .sos-workbench .sos-art-team p > small { font-size: 12px; padding: 4px 7px; }
+  .sos-prismatic .sos-workbench .sos-overview-preview.is-compact { width: 92%; height: 88%; transform: none; }
+  .sos-prismatic .sos-workbench .sos-art-document { padding: 26px; width: 68%; transform: rotate(-3deg); }
+  .sos-prismatic .sos-workbench .sos-art-document h4 { font-size: 27px; }
+  .sos-prismatic .sos-workbench .sos-art-document > p { font-size: 12px !important; }
+  .sos-prismatic .sos-workbench .sos-art-workspaces { width: 80%; }
+  .sos-prismatic .sos-workbench .sos-art-workspaces p { padding: 18px; gap: 10px; font-size: 13px !important; }
+  .sos-prismatic .sos-workbench .sos-art-workspaces i { font-size: 12px; }
+  .sos-prismatic .sos-workbench .sos-art-workspaces p:nth-of-type(2) { transform: translateX(9px); }
+  .sos-workbench-bottom { flex-direction: column; gap: 6px; font-size: 12px; }
+}
+@media (max-width:380px) {
+  .sos-workbench-copy { padding: 23px; }
+  .sos-prismatic .sos-workbench .sos-art-team p { gap: 7px; }
+  .sos-prismatic .sos-workbench .sos-art-team p > small { padding: 3px 5px; }
+  .sos-prismatic .sos-workbench .sos-art-document { width: 75%; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .sos-prismatic .sos-workbench :is(.sos-art-team,.sos-overview-preview.is-compact,.sos-art-document,.sos-art-workspaces p) { transform: none; }
+  .sos-prismatic .sos-workbench-rail { transform: none; }
+}

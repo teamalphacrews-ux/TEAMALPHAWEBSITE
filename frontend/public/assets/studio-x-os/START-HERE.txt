@@ -1,0 +1,96 @@
+STUDIO X OS — LOGO PACK
+Prepared for Yogi / Team Alpha
+
+START HERE
+==========
+This pack contains colour, solid-black and solid-white Studio X OS logos,
+with horizontal, square, standalone-symbol and wordmark-only layouts.
+
+QUICK PICKS
+===========
+Website on a dark background:
+01-Horizontal/studioxos-horizontal-colour-white-type-transparent-2048.png
+
+Website on a light background:
+01-Horizontal/studioxos-horizontal-colour-black-type-transparent-2048.png
+
+Primary app icon:
+04-App-and-Web-Icons/studioxos-app-icon-dark-1024.png
+
+Square profile or brand image:
+02-Square-Logo/studioxos-square-colour-white-type-on-black-2048.jpg
+
+Black logo for documents, invoices and light backgrounds:
+01-Horizontal/studioxos-horizontal-black-transparent-2048.png
+
+White logo for dark backgrounds or photo overlays:
+01-Horizontal/studioxos-horizontal-white-transparent-2048.png
+
+FOLDERS
+=======
+01-Horizontal: Complete X + wordmark; transparent PNG and background JPEG.
+02-Square-Logo: X above wordmark in a square canvas; PNG and JPEG.
+03-X-Symbol: Standalone X in colour, black and white; PNG and JPEG.
+04-App-and-Web-Icons: Colour X on dark/light square backgrounds; PNG and ICO.
+05-Wordmark: The studioxos lettering alone in black and white.
+06-Source-Images: Native generated variants and the original approved image.
+
+COLOUR AND BACKGROUNDS
+=====================
+colour-white-type = colourful X with white lettering, for dark backgrounds.
+colour-black-type = colourful X with black lettering, for light backgrounds.
+black = monochrome black artwork, for light backgrounds.
+white = monochrome white artwork, for dark backgrounds.
+transparent = alpha transparency.
+on-black / on-white = a fixed background.
+
+SIZES AND FORMATS
+=================
+Horizontal PNG/JPEG: 4096 x 1365 and 2048 x 683 pixels.
+Square logo PNG: 4096 x 4096 and 2048 x 2048 pixels.
+Square logo JPEG: 2048 x 2048 pixels.
+Standalone X PNG: 4096 x 4096 and 2048 x 2048 pixels.
+Standalone X JPEG: 2048 x 2048 pixels.
+App/web icon PNG: 1024, 512, 192, 180, 64, 48, 32 and 16 pixels square.
+Favicons: one ICO per theme, with 16, 32, 48 and 64 pixel frames.
+Wordmark PNG: 4096 x 759 and 2048 x 379 pixels.
+Wordmark JPEG: 2048 x 379 pixels.
+
+PNG supports transparency. JPEG does not, so each JPEG has a deliberate
+black or white background. PNG is generally the better choice for a website
+header or logo overlay. Use the X-only icons for small navigation icons and
+browser tabs; the full wordmark is not designed to remain readable at 32 px.
+
+Use the 2048 px horizontal files for web work; display them at the actual
+layout size with height:auto to preserve proportions. Use smaller icons
+when small assets are sufficient. The 4096 px files are larger raster exports.
+
+RESOLUTION AND SOURCE NOTES
+===========================
+The original approved concept is 1536 x 1024 pixels. The transparent production
+variants were generated at 2172 x 724 pixels. The 4096 px deliverables are
+carefully resized raster exports; they are not newly generated 4K detail.
+The isolated X contains less native detail than the full horizontal image.
+PNG and JPEG are bitmap formats. This pack does not contain a true editable
+SVG/EPS/AI vector master or an installable font. For very large-format printing
+or a final vector brand system, a dedicated vector reconstruction is the next
+production step. Native files are preserved so future work can start from them.
+
+APP ICON NOTES
+==============
+The app icons use a full square background without baked-in rounded corners.
+The platform or application can apply its own display mask. These are useful
+implementation assets, not a guarantee of submission readiness for every app
+store. Platform-specific icon packaging can be completed in the app project.
+
+KEEP THE IDENTITY CONSISTENT
+===========================
+Preserve the aspect ratio. Keep clear space around the artwork. Use sufficient
+contrast. Do not stretch the logo or place white lettering on a light image.
+The monochrome marks retain the X outline and open centre without the colour
+version's glass shading. Use the supplied preview to identify variants.
+
+FILES
+=====
+ASSET-INDEX.csv lists every image, dimensions, format and transparency.
+StudioXOS-Logo-Preview.jpg shows the principal treatments.

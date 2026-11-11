@@ -1,0 +1,170 @@
+/* Supporting choreography for the prismatic hero. Unenhanced content stays visible. */
+.sos-product.sos-motion-ready [data-scroll-scene] {
+  --scene-progress: 0.5;
+  --scene-enter: 1;
+  --scene-exit: 1;
+}
+
+/* Pause inherited decorative loops as well as new motion while it cannot be seen. */
+.sos-product.sos-motion-ready[data-motion-paused="true"],
+.sos-product.sos-motion-ready[data-motion-paused="true"] *,
+.sos-product.sos-motion-ready[data-motion-paused="true"] *::before,
+.sos-product.sos-motion-ready[data-motion-paused="true"] *::after,
+.sos-product.sos-motion-ready [data-scroll-scene][data-motion-visible="false"],
+.sos-product.sos-motion-ready [data-scroll-scene][data-motion-visible="false"] *,
+.sos-product.sos-motion-ready [data-scroll-scene][data-motion-visible="false"]::before,
+.sos-product.sos-motion-ready [data-scroll-scene][data-motion-visible="false"]::after,
+.sos-product.sos-motion-ready [data-scroll-scene][data-motion-visible="false"] *::before,
+.sos-product.sos-motion-ready [data-scroll-scene][data-motion-visible="false"] *::after,
+.sos-product.sos-motion-ready [data-motion-loop-visible="false"],
+.sos-product.sos-motion-ready [data-motion-loop-visible="false"] *,
+.sos-product.sos-motion-ready [data-motion-loop-visible="false"]::before,
+.sos-product.sos-motion-ready [data-motion-loop-visible="false"]::after,
+.sos-product.sos-motion-ready [data-motion-loop-visible="false"] *::before,
+.sos-product.sos-motion-ready [data-motion-loop-visible="false"] *::after {
+  animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Headings open through their own baseline; panels do not all fade and rise. */
+  .sos-product.sos-motion-ready[data-motion="full"] :is(
+    .sos-audience-heading h2,
+    .sos-journey-heading h2,
+    .sos-mobile-copy > h2,
+    .sos-smart-copy > h2,
+    .sos-reminders-heading h2,
+    .sos-section-heading h2,
+    .sos-faq h2
+  ) {
+    clip-path: inset(0 0 calc((1 - var(--scene-enter, 1)) * 20%) 0);
+  }
+
+  .sos-product.sos-motion-ready[data-motion="full"] .sos-journey-chapter-number > i {
+    transform: scaleY(clamp(0.3, calc(var(--scene-progress, 0.5) * 1.65), 1));
+    transform-origin: 50% 0;
+  }
+
+  .sos-product.sos-motion-ready[data-motion="full"] .sos-journey-chapter.is-active .sos-journey-chapter-number > i {
+    transform: scaleY(1);
+    transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* A handheld workspace settles in, then stays still while its content is used. */
+  .sos-product.sos-motion-ready[data-motion="full"] .sos-mobile-stage {
+    translate: 0 calc((1 - var(--scene-enter, 1)) * 28px);
+    rotate: calc((1 - var(--scene-enter, 1)) * -1.5deg);
+  }
+
+  /* The client experience unfolds from the studio-facing side of the page. */
+  .sos-product.sos-motion-ready[data-motion="full"] .sos-client-demo {
+    translate: calc((1 - var(--scene-enter, 1)) * 20px) 0;
+    clip-path: inset(0 calc((1 - var(--scene-enter, 1)) * 7%) 0 0 round 16px);
+  }
+
+  /* Connection traces follow the real integration grid, once on each arrival. */
+  .sos-product.sos-motion-ready[data-motion="full"] .sos-integrations-grid > article {
+    position: relative;
+  }
+
+  .sos-product.sos-motion-ready[data-motion="full"] .sos-integrations-grid > article::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.22;
+    pointer-events: none;
+    transform: scaleX(var(--scene-enter, 1));
+    transform-origin: 0 50%;
+  }
+
+  .sos-product.sos-motion-ready[data-motion="full"] [data-motion-unit="connections"] .sos-connections-lines path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: calc(1 - var(--scene-enter, 1));
+  }
+
+  /* Each capability artifact opens when the artifact arrives, even on a long phone layout. */
+  .sos-product.sos-motion-ready[data-motion="full"] [data-motion-unit^="capability-"] {
+    clip-path: inset(0 calc((1 - var(--scene-enter, 1)) * 7%) 0 0 round 12px);
+    translate: 0 calc((1 - var(--scene-enter, 1)) * 12px);
+  }
+
+  .sos-product.sos-motion-ready[data-motion="full"] :is(.sos-footer-wordmark, .sos-closing-wordmark) {
+    translate: 0 calc((1 - var(--scene-enter, 1)) * 24px);
+    scale: calc(0.98 + var(--scene-enter, 1) * 0.02);
+    clip-path: inset(calc((1 - var(--scene-enter, 1)) * 10%) 0 0);
+    transform-origin: 50% 100%;
+  }
+
+  .sos-product.sos-motion-ready[data-motion="full"] [data-motion-unit]:is(:focus-within, [data-motion-focus="true"]) {
+    clip-path: none;
+    translate: none;
+    rotate: none;
+    scale: none;
+    transform: none;
+  }
+
+  /* Never move or crop a surface around a keyboard user. */
+  .sos-product.sos-motion-ready[data-motion="full"] [data-scroll-scene]:is(:focus-within, [data-motion-focus="true"]) :is(
+    h2,
+    .sos-mobile-stage,
+    .sos-client-demo,
+    .sos-footer-wordmark,
+    .sos-closing-wordmark
+  ) {
+    clip-path: none;
+    translate: none;
+    rotate: none;
+    scale: none;
+    transform: none;
+  }
+}
+
+@media (min-width: 851px) and (prefers-reduced-motion: no-preference) {
+  .sos-product.sos-motion-ready[data-motion="full"] .sos-mobile-stage {
+    transform: perspective(1600px) rotateY(calc((1 - var(--scene-enter, 1)) * 3deg));
+    transform-origin: 50% 65%;
+  }
+
+  .sos-product.sos-motion-ready[data-motion="full"] .sos-client-demo {
+    transform: perspective(1500px) rotateY(calc((1 - var(--scene-enter, 1)) * -3deg));
+    transform-origin: 15% 50%;
+  }
+}
+
+@media (max-width: 850px) and (prefers-reduced-motion: no-preference) {
+  .sos-product.sos-motion-ready[data-motion="full"] .sos-mobile-stage {
+    translate: 0 calc((1 - var(--scene-enter, 1)) * 16px);
+    rotate: none;
+  }
+
+  .sos-product.sos-motion-ready[data-motion="full"] .sos-client-demo {
+    translate: none;
+    clip-path: inset(0 0 calc((1 - var(--scene-enter, 1)) * 3%) 0 round 16px);
+  }
+}
+
+/* Spatial effects stop; short color feedback still acknowledges interaction. */
+.sos-product.sos-motion-ready[data-motion="reduced"] *,
+.sos-product.sos-motion-ready[data-motion="reduced"] *::before,
+.sos-product.sos-motion-ready[data-motion="reduced"] *::after {
+  animation: none !important;
+  scroll-behavior: auto !important;
+}
+
+.sos-product.sos-motion-ready[data-motion="reduced"] :is(a, button, summary) {
+  transition: color 140ms linear, background-color 140ms linear, border-color 140ms linear !important;
+}
+
+.sos-product.sos-motion-ready[data-motion="reduced"] :is(a, button, summary):hover {
+  transform: none !important;
+  translate: none !important;
+  rotate: none !important;
+  scale: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sos-product.sos-motion-ready :is(a, button, summary) {
+    transition: color 140ms linear, background-color 140ms linear, border-color 140ms linear !important;
+  }
+}

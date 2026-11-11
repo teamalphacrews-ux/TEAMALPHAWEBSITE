@@ -1,16 +1,16 @@
 /* Public SaaS account screens share the product site's neutral, focused palette. */
-.saas-auth.studio-app{--studio-text:#f5f5f5;--studio-muted:#a5a5a5;--studio-border:#303030;--studio-surface:#111;--studio-canvas:#000;background:#000;color:#f5f5f5}
+.saas-product-auth.saas-auth.studio-app{--studio-text:#f5f5f5;--studio-muted:#a5a5a5;--studio-border:#303030;--studio-surface:#111;--studio-canvas:#090b12;background:var(--studio-canvas);color:var(--studio-text);color-scheme:dark}
 .saas-auth .saas-product-brand>span{background:#202020;border-radius:10px;box-shadow:none}
 .saas-auth .saas-product-brand small{color:#999;font-size:11px}
 .saas-auth .saas-auth-signin{color:#999!important;font-size:13px}
 .saas-auth .saas-auth-signin strong{color:#fff;font-size:13px}
 .saas-auth .saas-auth-layout{background:#111;border-color:#292929;border-radius:18px;box-shadow:none}
 .saas-auth .saas-kicker{font-size:11px;letter-spacing:.05em;color:#999}
-.saas-auth h1{color:#fff;letter-spacing:-.045em!important}
+.saas-product-auth.saas-auth h1{color:var(--studio-text);letter-spacing:-.04em!important}
 .saas-auth .saas-auth-description{color:#a5a5a5;font-size:15px;line-height:1.7}
 .saas-auth .saas-auth-aside{background:radial-gradient(ellipse at 20% 110%,#193ec366,transparent 60%),radial-gradient(ellipse at 100% 60%,#7846c833,transparent 65%),#101117;color:#eee;border-left:1px solid #292929}
 .saas-auth .saas-editorial-label{color:#adb2c1;font-size:13px}
-.saas-auth .saas-auth-aside h2{font-weight:500;letter-spacing:-.045em}
+.saas-product-auth.saas-auth .saas-auth-aside h2{color:var(--studio-text);font-weight:500;letter-spacing:-.04em}
 .saas-auth .saas-auth-aside>p{color:#a6a9b5;font-size:14px}
 .saas-auth .saas-auth-aside ul{font-size:13px;line-height:1.7;gap:17px;color:#c9ccda}
 .saas-auth .saas-auth-orbit{color:#a5b5ff;opacity:.8}
@@ -42,3 +42,35 @@
 .saas-auth .saas-auth-existing a,.saas-auth .saas-restart-auth{color:#e6e6e6}
 .saas-auth :is(a,button):focus-visible{outline:2px solid #b2c0ff;outline-offset:4px}
 @media(max-width:580px){.saas-auth .saas-auth-card{padding:30px 22px}.saas-auth .saas-auth-description{font-size:14px}.saas-auth .saas-auth-header{align-items:flex-start}.saas-auth .saas-auth-signin,.saas-auth .saas-auth-signin strong{font-size:11px}.saas-auth .saas-product-brand small{font-size:10px}.saas-auth .saas-auth-footer{font-size:10px}.saas-auth .saas-field input{font-size:16px}.saas-auth .saas-auth-layout{border-radius:14px}.saas-auth .saas-form-grid{grid-template-columns:1fr}}
+
+/* Keep recovery, policy links and password controls usable by touch. */
+.saas-auth .saas-auth-footer { flex-wrap: wrap; gap: 12px 24px; }
+.saas-auth .saas-auth-footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.saas-auth :is(.saas-auth-footer a, .saas-auth-signin, .saas-invite-summary a, .saas-auth-existing a, .saas-info a, .saas-restart-auth) { display: inline-flex; align-items: center; min-height: 44px; font-size: 12px; }
+.saas-auth .saas-password button { width: 44px; height: 44px; top: 1px; right: 1px; }
+.saas-auth .saas-password input { padding-right: 49px; }
+.saas-auth .saas-info .saas-primary { margin-top: 16px; }
+.saas-auth .saas-config-status { margin-block: 0 20px; }
+.saas-auth .saas-config-status > div { display: flex; align-items: center; gap: 10px; }
+.saas-auth .saas-config-status strong { color: #f5f5f5; font-size: 14px; font-weight: 500; line-height: 1.6; }
+.saas-auth .saas-config-status p { margin: 10px 0 0; overflow-wrap: anywhere; }
+.saas-auth .saas-invite-summary a { gap: 7px; color: #d1dcff; }
+.saas-auth .saas-auth-footer a { color: #b7bbcf; }
+.saas-auth .saas-social-button { position: relative; padding-inline: 28px; }
+.saas-auth .saas-social-button[aria-busy=true] { opacity: 1; cursor: progress; }
+.saas-auth .saas-provider-progress { position: absolute; right: 13px; }
+.saas-auth .saas-social-status p { margin: 0 0 7px; }
+.saas-auth .saas-social-status a { color: #e2e8ff; text-decoration: underline; text-underline-offset: 3px; }
+.saas-auth .saas-field small { font-size: 12px; font-weight: 400; }
+.saas-auth .saas-field-error { color: #ffb3c2; line-height: 1.6; }
+.saas-auth .saas-field input[aria-invalid=true] { border-color: #dc7d91; }
+.saas-auth .saas-auth-verifying { display: flex; align-items: center; gap: 12px; padding: 24px 0; border-block: 1px solid #333; color: #bbb; font-size: 14px; line-height: 1.6; }
+.saas-auth .saas-restart-auth { gap: 8px; margin-top: 12px; }
+.saas-auth .saas-auth-spinner { flex-shrink: 0; animation: saas-auth-spin .9s linear infinite; }
+@keyframes saas-auth-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .saas-auth .saas-auth-spinner { animation: none; } }
+@media (max-width: 580px) {
+  .saas-auth .saas-auth-footer { align-items: flex-start; }
+  .saas-auth .saas-auth-footer nav { flex-basis: 100%; gap: 4px 16px; }
+  .saas-auth .saas-auth-signin { flex-wrap: wrap; justify-content: flex-end; gap: 2px 10px; }
+}
