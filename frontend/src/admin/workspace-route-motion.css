@@ -1,0 +1,29 @@
+/* Preserve wrapping, accents and descenders inside the heading masks. */
+#sx-workspace-shell .studio-title-word {
+  display: inline-block;
+  vertical-align: bottom;
+  max-width: 100%;
+  overflow: clip;
+  overflow-wrap: anywhere;
+  padding-block: .12em;
+  margin-block: -.12em;
+}
+#sx-workspace-shell .studio-title-glyph { display: inline-block; }
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-studio-motion=reduced]) #sx-workspace-shell .studio-title-glyph {
+    animation: studio-title-arrive 850ms cubic-bezier(.22,1,.36,1) var(--glyph-delay,0ms) backwards;
+  }
+}
+@keyframes studio-title-arrive {
+  from { transform: translateY(115%) rotate(6deg); }
+  to { transform: translateY(0) rotate(0); }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  html:not([data-studio-motion=reduced]) #sx-workspace-shell #studio-main
+  :is(.sx-desk-new,.reference-button,.studio-button.primary,.qw-primary,.invoice-primary,[data-variant="primary"]):not(:disabled,[aria-disabled="true"],.danger,.secondary,.ghost) {
+    translate: var(--action-x,0px) var(--action-y,0px);
+    transition: translate 500ms cubic-bezier(.22,1,.36,1), filter 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+  }
+  html:not([data-studio-motion=reduced]) #sx-workspace-shell #studio-main [data-studio-follow] { filter: brightness(1.04); }
+}

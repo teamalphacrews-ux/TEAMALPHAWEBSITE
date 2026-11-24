@@ -1,0 +1,131 @@
+/* Sign-in alone follows the selected black-and-white homepage direction. */
+.saas-login-reference.saas-product-auth.saas-auth.studio-app {
+  --studio-text: #fff;
+  --studio-muted: #a3a3a3;
+  --studio-border: #333;
+  --studio-surface: #111;
+  --studio-canvas: #000;
+  --login-font: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  padding: 0 !important;
+  overflow: clip;
+  background: #000;
+  color: #fff;
+  font: 400 16px/1.75 var(--login-font);
+  -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+  scrollbar-color: #525252 #000;
+}
+
+.saas-login-reference ::selection { background: #fff; color: #000; }
+.saas-login-reference .saas-login-fluid-backdrop { position: absolute; z-index: -1; inset: 0; pointer-events: none; overflow: hidden; background: #000; }
+.saas-login-reference .saas-login-fluid-video { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 100%; object-fit: cover; opacity: .5; filter: saturate(.5) brightness(.8); }
+.saas-login-reference .saas-login-fluid-scrim { position: absolute; inset: 0; background: linear-gradient(to bottom, #0009, #000b 18%, #000c 32% 88%, #000); }
+
+.saas-login-reference .saas-auth-header,
+.saas-login-reference .saas-auth-layout,
+.saas-login-reference .saas-auth-footer { width: 100%; max-width: 1280px; margin-inline: auto; padding-inline: 24px; }
+.saas-login-reference .saas-auth-header { min-height: 80px; gap: 24px; }
+.saas-login-reference .saas-auth-header .saas-product-brand { display: inline-flex; flex: 0 0 auto; min-height: 44px; }
+.saas-login-reference .saas-auth-header .saas-product-brand > .saas-login-lockup { display: block; width: 152px; height: auto; aspect-ratio: 640 / 213; object-fit: contain; border-radius: 0; background: none; box-shadow: none; }
+.saas-login-reference .saas-auth-signin { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 16px; color: #a3a3a3 !important; font: 400 14px/1.5 var(--login-font); }
+.saas-login-reference .saas-auth-signin strong { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 12px 20px; border: 1px solid #ffffff1a; border-radius: 9999px; background: #1f1f22; color: #fff; font: 500 14px/20px var(--login-font); transition: background-color .18s ease; }
+.saas-login-reference .saas-auth-signin:hover strong { background: #2a2a2d; }
+
+.saas-login-reference .saas-login-motion-toggle { position: absolute; z-index: 2; top: 96px; right: max(24px, calc((100% - 1232px) / 2)); display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 10px 14px; border: 1px solid #ffffff26; border-radius: 9999px; background: #111; color: #d1d5db; font: 400 14px/20px var(--login-font); cursor: pointer; transition: background-color .18s ease; }
+.saas-login-reference .saas-login-motion-toggle:hover:not(:disabled) { background: #242424; }
+.saas-login-reference .saas-login-motion-toggle:disabled { cursor: default; }
+
+.saas-login-reference .saas-auth-layout { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); align-items: start; gap: clamp(64px, 9vw, 144px); flex: 1; min-height: 0; margin-block: 88px 72px; border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: visible; }
+.saas-login-reference .saas-auth-card { min-width: 0; width: 100%; max-width: 420px; padding: 0; }
+.saas-login-reference.saas-product-auth.saas-auth h1 { max-width: 420px; margin: 0 0 20px; color: #fff; font: 500 48px/1.08 var(--login-font) !important; letter-spacing: -.025em !important; text-wrap: balance; }
+.saas-login-reference .saas-auth-description { max-width: 40ch; margin: 0 0 32px; color: #9ca3af; font: 400 16px/1.75 var(--login-font); }
+.saas-login-reference .saas-auth-aside { display: flex; align-items: flex-start; min-width: 0; padding: 52px 0 0; border: 0; background: transparent; overflow: visible; }
+.saas-login-reference.saas-product-auth.saas-auth .saas-auth-aside h2 { margin: 0 0 24px; color: #fff; font: 500 clamp(48px, 4.5vw, 64px)/1.08 var(--login-font); letter-spacing: -.025em; text-wrap: balance; }
+.saas-login-reference .saas-auth-aside h2 em { font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif; font-weight: 400; font-style: italic; }
+.saas-login-reference .saas-auth-aside > p { max-width: 37ch; margin: 0; color: #9ca3af; font: 400 16px/1.75 var(--login-font); }
+.saas-login-reference .saas-auth-aside ul { display: grid; gap: 16px; max-width: 42ch; margin: 32px 0 0; padding: 0; color: #d1d5db; font: 400 14px/1.65 var(--login-font); }
+.saas-login-reference .saas-auth-aside li { align-items: flex-start; gap: 12px; }
+.saas-login-reference .saas-auth-aside li svg { margin-top: 3px; color: #a3a3a3; }
+
+.saas-login-reference .saas-social-buttons { gap: 12px; }
+.saas-login-reference .saas-social-button,
+.saas-login-reference .saas-social-button.is-apple { min-height: 48px; padding: 13px 36px; border: 1px solid #ffffff26; border-radius: 9999px; background: #1f1f22; color: #fff; box-shadow: none; font: 500 14px/20px var(--login-font); transition: background-color .18s ease, border-color .18s ease; }
+.saas-login-reference .saas-social-button:hover:not(:disabled) { border-color: #ffffff40; background: #2a2a2d; box-shadow: none; }
+.saas-login-reference .saas-social-button:disabled { opacity: 1; color: #a3a3a3; border-color: #333; background: #171717; }
+.saas-login-reference .saas-social-button:disabled img { opacity: .7; }
+.saas-login-reference .saas-social-button[aria-busy=true] { color: #fff; }
+.saas-login-reference .saas-social-status { margin: 16px 0 24px; color: #a3a3a3; font: 400 14px/1.65 var(--login-font); }
+.saas-login-reference .saas-social-status p { margin: 0 0 8px; }
+.saas-login-reference .saas-social-status a { color: #e5e7eb; }
+.saas-login-reference .saas-auth-divider { gap: 16px; margin: 28px 0; color: #a3a3a3; font: 400 14px/1.5 var(--login-font); letter-spacing: 0; text-transform: none; }
+.saas-login-reference .saas-auth-divider::before,
+.saas-login-reference .saas-auth-divider::after { background: #ffffff26; }
+.saas-login-reference .saas-auth-form fieldset { gap: 20px; }
+.saas-login-reference .saas-field { gap: 8px; color: #d1d5db; font: 500 14px/1.5 var(--login-font); }
+.saas-login-reference .saas-field input { height: 52px; padding: 13px 18px; border: 1px solid #525252; border-radius: 9999px; background: #111; color: #fff; caret-color: #fff; font: 400 16px/1.5 var(--login-font); transition: border-color .18s ease, background-color .18s ease; }
+.saas-login-reference .saas-field input::placeholder { color: #a3a3a3; opacity: 1; }
+.saas-login-reference .saas-field input:hover:not(:disabled) { border-color: #737373; }
+.saas-login-reference .saas-field input:focus { outline: 2px solid #fff; outline-offset: 3px; border-color: #fff; box-shadow: none; }
+.saas-login-reference .saas-field input:disabled { color: #a3a3a3; opacity: 1; }
+.saas-login-reference .saas-password input { padding-right: 58px; }
+.saas-login-reference .saas-password button { top: 4px; right: 4px; width: 44px; height: 44px; border-radius: 9999px; color: #d1d5db; }
+.saas-login-reference .saas-password button:hover:not(:disabled) { background: #2a2a2a; }
+.saas-login-reference .saas-primary { justify-content: center; gap: 10px; min-height: 48px; padding: 13px 24px; border: 1px solid #fff; border-radius: 9999px; background: #fff; color: #000; font: 500 14px/20px var(--login-font); transition: background-color .18s ease, border-color .18s ease; }
+.saas-login-reference .saas-primary:hover:not(:disabled) { translate: none; border-color: #e5e7eb; background: #e5e7eb; }
+.saas-login-reference .saas-primary:disabled { opacity: 1; border-color: #333; background: #333; color: #cfcfcf; cursor: not-allowed; }
+.saas-login-reference .saas-primary[aria-busy=true] { cursor: progress; }
+.saas-login-reference .saas-auth-existing { gap: 8px; margin: 24px 0 0; color: #a3a3a3; font: 400 14px/1.6 var(--login-font); }
+.saas-login-reference .saas-auth-existing a { min-height: 44px; color: #e5e7eb; font-size: 14px; }
+.saas-login-reference .saas-info { padding: 20px; border: 1px solid #404040; border-radius: 16px; background: #111; color: #a3a3a3; font: 400 14px/1.65 var(--login-font); }
+.saas-login-reference .saas-info h2 { color: #fff; font: 500 18px/1.5 var(--login-font); }
+.saas-login-reference .saas-config-status { margin-block: 0 24px; }
+.saas-login-reference .saas-config-status strong { color: #e5e7eb; font: 500 14px/1.6 var(--login-font); }
+.saas-login-reference .saas-info p { margin-bottom: 0; }
+.saas-login-reference .saas-error { padding: 14px 18px; border: 1px solid #737373; border-radius: 12px; background: #171717; color: #fff; font: 400 14px/1.65 var(--login-font); }
+
+.saas-login-reference .saas-auth-footer { align-items: center; flex-wrap: wrap; gap: 8px 24px; min-height: 88px; padding-block: 20px; border-top: 1px solid #ffffff1a; color: #a3a3a3; font: 400 14px/1.6 var(--login-font); }
+.saas-login-reference .saas-auth-footer nav { flex-wrap: wrap; gap: 0 20px; }
+.saas-login-reference .saas-auth-footer a { min-height: 44px; color: #a3a3a3; font: 400 14px/1.5 var(--login-font); }
+.saas-login-reference .saas-auth-footer a:hover,
+.saas-login-reference .saas-auth-existing a:hover { color: #fff; }
+.saas-login-reference :is(a, button):focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+
+@media (max-width: 1000px) {
+  .saas-login-reference .saas-auth-layout { gap: 48px; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); }
+  .saas-login-reference.saas-product-auth.saas-auth .saas-auth-aside h2 { font-size: 48px; }
+}
+
+@media (max-width: 800px) {
+  .saas-login-reference .saas-auth-layout { grid-template-columns: minmax(0, 420px); justify-content: center; gap: 0; max-width: 1280px; margin-block: 88px 64px; }
+  .saas-login-reference .saas-auth-aside { display: none; }
+  .saas-login-reference .saas-auth-header { align-items: center; }
+  .saas-login-reference .saas-auth-signin { max-width: 240px; gap: 4px 12px; }
+  .saas-login-reference .saas-auth-footer { justify-content: flex-start; gap: 4px 24px; }
+}
+
+@media (max-width: 580px) {
+  .saas-login-reference .saas-auth-header { min-height: 88px; gap: 12px; }
+  .saas-login-reference .saas-auth-header .saas-product-brand > .saas-login-lockup { width: 144px; }
+  .saas-login-reference .saas-auth-signin { max-width: 150px; font-size: 14px; line-height: 1.4; }
+  .saas-login-reference .saas-auth-signin strong { min-height: 44px; padding: 10px 14px; font-size: 14px; }
+  .saas-login-reference .saas-login-motion-toggle { top: 112px; }
+  .saas-login-reference .saas-auth-layout { margin-block: 92px 56px; }
+  .saas-login-reference.saas-product-auth.saas-auth h1 { font-size: 40px !important; }
+  .saas-login-reference .saas-auth-description { margin-bottom: 28px; }
+  .saas-login-reference .saas-auth-footer { align-items: flex-start; padding-block: 20px; }
+  .saas-login-reference .saas-auth-footer nav { flex-basis: 100%; gap: 0 20px; }
+}
+
+@media (max-width: 360px) {
+  .saas-login-reference .saas-auth-header { align-items: center; }
+  .saas-login-reference .saas-auth-header .saas-product-brand > .saas-login-lockup { width: 124px; }
+  .saas-login-reference .saas-auth-signin { max-width: 136px; }
+  .saas-login-reference .saas-auth-signin strong { gap: 4px; padding-inline: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saas-login-reference *, .saas-login-reference *::before, .saas-login-reference *::after { animation: none !important; transition: none !important; }
+}

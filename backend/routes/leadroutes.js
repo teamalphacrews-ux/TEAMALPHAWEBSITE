@@ -22,8 +22,6 @@ const allowedLeadFields = data => Object.fromEntries(Object.entries(data).filter
 
 router.get('/', async (req, res) => {
     try {
-        const warnings = await pipeline.reconcile();
-        if (warnings.length) res.set('X-Studio-Link-Warnings', String(warnings.length));
         const leads = await Lead.find().populate('tasks').sort({ createdAt: -1 });
         res.json(leads);
     } catch { res.status(503).json({ error: 'Enquiries are unavailable. Please retry.' }); }

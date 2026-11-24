@@ -1,0 +1,430 @@
+/* Studio X OS commercial workspace · shared liquid-glass materials.
+ * The commercial class is additive: existing layouts and all actions keep their
+ * original behavior. Repeated scope specificity intentionally clears the older
+ * personal-workspace rules, including their resolved dark-theme overrides.
+ * Legacy body portals are included only while commercial Layout is mounted.
+ */
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) {
+  --studio-canvas: #e6e7ea;
+  --studio-canvas-image: none;
+  --studio-surface: #f5f5f6;
+  --studio-surface-2: #ecedef;
+  --studio-text: #161718;
+  --studio-muted: #595d64;
+  --studio-border: rgb(20 22 26 / .13);
+  --studio-control-border: #87898e;
+  --studio-glass-bg: rgb(245 245 246 / .97);
+  --studio-glass-elevated: #f7f7f8;
+  --studio-glass-strong: rgb(248 248 249 / .98);
+  --studio-glass-border: rgb(20 22 26 / .08);
+  --studio-glass-highlight: linear-gradient(180deg, rgb(255 255 255 / .12), transparent 32%);
+  --studio-glass-rim: inset 0 1px 0 rgb(255 255 255 / .34);
+  --studio-glass-shadow: 0 1px 2px rgb(20 22 26 / .04), 0 14px 32px -22px rgb(20 22 26 / .28);
+  --studio-glass-blur: 8px;
+  --studio-focus: #855006;
+  --studio-accent: #f29b23;
+  --studio-on-accent: #1c1304;
+  --studio-accent-hover: #f6a93c;
+  --studio-hover: rgb(20 22 26 / .055);
+  --studio-selected: #e1e2e5;
+  --studio-scrim: rgb(17 17 20 / .34);
+  --studio-danger-ink: #a3263b;
+  --studio-danger-border: #a84a5b;
+  --studio-danger-surface: #fff0f2;
+  --studio-success-ink: #196340;
+  --studio-success-surface: #e7f4ed;
+  --studio-success-border: #79a68b;
+  --studio-warning-ink: #82500b;
+  --studio-warning-surface: #fff3dc;
+  --studio-warning-border: #bca05e;
+  --studio-radius-panel: 22px;
+  --studio-radius-control: 12px;
+  --studio-radius-small: 10px;
+  --studio-control-size: 44px;
+  --studio-control-font: 14px;
+  --studio-input-font: 14px;
+  --studio-content-width: 1560px;
+  --studio-page-gutter: clamp(18px, 2.5vw, 38px);
+  --studio-nav-width: 244px;
+  --studio-nav-surface: var(--studio-glass-bg);
+  --studio-nav-hover: var(--studio-hover);
+  --studio-nav-active: var(--studio-selected);
+  --studio-nav-accent: var(--studio-text);
+  --studio-plum: var(--studio-text);
+  --studio-plum-soft: var(--studio-muted);
+  --studio-gold: var(--studio-muted);
+  --studio-ivory: var(--studio-surface-2);
+  --studio-field-surface: var(--studio-glass-strong);
+  --studio-field-border: var(--studio-control-border);
+  --studio-control-accent: var(--studio-focus);
+  --studio-control-tint: var(--studio-selected);
+  --studio-control-ring: var(--studio-focus);
+  --studio-dock-shadow: 0 12px 30px rgb(26 26 31 / .14), var(--studio-glass-rim);
+  --appearance-subtle: var(--studio-surface-2);
+  --appearance-active: var(--studio-selected);
+  --appearance-link: var(--studio-focus);
+  --appearance-shadow: var(--studio-glass-shadow);
+  --control-accent: var(--studio-accent);
+  --control-accent-hover: var(--studio-accent-hover);
+  --control-accent-soft: var(--studio-selected);
+  --control-accent-ink: var(--studio-text);
+  --control-focus: var(--studio-focus);
+  --control-border: var(--studio-control-border);
+  --control-hover: var(--studio-hover);
+  --control-pressed: var(--studio-selected);
+  --control-danger: #a3263b;
+  --control-danger-hover: #871e30;
+  --control-danger-soft: var(--studio-danger-surface);
+  --brand-ink: var(--studio-text);
+  --brand-muted: var(--studio-muted);
+  --brand-paper: var(--studio-surface-2);
+  --brand-surface: var(--studio-surface);
+  --brand-stone: var(--studio-border);
+  --brand-accent: var(--studio-focus);
+  --brand-focus: var(--studio-focus);
+  --brand-champagne: var(--studio-muted);
+  --studio-font: "Urbanist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --brand-sans: var(--studio-font);
+  --studio-signature-gradient: linear-gradient(135deg, #f8bd57, #f29b23 52%, #ee8420);
+  --studio-accent-ink-text: #855006;
+  color-scheme: light;
+  color: var(--studio-text);
+  background: var(--studio-canvas-image), var(--studio-canvas);
+  background-attachment: fixed;
+  font-family: var(--studio-font);
+  font-size: 14px;
+  line-height: 1.5;
+  accent-color: var(--studio-focus);
+  caret-color: var(--studio-focus);
+  scrollbar-color: var(--studio-control-border) transparent;
+  scrollbar-width: thin;
+}
+html[data-studio-appearance="dark"] :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass:not([data-studio-theme="light"]), body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay),
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass[data-studio-theme="dark"] {
+  --studio-canvas: #111213;
+  --studio-canvas-image: none;
+  --studio-surface: #1b1c1e;
+  --studio-surface-2: #222326;
+  --studio-text: #f0f0f1;
+  --studio-muted: #afb2b9;
+  --studio-border: rgb(255 255 255 / .14);
+  --studio-control-border: #83868c;
+  --studio-glass-bg: rgb(27 28 30 / .97);
+  --studio-glass-elevated: #1f2023;
+  --studio-glass-strong: rgb(33 34 37 / .98);
+  --studio-glass-border: rgb(255 255 255 / .075);
+  --studio-glass-highlight: linear-gradient(180deg, rgb(255 255 255 / .018), transparent 32%);
+  --studio-glass-rim: inset 0 1px 0 rgb(255 255 255 / .04);
+  --studio-glass-shadow: 0 1px 2px rgb(0 0 0 / .3), 0 18px 40px -24px rgb(0 0 0 / .7);
+  --studio-focus: #f6b95e;
+  --studio-accent: #f4a43a;
+  --studio-on-accent: #1c1304;
+  --studio-accent-hover: #f7b14f;
+  --studio-hover: rgb(255 255 255 / .07);
+  --studio-selected: #303236;
+  --studio-scrim: rgb(0 0 0 / .58);
+  --studio-danger-ink: #ffb5c3;
+  --studio-danger-border: #bc7b8a;
+  --studio-danger-surface: #38232d;
+  --studio-success-ink: #7fd6a2;
+  --studio-success-surface: #243d34;
+  --studio-success-border: #688f7e;
+  --studio-warning-ink: #f3c27a;
+  --studio-warning-surface: #3d3524;
+  --studio-warning-border: #9f8b5b;
+  --control-danger: #a3263b;
+  --control-danger-hover: #ba344c;
+  --studio-signature-gradient: linear-gradient(135deg, #f8c062, #f4a43a 52%, #ef8a2a);
+  --studio-accent-ink-text: #f6b95e;
+  color-scheme: dark;
+}
+
+/* Clear material lets the continuous neutral canvas show through the workspace. */
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-workspace, .studio-main) { background: transparent; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-main { padding: 30px var(--studio-page-gutter) 42px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-sidebar {
+  background: var(--studio-glass-highlight), var(--studio-glass-bg);
+  border-right: 1px solid var(--studio-glass-border);
+  box-shadow: 6px 0 28px rgb(15 15 20 / .045), var(--studio-glass-rim);
+  -webkit-backdrop-filter: blur(var(--studio-glass-blur)) saturate(145%);
+  backdrop-filter: blur(var(--studio-glass-blur)) saturate(145%);
+  padding: 22px 12px 0;
+}
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-brand-row { margin-bottom: 22px; gap: 4px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-brand :is(strong, small) { color: var(--studio-text); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-brand strong { font-size: 14px; letter-spacing: -.025em; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-brand small { color: var(--studio-muted); font-size: 10px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar {
+  min-height: 76px;
+  height: 76px;
+  padding-inline: var(--studio-page-gutter);
+  gap: 20px;
+  background: var(--studio-glass-highlight), var(--studio-glass-bg);
+  border-bottom: 1px solid var(--studio-glass-border);
+  box-shadow: 0 5px 22px rgb(15 15 20 / .035), var(--studio-glass-rim);
+  -webkit-backdrop-filter: blur(var(--studio-glass-blur)) saturate(145%);
+  backdrop-filter: blur(var(--studio-glass-blur)) saturate(145%);
+}
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-context { gap: 10px; color: var(--studio-muted); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-context strong { color: var(--studio-text); font-size: 14px; font-weight: 600; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-workspace { color: var(--studio-muted); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-actions { gap: 9px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-divider { background: var(--studio-border); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-preview-label { color: var(--studio-muted); background: var(--studio-hover); border-bottom: 1px solid var(--studio-glass-border); font-size: 10px; line-height: 1.6; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-nav-item { min-height: 44px; margin-block: 3px; padding: 10px 12px; border-radius: 12px; background: transparent; color: var(--studio-muted); border: 1px solid transparent; font-size: 13px; box-shadow: none; translate: none; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-nav-item:is(:hover,.is-active) { color: var(--studio-text); background: var(--studio-hover); border-color: transparent; translate: none; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-nav-item.is-active { background: var(--studio-selected); border-color: var(--studio-glass-border); box-shadow: inset 0 1px 0 rgb(255 255 255 / .17); font-weight: 650; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-nav-item:is(.is-active,:hover)::after { display: none; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-nav-item :is(.studio-app-icon, svg) { color: inherit; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-nav-group-toggle { min-height: 44px; padding-inline: 12px; color: var(--studio-muted); font-size: 11px; letter-spacing: .02em; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-nav-section-label { font-size: 11px; line-height: 1.5; letter-spacing: .025em; color: var(--studio-muted); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-sidebar-resize, .studio-nav-close, .studio-website-shortcut, .studio-sidebar-profile button) { min-width: 44px; min-height: 44px; color: var(--studio-muted); border-radius: 12px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-sidebar-bottom { border-color: var(--studio-glass-border); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-sidebar-profile { border-color: var(--studio-glass-border); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-sidebar-profile strong { color: var(--studio-text); font-size: 12px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-sidebar-profile small { color: var(--studio-muted); font-size: 11px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-avatar { background: var(--studio-selected); border: 1px solid var(--studio-glass-border); color: var(--studio-text); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-footer { border-color: var(--studio-glass-border); color: var(--studio-muted); margin-inline: var(--studio-page-gutter); padding-block: 22px; font-size: 11px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-footer > span:first-child { font-size: 10px; letter-spacing: 0; }
+
+.studio-commercial-glass .studio-notification-footer a { color: var(--studio-focus); }
+html .studio-app.studio-app.studio-commercial-glass .studio-inline-count {
+  background: var(--studio-surface-2);
+  color: var(--studio-muted);
+  font-size: max(12px, .75rem);
+}
+
+/* One material system for the shared surfaces; authored documents are excluded. */
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-card, .studio-panel, .studio-metric, .studio-modal, .studio-team-dialog, .studio-crm-detail-card, .studio-crm-detail-body, .studio-search-results, .studio-notification-panel, .studio-select-sheet, .studio-action-sheet, .studio-more-panel, .saas-switcher-panel):not(:where(.invoice-public *, .qw-read-document *, .pdf-page *)) {
+  background: var(--studio-glass-highlight), var(--studio-glass-bg);
+  color: var(--studio-text);
+  border: 1px solid var(--studio-glass-border);
+  border-radius: var(--studio-radius-panel);
+  box-shadow: var(--studio-glass-shadow);
+  -webkit-backdrop-filter: blur(var(--studio-glass-blur)) saturate(145%);
+  backdrop-filter: blur(var(--studio-glass-blur)) saturate(145%);
+}
+/* Floating panels sit above dimmed or patterned content. The stronger glass fill
+   keeps their labels readable across the entire surface. */
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-modal, .studio-team-dialog, .studio-crm-detail-card, .studio-select-sheet, .studio-action-sheet, .studio-more-panel, .studio-notification-panel, .saas-switcher-panel) { background: var(--studio-glass-highlight), var(--studio-glass-strong); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-modal-header, .studio-modal-footer, .studio-team-dialog-header, .studio-crm-detail-header) { background: transparent; color: var(--studio-text); border-color: var(--studio-glass-border); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay):is(.studio-modal-overlay, .studio-crm-overlay, .studio-select-overlay, .studio-action-sheet-overlay) { background: var(--studio-scrim) !important; background-attachment: scroll; -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay).studio-iphone-more-overlay { background: transparent; background-attachment: scroll; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-more-scrim { background: var(--studio-scrim); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-sidebar-scrim { background: var(--studio-scrim); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-card-heading h2, .studio-card h2, .studio-panel h2) { color: var(--studio-text); letter-spacing: -.025em; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-muted, .studio-empty, .studio-empty p, .studio-table td small, .studio-crm-table td small, .studio-card-heading > a, .studio-notification-list p, .studio-modal .studio-field) { color: var(--studio-muted); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-modal-header h2, .studio-team-dialog-header h2) { font-size: 21px; line-height: 1.3; letter-spacing: -.025em; }
+
+/* Controls have a 3:1 boundary and remain opaque enough for crisp labels. */
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button, .studio-icon-button, .studio-control-button, .reference-button, .reference-icon-button, .ops-icon-button, .qw-button, .qw-primary, .invoice-primary) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 10px 16px;
+  box-sizing: border-box;
+  border: 1px solid var(--studio-control-border);
+  border-radius: 999px;
+  background: var(--studio-glass-highlight), var(--studio-glass-strong);
+  color: var(--studio-text);
+  box-shadow: 0 3px 8px rgb(19 19 24 / .055), inset 0 1px 0 rgb(255 255 255 / .2);
+  font-family: inherit;
+  font-size: var(--studio-control-font);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -.012em;
+  text-decoration: none;
+  filter: none;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease;
+}
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-icon-button, .reference-icon-button, .ops-icon-button, .studio-control-button.is-icon-only) { width: 44px; min-width: 44px; height: 44px; padding: 0; border-radius: 14px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button.primary, .reference-button, .qw-primary, .invoice-primary, .studio-control-button[data-variant=primary]):not(:is(.danger, .ops-danger-button, [data-variant=destructive], .is-success)) { color: var(--studio-on-accent) !important; -webkit-text-fill-color: var(--studio-on-accent) !important; background: var(--studio-signature-gradient) !important; border-color: transparent !important; box-shadow: inset 0 1px 0 rgb(255 255 255 / .18); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button.primary, .reference-button, .qw-primary, .invoice-primary, .studio-control-button[data-variant=primary]):not(:is(.danger, .ops-danger-button, [data-variant=destructive], .is-success)):not(:disabled, [aria-disabled="true"]):hover { background: var(--studio-accent-hover) !important; border-color: var(--studio-accent-hover) !important; }
+/* Swap each inverse pair atomically during the theme commit. The surrounding
+ * wave and ordinary hover transitions remain; reduced-motion duration still wins. */
+html.studio-theme-fade :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button.primary, .reference-button, .qw-primary, .invoice-primary, .studio-control-button[data-variant=primary]):not(:is(.danger, .ops-danger-button, [data-variant=destructive], .is-success)) { transition-property: box-shadow !important; transition-delay: 0ms !important; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button, .studio-icon-button, .studio-control-button, .reference-icon-button, .ops-icon-button, .qw-button):not(:is(.primary, .reference-button, .qw-primary, .invoice-primary, [data-variant=primary], .danger, .ops-danger-button, [data-variant=destructive], .is-success)):not(:disabled):hover { background: var(--studio-hover) !important; color: var(--studio-text); border-color: var(--studio-control-border); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button.danger, .reference-button.danger, .qw-primary.danger, .invoice-primary.danger, .studio-control-button[data-variant=destructive], .ops-danger-button) { color: #fff !important; -webkit-text-fill-color: #fff !important; background: var(--control-danger) !important; border-color: var(--control-danger) !important; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-control-button[data-variant=ghost] { background: transparent !important; border-color: transparent !important; box-shadow: none; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-control-button[data-variant=outline] { border-color: var(--studio-control-border) !important; background: var(--studio-glass-bg) !important; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button, .studio-icon-button, .studio-control-button, .reference-button, .reference-icon-button, .ops-icon-button, .qw-button, .qw-primary, .invoice-primary):not(:disabled):active { box-shadow: inset 0 2px 5px rgb(0 0 0 / .12); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button, .studio-icon-button, .studio-control-button, .reference-button, .reference-icon-button, .ops-icon-button, .qw-button, .qw-primary, .invoice-primary):disabled { opacity: 1; box-shadow: none; }
+/* Legacy primary actions share the inverse label role, including read-only states.
+ * Mute the fill rather than the entire button so disabled labels stay readable. */
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button.primary, .reference-button, .qw-primary, .invoice-primary, .studio-control-button[data-variant=primary]):not(:is(.danger, .ops-danger-button, [data-variant=destructive], .is-success)):is(:disabled, [aria-disabled="true"]) {
+  color: var(--studio-muted) !important;
+  -webkit-text-fill-color: currentColor !important;
+  background: var(--studio-surface-2) !important;
+  border-color: var(--studio-border) !important;
+  opacity: 1;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-control-button.is-success { color: var(--studio-success-ink) !important; background: var(--studio-success-surface) !important; border-color: var(--studio-success-border) !important; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button.small, .studio-control-button[data-size=sm]):not(.is-icon-only) { min-height: 44px; padding: 10px 14px; font-size: var(--studio-control-font); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-control-button[data-size=lg] { min-height: 48px; padding: 12px 20px; font-size: var(--studio-control-font); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.reference-text-button, .qw-text-button, .invoice-text-action, .settings-text-button, .settings-back-button) { min-height: 44px; font-size: var(--studio-control-font); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar :is(.studio-theme-toggle, .studio-notification-button, .studio-record-search-trigger) { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 50%; color: var(--studio-text); border-color: var(--studio-control-border); background: var(--studio-glass-highlight), var(--studio-glass-bg); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar .studio-theme-toggle { display: inline-flex; flex: 0 0 44px; visibility: visible; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar .studio-profile-button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; display: grid; place-items: center; border: 1px solid var(--studio-control-border); border-radius: 50%; background: var(--studio-glass-bg); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar .studio-avatar { width: 36px; height: 36px; background: var(--studio-selected); color: var(--studio-text); border: 0; }
+/* Native switch inputs keep their handlers, labels and checked semantics.
+ * The shared track and thumb pair replaces mixed legacy green/white treatments. */
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-control {
+  --switch-off: var(--studio-surface-2);
+  --switch-edge: var(--studio-control-border);
+  --switch-on: var(--studio-accent);
+  --switch-thumb: var(--studio-muted);
+  --switch-active-thumb: var(--studio-on-accent);
+  position: relative;
+  min-height: 44px;
+  gap: 12px;
+  color: var(--studio-text);
+  cursor: pointer;
+}
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-control > .studio-switch-track {
+  display: block;
+  box-sizing: border-box;
+  position: relative;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 30px;
+  border: 1px solid var(--switch-edge);
+  border-radius: 999px;
+  background: var(--switch-off);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / .1), inset 0 -1px 0 rgb(255 255 255 / .12);
+  opacity: 1;
+  pointer-events: none;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-control > .studio-switch-track::after {
+  content: '';
+  box-sizing: border-box;
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--switch-thumb);
+  box-shadow: 0 2px 4px rgb(0 0 0 / .18), inset 0 1px 0 rgb(255 255 255 / .18);
+  transform: translateX(0);
+  transition: transform 180ms ease, background-color 180ms ease;
+}
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-control > input {
+  position: absolute;
+  top: 50%;
+  width: 52px;
+  height: 44px;
+  margin: 0;
+  opacity: 0;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-control > input:checked + .studio-switch-track { background: var(--switch-on); border-color: var(--switch-on); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-control > input:checked + .studio-switch-track::after { left: 2px; background: var(--switch-active-thumb); transform: translateX(22px); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-control > input:focus-visible + .studio-switch-track { outline: 2px solid var(--studio-focus); outline-offset: 3px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-control > input:disabled { cursor: not-allowed; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-control > input:disabled + .studio-switch-track { opacity: .7; box-shadow: none; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-control > input:disabled:checked + .studio-switch-track { background: color-mix(in srgb, var(--studio-accent) 75%, var(--studio-surface)); border-color: var(--studio-control-border); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-state { color: var(--studio-muted); font-size: 13px; line-height: 1.5; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(input.studio-input, select.studio-input, textarea.studio-input, .studio-select-native, .studio-select-trigger, .studio-field > input, .studio-field > textarea):not(:where(.invoice-public *, .qw-read-document *, .pdf-page *, [type=checkbox], [type=radio], [type=range], [type=color], [type=file], [type=hidden])) {
+  min-height: 44px;
+  max-width: 100%;
+  border: 1px solid var(--studio-control-border);
+  border-radius: 12px;
+  background: var(--studio-glass-strong);
+  color: var(--studio-text);
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: inset 0 1px 2px rgb(13 13 18 / .03);
+}
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) input::placeholder, html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) textarea::placeholder { color: var(--studio-muted); opacity: 1; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-search, .studio-global-search, .studio-menu-search, .studio-select-search) { min-height: 44px; border: 1px solid var(--studio-control-border); border-radius: 12px; background: var(--studio-glass-bg); color: var(--studio-muted); box-shadow: inset 0 1px 0 rgb(255 255 255 / .15); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-search, .studio-global-search, .studio-menu-search, .studio-select-search) input { background: transparent; color: var(--studio-text); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-search-shortcut, .studio-search-hint) { color: var(--studio-muted); background: var(--studio-surface-2); border-color: var(--studio-border); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-field > span, .studio-select-options small) { color: var(--studio-muted); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-search, .studio-global-search, .studio-menu-search, .studio-select-search):focus-within { outline: 2px solid var(--studio-focus); outline-offset: 3px; border-color: var(--studio-focus); box-shadow: none; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :focus-visible { outline: 2px solid var(--studio-focus); outline-offset: 3px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(input, textarea, select):focus-visible { outline: 2px solid var(--studio-focus); outline-offset: 3px; border-color: var(--studio-focus); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) ::selection { background: var(--studio-selected); color: var(--studio-text); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) * { scrollbar-width: thin; scrollbar-color: var(--studio-control-border) transparent; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) ::-webkit-scrollbar { width: 7px; height: 7px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) ::-webkit-scrollbar-thumb { background: var(--studio-control-border); border: 2px solid transparent; background-clip: padding-box; border-radius: 10px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(table, .studio-metric-value) { font-variant-numeric: tabular-nums; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) a { text-underline-offset: 3px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-skip-link { left: max(16px, var(--studio-nav-width)); min-height: 44px; background: var(--studio-accent); color: var(--studio-on-accent); border-radius: 12px; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-select-sheet-header > button, .studio-more-close, .studio-more-group-button, .studio-more-signout) { min-width: 44px; min-height: 44px; border-color: var(--studio-control-border); background: var(--studio-glass-bg); color: var(--studio-text); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-select-options > button[aria-selected=true], .studio-more-group-button.is-selected, .studio-more-shortcut.is-active) { background: var(--studio-selected); color: var(--studio-text); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-select-options > button > svg { color: var(--studio-focus); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-more-shortcut .studio-app-icon { background: var(--studio-selected); color: var(--studio-text); box-shadow: inset 0 1px 0 rgb(255 255 255 / .14); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-more-shortcut .studio-app-icon svg { color: var(--studio-text); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-more-settings { color: var(--studio-text); border-color: var(--studio-glass-border); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-more-profile { color: var(--studio-text); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-more-profile small { color: var(--studio-muted); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-more-header p { color: var(--studio-muted); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-mobile-navigation {
+  background: var(--studio-glass-highlight), var(--studio-glass-elevated);
+  border: 1px solid var(--studio-glass-border);
+  border-radius: var(--studio-radius-panel);
+  box-shadow: var(--studio-dock-shadow);
+  -webkit-backdrop-filter: blur(var(--studio-glass-blur)) saturate(145%);
+  backdrop-filter: blur(var(--studio-glass-blur)) saturate(145%);
+}
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-mobile-navigation > :is(a, button) { min-height: 56px; color: var(--studio-muted); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-mobile-navigation > .is-active { color: var(--studio-text); background: var(--studio-selected); }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-mobile-navigation .studio-mobile-tab-icon { background: transparent; color: inherit; box-shadow: none; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-mobile-navigation .studio-mobile-tab-icon svg { color: inherit; }
+html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-session-warning { background: var(--studio-warning-surface); color: var(--studio-warning-ink); border-color: var(--studio-warning-border); }
+
+@media (min-width: 1101px) {
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay).studio-sidebar-compact { --studio-nav-width: 84px; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay).studio-sidebar-compact .studio-sidebar { padding-inline: 9px; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay).studio-sidebar-compact .studio-nav-item { min-height: 44px; }
+}
+@media (max-width: 1100px) {
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-sidebar { background: var(--studio-glass-highlight), var(--studio-glass-elevated); }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-sidebar-container { width: min(310px, calc(100vw - 30px)); }
+}
+@media (max-width: 768px) {
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) { --studio-glass-blur: 14px; --studio-radius-panel: 24px; --studio-page-gutter: 16px; background-attachment: scroll; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-main { padding: 24px 16px 32px; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar { height: auto; min-height: 68px; padding: max(8px, env(safe-area-inset-top)) 12px 8px; gap: 8px; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-actions { gap: 6px; flex: 0 0 auto; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-context { min-width: 0; flex: 1 1 auto; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-context strong { overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar :is(.studio-theme-toggle, .studio-notification-button, .studio-record-search-trigger) { flex: 0 0 44px; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar .studio-theme-toggle { display: inline-flex; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-divider { display: none; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar .studio-profile-button { flex: 0 0 44px; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(input.studio-input, select.studio-input, textarea.studio-input, .studio-field > input, .studio-field > textarea) { font-size: 16px; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-mobile-navigation { -webkit-backdrop-filter: blur(var(--studio-glass-blur)) saturate(135%); backdrop-filter: blur(var(--studio-glass-blur)) saturate(135%); }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-footer { margin-inline: 16px; flex-wrap: wrap; font-size: 10px; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-skip-link { left: 16px; }
+}
+@media (max-width: 420px) {
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar { gap: 4px; padding-inline: 8px; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-actions { gap: 3px; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-context { gap: 0; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-topbar-context strong { font-size: 12px; }
+}
+
+/* Plain material fallbacks preserve contrast without depending on blur. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) { --studio-glass-bg: var(--studio-surface) !important; --studio-glass-elevated: var(--studio-surface) !important; --studio-glass-strong: var(--studio-surface) !important; --studio-glass-highlight: none !important; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) { --studio-glass-bg: var(--studio-surface) !important; --studio-glass-elevated: var(--studio-surface) !important; --studio-glass-strong: var(--studio-surface) !important; --studio-glass-highlight: none !important; --studio-glass-blur: 0px !important; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-mobile-navigation, .studio-more-scrim, .studio-sidebar-scrim), html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay):is(.studio-modal-overlay, .studio-crm-overlay, .studio-select-overlay, .studio-action-sheet-overlay) { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-track, html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-track::after { transition: none !important; }
+  html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button, .studio-icon-button, .studio-control-button, .studio-nav-item, .studio-more-dialog, .studio-more-scrim, .studio-select-sheet) { animation: none; transition: none; }
+}
+html[data-studio-motion=reduced] :is(.studio-app.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) :is(.studio-button, .studio-icon-button, .studio-control-button, .studio-nav-item, .studio-more-dialog, .studio-more-scrim, .studio-select-sheet) { animation: none; transition: none; }
+
+html[data-studio-motion=reduced] :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-track, html[data-studio-motion=reduced] :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) .studio-switch-track::after { transition: none !important; }

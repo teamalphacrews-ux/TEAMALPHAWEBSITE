@@ -1,0 +1,21 @@
+.studio-commercial-glass .sx-automation-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 32px;
+  margin: 0 0 24px;
+  padding: clamp(16px, 2.2vw, 26px);
+  background: var(--studio-glass-highlight), var(--studio-glass-bg);
+  border: 1px solid var(--studio-glass-border);
+  border-radius: 16px;
+  color: var(--studio-text);
+}
+.sx-automation-summary h2 { font-size: 1.15rem; margin: 0; line-height: 1.35; }
+.sx-automation-summary p { max-width: 65ch; margin: .4rem 0 0; line-height: 1.5; color: var(--studio-muted); }
+.sx-automation-summary dl { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 14px 0 0; font-size: .875rem; }
+.sx-automation-summary dl div { display: flex; flex-wrap: wrap; gap: 6px; }
+.sx-automation-summary dt { color: var(--studio-muted); }
+.sx-automation-summary dd { font-weight: 600; margin: 0; }
+.sx-automation-summary .sx-automation-note { font-size: .875rem; }
+.sx-automation-summary button { flex: none; }
+@media (max-width: 700px) { .studio-commercial-glass .sx-automation-summary { flex-direction: column; } }

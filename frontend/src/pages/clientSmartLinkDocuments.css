@@ -1,0 +1,62 @@
+@media screen {
+  .shared-quotation.studio-client-glass:has(> .sq-smart-link-state) {
+    background: linear-gradient(100deg, rgb(8 8 10 / 94%), rgb(8 8 10 / 78%)),
+      #080808 url('/assets/studio-x-os/media/20261115/fluid-hero-poster-c2fb6664b63b.jpg') center / cover;
+  }
+
+  .shared-quotation.studio-client-glass > .sq-smart-link-state {
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: 14px;
+    min-height: 100svh;
+    max-width: 660px;
+    margin: 0 auto;
+    padding: 40px clamp(24px, 6vw, 64px);
+    color: #f8f6f2;
+    font-family: Urbanist, system-ui, sans-serif;
+  }
+
+  .sq-smart-link-state .studio-x-brand-art { width: 128px; margin-bottom: 10px; }
+
+  .shared-quotation.studio-client-glass .sq-smart-link-state h1 {
+    margin: 0;
+    color: inherit;
+    font: 600 clamp(38px, 6vw, 58px)/1.02 Urbanist, system-ui, sans-serif;
+    letter-spacing: -.045em;
+  }
+
+  .shared-quotation.studio-client-glass .sq-smart-link-state p {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    color: #e1d9cf;
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  .client-project.studio-client-glass .cp-document-disclosure > summary {
+    padding-inline: 12px;
+    border: 1px solid var(--client-line);
+    border-radius: 12px;
+    background: var(--client-glass);
+    color: var(--client-ink);
+    font-family: var(--sx-public-font);
+  }
+
+  .client-project.studio-client-glass :is(.sq-document-header, .invoice-paper-tools) button {
+    background: #f7f6f3;
+    border-color: #ccc8c2;
+    color: #34312f;
+  }
+
+  .client-project.studio-client-glass :is(.sq-document-header, .invoice-paper-tools) button:is(:hover, :focus-visible) {
+    background: #fff1da;
+    border-color: #885c26;
+    color: #4e3010;
+  }
+
+  .client-project.studio-client-glass :is(.sq-document-header, .invoice-paper-tools) button:focus-visible {
+    outline-color: #885c26;
+  }
+}

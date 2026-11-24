@@ -1,3 +1,4 @@
+import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import { useAuth } from '../../context/AuthContext';
 import { hasFullModuleAccess } from '../../utils/moduleAccess';
 import { useEffect, useState } from "react";
@@ -21,7 +22,7 @@ export function ProjectsView({ projects = [], loading = false, error = "", onSel
   const totalBalance = projects.reduce((sum, project) => sum + remainingAmount(project), 0);
   const filtered = projects.filter((project) => matchesLead(project, query) && (payment === "all" || project.paymentStatus === payment) && (period === "all" || (period === "upcoming" && project.eventDate && new Date(project.eventDate).getTime() >= today) || (period === "past" && project.eventDate && new Date(project.eventDate).getTime() < today) || (period === "unscheduled" && !project.eventDate))).sort((a, b) => (a.eventDate ? new Date(a.eventDate).getTime() : Infinity) - (b.eventDate ? new Date(b.eventDate).getTime() : Infinity));
   return <>
-    <div className="studio-page-heading"><div><span className="studio-eyebrow">OPERATIONS</span><h1>Production projects</h1><p className="studio-muted">Manage the crew, tasks and payments for confirmed bookings.</p></div><Link className="studio-button" to="/admin/crm">View enquiries <ArrowUpRight size={16} /></Link></div>
+    <div className="studio-page-heading"><div><span className="studio-eyebrow">OPERATIONS</span><WorkspaceMotionTitle>Production projects</WorkspaceMotionTitle><p className="studio-muted">Manage the crew, tasks and payments for confirmed bookings.</p></div><Link className="studio-button" to="/admin/crm">View enquiries <ArrowUpRight size={16} /></Link></div>
     <div className="studio-metric-grid studio-crm-metrics">
       <div className="studio-metric"><span>Booked projects</span><strong>{loading ? "—" : projects.length}</strong><small>Every confirmed client, in one place</small></div>
       <div className="studio-metric"><span>Upcoming occasions</span><strong>{loading ? "—" : upcoming.length}</strong><small>Dates to look forward to</small></div>

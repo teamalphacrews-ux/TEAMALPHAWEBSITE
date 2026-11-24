@@ -1,0 +1,32 @@
+.studio-commercial-glass .sx-page-guide-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 5px;
+  background: transparent;
+  color: var(--studio-text);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.sx-page-guide-trigger svg { flex: none; color: var(--studio-muted); }
+.sx-page-guide-trigger strong { margin-inline-end: 4px; }
+.sx-guide-label { color: var(--studio-muted); font-size: 13px; }
+.sx-page-guide-trigger:hover .sx-guide-label { text-decoration: underline; }
+.sx-guide-steps {
+  padding-inline-start: 1.6rem;
+  margin: 0;
+  color: var(--studio-text);
+  list-style: decimal;
+}
+.sx-guide-steps li { padding-inline-start: .4rem; }
+.sx-guide-steps li + li { margin-top: 1rem; }
+.sx-guide-steps li::marker { color: var(--studio-muted); font-variant-numeric: tabular-nums; }
+.sx-guide-steps p { margin: .25rem 0 0; line-height: 1.5; color: var(--studio-muted); }
+@media (max-width: 850px) {
+  .sx-page-guide-trigger .sx-guide-label { display: none; }
+  .sx-page-guide-trigger strong { margin-inline-end: 0; white-space: nowrap; }
+}

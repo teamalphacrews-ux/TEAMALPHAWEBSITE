@@ -1,3 +1,4 @@
+import WorkspaceMotionTitle from '../common/WorkspaceMotionTitle';
 import StudioButton from '../common/StudioButton';
 import StudioSelect from '../common/StudioSelect';
 import { useId } from "react";
@@ -10,7 +11,7 @@ export function WorkspaceHeader({ eyebrow, title, description, children }) {
     <div className="studio-page-heading">
       <div>
         <span className="studio-eyebrow">{eyebrow}</span>
-        <h1>{title}</h1>
+        <WorkspaceMotionTitle>{title}</WorkspaceMotionTitle>
         <p className="studio-muted">{description}</p>
       </div>
       <div className="studio-heading-actions">{children}</div>
@@ -49,6 +50,7 @@ export function WorkspaceSearch({
   value,
   onChange,
   placeholder = "Search records…",
+  maxLength,
 }) {
   return (
     <label className="studio-search">
@@ -57,6 +59,7 @@ export function WorkspaceSearch({
         aria-label={placeholder}
         placeholder={placeholder}
         value={value}
+        maxLength={maxLength}
         onChange={(event) => onChange(event.target.value)}
       />
     </label>

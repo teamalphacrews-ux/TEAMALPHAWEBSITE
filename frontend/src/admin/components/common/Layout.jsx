@@ -4,12 +4,13 @@ import Sidebar from './Sidebar';
 import { canAccessStudioPath } from '../../../utils/moduleAccess';
 import Topbar from './Topbar';
 import { OfflineDraftsProvider } from '../../../offline/OfflineDrafts';
-import { NativeDeviceBridge } from '../../../native/NativeDeviceSettings';
+import { NativeDeviceBridge } from '../../../native/NativeDeviceBridge';
 import '../../studio.css';
 import '../../studio-motion.css';
 import '../../studio-mobile.css';
 import '../../studio-brand.css';
 import { useAuth } from '../../../context/AuthContext';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
 import useStudioDialog from '../studio/useStudioDialog';
 import StudioProductBrand from '../../../components/StudioProductBrand';
 import { StudioPreferencesProvider, useStudioPreferences } from './StudioPreferences';
@@ -21,6 +22,7 @@ import MobileNavigation from './MobileNavigation';
 import useMobileViewport from './useMobileViewport';
 import useIPhoneAppNavigation from './useIPhoneAppNavigation';
 import IPhoneMoreMenu from './IPhoneMoreMenu';
+import useWorkspaceMotionPresence from './useWorkspaceMotionPresence';
 import '../../studio-phone.css';
 import '../../studio-control-polish.css';
 import '../../studio-compact-phone.css';
@@ -31,6 +33,15 @@ import '../../studio-drawer-refinement.css';
 import '../../studio-iphone-more.css';
 import '../../studio-precision-controls.css';
 import '../../studio-live-mobile.css';
+import '../../studio-commercial-glass.css';
+import '../../studio-commercial-workspace.css';
+import '../../studio-commercial-flow.css';
+import '../../studio-commercial-documents.css';
+import '../../studio-commercial-controls.css';
+import '../../studio-commercial-legacy-controls.css';
+import '../../studio-workspace-shell.css';
+import '../../workspace-route-motion.css';
+import { enterWorkspacePage, followPrimaryAction, routeDirection } from './workspaceRouteMotion';
 
 const StudioControlReview = import.meta.env.DEV ? lazy(() => import('./StudioControlReview')) : null;
 
@@ -40,7 +51,7 @@ const pageTitles = {
   'studio-projects': 'Projects', 'quote-templates': 'Document templates', templates: 'Document templates',
   invoices: 'Invoices', clients: 'Clients', data: 'Data management', settings: 'Settings',
   integrations: 'Connections', email: 'Email', whatsapp: 'WhatsApp', projects: 'Production',
-  crew: 'Crew', 'post-production': 'Post-production', gallery: 'Galleries', finance: 'Finance',
+  crew: 'Crew', 'post-production': IS_COMMERCIAL_DEPLOYMENT ? 'Tasks' : 'Post-production', gallery: 'Galleries', finance: 'Finance',
   calendar: 'Calendar', 'activity-log': 'Activity', chats: 'Messages', users: 'Team',
   workspace: 'Workspace', subscription: 'Subscription',
 };
@@ -55,9 +66,20 @@ function studioRouteTitle(pathname) {
 
 function IPhoneNavigation() {
   const [open, setOpen] = useState(false);
+  const opener = useRef(null);
+  useEffect(() => {
+    if (open || !opener.current) return;
+    const frame = requestAnimationFrame(() => {
+      if (opener.current?.isConnected && !document.querySelector('[aria-modal=true]')) {
+        opener.current.focus({ preventScroll: true });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [open]);
+  const { present, leaving } = useWorkspaceMotionPresence(open, 320);
   return <div className={'studio-iphone-navigation' + (open ? ' is-more-open' : '')}>
-    <MobileNavigation appMenu menuOpen={open} onMenuClick={() => setOpen(true)} controlsId="studio-iphone-more" />
-    {open && <IPhoneMoreMenu onClose={() => setOpen(false)} />}
+    <MobileNavigation appMenu menuOpen={open} onMenuClick={event => { opener.current = event.currentTarget; setOpen(true); }} controlsId="studio-iphone-more" />
+    {present && <IPhoneMoreMenu leaving={leaving} onClose={() => setOpen(false)} />}
   </div>;
 }
 
@@ -67,6 +89,8 @@ function StudioLayout() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const location = useLocation();
   const navigationType = useNavigationType();
+  const mainRef = useRef(null);
+  const lastArrival = useRef(null);
   const previousPath = useRef(location.pathname);
   // New pages start below the header; tabs and browser Back retain their scroll position.
   useLayoutEffect(() => {
@@ -75,14 +99,41 @@ function StudioLayout() {
     }
     previousPath.current = location.pathname;
   }, [location.pathname, navigationType]);
+  useLayoutEffect(() => {
+    if (!IS_COMMERCIAL_DEPLOYMENT || !mainRef.current) return;
+    const direction = lastArrival.current && lastArrival.current !== location.pathname
+      ? routeDirection(lastArrival.current, location.pathname) : 0;
+    lastArrival.current = location.pathname;
+    return enterWorkspacePage(mainRef.current, direction);
+  }, [location.pathname]);
+  useEffect(() => {
+    if (IS_COMMERCIAL_DEPLOYMENT && mainRef.current) return followPrimaryAction(mainRef.current);
+  }, []);
   const { user, sessionError } = useAuth();
-  const iPhoneNavigation = useIPhoneAppNavigation(user);
+  const nativePhoneNavigation = useIPhoneAppNavigation(user);
+  const [smallScreen, setSmallScreen] = useState(() => window.matchMedia('(max-width:760px)').matches);
+  const iPhoneNavigation = nativePhoneNavigation || (IS_COMMERCIAL_DEPLOYMENT && smallScreen);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width:760px)');
+    const resize = () => setSmallScreen(media.matches);
+    media.addEventListener('change', resize);
+    return () => media.removeEventListener('change', resize);
+  }, []);
   const sidebarKey = 'teamalpha-sidebar-compact:' + (user?._id || user?.id || user?.email || 'current');
   const [isSidebarCompact, setIsSidebarCompact] = useState(() => {
     try { return localStorage.getItem(sidebarKey) === 'true'; } catch { return false; }
   });
   const [isDrawerLayout, setIsDrawerLayout] = useState(() => window.matchMedia('(max-width: 1100px)').matches);
   const { preferences } = useStudioPreferences();
+  // Content arrival is styled on the mounted page, after Suspense resolves.
+  // The shell and existing forms stay mounted; fixed controls never move with it.
+  useLayoutEffect(() => {
+    if (!IS_COMMERCIAL_DEPLOYMENT) return undefined;
+    // A few legacy dialogs portal directly to body. This flag exists only while
+    // the commercial workspace is mounted, so auth and personal UI stay isolated.
+    document.body.classList.add('studio-commercial-workspace');
+    return () => document.body.classList.remove('studio-commercial-workspace');
+  }, []);
   useEffect(() => {
     const media = window.matchMedia('(max-width: 1100px)');
     const resize = () => { setIsDrawerLayout(media.matches); setIsSidebarOpen(false); };
@@ -103,7 +154,7 @@ function StudioLayout() {
   const compact = isSidebarCompact && !isDrawerLayout;
   const drawerRef = useStudioDialog(() => setIsSidebarOpen(false), { enabled: drawerOpen });
 
-  return <div data-studio-text-size={preferences.textSize} data-studio-theme={preferences.theme} className={'studio-app studio-personal-workspace' + (iPhoneNavigation ? ' studio-native-phone' : '') + (location.pathname.replace(/\/$/, '') === '/admin' ? ' studio-overview-shell' : '') + (compact ? ' studio-sidebar-compact' : '') + (isFocusMode ? ' studio-focus-mode' : '')}>
+  return <div id={IS_COMMERCIAL_DEPLOYMENT ? 'sx-workspace-shell' : undefined} data-studio-text-size={preferences.textSize} data-studio-theme={preferences.theme} className={'studio-app studio-personal-workspace' + (IS_COMMERCIAL_DEPLOYMENT ? ' studio-commercial-glass studio-marlo-workspace' : '') + (iPhoneNavigation ? ' studio-native-phone' : '') + (location.pathname.replace(/\/$/, '') === '/admin' ? ' studio-overview-shell' : '') + (compact ? ' studio-sidebar-compact' : '') + (isFocusMode ? ' studio-focus-mode' : '')}>
     <NativeDeviceBridge />
     <a className="studio-skip-link" href="#studio-main">Skip to content</a>
     {!isFocusMode && !iPhoneNavigation && <>
@@ -112,15 +163,15 @@ function StudioLayout() {
     </>}
     {/* The dialog hook owns background isolation, including its cleanup. */}
     <div className="studio-workspace">
-      {!isFocusMode && <Topbar onMenuClick={() => setIsSidebarOpen(true)} />}
+      {!isFocusMode && <Topbar nativeNavigation={iPhoneNavigation} onMenuClick={() => setIsSidebarOpen(true)} />}
       {sessionError && <div className="studio-session-warning" role="status"><span>{sessionError}</span><button className="studio-button small" type="button" onClick={() => window.location.reload()}>Retry connection</button></div>}
-      <div className="studio-preview-label" hidden={!user?.isPreview}>DESIGN PREVIEW · SAMPLE DATA · Changes in this local preview are temporary.</div>
-        <main id="studio-main" className={"studio-main" + (["/admin/users", "/admin/activity-log"].includes(location.pathname) ? " studio-legacy-page" : "")} tabIndex={-1}>
+      {!IS_COMMERCIAL_DEPLOYMENT && <div className="studio-preview-label" hidden={!user?.isPreview}>DESIGN PREVIEW · SAMPLE DATA · Changes in this local preview are temporary.</div>}
+        <main ref={mainRef} id="studio-main" className={"studio-main" + (["/admin/users", "/admin/activity-log"].includes(location.pathname) ? " studio-legacy-page" : "")} tabIndex={-1}>
         <Suspense fallback={<div className="studio-loading" role="status"><span className="studio-loader" /> Opening your workspace…</div>}>
           {!canAccessStudioPath(user, location.pathname) ? <section className="studio-card studio-empty" role="status"><h1>Module unavailable</h1><p>Your account has not been assigned access to this area.</p><Link className="studio-button" to="/admin">Open your workspace</Link></section> : StudioControlReview && new URLSearchParams(location.search).get('controls') === 'review' ? <StudioControlReview /> : <Outlet context={{ setIsFocusMode }} />}
         </Suspense>
       </main>
-      {!isFocusMode && <footer className="studio-footer"><span className="studio-product-footer-identity"><StudioProductBrand /><span>{user?.workspace?.name || 'Team Alpha'}</span></span><span>Made for the stories you create.</span></footer>}
+      {!isFocusMode && <footer className="studio-footer"><span className="studio-product-footer-identity"><StudioProductBrand /><span>{user?.workspace?.name || 'Team Alpha'}</span></span>{IS_COMMERCIAL_DEPLOYMENT && user?.isPreview ? <span className="studio-preview-label">Sample workspace · Changes in this preview are temporary.</span> : <span>Made for the stories you create.</span>}</footer>}
     </div>
     {!isFocusMode && (iPhoneNavigation ? <IPhoneNavigation key={location.key} /> : <MobileNavigation menuOpen={drawerOpen} onMenuClick={() => setIsSidebarOpen(true)} />)}
   </div>;

@@ -1,5 +1,25 @@
 export const normalizeCrewName = value => String(value || "").trim().toLowerCase();
 
+const shootTypes = new Set(["Wedding", "Pre-Wedding", "Engagement", "Birthday"]);
+
+// Conflicts arrive in roster order. Show the first overlap in time, choosing
+// the editable booking when one side belongs to a read-only calendar.
+export function nextCrewAction(upcomingEvents, conflicts) {
+  let earliest;
+  for (const conflict of conflicts) {
+    if (!conflict.first._id || !conflict.second._id) continue;
+    if (!earliest || Date.parse(conflict.second.start) < Date.parse(earliest.second.start)) earliest = conflict;
+  }
+  if (earliest) {
+    const event = earliest.second.isReadOnly && !earliest.first.isReadOnly ? earliest.first : earliest.second;
+    return { event, member: earliest.member, other: event === earliest.first ? earliest.second : earliest.first, kind: "overlap" };
+  }
+  const unassigned = upcomingEvents.find(event => event._id && !event.isReadOnly && shootTypes.has(event.type) && !event.teamMembers?.some(normalizeCrewName));
+  if (unassigned) return { event: unassigned, kind: "unassigned" };
+  const next = upcomingEvents.find(event => event._id);
+  return next ? { event: next, kind: "scheduled" } : null;
+}
+
 export function deriveCrewSchedule(crew, events, now) {
   const upcomingEvents = events.filter(event => {
     const start = new Date(event.start).getTime();

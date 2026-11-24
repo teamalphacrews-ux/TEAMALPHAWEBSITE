@@ -17,12 +17,15 @@ const minuteOnDay = (value, day, timezone, end = false) => {
   return Number.isFinite(clock[0]) ? clock[0] * 60 + clock[1] : end ? 1440 : 0;
 };
 
-export default function OverviewDaySchedule({ timezone = 'Asia/Kolkata', preferences = {}, refreshKey = 0, remove }) {
+export default function OverviewDaySchedule({ timezone = 'Asia/Kolkata', preferences = {}, refreshKey = 0, remove, calendarResult, retryCalendar }) {
   const { token } = useAuth();
   const headingId = useId();
-  const [result, setResult] = useState({ events: null, error: false });
+  const [localResult, setResult] = useState({ events: null, error: false });
+  const result = calendarResult || localResult;
+  const externalCalendar = Boolean(calendarResult);
   const [retry, setRetry] = useState(0);
-  const [now, setNow] = useState(() => new Date());
+  const [localNow, setNow] = useState(() => new Date());
+  const now = externalCalendar ? new Date() : localNow;
   const [selectedDay, setSelectedDay] = useState(null);
   const today = studioDayKey(now, timezone);
   const day = selectedDay || today;
@@ -33,6 +36,7 @@ export default function OverviewDaySchedule({ timezone = 'Asia/Kolkata', prefere
   const time = value => formatWorkspaceTime(value, displayPreferences, timezone) + (clockChanges ? ' ' + new Intl.DateTimeFormat('en', { timeZone: timezone, timeZoneName: 'short' }).formatToParts(new Date(value)).find(part => part.type === 'timeZoneName')?.value : '');
 
   useEffect(() => {
+    if (externalCalendar) return;
     const controller = new AbortController();
     const load = async () => {
       try {
@@ -49,7 +53,7 @@ export default function OverviewDaySchedule({ timezone = 'Asia/Kolkata', prefere
       if (!document.hidden) load();
     }, 60000);
     return () => { controller.abort(); window.clearInterval(timer); };
-  }, [refreshKey, retry, token]);
+  }, [refreshKey, retry, token, externalCalendar]);
 
   const events = (result.events || [])
     .filter(event => eventOnStudioDay(event, day, timezone))
@@ -83,7 +87,7 @@ export default function OverviewDaySchedule({ timezone = 'Asia/Kolkata', prefere
     <p className="overview-day-zone">Your day, in focus <span>· {timezone}</span></p>
     <div className="overview-day-scene">
       <div className="overview-day-landscape" aria-hidden="true"><i /><i /><i /></div>
-      {result.error ? <div className="overview-day-empty" role="alert"><CalendarDays size={23} /><strong>Calendar unavailable</strong><span>Your schedule couldn’t be loaded.</span><button type="button" onClick={() => setRetry(value => value + 1)}><RefreshCw size={13} /> Try again</button></div>
+      {result.error ? <div className="overview-day-empty" role="alert"><CalendarDays size={23} /><strong>Calendar unavailable</strong><span>Your schedule couldn’t be loaded.</span><button type="button" onClick={retryCalendar || (() => setRetry(value => value + 1))}><RefreshCw size={13} /> Try again</button></div>
         : result.events === null ? <div className="overview-day-empty" role="status"><CalendarDays size={23} /><span>Loading your schedule…</span></div>
           : !events.length ? <div className="overview-day-empty"><CalendarDays size={23} /><strong>A little breathing room.</strong><span>No events scheduled for {day === today ? 'today' : 'this day'}.</span></div>
             : <>

@@ -1,0 +1,308 @@
+/* Record views use the shell’s theme and keep local affordances attached to their data. */
+html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass {
+  :is(.record-desk,.record-enquiries,.sx-task-page) {
+    --record-card: var(--studio-surface, #f5f5f6);
+    --record-inside: var(--studio-surface-2);
+    --record-accent: var(--studio-accent, #f29b23);
+    --record-shadow: 0 1px 2px #14161a0a, 0 14px 32px -22px #14161a47;
+    min-width: 0;
+  }
+  :is(.record-desk,.record-enquiries,.sx-task-page) .record-views {
+    display: flex; align-items: stretch; gap: 4px; flex-wrap: wrap;
+    width: 100%; margin: 0 0 15px; padding: 0;
+    border: 0; border-bottom: 1px solid var(--studio-border); border-radius: 0;
+    box-shadow: none; background: transparent;
+  }
+  :is(.record-desk,.record-enquiries,.sx-task-page) .record-views > button {
+    position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    min-height: 44px; padding: 6px 12px; margin: 0; border: 0; border-radius: 0;
+    color: var(--studio-muted); background: transparent; box-shadow: none; font: inherit;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  :is(.record-desk,.record-enquiries,.sx-task-page) .record-views > button:is(:hover,[aria-pressed=true]) { color: var(--studio-text); background: transparent; }
+  .record-views > button[aria-pressed=true]::after { content: ''; position: absolute; inset: auto 0 -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--record-accent); }
+  .record-desk .project-contact-heading { margin-bottom: 12px; }
+  .record-desk .project-contact-register-tools { margin: 0 0 10px; }
+  .record-desk :is(.sx-project-register-toolbar,.project-contact-filters) { border: 0; padding: 0; margin: 0 0 12px; }
+  .record-desk .project-contact-filters { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
+  .record-desk .project-contact-filters > button {
+    display: inline-flex; align-items: center; flex: none; gap: 5px; min-height: 44px; padding: 6px 10px; border: 0; border-radius: 9px;
+    background: transparent; color: var(--studio-muted); font-size: 13px; font-weight: 600;
+  }
+  .record-desk .project-contact-filters > button[aria-pressed=true] { background: var(--studio-text); color: var(--record-card); }
+  .record-desk .project-contact-filters > button::after { display: none; }
+  .record-desk .project-contact-filter-count { background: transparent; color: inherit; }
+  .record-desk .record-slate, .record-desk .record-people {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 312px), 1fr)); gap: 16px;
+  }
+  .record-desk .record-people { grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
+  :is(.record-project-tile,.record-person,.record-project-timeline > section) {
+    display: flex; flex-direction: column; min-width: 0; padding: 18px 20px;
+    background: var(--record-card); color: var(--studio-text); border: 1px solid var(--studio-border);
+    border-radius: 22px; box-shadow: var(--record-shadow); transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  :is(.record-project-tile,.record-person) :is(header,footer) { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .record-category {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700;
+    color: var(--studio-muted); letter-spacing: .075em; text-transform: uppercase;
+  }
+  .record-category::before,.record-enquiry-lane > h2 > i,.sx-task-card-project > span { content: ''; width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--record-accent); }
+  :is(.record-pin,.record-open) {
+    display: inline-grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; padding: 0;
+    border-radius: 11px; color: var(--studio-text); background: var(--record-inside); border: 1px solid var(--studio-border); cursor: pointer;
+  }
+  .record-pin[aria-pressed=true] { color: var(--record-card); background: var(--studio-text); }
+  .record-pin[aria-pressed=false]:hover { background: var(--studio-hover); }
+  .record-project-identity { display: flex; align-items: center; gap: 12px; margin: 12px 0 15px; }
+  .record-project-identity > div { min-width: 0; }
+  .record-date-mark {
+    width: 61px; height: 61px; flex: 0 0 61px; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; border: 4px solid var(--record-accent);
+    border-radius: 50%; background: var(--record-inside); color: var(--studio-text); line-height: 1.08;
+  }
+  .record-date-mark strong { font-size: 20px; font-weight: 650; }
+  .record-date-mark small { font-size: 11px; font-weight: 600; }
+  :is(.record-project-tile,.record-person) h2 { margin: 0; color: var(--studio-text); font-size: 18px; line-height: 1.25; font-weight: 650; letter-spacing: -.025em; overflow-wrap: anywhere; }
+  :is(.record-project-tile,.record-person) h2 a,.record-project-timeline li a { color: inherit; text-decoration: none; }
+  :is(.record-project-tile,.record-person) p { margin: 4px 0 0; color: var(--studio-muted); font-size: 13px; line-height: 1.4; }
+  .record-project-identity p a { color: inherit; }
+  .record-project-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--studio-muted); margin-bottom: 16px; }
+  :is(.record-project-tile,.record-person) footer { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--studio-border); }
+  .record-project-tile footer > span,.record-person footer small,.record-project-timeline small { color: var(--studio-muted); font-size: 13px; line-height: 1.5; }
+  .record-project-tile footer > span,.record-person-methods a { display: flex; align-items: center; min-width: 0; gap: 6px; overflow-wrap: anywhere; }
+  .record-project-tile footer svg,.record-person-methods svg { flex: none; }
+  .record-project-timeline { display: grid; gap: 14px; }
+  .record-project-timeline h2 { margin: 0 0 8px; font-size: 18px; }
+  .record-project-timeline ul { list-style: none; margin: 0; padding: 0; }
+  .record-project-timeline li { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--studio-border); }
+  .record-project-timeline li > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .record-project-timeline small { display: block; }
+  .record-project-timeline li > div > a { font-weight: 650; }
+  .record-project-timeline .record-date-mark { width: 43px; height: 43px; flex-basis: 43px; border-width: 2px; }
+  .record-project-timeline .record-date-mark strong { font-size: 16px; }
+  .record-person header { align-items: flex-start; margin-bottom: 12px; }
+  .record-avatar,.record-assignee {
+    display: inline-grid; place-items: center; flex: none; border-radius: 50%;
+    width: 44px; height: 44px; font: 650 15px/1 var(--studio-font); color: #3a2b16; background: linear-gradient(135deg,#f8d582,#ebb477);
+  }
+  .record-avatar[data-type=Lead] { color: #412716; background: linear-gradient(135deg,#f8d9a9,#eda17d); }
+  .record-avatar[data-type=Other] { color: #252c37; background: linear-gradient(135deg,#eceef3,#bbc5d3); }
+  .record-person-methods { display: grid; gap: 6px; margin: 14px 0; }
+  .record-person-methods a { min-height: 44px; color: var(--studio-muted); text-decoration: none; font-size: 14px; padding: 2px 0; }
+  .record-person-methods a:hover { color: var(--studio-text); }
+  .record-desk a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .record-desk a.record-open:hover { text-decoration: none; background: var(--studio-hover); }
+  .record-enquiries .studio-card.studio-crm-table-card:has(.record-pipeline) {
+    padding: 0; background: transparent; background-image: none; box-shadow: none; border: 0; border-radius: 0; backdrop-filter: none;
+  }
+  .record-enquiries .studio-crm-table-card:has(.record-pipeline) > .studio-toolbar { padding-inline: 0; }
+  .record-enquiries .record-pipeline { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,225px),1fr)); align-items: start; gap: 14px; margin: 0 0 16px; }
+  .record-enquiries .record-enquiry-lane,.sx-task-page .sx-task-lane {
+    padding: 10px; min-width: 0; min-height: 210px; border: 1px solid var(--studio-border); border-radius: 20px; background: var(--record-inside);
+  }
+  .record-enquiry-lane > h2 { display: flex; align-items: center; gap: 8px; margin: 0; padding: 4px 4px 13px; font-size: 15px; }
+  .record-enquiry-lane > h2 > span { margin-left: auto; font-size: 12px; color: var(--studio-muted); }
+  .record-enquiry-lane article,.sx-task-page .sx-task-card {
+    position: relative; background: var(--record-card); border: 1px solid var(--studio-border); border-radius: 14px;
+    box-shadow: 0 2px 5px #1718190b; padding: 14px; backdrop-filter: none;
+  }
+  .record-enquiry-lane article + article { margin-top: 8px; }
+  .record-enquiry-lane h3 { margin: 0 0 9px; }
+  .record-enquiry-lane h3 button { min-height: 44px; padding: 0; background: transparent; border: none; color: var(--studio-text); text-align: left; font: inherit; cursor: pointer; }
+  .record-enquiry-project,.record-enquiry-lane dl { font-size: 13px; color: var(--studio-muted); }
+  .record-enquiry-project small { display: block; }
+  .record-enquiry-lane dl { display: grid; gap: 4px; margin: 12px 0; }
+  .record-enquiry-lane dl > div { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .record-enquiry-lane dd { color: var(--studio-text); margin: 0; }
+  .record-enquiry-lane .studio-crm-row-actions { display: flex; justify-content: flex-start; gap: 6px; flex-wrap: wrap; }
+  .sx-task-page .ops-section-heading { padding: 0; }
+  .sx-task-page .record-views { margin-bottom: 5px; }
+  .sx-task-page .ops-task-toolbar { padding-block: 10px; }
+  .sx-task-page .sx-task-board { gap: 14px; grid-template-columns: repeat(5,minmax(205px,1fr)); align-items: stretch; padding-top: 0; }
+  .sx-task-page .sx-task-lane-items { gap: 8px; }
+  .sx-task-page .sx-task-lane-header { min-height: 30px; padding: 0 3px; margin-bottom: 7px; }
+  .sx-task-page .sx-task-lane[data-drop-target=true] { outline: 2px solid var(--record-accent); outline-offset: -2px; }
+  .sx-task-page .sx-task-card-project { display: flex; gap: 6px; align-items: center; margin: 0 0 6px; font-size: 12px; color: var(--studio-muted); }
+  .sx-task-card-project > span { width: 6px; height: 6px; }
+  .sx-task-page .sx-task-card-title { min-height: 44px; margin-bottom: 4px; padding: 0; font-size: 15px; line-height: 1.35; }
+  .sx-task-page .sx-task-card-top { min-height: 0; margin-bottom: 4px; }
+  .sx-task-page .sx-task-card-meta { gap: 6px; padding-top: 8px; margin-top: 8px; }
+  .sx-task-page .record-assignee { width: 21px; height: 21px; font-size: 9px; }
+  .sx-task-page .sx-task-card-actions { gap: 2px; margin-top: 8px; padding-top: 6px; }
+}
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+  html:not([data-studio-motion=reduced]) #sx-workspace-shell .record-project-tile { transition: transform 500ms cubic-bezier(.22,1,.36,1), box-shadow 180ms ease; }
+  html:not([data-studio-motion=reduced]) #sx-workspace-shell .record-project-tile:hover { transform: translateY(-4px); transition-duration: 450ms, 180ms; }
+  html:not([data-studio-motion=reduced]) .studio-commercial-glass .record-person:hover { transform: translateY(-2px); }
+}
+@media (max-width:760px) {
+  html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-board {
+    grid-template-columns: repeat(5,minmax(245px,86%)); overflow-x: auto; scroll-snap-type: x proximity;
+  }
+  html .studio-commercial-glass .sx-task-lane { scroll-snap-align: start; }
+  html .studio-commercial-glass .record-project-timeline li { flex-wrap: wrap; }
+  html .studio-commercial-glass .record-enquiries .record-enquiry-lane { min-height: 0; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .studio-commercial-glass .record-desk :is(.record-project-tile,.record-person,.record-slate) { animation: none; transition: none; }
+}
+
+html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass {
+  .record-detail-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 4px; color: var(--studio-muted); min-height: 44px; font-size: 13px; }
+  .sx-project-detail .reference-heading { align-items: center; flex-wrap: wrap; gap: 12px 20px; }
+  .sx-project-detail .sx-project-identity { flex: 1 1 350px; min-width: 0; }
+  .sx-project-detail .sx-project-identity h1 { margin-top: 4px; }
+  .sx-project-detail .sx-project-identity p { margin: 5px 0 0; }
+  .sx-project-detail .project-hub-header-actions { margin: 0; flex: 0 1 auto; }
+  .record-project-summary {
+    display: flex; flex-wrap: wrap; margin: 14px 0; padding: 5px; border-radius: 19px;
+    border: 1px solid var(--studio-glass-border); background: var(--studio-surface); box-shadow: var(--studio-glass-shadow);
+  }
+  .record-project-summary > div { flex: 1 1 140px; min-width: 0; padding: 12px 16px; }
+  .record-project-summary dt { color: var(--studio-muted); font-size: 13px; }
+  .record-project-summary dd { margin: 5px 0 0; font-size: 23px; line-height: 1.25; font-weight: 650; color: var(--studio-text); }
+  .record-project-summary dd > button { display: flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 0; background: transparent; border: 0; font: inherit; color: inherit; cursor: pointer; }
+  .record-project-summary dd > button svg { color: var(--studio-muted); }
+  :is(.sx-project-detail,.contact-detail-workspace) .project-contact-detail-tabs {
+    display: flex; justify-content: flex-start; gap: 4px; padding: 0; margin: 0 0 16px;
+    background: transparent; border: 0; box-shadow: none; border-bottom: 1px solid var(--studio-border); border-radius: 0;
+    overflow-x: auto;
+  }
+  :is(.sx-project-detail,.contact-detail-workspace) .project-contact-detail-tabs > button {
+    flex: none; min-width: 0; min-height: 44px; padding: 6px 13px; border: 0; border-bottom: 3px solid transparent;
+    border-radius: 0; color: var(--studio-muted); background: transparent; box-shadow: none; font-weight: 600;
+  }
+  :is(.sx-project-detail,.contact-detail-workspace) .project-contact-detail-tabs > button[aria-selected=true] { color: var(--studio-text); border-bottom-color: var(--studio-accent); background: transparent; box-shadow: none; }
+  .sx-project-detail .sx-project-team-avatar { background: linear-gradient(135deg,#f8d582,#ebb477); color: #3a2b16; border: 0; font-weight: 650; }
+}
+@media (min-width:1101px) {
+  html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-project-detail .reference-detail-grid.project:not(.project-hub-wide) {
+    grid-template-columns: minmax(0,1.5fr) minmax(280px,1fr); gap: 16px;
+  }
+}
+@media (max-width:760px) {
+  html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-project-detail .reference-heading { display: flex; }
+  html .studio-app.studio-commercial-glass .sx-project-detail .record-project-summary > div { flex: 1 0 45%; padding: 10px 12px; }
+  html .studio-app.studio-commercial-glass .sx-project-detail .record-project-summary dd { font-size: 20px; }
+}
+
+/* The progress, document and payment figures belong to the same record. */
+#sx-workspace-shell :is(.sx-project-detail,.contact-detail-workspace) .reference-payment-summary > div { border-color: var(--studio-border); }
+#sx-workspace-shell :is(.sx-project-detail,.contact-detail-workspace) .reference-payment-summary span { color: var(--studio-muted); }
+#sx-workspace-shell :is(.sx-project-detail,.contact-detail-workspace) .reference-payment-summary strong {
+  color: var(--studio-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere;
+}
+#sx-workspace-shell :is(.project-contact-filters,.project-contact-detail-tabs,.record-views) > button:focus-visible {
+  outline: 2px solid var(--studio-focus); outline-offset: -3px;
+}
+@media (max-width:760px) {
+  #sx-workspace-shell .sx-project-detail > .reference-heading {
+    display: grid; grid-template-columns: minmax(0,1fr); gap: 12px;
+  }
+  #sx-workspace-shell .sx-project-detail .sx-project-identity { grid-column: 1; }
+  #sx-workspace-shell .record-enquiries .studio-crm-row-actions {
+    display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,96px),1fr)); gap: 8px;
+  }
+  #sx-workspace-shell .record-enquiries .studio-crm-row-actions > button {
+    width: 100%; max-width: none; min-width: 0; min-height: 44px; height: auto; padding: 8px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  #sx-workspace-shell .record-enquiries .enquiry-action-object { display: none; }
+  #sx-workspace-shell :is(.record-project-identity h2,.record-project-identity p,.record-person h2,.record-project-timeline li > div) > a {
+    display: inline-flex; align-items: center; min-height: 44px;
+  }
+  #sx-workspace-shell .record-enquiry-project .studio-crm-text-link { display: inline-flex; align-items: center; min-height: 44px; }
+}
+@media (max-width:440px) {
+  #sx-workspace-shell .record-desk .project-contact-filters {
+    display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 4px; padding: 4px;
+  }
+  #sx-workspace-shell .record-desk .project-contact-filters > button {
+    justify-content: space-between; min-width: 0; width: 100%;
+  }
+  #sx-workspace-shell .record-desk .project-contact-heading-actions {
+    max-width: 100%; flex-wrap: wrap; gap: 8px;
+  }
+  #sx-workspace-shell :is(.record-desk .project-contact-heading-actions,.record-enquiries .studio-heading-actions,.sx-task-page .studio-heading-actions) > :is(button,a) {
+    min-width: 0; padding-inline: 10px;
+  }
+  #sx-workspace-shell .sx-project-detail .project-hub-header-actions > div > button {
+    padding-inline: 8px;
+  }
+  #sx-workspace-shell :is(.sx-project-detail,.contact-detail-workspace) .project-contact-detail-tabs {
+    gap: 0; padding-inline: 0;
+  }
+  #sx-workspace-shell :is(.sx-project-detail,.contact-detail-workspace) .project-contact-detail-tabs > button {
+    flex: 1 0 auto; min-width: 44px; padding-inline: 1px; font-size: 13px;
+  }
+  #sx-workspace-shell :is(.sx-project-detail,.contact-detail-workspace) .reference-payment-summary {
+    grid-template-columns: minmax(0,1fr); gap: 0; margin-bottom: 16px;
+  }
+  #sx-workspace-shell :is(.sx-project-detail,.contact-detail-workspace) .reference-payment-summary > div {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    padding: 8px 0; border: 0; border-bottom: 1px solid var(--studio-border);
+  }
+  #sx-workspace-shell :is(.sx-project-detail,.contact-detail-workspace) .reference-payment-summary span { margin: 0; }
+}
+
+html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass {
+  .record-progress-mark {
+    display: grid; place-items: center; width: 61px; height: 61px; flex: 0 0 61px; border-radius: 50%;
+    background: conic-gradient(var(--record-accent) var(--done), var(--studio-selected) var(--done));
+    font-variant-numeric: tabular-nums;
+  }
+  .record-progress-mark strong { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 50%; background: var(--record-card); color: var(--studio-text); font-size: 14px; }
+  .record-project-timeline .record-mobile-agenda { display: none; }
+  .record-gantt p { margin: 0 0 14px; color: var(--studio-muted); font-size: 13px; }
+  .record-gantt-scroll { overflow-x: auto; max-width: 100%; }
+  .record-gantt-grid { min-width: 620px; }
+  .record-gantt-heading,.record-gantt-row { display: grid; grid-template-columns: minmax(160px,24%) minmax(0,1fr); }
+  .record-gantt-heading { padding-bottom: 8px; font-size: 13px; color: var(--studio-muted); }
+  .record-gantt-heading > div { display: grid; grid-template-columns: repeat(var(--ticks),1fr); }
+  .record-gantt-heading small { font-size: 11px; }
+  .record-gantt-row { border-top: 1px solid var(--studio-border); align-items: stretch; min-height: 56px; }
+  .record-gantt-project { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 3px; padding: 8px 12px 8px 0; }
+  .record-gantt-project a { color: var(--studio-text); font-weight: 600; line-height: 1.3; }
+  .record-gantt-project small { color: var(--studio-muted); font-size: 12px; }
+  .record-gantt-track { position: relative; border-left: 1px solid var(--studio-border); background: repeating-linear-gradient(to right, transparent 0 calc(100% / var(--ticks) - 1px), var(--studio-border) calc(100% / var(--ticks) - 1px) calc(100% / var(--ticks))); }
+  .record-gantt-bar { position: absolute; top: calc(50% - 7px); min-width: 3px; height: 14px; border-radius: 7px; overflow: hidden; background: color-mix(in srgb,var(--record-accent) 35%,var(--record-card)); }
+  .record-gantt-bar i { display: block; height: 100%; width: var(--done); border-radius: inherit; background: var(--record-accent); }
+  .record-gantt-today { position: absolute; inset-block: 0; width: 1px; background: var(--studio-muted); }
+  .record-gantt-percent { position: absolute; right: 1px; bottom: 2px; font-size: 11px; color: var(--studio-muted); }
+}
+@media (max-width:760px) {
+  html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .record-project-timeline .record-mobile-agenda { display: flex; }
+  html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .record-project-timeline .record-gantt { display: none; }
+}
+
+html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass {
+  .record-views:has(> .sx-section-selection:not([hidden])) > button::after { display: none; }
+  .sx-project-detail .project-contact-detail-tabs:has(> .sx-section-selection:not([hidden])) > button[aria-selected=true] { border-bottom-color: transparent; }
+  .record-progress-mark { position: relative; background: var(--record-card); }
+  .record-progress-mark svg { width: 100%; height: 100%; position: absolute; inset: 0; transform: rotate(-90deg); fill: none; }
+  .record-progress-mark circle { stroke-width: 5; }
+  .record-progress-mark .record-ring-track { stroke: var(--studio-selected); }
+  .record-progress-mark .record-ring-fill { stroke: var(--studio-accent); stroke-dasharray: 100; stroke-dashoffset: var(--remaining); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-studio-motion=reduced]) #sx-workspace-shell.studio-commercial-glass {
+    :is(.record-project-tile,.record-person,.record-enquiry-lane article) { animation: record-card-enter 800ms cubic-bezier(.16,1,.3,1) backwards; animation-delay: calc(50ms * var(--record-order, 0)); }
+    .sx-task-card { animation: record-task-enter 400ms cubic-bezier(.16,1,.3,1) backwards; animation-delay: calc(25ms * var(--record-order, 0)); }
+    .record-ring-fill { animation: record-ring-enter 1000ms cubic-bezier(.16,1,.3,1) backwards; animation-delay: calc(150ms + var(--record-order, 0) * 50ms); transition: stroke-dashoffset 600ms cubic-bezier(.16,1,.3,1); }
+    .record-gantt-bar i { transform-origin: left center; animation: record-duration-enter 1000ms cubic-bezier(.16,1,.3,1) backwards; animation-delay: calc(800ms + var(--record-order, 0) * 50ms); }
+    .record-gantt-bar { transform-origin: left center; animation: record-duration-enter 1000ms cubic-bezier(.16,1,.3,1) backwards; animation-delay: calc(300ms + var(--record-order, 0) * 50ms); }
+    .record-gantt-today { transform-origin: top center; animation: record-today-enter 700ms cubic-bezier(.16,1,.3,1) 1100ms backwards; }
+    .record-desk .reference-desktop-records tbody > tr,.record-desk .reference-mobile-records > li,.sx-task-page .ops-task-table tbody > tr { animation: record-card-enter 520ms cubic-bezier(.16,1,.3,1) backwards; }
+    :is(.record-project-timeline,.record-pipeline,.record-enquiries .studio-crm-table-scroll,.record-slate,.record-people,.record-desk .reference-desktop-records,.record-desk .reference-mobile-records,.sx-task-board,.sx-task-page .ops-table-scroll) { animation: record-view-enter 700ms cubic-bezier(.16,1,.3,1); }
+    .sx-task-card { transition: rotate 500ms cubic-bezier(.2,1.5,.45,1), scale 500ms cubic-bezier(.2,1.5,.45,1); }
+    .sx-task-card[data-dragging=true] { rotate: 1.5deg; scale: 1.03; transition-duration: 250ms; }
+  }
+}
+@keyframes record-task-enter { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes record-card-enter { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes record-ring-enter { from { stroke-dashoffset: 100; } }
+@keyframes record-duration-enter { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes record-today-enter { from { opacity: 0; transform: scaleY(0); } to { opacity: 1; transform: scaleY(1); } }
+@keyframes record-view-enter { from { opacity: .6; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+html[data-studio-motion=reduced] .studio-commercial-glass [data-record-key] { translate: none !important; }
+@media (prefers-reduced-motion:reduce) { .studio-commercial-glass [data-record-key] { translate: none !important; } }

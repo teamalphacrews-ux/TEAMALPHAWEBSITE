@@ -9,6 +9,7 @@ const {
   invoiceFromQuote,
   publicQuote,
 } = require("../utils/quoteLifecycle");
+const { acceptedQuoteDestination } = require('../utils/acceptedQuoteDestination');
 const router = express.Router();
 router.use((req, res, next) => {
   res.set("Cache-Control", "no-store");
@@ -36,16 +37,29 @@ async function find(token) {
   return result && require('../utils/documentDefaults').linkIsActive(result) ? result : null;
 }
 async function ensureInvoice(q) {
-  // The acceptance claim reserves a single invoice ID atomically. An interrupted
-  // request can safely retry this insert without requiring replica-set transactions.
   const studio = await StudioConfig.findOne({ key: 'studio' }) || {};
   const values = invoiceFromQuote(q, studio);
-  values.documentNumber = await require('../services/documentNumbering').nextDocumentNumber('invoice', studio, q.acceptedAt, Invoice);
-  return Invoice.findOneAndUpdate(
-    { _id: q.invoiceId },
-    { $setOnInsert: values },
-    { upsert: true, new: true, runValidators: true },
-  );
+  return require('../services/documentNumbering').persistNumberedInvoice({
+    invoiceId: q.invoiceId,
+    studio,
+    date: q.acceptedAt,
+    persist: async documentNumber => {
+      const now = new Date();
+      try {
+        return await Invoice.findOneAndUpdate(
+          { _id: q.invoiceId },
+          { $setOnInsert: { ...values, documentNumber, createdAt: now, updatedAt: now } },
+          { upsert: true, new: true, runValidators: true, timestamps: false },
+        );
+      } catch (error) {
+        if (error.code === 11000) {
+          const existing = await Invoice.findById(q.invoiceId);
+          if (existing) return existing;
+        }
+        throw error;
+      }
+    },
+  });
 }
 router.get(
   "/:token",
@@ -134,13 +148,14 @@ router.post(
       });
     const linkedEnquiry = await require("../services/enquiryPipeline").syncQuote(q);
     if (linkedEnquiry?._id) await require('../services/productionTemplates').applyDefaultProduction(linkedEnquiry._id);
-    if (q.autoCreateInvoice !== false) {
+    if (q.autoCreateInvoice !== false && !q.invoiceGeneratedAt) {
       await ensureInvoice(q);
       q = await Quotation.findOneAndUpdate(
-        { _id: q._id, status: "Accepted" },
-        { $set: { invoiceGeneratedAt: q.invoiceGeneratedAt || new Date() } },
+        { _id: q._id, status: "Accepted", invoiceGeneratedAt: null },
+        { $set: { invoiceGeneratedAt: new Date() } },
         { new: true },
-      );
+      ) || await find(req.params.token);
+      if (!q) return res.status(404).json({ error: "This quotation link is unavailable." });
     }
     if (req.app) {
       const Notification = require("../models/Notification");
@@ -160,7 +175,7 @@ router.post(
           title: "Quotation accepted",
           description: `${q.clientName} accepted quotation ${q.documentNumber || String(q._id).slice(-6).toUpperCase()}.`,
           type: "System",
-          link: "/admin/quotations",
+          link: acceptedQuoteDestination(q, "/admin/quotations"),
         }).catch(() => {});
       if (
         !q.emailConfirmationStatus ||

@@ -247,3 +247,8 @@
   .wa-wabb-send-row > button { justify-content: center; min-height: 46px; }
   .wa-wabb-attempt .studio-button { min-height: 44px; }
 }
+
+#sx-workspace-shell .wa-wabb-kicker { font-size: 12px; letter-spacing: .055em; line-height: 1.45; }
+#sx-workspace-shell .wa-wabb-grid .wa-wabb-field-help { font-size: 14px; line-height: 1.55; }
+#sx-workspace-shell .wa-wabb-message-help { font-size: 12px; }
+#sx-workspace-shell .wa-wabb-send-row > span { font-size: 12px; }

@@ -1,10 +1,13 @@
+import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import StudioSelect from '../components/common/StudioSelect';
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
+  ArrowUpRight,
   CalendarDays,
   ClipboardList,
   FileSignature,
@@ -12,6 +15,7 @@ import {
   Mail,
   Pencil,
   ReceiptText,
+  Users,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -38,6 +42,11 @@ import {
 } from "../components/contacts/ContactRelatedTables";
 import "./referenceContacts.css";
 import "./projectContactRefinement.css";
+import "./studioCommercialProjects.css";
+import "./studioRecordDesk.css";
+import SectionSelectionIndicator from "./SectionSelectionIndicator";
+import { useSectionArrival } from "./useSectionArrival";
+import { projectChecklistSummary } from "../components/projects/projectReadiness";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 import {ProjectOverview,ProjectOperations} from '../components/projects/ProjectOperations';
 import {useOfflineDraft,OfflineDraftStatus} from '../../offline/OfflineDrafts';
@@ -51,6 +60,8 @@ function StudioProjectWorkspace({id}){
  const tabs=[['overview','Overview'], ...(hasModuleAccess(user,'quotations') || hasModuleAccess(user,'invoices') || hasModuleAccess(user,'contacts') ? [['documents','Documents']] : []), ...(hasModuleAccess(user,'finance') && hasModuleAccess(user,'invoices') ? [['payments','Payments']] : []), ...(hasModuleAccess(user,'crew') ? [['crew','Crew']] : []), ...(hasModuleAccess(user,'production') ? [['delivery','Delivery']] : [])];
  const tab=tabs.some(([value])=>value===sectionParams.get('tab'))?sectionParams.get('tab'):'overview';
  const setTab=value=>setSectionParams(previous=>{const next=new URLSearchParams(previous);if(value==='overview')next.delete('tab');else next.set('tab',value);return next;},{replace:true});
+ const panelRef = useRef(null);
+ useSectionArrival(panelRef, tabs.findIndex(([value]) => value === tab), '[role="tabpanel"]:not([hidden])');
  const tabsId=useId();
  const navigateTabs=event=>{
    if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
@@ -103,6 +114,7 @@ function StudioProjectWorkspace({id}){
         retry={reload}
       />
     );
+  const clientName = [contact.firstName, contact.lastName].filter(Boolean).join(' ');
   const query = new URLSearchParams({
       contact: contact._id,
       project: id,
@@ -178,16 +190,17 @@ function StudioProjectWorkspace({id}){
     },
   ];
   return (
-    <div className="reference-workspace project-hub project-contact-workspace project-contact-detail">
+    <div className={'reference-workspace project-hub project-contact-workspace project-contact-detail' + (IS_COMMERCIAL_DEPLOYMENT ? ' sx-project-detail' : '')}>
+      {IS_COMMERCIAL_DEPLOYMENT && <Link className="record-detail-back" to="/admin/studio-projects"><ArrowLeft size={15} />Project slate</Link>}
       <div className="reference-heading">
-        <Link
+        {!IS_COMMERCIAL_DEPLOYMENT && <Link
           to={hasModuleAccess(user, 'contacts') && contact._id ? `/admin/contacts/${contact._id}` : '/admin/studio-projects'}
           className="reference-back"
           aria-label={hasModuleAccess(user, 'contacts') && contact._id ? "Back to client" : "Back to projects"}
         >
           <ArrowLeft size={18} />
-        </Link>
-        <h1>{project.name}</h1>
+        </Link>}
+        {IS_COMMERCIAL_DEPLOYMENT ? <div className="sx-project-identity"><span className="record-category">{clientName && hasModuleAccess(user, 'contacts') && contact._id && <><Link to={'/admin/contacts/' + contact._id}>{clientName}</Link> · </>}{project.type || 'Project'}</span><WorkspaceMotionTitle>{project.name}</WorkspaceMotionTitle><p>{project.description || [project.startDate && recordDate(project.startDate), project.location].filter(Boolean).join(' · ')}</p></div> : <WorkspaceMotionTitle>{project.name}</WorkspaceMotionTitle>}
         <div className="project-hub-header-actions"><StudioSelect
           aria-label="Project status"
           className={`reference-status-select ${project.status.toLowerCase()}`}
@@ -222,11 +235,12 @@ function StudioProjectWorkspace({id}){
         /></div>
       </div>
       <WorkspaceError error={error} retry={reload} />
-      <div className="project-hub-tabs project-contact-detail-tabs" style={{ '--project-contact-tab-count': tabs.length }} role="tablist" aria-label="Project sections" onKeyDown={navigateTabs}>{tabs.map(([value,label])=><button type="button" key={value} role="tab" id={`${tabsId}-tab-${value}`} aria-controls={`${tabsId}-panel-${value}`} aria-selected={tab===value} tabIndex={tab===value?0:-1} onClick={()=>setTab(value)}>{label}</button>)}</div>
-      <div className={'reference-detail-grid project'+(tab==='overview'?'':' project-hub-wide')}>
+      {IS_COMMERCIAL_DEPLOYMENT && tab === 'overview' && <ProjectSummary detail={detail} user={user} onTab={setTab} />}
+      <div data-section-selector={IS_COMMERCIAL_DEPLOYMENT ? "line" : undefined} className="project-hub-tabs project-contact-detail-tabs" style={{ '--project-contact-tab-count': tabs.length }} role="tablist" aria-label="Project sections" onKeyDown={navigateTabs}>{tabs.map(([value,label])=><button type="button" key={value} role="tab" id={`${tabsId}-tab-${value}`} aria-controls={`${tabsId}-panel-${value}`} aria-selected={tab===value} tabIndex={tab===value?0:-1} onClick={()=>setTab(value)}>{label}</button>)}{IS_COMMERCIAL_DEPLOYMENT && <SectionSelectionIndicator selection={tab} />}</div>
+      <div ref={panelRef} className={'reference-detail-grid project'+(tab==='overview'?'':' project-hub-wide')}>
         <div style={{ minWidth: 0 }}>
           {tabs.map(([value])=><div key={value} role="tabpanel" id={`${tabsId}-panel-${value}`} aria-labelledby={`${tabsId}-tab-${value}`} hidden={tab!==value} tabIndex={0}>{tab===value&&<>
-          {tab==='overview'&&<ProjectOverview detail={detail} onTab={setTab}/>}
+          {tab==='overview'&&<ProjectOverview detail={detail} onTab={setTab} refreshing={loading} loadError={error}/>}
           {tab==='documents'&&<ReferenceSection title="Documents">
             {hasDocuments && (
               <ContactDocuments
@@ -292,7 +306,7 @@ function StudioProjectWorkspace({id}){
 
           </>}</div>)}
         </div>
-        {tab==='overview'&&<aside>
+        {tab==='overview'&&<aside className={IS_COMMERCIAL_DEPLOYMENT ? 'sx-project-reference-rail' : undefined}>
           <ReferenceSection title="Project details">
             <button
               className="reference-info-edit reference-icon-button"
@@ -342,6 +356,10 @@ function StudioProjectWorkspace({id}){
               </dd>
             </dl>
           </ReferenceSection>
+          {IS_COMMERCIAL_DEPLOYMENT && hasModuleAccess(user, 'crew') && <ReferenceSection title="Assigned team">
+            {(detail.production?.crew || []).length ? <ul className="sx-project-team-list">{detail.production.crew.map(person => <li key={person._id || person.name}><span className="sx-project-team-avatar" aria-hidden="true">{(person.name || 'Crew').split(/\s+/).map(part => part[0]).slice(0,2).join('').toUpperCase()}</span><span><strong>{person.name}</strong><small>{person.specialty || 'Assigned crew'}{person.unresolved ? ' · Details need review' : ''}</small></span></li>)}</ul> : <p className="studio-muted">No crew members assigned yet.</p>}
+            <button type="button" className="studio-button sx-project-team-action" onClick={() => setTab('crew')}><Users size={16} aria-hidden="true" />Manage assigned team</button>
+          </ReferenceSection>}
           <ReferenceSection title="Notes">
             <form onSubmit={addNote}><OfflineDraftStatus draft={noteDraft}/>
               <textarea
@@ -397,4 +415,22 @@ function StudioProjectWorkspace({id}){
       )}
     </div>
   );
+}
+
+
+function ProjectSummary({ detail, user, onTab }) {
+  const checklist = projectChecklistSummary(detail.production?.tasks);
+  const facts = [];
+  if (hasModuleAccess(user, 'production')) facts.push({ label: checklist.label, value: checklist.value, tab: 'delivery' });
+  if (hasModuleAccess(user, 'crew')) facts.push({ label: 'Assigned crew', value: detail.production?.crew?.length || 0, tab: 'crew' });
+  if (hasModuleAccess(user, 'quotations') || hasModuleAccess(user, 'invoices')) {
+    const quotes = hasModuleAccess(user, 'quotations') ? detail.quotations?.length || 0 : 0;
+    const invoices = hasModuleAccess(user, 'invoices') ? detail.invoices?.length || 0 : 0;
+    facts.push({ label: 'Quotes & invoices', value: quotes + invoices, tab: 'documents' });
+  }
+  facts.push({ label: 'Status', value: detail.project.status || 'Inquiry' });
+  return <dl className="record-project-summary" aria-label="Project summary">{facts.map(fact =>
+    <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.tab
+      ? <button type="button" onClick={() => onTab(fact.tab)} aria-label={fact.label + ': ' + fact.value}>{fact.value}<ArrowUpRight aria-hidden="true" size={15} /></button>
+      : fact.value}</dd></div>)}</dl>;
 }

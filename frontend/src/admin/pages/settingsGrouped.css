@@ -71,6 +71,49 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
  .studio-app .settings-profile-tile strong { font-size:17px; }
 }
 @media(prefers-reduced-motion:no-preference) {
- html:not([data-studio-motion=reduced]) .settings-grouped .settings-content { animation:settings-panel-enter .22s ease-out; }
+ html:not([data-studio-motion=reduced]) .studio-personal-workspace .settings-grouped .settings-content { animation:settings-panel-enter .22s ease-out; }
  @keyframes settings-panel-enter { from { opacity:.35; transform:translateY(7px); } to { opacity:1; transform:none; } }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-studio-motion=reduced]) #sx-workspace-shell .studio-settings-page .studio-switch-control > .studio-switch-track::after {
+    transition: transform 450ms cubic-bezier(.25,1.48,.4,1), background-color 180ms ease;
+  }
+}
+#sx-workspace-shell .studio-settings-page .studio-switch-control > .studio-switch-track {
+  width: 42px; min-width: 42px; flex-basis: 42px; height: 24px; border: 0;
+  background: var(--studio-surface-3, var(--studio-border)); box-shadow: inset 0 0 0 1px var(--studio-border);
+}
+#sx-workspace-shell .studio-settings-page .studio-switch-control > .studio-switch-track::after {
+  top: 3px; left: 3px; width: 18px; height: 18px; background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / .25);
+}
+#sx-workspace-shell .studio-settings-page .studio-switch-control > input:checked + .studio-switch-track {
+  background: var(--studio-signature-gradient, linear-gradient(135deg, #f8bd57, #f29b23 52%, #ee8420)); box-shadow: none;
+}
+#sx-workspace-shell .studio-settings-page .studio-switch-control > input:checked + .studio-switch-track::after {
+  left: 3px; background: #fff; transform: translateX(18px);
+}
+
+#sx-workspace-shell .settings-profile-photo .settings-check {
+  align-items: center;
+  min-height: 44px;
+}
+#sx-workspace-shell .settings-profile-photo .settings-check input { margin-block-start: 0; }
+@media (max-width: 600px) {
+  #sx-workspace-shell .settings-primary-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px 0;
+    overflow: visible;
+  }
+  #sx-workspace-shell .settings-primary-nav > button {
+    min-width: 0;
+    padding-inline: 3px;
+    overflow-wrap: anywhere;
+  }
+  #sx-workspace-shell .settings-primary-nav > .sx-section-selection {
+    top: var(--section-rule-y);
+    bottom: auto;
+  }
 }

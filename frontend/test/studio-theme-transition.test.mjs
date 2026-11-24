@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cancelStudioThemeTransition, themeRevealGeometry, transitionStudioTheme } from '../src/utils/studioThemeTransition.js';
+import { cancelStudioThemeTransition, themeRevealGeometry, transitionCommercialTheme, transitionStudioTheme } from '../src/utils/studioThemeTransition.js';
 
 const deferred = () => {
   let resolve, reject;
@@ -237,5 +237,75 @@ test('a rejected animation API cannot block the theme change or fallback cleanup
   assert.equal(commits, 1);
   assert.equal(env.classes.size, 0);
   assert.equal(env.bodyChildren.length, 0);
+});
+
+function nativeThemeBrowser(options) {
+  const env = browser(options);
+  const transitions = [];
+  env.win.KeyframeEffect = class { get pseudoElement() { return null; } };
+  env.doc.documentElement.animate = (frames, options) => {
+    const animation = { frames, options, cancel() {} };
+    env.animations.push(animation);
+    return animation;
+  };
+  env.doc.startViewTransition = update => {
+    const ready = deferred(), finished = deferred();
+    const transition = { update, ready: ready.promise, finished: finished.promise,
+      begin() { update(); ready.resolve(); }, end: finished.resolve,
+      skipTransition() { ready.reject(new Error('Skipped')); finished.resolve(); },
+    };
+    transitions.push(transition);
+    return transition;
+  };
+  return { ...env, transitions };
+}
+
+test('commercial appearance reveals the incoming theme from the control to the farthest corner', async () => {
+  const env = nativeThemeBrowser({ width: 390, height: 844 }); let commits = 0;
+  const done = transitionCommercialTheme({ origin: { x: 233, y: 33 }, commit: () => commits++, doc: env.doc, win: env.win });
+  env.transitions[0].begin(); await settle();
+  assert.equal(commits, 1);
+  assert.deepEqual(env.animations[0].frames.clipPath, ['circle(0px at 233px 33px)', `circle(${Math.hypot(233,811)}px at 233px 33px)`]);
+  assert.deepEqual(env.animations[0].options, { duration: 450, easing: 'cubic-bezier(.65,0,.35,1)', pseudoElement: '::view-transition-new(root)' });
+  env.transitions[0].end(); await done;
+  assert.equal(env.classes.size, 0);
+});
+
+test('a superseded commercial snapshot cannot apply stale preferences or interrupt the next reveal', async () => {
+  const env = nativeThemeBrowser(), commits = [];
+  const start = value => transitionCommercialTheme({ commit: () => commits.push(value), doc: env.doc, win: env.win });
+  const first = start('dark'); const second = start('light');
+  env.transitions[0].update(); env.transitions[1].begin(); await first;
+  assert.ok(env.classes.has('studio-theme-reveal'));
+  env.reduceMotion(); await second;
+  assert.deepEqual(commits, ['light']);
+  assert.equal(env.classes.size, 0);
+  assert.equal(env.mediaListeners.size, 0);
+});
+
+test('commercial appearance commits immediately with reduced motion or without snapshot support', async () => {
+  for (const options of [{ osReduced: true }, { reduceMotion: true }, { hidden: true }, { missingApi: true }]) {
+    const env = nativeThemeBrowser(options); let commits = 0;
+    if (options.missingApi) delete env.doc.startViewTransition;
+    await transitionCommercialTheme({ commit: () => commits++, reduceMotion: options.reduceMotion, doc: env.doc, win: env.win });
+    assert.equal(commits, 1);
+    assert.equal(env.transitions.length, 0);
+  }
+});
+
+test('only a root-retargeted click inside the original switch repeats it during capture', async () => {
+  const env = nativeThemeBrowser(); let clicks = 0, focus;
+  const origin = { isConnected: true, matches: () => true, click: () => clicks++, focus: options => { focus = options; },
+    getBoundingClientRect: () => ({ left: 90, top: 10, right: 156, bottom: 46, width: 66, height: 36 }) };
+  const done = transitionCommercialTheme({ commit() {}, origin, doc: env.doc, win: env.win });
+  const [captureClick] = env.docListeners.get('click');
+  const event = { button: 0, target: env.doc.documentElement, clientX: 120, clientY: 30 };
+  captureClick({ ...event, target: origin });
+  captureClick({ ...event, clientX: 30 });
+  captureClick(event);
+  assert.equal(clicks, 1);
+  assert.deepEqual(focus, { preventScroll: true });
+  cancelStudioThemeTransition(env.doc); await done;
+  assert.equal(env.docListeners.get('click').size, 0);
 });
 

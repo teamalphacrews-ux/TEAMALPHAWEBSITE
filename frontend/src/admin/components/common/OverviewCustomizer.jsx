@@ -5,6 +5,7 @@ import { OperationsModal } from '../operations/OperationsUI';
 import { OVERVIEW_CARDS, useStudioPreferences } from './StudioPreferences';
 import StudioAppIcon from './StudioAppIcon';
 import { moveOverviewCard, reorderVisibleOverviewCards } from '../../../utils/overviewPreferences';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
 import './overviewCustomization.css';
 
 const symbols = {
@@ -70,7 +71,7 @@ export default function OverviewCustomizer({ onClose, initialTab = 'arrange' }) 
     setAnnouncement('Your previous card order and visibility have been restored.');
     resetControl.current?.focus();
   };
-  return <OperationsModal title="Customize overview" description="Choose your cards and arrange their order in Insights. Today keeps your schedule and urgent work first." onClose={onClose} footer={<>
+  return <OperationsModal title="Customize overview" description={IS_COMMERCIAL_DEPLOYMENT ? "Choose what appears on Today and Insights. You can also rearrange your Insights cards." : "Choose your cards and arrange their order in Insights. Today keeps your schedule and urgent work first."} onClose={onClose} footer={<>
     <button ref={resetControl} type="button" className="studio-button" onClick={reset}><RotateCcw size={16} />Reset layout</button>
     <button type="button" className="studio-button primary" onClick={onClose}><Check size={16} />Done</button>
   </>}>

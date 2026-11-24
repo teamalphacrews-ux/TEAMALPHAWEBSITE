@@ -19,6 +19,8 @@ import {
   UsersRound,
   Sun,
   Moon,
+  Pause,
+  Play,
   X,
 } from "lucide-react";
 import { API_BASE_URL } from "../utils/apiConfig";
@@ -29,14 +31,24 @@ import {
 } from "../utils/clientProjectData";
 import { InvoiceDocument } from "./PublicInvoice";
 import ClientFeatureCard from './ClientFeatureCard';
+import ClientFluidCover from './ClientFluidCover';
 import ClientPaymentDialog from './ClientPaymentDialog';
 import { clientDashboardSummary, clientPaymentRows } from '../utils/clientDashboardData';
 import "./clientProjectWorkspace.css";
 import './clientSmartDashboard.css';
+import './studioClientGlass.css';
+import './studioClientRadiance.css';
+import '../saas/commercialPublicSurface.css';
+import './clientSmartLinkHome.css';
+import './clientSmartLinkSections.css';
+import './clientSmartLinkOverlays.css';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../saas/release';
 
 const projectSections = ["quotation", "invoice", "payments", "delivery", "crew"];
+const effectsPauseKey = 'studio-commercial-client-effects-paused';
+const readEffectsPause = () => { try { return sessionStorage.getItem(effectsPauseKey) === 'true'; } catch { return false; } };
 const sectionFromHash = () => {
-  const id = window.location.hash.replace("#project-", "");
+  const id = typeof window === 'undefined' ? '' : window.location.hash.replace("#project-", "");
   return projectSections.includes(id) ? id : null;
 };
 
@@ -123,13 +135,36 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
     [openDelivery, setOpenDelivery] = useState(null),
     [openCrew, setOpenCrew] = useState(null),
     [chatOpen, setChatOpen] = useState(
-      () => window.location.hash === "#project-support",
+      () => typeof window !== 'undefined' && window.location.hash === "#project-support",
     );
   const [refreshKey, setRefreshKey] = useState(0);
   const [paymentRequest, setPaymentRequest] = useState(null);
   const closePayment = useCallback(() => setPaymentRequest(null), []);
   const [appearance, setAppearance] = useState(() => { try { return localStorage.getItem('teamalpha-client-appearance') === 'dark' ? 'dark' : 'daylight'; } catch { return 'daylight'; } });
   useEffect(() => { try { localStorage.setItem('teamalpha-client-appearance', appearance); } catch { /* Appearance still works for this visit. */ } }, [appearance]);
+  const [effectsPaused, setEffectsPaused] = useState(() => IS_COMMERCIAL_DEPLOYMENT && readEffectsPause());
+  const [effectsReduced, setEffectsReduced] = useState(() => IS_COMMERCIAL_DEPLOYMENT && (typeof window === 'undefined' || Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)));
+  const [effectsVisible, setEffectsVisible] = useState(() => typeof document !== 'undefined' && !document.hidden);
+  useEffect(() => {
+    if (!IS_COMMERCIAL_DEPLOYMENT) return undefined;
+    const preference = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => setEffectsReduced(Boolean(preference?.matches));
+    const updateVisibility = () => setEffectsVisible(!document.hidden);
+    preference?.addEventListener?.('change', updatePreference);
+    document.addEventListener('visibilitychange', updateVisibility);
+    return () => {
+      preference?.removeEventListener?.('change', updatePreference);
+      document.removeEventListener('visibilitychange', updateVisibility);
+    };
+  }, []);
+  const effectsMode = effectsReduced ? 'reduced' : effectsPaused || !effectsVisible ? 'paused' : 'playing';
+  const effectsLabel = effectsReduced ? 'Effects reduced' : effectsPaused ? 'Resume effects' : 'Pause effects';
+  const toggleEffects = () => {
+    if (effectsReduced) return;
+    const next = !effectsPaused;
+    setEffectsPaused(next);
+    try { sessionStorage.setItem(effectsPauseKey, String(next)); } catch { /* Effects remain controllable for this visit. */ }
+  };
   const accepted = quote.status === 'Accepted';
   const [error, setError] = useState(""),
     [messageError, setMessageError] = useState(""),
@@ -593,8 +628,9 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
   ];
   return (
     <div
-      className="client-project cp-dashboard"
+      className={`client-project cp-dashboard${IS_COMMERCIAL_DEPLOYMENT ? " studio-client-glass studio-client-radiance" : ""}`}
       data-theme={appearance}
+      data-client-effects={IS_COMMERCIAL_DEPLOYMENT ? effectsMode : undefined}
       ref={workspaceRef}
       data-print-document={approved ? "invoice" : "quote"}
     >
@@ -602,14 +638,15 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       <meta name="referrer" content="no-referrer" />
       <header className="cp-topbar">
         <div>
-          <img src={resolveStudioImage(quote.studio.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt={quote.studio.name} />
+          <img src={resolveStudioImage(quote.studio.logoUrl || (IS_COMMERCIAL_DEPLOYMENT ? '/assets/studio-x-os/mark-20261104.webp' : TEAM_ALPHA_LOGO), API_BASE_URL)} alt="" />
           <span>
             {quote.studio.name}
-            <small>YOUR CLIENT DASHBOARD</small>
+            <small>{IS_COMMERCIAL_DEPLOYMENT ? 'Client Smart Link' : 'YOUR CLIENT DASHBOARD'}</small>
           </span>
         </div>
         <div className="cp-topbar-tools">
           <button type="button" className="cp-theme-toggle" aria-label={appearance === 'dark' ? 'Switch to Daylight mode' : 'Switch to Dark mode'} onClick={() => setAppearance(mode => mode === 'dark' ? 'daylight' : 'dark')}>{appearance === 'dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}</button>
+          {IS_COMMERCIAL_DEPLOYMENT && <button type="button" className="cp-effects-toggle" onClick={toggleEffects} aria-label={effectsLabel} aria-pressed={effectsMode !== 'playing'} title={effectsReduced ? 'Effects are reduced by your device motion preference.' : effectsLabel} disabled={effectsReduced}>{effectsPaused && !effectsReduced ? <Play size={17} aria-hidden="true" /> : <Pause size={17} aria-hidden="true" />}<span>{effectsLabel}</span></button>}
         <span className="cp-private-label">
           <LockKeyhole size={13} strokeWidth={1.5} aria-hidden="true" /> Private
           project
@@ -618,12 +655,13 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       </header>
       <main className="cp-main">
         <section className="cp-welcome" aria-labelledby="client-project-title">
-          <img
+          {IS_COMMERCIAL_DEPLOYMENT && <ClientFluidCover effectsMode={effectsMode} />}
+          {(!IS_COMMERCIAL_DEPLOYMENT || coverUrl !== '/assets/studio-wedding.webp') && <img
             className="cp-cover-image"
             src={coverUrl}
             alt=""
             fetchPriority="high"
-          />
+          />}
           <div className="cp-cover-shade" />
           <div className="cp-welcome-content">
             <span className="cp-eyebrow">YOUR PROJECT OVERVIEW</span>
@@ -641,7 +679,15 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
           </div>
         </section>
         <section className="cp-feature-grid" aria-label="Your project at a glance">
-          {featureCards.map(card => <ClientFeatureCard key={card.id} {...card} open={activeSection === card.id} onClick={() => openSection(card.id)} />)}
+          {featureCards.map(card => (
+            <ClientFeatureCard
+              key={card.id}
+              {...card}
+              minimal={IS_COMMERCIAL_DEPLOYMENT}
+              open={activeSection === card.id}
+              onClick={() => openSection(card.id)}
+            />
+          ))}
         </section>
         {summary.payments.available && summary.payments.balance > 0 && <section className="cp-payment-action cp-next-action" aria-label="Your next payment"><div><span className="cp-eyebrow">{summary.payments.next ? 'NEXT PAYMENT' : 'REMAINING BALANCE'}</span><h2>{money(summary.payments.next?.amount ?? summary.payments.balance)} <span>{summary.payments.next ? `${summary.payments.next.state} · ${date(summary.payments.next.dueDate)}` : 'Contact your studio for the schedule'}</span></h2><p>{summary.invoice.number} · Updated after your studio confirms receipt.</p></div><button type="button" className="cp-button" onClick={() => setPaymentRequest({})}><Wallet size={17} /> Make payment<ArrowUpRight size={15} /></button></section>}
         {visibility.showProgress !== false && <section
@@ -679,7 +725,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
         </section>}
         <div className="cp-workspace-heading">
           <span className="cp-eyebrow">YOUR PROJECT</span>
-          <h2>Every detail, in one place.</h2>
+          <h2>Every detail, {IS_COMMERCIAL_DEPLOYMENT ? <em>in one place.</em> : 'in one place.'}</h2>
           <p>
             Open a section to explore your documents, updates and project team.
           </p>
@@ -898,10 +944,11 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
         <span className="cp-chat-launcher-label">{chatOpen ? "Close support" : "Message studio"}</span>
       </button></>}
       <footer className="cp-footer">
-        {quote.studio.name} ·{" "}
-        {quote.studio.email && (
+        <span>{quote.studio.name}</span>
+        {quote.studio.email && <>
+          <span className="cp-footer-divider" aria-hidden="true"> · </span>
           <a href={`mailto:${quote.studio.email}`}>{quote.studio.email}</a>
-        )}
+        </>}
       </footer>
     </div>
   );

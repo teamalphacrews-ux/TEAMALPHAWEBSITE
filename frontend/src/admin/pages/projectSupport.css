@@ -288,3 +288,106 @@
 .support-message-list>article.studio{border-color:var(--studio-border)}
 .support-earlier{border:1px solid var(--studio-border);border-radius:999px;min-height:36px;padding:8px 14px;background:var(--studio-surface)}
 @media(max-width:700px){.support-composer textarea{font-size:16px}.support-context-links a{min-height:44px}.support-workspace{border-radius:20px}}
+
+/* Keep a message list visible beside its conversation on desktop. */
+.studio-marlo-workspace .support-workspace {
+  gap: 16px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+@media (min-width: 701px) {
+  .studio-marlo-workspace .support-workspace {
+    grid-template-columns: minmax(220px, 34%) minmax(0, 1fr);
+    min-height: min(620px, 72vh);
+  }
+}
+.studio-marlo-workspace :is(.support-inbox, .support-conversation) {
+  background: var(--studio-glass-bg);
+  border: 1px solid var(--studio-glass-border);
+  border-radius: 22px;
+  box-shadow: var(--studio-glass-shadow);
+  overflow: hidden;
+}
+.support-mail-filters {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--studio-border);
+}
+.support-mail-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--studio-muted);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font: 600 14px var(--studio-font);
+}
+.support-mail-filters button[aria-pressed="true"] {
+  color: var(--studio-text);
+  border-bottom-color: var(--studio-accent);
+}
+.support-mail-filters span {
+  border-radius: 99px;
+  padding: 1px 7px;
+  background: var(--studio-warning-surface);
+  color: var(--studio-accent-ink-text);
+}
+.studio-marlo-workspace .support-thread-list > button {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--studio-border);
+  transition: background-color 160ms var(--sx-flow-ease);
+}
+.studio-marlo-workspace .support-thread-list > button:hover,
+.studio-marlo-workspace .support-thread-list > button.selected { background: var(--studio-surface-2); }
+.studio-marlo-workspace .support-thread-list > button.selected { border-left-color: var(--studio-accent); }
+.studio-marlo-workspace .support-avatar {
+  width: 36px; height: 36px;
+  background: var(--studio-warning-surface); color: var(--studio-accent-ink-text);
+  font-weight: 700;
+}
+.studio-marlo-workspace .support-thread-list > button:nth-child(3n) .support-avatar {
+  background: var(--studio-surface-2); color: var(--studio-text);
+}
+.studio-marlo-workspace .support-thread-list strong { font-size: 14px; font-weight: 650; }
+.support-thread-subject {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  font-size: 13.5px;
+  color: var(--studio-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.studio-marlo-workspace .support-thread-list small {
+  max-width: none; margin-top: 3px; font-size: 12.5px;
+}
+.studio-marlo-workspace .support-empty > svg {
+  box-sizing: content-box; display: inline-block; padding: 12px; width: 20px; height: 20px;
+  background: var(--studio-surface-2); border-radius: 14px; color: var(--studio-text);
+}
+.studio-marlo-workspace .support-empty h3 { color: var(--studio-text); font-size: 17px; font-weight: 650; }
+.studio-marlo-workspace .support-empty p,
+.studio-marlo-workspace .support-message-list p { font-size: 14px; }
+
+/* The inbox and conversation each own their glass surface. */
+#sx-workspace-shell .support-workspace {
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+  overflow: visible;
+}
+#sx-workspace-shell :is(.support-inbox, .support-conversation) {
+  background: var(--studio-glass-highlight), var(--studio-glass-bg);
+  border: 1px solid var(--studio-glass-border);
+}
+#sx-workspace-shell .support-mail-filters button { min-inline-size: 44px; }
+@media (max-width: 700px) {
+  #sx-workspace-shell .support-workspace { min-height: 0; }
+  #sx-workspace-shell .support-thread-list { max-height: none; }
+}

@@ -1,0 +1,154 @@
+/* Shared commercial control contract. The existing material/semantic tokens own
+   appearance; this layer owns geometry, glyph scale and state feedback. */
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass {
+  --studio-control-height: 44px;
+  --studio-control-icon-size: 18px;
+  --studio-navigation-icon-size: 20px;
+  --studio-control-gap: 8px;
+  --studio-control-duration: 160ms;
+  --studio-control-ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+/* A glyph is a fixed-size drawing, not a percentage of a shrinking tile.
+   These important declarations clear the older personal icon-tile rules only. */
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-sidebar .studio-nav-item .studio-symbol-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px;
+  min-height: 22px;
+  flex: 0 0 22px !important;
+  overflow: visible;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  border: 0;
+  border-radius: 0;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-sidebar .studio-nav-item .studio-symbol-tile::before { display: none; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-sidebar .studio-nav-item .studio-symbol-tile > svg {
+  display: block;
+  width: var(--studio-navigation-icon-size) !important;
+  height: var(--studio-navigation-icon-size) !important;
+  min-width: var(--studio-navigation-icon-size);
+  min-height: var(--studio-navigation-icon-size);
+  flex: 0 0 var(--studio-navigation-icon-size);
+  color: inherit !important;
+  stroke: currentColor !important;
+  stroke-width: 1.8;
+  opacity: 1;
+  scale: 1;
+  transform: none;
+}
+
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-button,.reference-button,.ops-button,.qw-button,.qw-primary,.invoice-primary,.invoice-btn,.invoice-btn-secondary,.workspace-action-trigger) {
+  min-height: var(--studio-control-height);
+  gap: var(--studio-control-gap);
+  padding: 9px 16px;
+  border-radius: 12px;
+  font-size: 14px !important;
+  line-height: 1.4;
+  font-weight: 600;
+  text-decoration: none;
+  vertical-align: middle;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-icon-button,.reference-icon-button,.ops-icon-button,.qw-icon-button,.sx-task-icon,.studio-button.is-icon-only) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--studio-control-height);
+  height: var(--studio-control-height);
+  min-width: var(--studio-control-height);
+  min-height: var(--studio-control-height);
+  flex: 0 0 var(--studio-control-height);
+  padding: 0;
+  border-radius: 14px;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-project-view-control > button { min-height: var(--studio-control-height); font-size: 14px; }
+/* Clear older compact picker overrides without changing personal workspaces. */
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.saas-switcher-create .studio-button,.saas-invitation > .studio-button) {
+  min-height: var(--studio-control-height) !important;
+  font-size: 14px !important;
+  line-height: 1.4;
+  padding: 10px 14px !important;
+  gap: var(--studio-control-gap);
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.saas-switcher-add,.saas-switcher-manage) {
+  min-height: var(--studio-control-height);
+  font-size: 14px;
+  line-height: 1.4;
+  gap: var(--studio-control-gap);
+}
+/* The record-search control intentionally has a text-sized desktop footprint. */
+@media (min-width: 761px) {
+  html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-topbar .studio-record-search-trigger { width: auto; flex: 1 1 220px; max-width: 400px; padding: 0 14px; justify-content: flex-start; }
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-button,.reference-button,.ops-button,.qw-button,.qw-primary,.invoice-primary,.invoice-btn,.invoice-btn-secondary,.studio-icon-button,.reference-icon-button,.ops-icon-button,.qw-icon-button,.sx-task-icon) :is(svg.lucide,svg.studio-icon) {
+  width: var(--studio-control-icon-size) !important;
+  height: var(--studio-control-icon-size) !important;
+  min-width: var(--studio-control-icon-size);
+  min-height: var(--studio-control-icon-size);
+  flex: 0 0 var(--studio-control-icon-size);
+  stroke-width: 1.8;
+  opacity: 1;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-button,.reference-button,.ops-button,.qw-button,.qw-primary,.invoice-primary,.invoice-btn,.invoice-btn-secondary,.studio-icon-button,.reference-icon-button,.ops-icon-button,.qw-icon-button,.sx-task-icon,.studio-nav-item) {
+  transition: color var(--studio-control-duration) ease, background-color var(--studio-control-duration) ease, border-color var(--studio-control-duration) ease, box-shadow var(--studio-control-duration) ease;
+  translate: none;
+  scale: 1;
+  transform: none;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-button,.reference-button,.ops-button,.qw-button,.qw-primary,.invoice-primary,.invoice-btn,.invoice-btn-secondary,.studio-icon-button,.reference-icon-button,.ops-icon-button,.qw-icon-button,.sx-task-icon):not(:disabled):not([aria-disabled=true]):hover { filter: none; translate: none; scale: 1; transform: none; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-button,.reference-button,.ops-button,.qw-button,.qw-primary,.invoice-primary,.studio-icon-button,.reference-icon-button,.ops-icon-button,.qw-icon-button,.sx-task-icon):disabled { opacity: 1; cursor: not-allowed; translate: none; scale: 1; transform: none; }
+/* Preserve label and glyph contrast on unavailable secondary actions.
+   The subdued fill, border and flat surface distinguish them from active controls. */
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-button,.studio-icon-button,.reference-icon-button,.ops-icon-button,.qw-icon-button,.sx-task-icon,.invoice-btn-secondary):disabled:not(:is(.primary,.danger,.is-success,[data-variant=primary],[data-variant=destructive])) {
+  color: var(--studio-muted);
+  -webkit-text-fill-color: currentColor;
+  background: var(--studio-surface-2) !important;
+  border-color: var(--studio-border) !important;
+  box-shadow: none;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-button.danger,.studio-icon-button.danger,.reference-button.danger,.ops-button.danger,.ops-icon-button.danger,.studio-control-button[data-variant=destructive],.sx-task-icon[aria-label^="Delete"],.qw-primary.qw-primary[data-document-intent=destructive]) {
+  color: var(--studio-danger-ink) !important;
+  -webkit-text-fill-color: var(--studio-danger-ink) !important;
+  background: var(--studio-danger-surface) !important;
+  border-color: var(--studio-danger-border) !important;
+}
+#sx-workspace-shell :is(.reference-text-button,.qw-text-button,.invoice-text-action,.settings-text-button):disabled {
+  opacity: 1;
+  color: var(--studio-muted) !important;
+  -webkit-text-fill-color: currentColor;
+  cursor: not-allowed;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(button,a,input,select,textarea,summary):focus-visible { outline: 2px solid var(--studio-focus); outline-offset: 3px; }
+
+/* Native checkboxes retain their semantics and full hit target. The switch
+   input overlays the track, instead of drifting to the end of the On/Off text. */
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-switch-control { min-height: 44px; gap: 10px; flex-shrink: 0; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-switch-control > input { inset-inline-start: 0; inset-inline-end: auto; top: 50%; width: 52px; height: 44px; transform: translateY(-50%); z-index: 2; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-switch-control > .studio-switch-track { flex: 0 0 52px; width: 52px; height: 28px; min-width: 52px; border-radius: 999px; transition: background-color 180ms ease, border-color 180ms ease; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-switch-control > .studio-switch-track::after { width: 22px; height: 22px; border-radius: 50%; transition: transform 180ms var(--studio-control-ease), background-color 180ms ease; }
+/* Full settings/customizer rows put their switch at the trailing edge. Grid
+   overlays the native input on that exact track without guessing row padding. */
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.settings-toggle,.settings-quick-theme,.overview-card-toggle).studio-switch-control { display: grid; grid-template-columns: auto minmax(0,1fr) 52px; align-items: center; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .settings-toggle.studio-switch-control { grid-template-columns: minmax(0,1fr) auto 52px; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.settings-toggle,.settings-quick-theme,.overview-card-toggle).studio-switch-control > :is(input,.studio-switch-track) { grid-column: 3; grid-row: 1; justify-self: center; align-self: center; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.settings-toggle,.settings-quick-theme,.overview-card-toggle).studio-switch-control > input { position: relative; inset: auto; transform: none; margin: 0; }
+
+/* The route and record views sequence their own arrivals. Keep the older
+   generic heading fade from running over the commercial title mask. */
+#sx-workspace-shell :is(.studio-page-heading, .studio-metric) { animation: none; }
+
+@media (max-width: 760px) {
+  html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-page-heading,.project-contact-heading,.reference-heading,.ops-page-heading,.qw-editor-top,.invoice-top-actions) { row-gap: 16px; }
+  html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-search,.reference-search,.studio-field,.ops-field) :is(input,select,textarea) { font-size: 16px; }
+  html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-topbar .studio-record-search-trigger { flex: 0 0 44px; width: 44px; padding: 0; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-commercial-glass *, .studio-commercial-glass *::before, .studio-commercial-glass *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+html[data-studio-motion=reduced] .studio-commercial-glass *, html[data-studio-motion=reduced] .studio-commercial-glass *::before, html[data-studio-motion=reduced] .studio-commercial-glass *::after,
+.studio-commercial-glass[data-studio-motion=reduced] *, .studio-commercial-glass[data-studio-motion=reduced] *::before, .studio-commercial-glass[data-studio-motion=reduced] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

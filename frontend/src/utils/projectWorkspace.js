@@ -1,4 +1,4 @@
-import {eventOnStudioDay} from './studioTime.js';
+import {eventOnStudioDay, eventStartDay, hasAllDayRange} from './studioTime.js';
 export const recordId = value => String(value?._id || value || '');
 export function projectLeadRecord(project, leads) {
   if (!project) return null;
@@ -28,3 +28,13 @@ export const directionsHref = value => typeof value==='string' && value.trim() ?
 export function deliveryHref(value) {try {const url=new URL(value);return url.protocol==='https:'&&!url.username&&!url.password?url.href:null;}catch{return null;}}
 export function validDay(value) {return typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value+'T12:00:00Z')) && new Date(value+'T12:00:00Z').toISOString().slice(0,10)===value;}
 export function shootEvents(events, day, timezone) {return events.filter(event=>eventOnStudioDay(event,day,timezone)).sort((a,b)=>Date.parse(a.start)-Date.parse(b.start));}
+
+export function nextShootDay(events, afterDay, timezone) {
+  let next = '';
+  for (const event of events) {
+    if (!hasAllDayRange(event) && !(Date.parse(event.end) > Date.parse(event.start))) continue;
+    const day = eventStartDay(event, timezone);
+    if (day > afterDay && (!next || day < next)) next = day;
+  }
+  return next;
+}

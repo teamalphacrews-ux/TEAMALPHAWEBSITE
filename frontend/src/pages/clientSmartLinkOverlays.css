@@ -1,0 +1,181 @@
+/* The payment dialog is portaled to body. Both overlays follow the active
+   commercial Smart Link's appearance, including when the device theme differs. */
+@media screen {
+  body:has(.client-project.studio-client-radiance[data-theme]) {
+    --smart-overlay-panel: #fcfaf7;
+    --smart-overlay-well: #f3efe9;
+    --smart-overlay-field: #fffefd;
+    --smart-overlay-ink: #211e1b;
+    --smart-overlay-muted: #5d5650;
+    --smart-overlay-line: #d6cec4;
+    --smart-overlay-control: #94877a;
+    --smart-overlay-accent: #845004;
+    --smart-overlay-tint: #f8e7d0;
+    --smart-overlay-error: #852d22;
+    --smart-overlay-error-fill: #ffede7;
+    --smart-overlay-shadow: 0 18px 64px #261d1640;
+    --smart-overlay-action: var(--sx-public-action, linear-gradient(135deg, #f8c062, #f4a43a 52%, #ef8a2a));
+    --smart-overlay-action-ink: #1c1304;
+    --smart-overlay-cover: linear-gradient(100deg, #0c0b0bee 8%, #171016c9 58%, #0a090b66),
+      url('/assets/studio-x-os/media/20261115/fluid-hero-poster-c2fb6664b63b.jpg') center 55% / cover #171417;
+  }
+
+  body:has(.client-project.studio-client-radiance[data-theme="dark"]) {
+    --smart-overlay-panel: #191819;
+    --smart-overlay-well: #222123;
+    --smart-overlay-field: #161516;
+    --smart-overlay-ink: #f8f5f1;
+    --smart-overlay-muted: #c0b9b3;
+    --smart-overlay-line: #454144;
+    --smart-overlay-control: #807978;
+    --smart-overlay-accent: #ffbd70;
+    --smart-overlay-tint: #372b23;
+    --smart-overlay-error: #ffb9ab;
+    --smart-overlay-error-fill: #422b27;
+    --smart-overlay-shadow: 0 18px 64px #0009;
+  }
+
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] {
+    & .cp-chat-launcher {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      width: auto;
+      height: 48px;
+      padding-inline: 18px;
+      border: 1px solid rgb(97 60 8 / 45%);
+      border-radius: 999px;
+      color: var(--smart-overlay-action-ink);
+      background: var(--smart-overlay-action);
+      box-shadow: 0 3px 14px #16110b25;
+    }
+
+    & .cp-chat-launcher-label { display: inline; font-size: 14px; font-weight: 650; }
+    & .cp-chat-launcher svg { width: 19px; height: 19px; }
+    & .cp-chat-launcher:hover { background: #ffc570; }
+
+    & #project-support {
+      width: min(398px, calc(100vw - 24px));
+      border: 1px solid var(--smart-overlay-line);
+      border-radius: 20px;
+      color: var(--smart-overlay-ink);
+      background: var(--smart-overlay-panel);
+      box-shadow: var(--smart-overlay-shadow);
+
+      & .cp-chat-heading {
+        padding: 16px;
+        color: #fff;
+        border-color: #343136;
+        background: var(--smart-overlay-cover);
+      }
+      & .cp-chat-heading h2 { color: #fffaf5; font-size: 18px; line-height: 1.25; letter-spacing: -.025em; overflow-wrap: anywhere; }
+      & .cp-chat-heading p { margin-top: 4px; color: #e6ded8; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+      & .cp-chat-avatar { border-radius: 50%; background: #fff; border-color: #ffffff70; }
+      & .cp-chat-close { border-radius: 50%; color: #fff; background: #201e21e6; border-color: #a29992; }
+      & .cp-messages { background: var(--smart-overlay-well); scrollbar-color: var(--smart-overlay-control) transparent; }
+      & .cp-message { background: var(--smart-overlay-field); border-color: var(--smart-overlay-line); }
+      & .cp-message.client { background: var(--smart-overlay-tint); }
+      & .cp-message strong { color: var(--smart-overlay-ink); font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
+      & .cp-message p { color: var(--smart-overlay-ink); font-size: 15px; line-height: 1.55; }
+      & .cp-message time, & .cp-compose small { color: var(--smart-overlay-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+      & .cp-support-empty > svg { color: var(--smart-overlay-accent); }
+      & .cp-support-empty h3 { color: var(--smart-overlay-ink); font-size: 20px; font-weight: 600; letter-spacing: -.025em; }
+      & .cp-support-empty p { color: var(--smart-overlay-muted); font-size: 15px; line-height: 1.6; }
+      & .cp-earlier { color: var(--smart-overlay-accent); font-size: 14px; text-decoration: underline; text-underline-offset: .2em; }
+      & .cp-compose { background: var(--smart-overlay-panel); border-color: var(--smart-overlay-line); }
+      & .cp-compose > label { font-weight: 650; color: var(--smart-overlay-ink); }
+      & .cp-compose textarea { border-color: var(--smart-overlay-control); color: var(--smart-overlay-ink); background: var(--smart-overlay-field); }
+      & .cp-compose textarea::placeholder { color: var(--smart-overlay-muted); opacity: 1; }
+      & .cp-compose .cp-button {
+        min-height: 44px;
+        padding: 10px 18px;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 650;
+        color: var(--smart-overlay-action-ink) !important;
+        background: var(--smart-overlay-action);
+        box-shadow: none;
+        backdrop-filter: none;
+      }
+      & .cp-compose .cp-button:hover:enabled { background: #ffc570; }
+      & .cp-compose .cp-error { color: var(--smart-overlay-error); border: 1px solid currentColor; background: var(--smart-overlay-error-fill); font-size: 14px; }
+      & :is(.cp-compose .cp-button, textarea, .cp-earlier):disabled {
+        color: var(--smart-overlay-disabled, var(--smart-overlay-muted)) !important;
+        background: var(--smart-overlay-well);
+        border-color: var(--smart-overlay-line);
+        opacity: 1;
+      }
+    }
+    & :is(.cp-chat-launcher, #project-support button, #project-support textarea):focus-visible { outline: 3px solid var(--smart-overlay-accent); outline-offset: 3px; }
+    & #project-support .cp-chat-close:focus-visible { outline-color: #ffc570; }
+  }
+
+  body:has(.client-project.cp-dashboard.studio-client-radiance[data-theme]) .cmp-payment-overlay[data-theme] {
+    background: rgb(7 6 8 / 62%);
+    font-family: Urbanist, system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--smart-overlay-ink);
+    & .cmp-payment-dialog {
+      border-radius: 22px;
+      border-color: var(--smart-overlay-control);
+      box-shadow: var(--smart-overlay-shadow);
+      background: var(--smart-overlay-panel);
+    }
+    & .cmp-payment-header { background: var(--smart-overlay-cover); border-color: #3b3839; }
+    & .cmp-payment-header h2 { color: #fffaf5; font-weight: 600; letter-spacing: -.04em; }
+    & .cmp-payment-dialog .cmp-payment-eyebrow { font-size: 11px; font-weight: 650; color: #ffd196; letter-spacing: .1em; }
+    & .cmp-payment-dialog .cmp-payment-close { background: #201e21e6; color: #fff; border-color: #a29992; }
+    & .cmp-payment-dialog :is(.cmp-payment-summary,.cmp-payment-copy-row,.cmp-payment-manual,.cmp-payment-footer) { background: var(--smart-overlay-well); border-color: var(--smart-overlay-line); }
+    & .cmp-payment-dialog .cmp-payment-method { background: var(--smart-overlay-field); border-color: var(--smart-overlay-line); }
+    & .cmp-payment-dialog :is(.cmp-payment-summary,.cmp-payment-method) { border-radius: 16px; }
+    & .cmp-payment-summary .cmp-payment-reference { border-color: var(--smart-overlay-line); }
+    & .cmp-payment-dialog :is(.cmp-payment-summary strong,.cmp-payment-method-heading h3,.cmp-payment-copy-row code,.cmp-payment-bank-details,.cmp-payment-manual label) { color: var(--smart-overlay-ink); }
+    & .cmp-payment-dialog .cmp-payment-amount strong { font-weight: 650; }
+    & .cmp-payment-dialog :is(.cmp-payment-description,.cmp-payment-method-heading p,.cmp-payment-summary span,.cmp-payment-help,.cmp-payment-footer > span,.cmp-payment-manual p) { color: var(--smart-overlay-muted); }
+    & .cmp-payment-dialog :is(.cmp-payment-copy,.cmp-payment-secondary,.cmp-payment-done) { color: var(--smart-overlay-ink); background: var(--smart-overlay-field); border-color: var(--smart-overlay-control); box-shadow: none; }
+    & .cmp-payment-dialog .cmp-payment-action:not(.cmp-payment-secondary) { color: var(--smart-overlay-action-ink); background: var(--smart-overlay-action); border-color: transparent; }
+    & .cmp-payment-dialog .cmp-payment-action:not(.cmp-payment-secondary):hover { background: #ffc570; }
+    & .cmp-payment-dialog :is(.cmp-payment-secondary,.cmp-payment-copy,.cmp-payment-done):hover { background: var(--smart-overlay-well); border-color: var(--smart-overlay-accent); }
+    & .cmp-payment-dialog :is(.cmp-payment-action,.cmp-payment-done) { font-size: 15px; font-weight: 650; border-radius: 999px; }
+    & .cmp-payment-dialog .cmp-payment-method-icon { border-radius: 50%; color: var(--smart-overlay-accent); background: var(--smart-overlay-tint); border-color: var(--smart-overlay-line); }
+    & .cmp-payment-dialog .cmp-payment-note { margin-top: 16px; padding: 12px 14px; background: var(--smart-overlay-tint); border-radius: 14px; }
+    & .cmp-payment-dialog :is(.cmp-payment-note p,.cmp-payment-feedback,.cmp-payment-note > svg) { color: var(--smart-overlay-ink); }
+    & .cmp-payment-dialog .cmp-payment-unavailable { background: transparent; }
+    & .cmp-payment-manual textarea { background: var(--smart-overlay-field); color: var(--smart-overlay-ink); border-color: var(--smart-overlay-control); }
+    & .cmp-payment-dialog :is(button,a,textarea):focus-visible { outline: 3px solid var(--smart-overlay-accent); outline-offset: 2px; }
+    & .cmp-payment-dialog .cmp-payment-close:focus-visible { outline-color: #ffc570; }
+  }
+}
+
+@media screen and (max-width: 680px) {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-chat-launcher { width: calc(100% - 32px); }
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  body:has(.client-project.studio-client-radiance) :is(#project-support, .cp-chat-launcher, .cmp-payment-dialog),
+  body:has(.client-project.studio-client-radiance) :is(#project-support, .cmp-payment-dialog) :is(button,a,textarea) { animation: none; transition: none; }
+}
+
+@media screen and (forced-colors: active) {
+  body:has(.client-project.cp-dashboard.studio-client-radiance[data-theme]) {
+    --smart-overlay-panel: Canvas;
+    --smart-overlay-well: Canvas;
+    --smart-overlay-field: Field;
+    --smart-overlay-ink: CanvasText;
+    --smart-overlay-muted: CanvasText;
+    --smart-overlay-line: CanvasText;
+    --smart-overlay-control: ButtonText;
+    --smart-overlay-accent: Highlight;
+    --smart-overlay-tint: Canvas;
+    --smart-overlay-shadow: none;
+    --smart-overlay-action: ButtonFace;
+    --smart-overlay-action-ink: ButtonText;
+    --smart-overlay-error: CanvasText;
+    --smart-overlay-error-fill: Canvas;
+    --smart-overlay-cover: Canvas;
+    --smart-overlay-disabled: GrayText;
+
+    & :is(#project-support button, .cmp-payment-dialog button, .cmp-payment-dialog a, .cp-chat-launcher):focus-visible { outline-color: Highlight; }
+  }
+}

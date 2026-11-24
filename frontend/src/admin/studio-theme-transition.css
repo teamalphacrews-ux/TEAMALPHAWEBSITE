@@ -1,3 +1,45 @@
+html.studio-theme-reveal::view-transition { pointer-events: none; }
+html.studio-theme-reveal::view-transition-group(root),
+html.studio-theme-reveal::view-transition-old(root),
+html.studio-theme-reveal::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+html.studio-theme-reveal :where(.studio-app, .studio-app *) {
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+#sx-workspace-shell .studio-topbar button.sx-desk-appearance {
+  position: relative;
+  isolation: isolate;
+  direction: ltr;
+  width: 66px;
+  min-width: 66px;
+  gap: 0;
+  padding: 2px;
+}
+#sx-workspace-shell .studio-topbar .sx-desk-appearance::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: calc(50% - 15px);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--desk-selected);
+  pointer-events: none;
+}
+#sx-workspace-shell .studio-topbar .sx-desk-appearance[data-theme-choice=dark]::before { transform: translateX(30px); }
+#sx-workspace-shell .studio-topbar button.sx-desk-appearance[data-theme-choice] span {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-studio-motion=reduced]) #sx-workspace-shell .sx-desk-appearance::before {
+    transition: transform 500ms cubic-bezier(.333333, 1.6, .666667, 1);
+  }
+}
+
 /* Colors follow the live floating wave without replacing existing card animations. */
 html.studio-theme-fade :is(.studio-app,.studio-sidebar,.studio-workspace,.studio-main,.studio-topbar,.studio-card,.studio-metric,.studio-modal,.studio-input,.studio-button,.studio-nav-item,.settings-pref-section,.studio-crm-overlay,.studio-crm-detail-card,.qw-page,.invoice-editor) {
   transition-property: background-color, color, border-color, box-shadow;

@@ -1,4 +1,6 @@
 import { useAuth } from '../../../context/AuthContext';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
+import { canWriteWorkspaceModule } from '../../../utils/workspaceActions';
 import { hasModuleAccess } from '../../../utils/moduleAccess';
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +26,7 @@ import "../../pages/referenceContacts.css";
 import { contactCountries } from "./countries";
 import { WorkspaceActionMenu } from "../operations/WorkspaceActionMenu";
 
-export function ContactForm({ record, onClose, onSaved }) {
+export function ContactForm({ record, onClose, onSaved, title, submitLabel }) {
   const [form, setForm] = useState({
     contactType: "Client",
     firstName: "",
@@ -68,12 +70,12 @@ export function ContactForm({ record, onClose, onSaved }) {
   return (
     <div className="reference-contact-modal">
       <WorkspaceDialog
-        title={record ? "Edit contact" : "Add contact"}
+        title={title || (record ? "Edit contact" : "Add contact")}
         onClose={onClose}
         onSubmit={save}
         busy={busy}
         error={error}
-        submitLabel={record ? "Save contact" : "Add contact"}
+        submitLabel={submitLabel || (record ? "Save contact" : "Add contact")}
       >
         <WorkspaceField
           label="Contact type"
@@ -373,6 +375,7 @@ export function ContactDocumentForm({
   contact,
   projectId,
   record,
+  readOnly = false,
   onClose,
   onSaved,
 }) {
@@ -386,7 +389,7 @@ export function ContactDocumentForm({
     setForm((current) => ({ ...current, [name]: value }));
   const save = async (event) => {
     event.preventDefault();
-    if (busy) return;
+    if (busy || readOnly) return;
     setBusy(true);
     setError("");
     try {
@@ -408,6 +411,12 @@ export function ContactDocumentForm({
       setBusy(false);
     }
   };
+  if (readOnly) return (
+    <WorkspaceDialog title={form.title} onClose={onClose} onSubmit={event => event.preventDefault()}
+      footer={<button type="button" className="studio-button" onClick={onClose}>Close</button>}>
+      <p className="reference-note-text workspace-wide">{form.content || 'No content yet.'}</p>
+    </WorkspaceDialog>
+  );
   return (
     <WorkspaceDialog
       title={`${record ? "Edit" : "Create"} ${type.toLowerCase()} draft`}
@@ -492,9 +501,13 @@ export function ContactCreateMenu({
     },
     { name: "Message", icon: Mail, action: () => onDocument("Message") },
   ];
+  const available = options.filter(({ name, action }) => action && (IS_COMMERCIAL_DEPLOYMENT
+    ? canWriteWorkspaceModule(user, optionModules[name])
+    : hasModuleAccess(user, optionModules[name])));
+  if (!available.length) return null;
   return (
     <WorkspaceActionMenu label="Create new" className="reference-create-menu" primary>
-      {options.filter(option => option.action && hasModuleAccess(user, optionModules[option.name])).map(option => {
+      {available.map(option => {
         const Icon = option.icon;
         return <button key={option.name} onClick={option.action}><Icon size={16} aria-hidden="true" />{option.name}</button>;
       })}

@@ -16,6 +16,7 @@ import {
   recordError,
 } from "../components/operations/workspaceData";
 import { messageRequestId } from "../../utils/clientProjectData";
+import { IS_COMMERCIAL_DEPLOYMENT } from "../../saas/release";
 import "./projectSupport.css";
 
 export default function ProjectSupport() {
@@ -23,6 +24,7 @@ export default function ProjectSupport() {
   const [search, setSearch] = useSearchParams();
   const [threads, setThreads] = useState([]),
     [query, setQuery] = useState("");
+  const [unreadOnly, setUnreadOnly] = useState(false);
   const selected = search.get("quote") || "";
   const [refresh, setRefresh] = useState(0);
   const [detail, setDetail] = useState(null),
@@ -35,8 +37,18 @@ export default function ProjectSupport() {
     [olderBusy, setOlderBusy] = useState(false);
   const requestId = useRef(""),
     firstList = useRef(true);
+  const conversationHeading = useRef(null);
+  const inboxList = useRef(null);
+  const focusRequest = useRef(null);
   const text = draft.id === selected ? draft.text : "";
   const current = detail?.id === selected ? detail.data : null;
+  useEffect(() => {
+    const request = focusRequest.current;
+    if (!request || request.to !== selected) return;
+    focusRequest.current = null;
+    const target = selected ? conversationHeading.current : Array.from(inboxList.current?.querySelectorAll('button') || []).find(row => row.dataset.threadId === request.from);
+    target?.focus();
+  }, [selected]);
   useEffect(() => {
     let active = true,
       fetching = false;
@@ -48,7 +60,9 @@ export default function ProjectSupport() {
         if (active) {
           setThreads(data);
           if (firstList.current) {
-            if (window.innerWidth > 700 && data[0]?._id)
+            // Opening a thread marks its messages as read. The guided inbox
+            // waits for an explicit choice and still honors direct links.
+            if (!IS_COMMERCIAL_DEPLOYMENT && window.innerWidth > 700 && data[0]?._id)
               setSearch(current => current.get("quote") ? current : { quote: data[0]._id }, { replace: true });
             firstList.current = false;
           }
@@ -141,6 +155,13 @@ export default function ProjectSupport() {
     };
   }, [selected, refresh]);
   const choose = (id) => {
+    if (IS_COMMERCIAL_DEPLOYMENT) {
+      if (id === selected) {
+        conversationHeading.current?.focus();
+        return;
+      }
+      focusRequest.current = { from: selected, to: id };
+    }
     setSearch(id ? { quote: id } : {}, { replace: true });
     setDraft({ id, text: "" });
     setSendError("");
@@ -231,17 +252,38 @@ export default function ProjectSupport() {
       setOlderBusy(false);
     }
   };
-  const filtered = threads.filter((thread) =>
-    `${thread.clientName} ${thread.title} ${thread.documentNumber}`
-      .toLowerCase()
-      .includes(query.trim().toLowerCase()),
+  const unreadThreads = threads.filter(thread => thread.clientUnread > 0);
+  const filtered = (unreadOnly ? unreadThreads : threads).filter(thread =>
+    [thread.clientName, thread.title, thread.documentNumber]
+      .filter(Boolean).join(" ").toLowerCase().includes(query.trim().toLowerCase()),
   );
+  const canSuggestThread = IS_COMMERCIAL_DEPLOYMENT && !loading && !error && !sending &&
+    (!selected || (!text && !threadError && current?.messages.at(-1)?.author === "studio"));
+  const nextUnread = canSuggestThread && filtered.find(thread => thread._id && thread._id !== selected && thread.clientUnread > 0);
+  const clientMessage = canSuggestThread && !selected && !nextUnread && filtered.find(thread => thread._id && thread.latestMessage?.author === "client");
+  const nextThread = nextUnread || clientMessage;
+  let description = "Project questions and replies, connected to each client’s shared project link.";
+  if (nextUnread) {
+    const count = Number(nextUnread.clientUnread);
+    description = `${count} unread ${count === 1 ? "message" : "messages"} from ${nextUnread.clientName || "a client"} about ${nextUnread.title || "their project"}.`;
+  } else if (clientMessage) {
+    description = `${clientMessage.clientName || "The client"} wrote the last message in ${clientMessage.title || "this project conversation"}.`;
+  }
   return (
     <div className="project-support">
-      <WorkspaceHeader title="Client support" description="Project questions and replies, connected to each client’s shared project link.">
+      <WorkspaceHeader title={IS_COMMERCIAL_DEPLOYMENT ? "Inbox" : "Client support"} description={description}>
+        {nextThread && <button type="button" className="studio-button primary" onClick={() => choose(nextThread._id)}><MessageSquare size={15} />{nextUnread ? "Read unread messages" : "Review message"}</button>}
         <button type="button" className="studio-button" onClick={() => setRefresh(value => value + 1)} disabled={loading || sending}><RefreshCw size={15} />Refresh</button>
       </WorkspaceHeader>
       <WorkspaceError error={error} retry={() => setRefresh(value => value + 1)} />
+      {IS_COMMERCIAL_DEPLOYMENT && (
+        <div className="support-mail-filters" role="group" aria-label="Filter conversations">
+          <button type="button" aria-pressed={!unreadOnly} onClick={() => setUnreadOnly(false)}>All</button>
+          <button type="button" aria-pressed={unreadOnly} onClick={() => setUnreadOnly(true)}>
+            Unread <span>{unreadThreads.length}</span>
+          </button>
+        </div>
+      )}
       <div className={"support-workspace" + (selected ? " has-thread" : "") + (!loading && !filtered.length && !selected ? " is-empty" : "")}>
         <aside className="support-inbox">
           <label className="studio-search">
@@ -253,7 +295,7 @@ export default function ProjectSupport() {
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
-          <div className="support-thread-list">
+          <div className="support-thread-list" ref={inboxList}>
             {loading ? (
               <p className="support-empty" role="status">
                 Loading conversations…
@@ -262,6 +304,7 @@ export default function ProjectSupport() {
               filtered.map((thread) => (
                 <button
                   key={thread._id}
+                  data-thread-id={thread._id}
                   className={thread._id === selected ? "selected" : ""}
                   disabled={sending}
                   onClick={() => choose(thread._id)}
@@ -276,9 +319,12 @@ export default function ProjectSupport() {
                   </span>
                   <span>
                     <strong>{thread.clientName}</strong>
+                    {IS_COMMERCIAL_DEPLOYMENT && thread.title && (
+                      <span className="support-thread-subject">{thread.title}</span>
+                    )}
                     <small>
                       {thread.latestMessage?.text ||
-                        thread.title ||
+                        (!IS_COMMERCIAL_DEPLOYMENT && thread.title) ||
                         "No messages yet"}
                     </small>
                   </span>
@@ -288,9 +334,9 @@ export default function ProjectSupport() {
             ) : (
               <div className="support-empty">
                 <MessageSquare size={28} />
-                <h3>{query.trim() ? "No matching conversations" : "No conversations yet"}</h3>
+                <h3>{query.trim() ? "No matching conversations" : unreadOnly ? "You’re all caught up" : "No conversations yet"}</h3>
                 <p>
-                  {query.trim() ? "Try another client name or clear your search." : "Accepted quotes appear here. Clients can message you from the same project link."}
+                  {query.trim() ? "Try another client name or clear your search." : unreadOnly ? "New client replies will appear here." : "Accepted quotes appear here. Clients can message you from the same project link."}
                 </p>
               </div>
             )}
@@ -312,8 +358,8 @@ export default function ProjectSupport() {
                   <ArrowLeft size={18} />
                 </button>
                 <div>
-                  <h2>
-                    {current?.quote.clientName || "Loading conversation…"}
+                  <h2 ref={conversationHeading} tabIndex={-1}>
+                    {current?.quote.clientName || threads.find(thread => thread._id === selected)?.clientName || "Client conversation"}
                   </h2>
                   <p>{current?.quote.title}</p>
                 </div>
@@ -388,7 +434,7 @@ export default function ProjectSupport() {
                 )}
               </div>
               <form className="support-composer" onSubmit={send} aria-busy={sending}>
-                <label htmlFor="studio-support-reply">Reply to client</label>
+                <label htmlFor="studio-support-reply">{IS_COMMERCIAL_DEPLOYMENT && current?.quote.clientName ? "Reply to " + current.quote.clientName : "Reply to client"}</label>
                 <textarea
                   id="studio-support-reply"
                   disabled={sending || !current}
@@ -424,7 +470,7 @@ export default function ProjectSupport() {
           ) : (
             <div className="support-empty">
               <MessageSquare size={34} />
-              <h3>One conversation per project</h3>
+              <h3>{IS_COMMERCIAL_DEPLOYMENT ? "Pick a conversation" : "One conversation per project"}</h3>
               <p>Select a client to read their messages and reply.</p>
             </div>
           )}

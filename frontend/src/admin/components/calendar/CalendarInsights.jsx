@@ -1,30 +1,28 @@
 import StudioSelect from '../common/StudioSelect';
 import { useState } from "react";
-import { calendarMonthLoad } from "./calendarData";
+import { IS_COMMERCIAL_DEPLOYMENT } from "../../../saas/release";
 import "../operations/studioInsights.css";
 
 export default function CalendarInsights({
-  events,
-  month,
+  monthLoad,
   selected,
   onSelect,
   loading,
-  timezone,
-  formatDate,
+  dayLabels,
 }) {
   const {
     days,
     events: monthEvents,
     activeDays,
     peak,
-  } = calendarMonthLoad(events, month, timezone);
-  const dayLabel = day => formatDate ? formatDate(day.key) : day.label;
+  } = monthLoad;
   const [hovered, setHovered] = useState(null);
   const selectedIndex = Math.max(
     0,
     days.findIndex((day) => day.key === selected),
   );
   const active = days[hovered ?? selectedIndex] || days[0];
+  const firstWeekday = (new Date(days[0].key + "T12:00:00Z").getUTCDay() + 6) % 7 + 1;
   const focusDay = (event, index) => {
     const directions = {
       ArrowLeft: index - 1,
@@ -32,6 +30,10 @@ export default function CalendarInsights({
       Home: 0,
       End: days.length - 1,
     };
+    if (getComputedStyle(event.currentTarget.parentElement).gridAutoFlow === "row") {
+      directions.ArrowUp = index - 7;
+      directions.ArrowDown = index + 7;
+    }
     if (!Object.hasOwn(directions, event.key)) return;
     event.preventDefault();
     const next = Math.max(0, Math.min(days.length - 1, directions[event.key]));
@@ -66,12 +68,12 @@ export default function CalendarInsights({
           >
             {days.map((day) => (
               <option key={day.key} value={day.key}>
-                {dayLabel(day)}
+                {dayLabels.get(day.key)}
               </option>
             ))}
           </StudioSelect>
           <div className="studio-calendar-load-value" aria-live="polite">
-            <strong>{dayLabel(active)}</strong>
+            <strong>{dayLabels.get(active.key)}</strong>
             <span>
               {loading ? "—" : active.count}{" "}
               {active.count === 1 ? "event" : "events"}
@@ -83,7 +85,11 @@ export default function CalendarInsights({
         className="studio-calendar-load"
         role="group"
         aria-label="Events per day. Use arrow keys to inspect dates."
+        style={IS_COMMERCIAL_DEPLOYMENT ? { "--load-first-weekday": firstWeekday } : undefined}
       >
+        {IS_COMMERCIAL_DEPLOYMENT && ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(label =>
+          <span key={label} className="calendar-load-weekday" aria-hidden="true">{label}</span>
+        )}
         {days.map((day, index) => (
           <button
             type="button"
@@ -91,8 +97,8 @@ export default function CalendarInsights({
             key={day.key}
             tabIndex={index === selectedIndex ? 0 : -1}
             aria-pressed={day.key === selected}
-            aria-label={`${dayLabel(day)}: ${day.count} ${day.count === 1 ? "event" : "events"}`}
-            title={`${dayLabel(day)}: ${day.count} events`}
+            aria-label={`${dayLabels.get(day.key)}: ${day.count} ${day.count === 1 ? "event" : "events"}`}
+            title={`${dayLabels.get(day.key)}: ${day.count} events`}
             onFocus={() => setHovered(index)}
             onBlur={() => setHovered(null)}
             onPointerEnter={() => setHovered(index)}
@@ -109,11 +115,9 @@ export default function CalendarInsights({
                   day.count && peak ? `${(day.count / peak) * 100}%` : "2px",
               }}
             />
-            <small>
-              {index === 0 || index === days.length - 1 || ((index + 1) % 5 === 0 && index < days.length - 3)
-                ? day.day
-                : ""}
-            </small>
+            <small>{index === 0 || index === days.length - 1 || ((index + 1) % 5 === 0 && index < days.length - 3)
+              ? day.day : IS_COMMERCIAL_DEPLOYMENT && <span className="calendar-load-extra-date">{day.day}</span>}</small>
+            {IS_COMMERCIAL_DEPLOYMENT && day.count > 0 && <span className="calendar-load-count" aria-hidden="true">{day.count}</span>}
           </button>
         ))}
       </div>

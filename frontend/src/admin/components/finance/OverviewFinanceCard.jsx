@@ -1,8 +1,9 @@
 import StudioAppIcon from '../common/StudioAppIcon';
+import WorkdeskNumber from '../overview/WorkdeskNumber';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, RefreshCw, Wallet } from 'lucide-react';
+import { ArrowUpRight, CreditCard, RefreshCw, Wallet } from 'lucide-react';
 import API from '../../../utils/apiConfig';
 import { overviewFinanceTotals } from './overviewFinanceData';
 import { useStudioPreferences } from '../common/StudioPreferences';
@@ -11,7 +12,7 @@ import { studioText } from '../../../utils/studioTranslations';
 import { useStudioIdentity } from '../../../utils/studioIdentity';
 import { studioTimezone } from '../../../utils/studioTime';
 
-export default function OverviewFinanceCard({ remove, refreshKey, motionActive = false }) {
+export default function OverviewFinanceCard({ remove, refreshKey, motionActive = false, workdesk = false }) {
   const { identity } = useStudioIdentity();
   const { preferences } = useStudioPreferences();
   const timezone = studioTimezone(identity?.timezone);
@@ -38,6 +39,14 @@ export default function OverviewFinanceCard({ remove, refreshKey, motionActive =
   const loading = result?.key !== key;
   const totals = !loading && !result.error ? result.data : null;
   const value = name => totals ? formatWorkspaceNumber(totals[name], preferences, { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }) : '—';
+  if (workdesk) return <section className="sx-desk-account" data-overview-card="financePulse" aria-label="Studio account" aria-busy={loading}>
+    <header><span><CreditCard size={15}/>Studio account</span><div>{remove}<Link to="/admin/finance" aria-label="Open finance"><ArrowUpRight size={15}/></Link></div></header>
+    <p className="sx-desk-account-total"><strong><WorkdeskNumber value={totals?.netProfit} numberFormat={preferences.numberFormat} currency="INR"/></strong><small>Net profit</small></p>
+    <dl><div><dt>Upcoming payments</dt><dd>{value('upcoming')}</dd></div><div><dt>Due now</dt><dd><Link to="/admin/finance?view=due">{value('due')}</Link></dd></div></dl>
+    {result?.key === key && result.error ? <button type="button" onClick={() => setRetry(value => value + 1)}><RefreshCw size={13}/>Retry finance</button>
+      : <Link className="sx-desk-account-link" to="/admin/finance?view=due">Review payment schedule <ArrowUpRight size={13}/></Link>}
+    {totals?.excludedCurrencies > 0 && <small>{totals.excludedCurrencies} non-INR invoices excluded</small>}
+  </section>;
   return <section className="overview-feature-card finance" data-overview-card="financePulse" data-motion-active={motionActive} aria-label="Finance pulse" aria-busy={loading}>
     {remove}
     <div className="overview-fluid-glow" aria-hidden="true"><i /><i /><i /></div>
@@ -45,7 +54,19 @@ export default function OverviewFinanceCard({ remove, refreshKey, motionActive =
     <h3 className="overview-feature-label"><StudioAppIcon icon={Wallet} tone="green" size={30} /><span lang={preferences.language} dir="auto">{studioText(preferences.language, 'Finance pulse')}</span></h3>
     <span className="overview-finance-profit-label">Net profit</span>
     <strong className="overview-feature-number overview-finance-profit">{value('netProfit')}</strong>
-    <dl className="overview-finance-amounts"><div><dt>Upcoming amount</dt><dd>{value('upcoming')}</dd><small>Future & undated</small></div><div><dt>Due amount</dt><dd><Link to="/admin/finance?view=due" aria-label="Review invoice payments due now">{value('due')}<ArrowUpRight size={13} /></Link></dd><small>Today & overdue</small></div></dl>
+    <dl className="overview-finance-amounts">
+      <div>
+        <dt>Upcoming amount</dt>
+        <dd>{value('upcoming')}<small>Future & undated</small></dd>
+      </div>
+      <div>
+        <dt>Due amount</dt>
+        <dd>
+          <Link to="/admin/finance?view=due" aria-label={totals ? `Review invoice payments due now, ${value('due')}` : 'Review invoice payments due now'}>{value('due')}<ArrowUpRight size={13} aria-hidden="true" /></Link>
+          <small>Today & overdue</small>
+        </dd>
+      </div>
+    </dl>
     {result?.key === key && result.error ? <p className="overview-finance-note" role="status">Finance couldn’t load. <button type="button" onClick={() => setRetry(value => value + 1)}><RefreshCw size={11} />Retry</button></p> : <p className="overview-finance-note">{loading ? 'Loading finance…' : 'Received income − paid expenses · all time · INR'}</p>}
     {totals?.excludedCurrencies > 0 && <p className="overview-finance-note">{totals.excludedCurrencies} non-INR invoices excluded</p>}
     <Link to="/admin/finance">Open finance<ArrowUpRight size={15} /></Link>

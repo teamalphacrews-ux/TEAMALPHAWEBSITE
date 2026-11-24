@@ -14,6 +14,71 @@ export function cancelStudioThemeTransition(doc = document) {
   const active = activeTransitions.get(doc);
   if (active) { active.cancelled = true; active.finish(); }
 }
+
+/** Reveal the new commercial appearance as a single snapshot, without moving controls. */
+export async function transitionCommercialTheme({ commit, origin, reduceMotion = false, doc = document, win = window }) {
+  cancelStudioThemeTransition(doc);
+  const root = doc.documentElement;
+  const media = win.matchMedia?.('(prefers-reduced-motion: reduce)');
+  if (reduceMotion || media?.matches || doc.visibilityState === 'hidden' ||
+      typeof doc.startViewTransition !== 'function' || !root.animate || !win.KeyframeEffect || !('pseudoElement' in win.KeyframeEffect.prototype)) {
+    commit();
+    return;
+  }
+
+  const width = win.innerWidth, height = win.innerHeight;
+  const { x, y } = themeRevealGeometry(origin, { width, height });
+  const radius = Math.hypot(Math.max(x, width - x), Math.max(y, height - y));
+  const center = `at ${x}px ${y}px`;
+  let native, animation, committed = false;
+  const request = { cancelled: false, finish() { animation?.cancel(); native?.skipTransition(); release(); } };
+  function apply() {
+    if (!request.cancelled && !committed) { committed = true; commit(); }
+  }
+  function stop() { apply(); cancelStudioThemeTransition(doc); }
+  function motionChange(event) { if (event.matches) stop(); }
+  function visibilityChange() { if (doc.visibilityState === 'hidden') stop(); }
+  function repeatSwitch(event) {
+    // During root capture the browser can retarget a physical click to <html>.
+    if (event.target !== root || event.button !== 0 || !origin?.matches?.('button.studio-theme-toggle') || !origin.isConnected) return;
+    const rect = origin.getBoundingClientRect();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return;
+    origin.focus({ preventScroll: true });
+    origin.click();
+  }
+  function release() {
+    media?.removeEventListener?.('change', motionChange);
+    win.removeEventListener('resize', stop);
+    doc.removeEventListener('visibilitychange', visibilityChange);
+    doc.removeEventListener('click', repeatSwitch, true);
+    if (activeTransitions.get(doc) === request) {
+      activeTransitions.delete(doc);
+      root.classList.remove('studio-theme-reveal');
+    }
+  }
+
+  activeTransitions.set(doc, request);
+  root.classList.add('studio-theme-reveal');
+  media?.addEventListener?.('change', motionChange);
+  win.addEventListener('resize', stop);
+  doc.addEventListener('visibilitychange', visibilityChange);
+  doc.addEventListener('click', repeatSwitch, true);
+  try {
+    native = doc.startViewTransition(apply);
+    await native.ready;
+    if (request.cancelled) return;
+    animation = root.animate({ clipPath: [`circle(0px ${center})`, `circle(${radius}px ${center})`] }, {
+      duration: 450, easing: 'cubic-bezier(.65,0,.35,1)', pseudoElement: '::view-transition-new(root)',
+    });
+    await native.finished;
+  } catch {
+    // Snapshotting can fail after capability detection, including during navigation.
+    apply();
+    native?.skipTransition();
+  } finally {
+    release();
+  }
+}
 const targets = [
   '.studio-brand', '.saas-switcher-trigger', '.studio-nav-item', '.studio-nav-group-toggle', '.studio-sidebar-footer',
   '.studio-topbar-context', '.studio-topbar-actions > button', '.studio-global-search', '.studio-notification-wrap',

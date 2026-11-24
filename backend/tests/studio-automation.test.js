@@ -21,3 +21,25 @@ test('payment alerts include only outstanding issued invoices and use one event 
   const run = createAutomationRunner({ Config: { findOne: async () => ({ automation }) }, Notification: { findOneAndUpdate: async query => keys.add(query.eventKey) }, Invoice: { find: queryFilter => { filter = queryFilter; return query([{ _id: 'unpaid', clientName: 'A', total: 1000, advancePaid: 200 }, { _id: 'settled', total: 1000, advancePaid: 1000 }]); } }, now: () => new Date('2026-10-23T05:00:00Z') });
   await run(); await run(); assert.equal(filter.documentStatus, 'Sent'); assert.equal(filter.status, 'Pending'); assert.equal(filter.dueDate.$lt.toISOString(), '2026-10-22T18:30:00.000Z'); assert.deepEqual([...keys], ['payment-overdue:unpaid:2026-10-23']);
 });
+
+test('a workspace acceptance alert links to its generated invoice, with a quote fallback during recovery', async () => {
+  const { runInWorkspace, workspaceDatabase } = require('../saas/tenantContext');
+  const id = '123456789012345678901234';
+  const notes = [];
+  const rows = [
+    { _id: 'q1', invoiceId: 'i1', invoiceGeneratedAt: new Date() },
+    { _id: 'q2', invoiceId: 'reserved-but-unwritten' },
+    { _id: 'q3' },
+  ];
+  const automation = { notifyQuoteAccepted: true, notifyPaymentOverdue: false, notifyAssignments: false, notifyDeliveryDue: false, dailyDigestEnabled: false };
+  const run = createAutomationRunner({
+    Config: { findOne: async () => ({ automation }) },
+    Notification: { findOneAndUpdate: async (_filter, update) => { notes.push(update.$setOnInsert.link); } },
+    Quotation: { find: () => query(rows) },
+  });
+  await runInWorkspace({ _id: id, databaseName: workspaceDatabase(id) }, run);
+  assert.deepEqual(notes, ['/admin/invoices/i1', '/admin/quotations?quote=q2', '/admin/quotations?quote=q3']);
+  notes.length = 0;
+  await runInWorkspace(null, run);
+  assert.deepEqual(notes, rows.map(row => '/admin/quotations?quote=' + row._id));
+});

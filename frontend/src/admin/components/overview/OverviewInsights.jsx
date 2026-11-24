@@ -4,7 +4,10 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight, BarChart3, Camera, Check, Clock3, Flame, Grid3X3, TrendingUp, RefreshCw } from 'lucide-react';
 import { nextOverviewIdea } from '../../../utils/overviewInspiration';
 import { hourlyActivityRows, rhythmScaleMaximum, roundedPercentageShares } from '../../../utils/overviewChartData';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
+import OverviewFluidBackdrop from './OverviewFluidBackdrop';
 import './overviewInspiration.css';
+import './overviewFluidBackdrop.css';
 
 const inspirationKey = 'studio-overview-last-idea';
 const initialIdea = () => {
@@ -31,8 +34,10 @@ export function OverviewWelcome({ name, greeting, date, todayCount, pending }) {
     try { sessionStorage.setItem(inspirationKey, idea.id); } catch { /* Reading ideas also works without storage. */ }
   }, [idea.id]);
   return <section className="ov-welcome" aria-labelledby="ov-welcome-title">
-    <img className="ov-welcome-photo" src="/assets/banner/dsc05646-1280.webp" alt="" />
-    <div className="ov-welcome-light" aria-hidden="true" />
+    {IS_COMMERCIAL_DEPLOYMENT ? <OverviewFluidBackdrop /> : <>
+      <img className="ov-welcome-photo" src="/assets/banner/dsc05646-1280.webp" alt="" />
+      <div className="ov-welcome-light" aria-hidden="true" />
+    </>}
     <div className="ov-welcome-copy"><span>{greeting}, {name}</span>
       <div className="ov-inspiration-content" aria-live="polite" aria-atomic="true"><div className="ov-inspiration-story" key={idea.id}><span className="ov-inspiration-category">{idea.category}</span><h2 id="ov-welcome-title">{idea.title}</h2><p>{idea.detail}</p></div></div>
       <div className="ov-inspiration-actions"><Link to={idea.to}>{idea.action}<ArrowUpRight size={15} /></Link><button type="button" aria-label="Show another studio idea" onClick={() => setIdea(current => nextOverviewIdea(current.id))}><RefreshCw size={14} /><span>Another idea</span></button></div>

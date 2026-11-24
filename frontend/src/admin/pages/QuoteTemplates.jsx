@@ -1,3 +1,5 @@
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
+import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Plus, Pencil, Trash2, Layers } from "lucide-react";
@@ -398,7 +400,7 @@ export default function QuoteTemplates() {
   return (
     <div className="reference-workspace">
       <div className="reference-heading">
-        <h1>Templates</h1>
+        <WorkspaceMotionTitle>{IS_COMMERCIAL_DEPLOYMENT ? "Quote templates" : "Templates"}</WorkspaceMotionTitle>
         <label className="reference-search">
           <Search size={16} />
           <input
@@ -412,9 +414,11 @@ export default function QuoteTemplates() {
           New Template
         </button>
       </div>
-      <div className="reference-tabs">
-        <button className="active">Quote Templates</button>
-      </div>
+      {!IS_COMMERCIAL_DEPLOYMENT && (
+        <div className="reference-tabs">
+          <button className="active">Quote Templates</button>
+        </div>
+      )}
       <WorkspaceError error={error} retry={reload} />
       {visible.length ? (
         <div className="reference-template-grid">
@@ -428,8 +432,7 @@ export default function QuoteTemplates() {
                 {template.expiryEnabled === false
                   ? "No expiry"
                   : `${template.validityDays || 14} day validity`}
-                <br />
-                Updated {recordDate(template.updatedAt)}
+                {template.updatedAt && <><br />Updated {recordDate(template.updatedAt)}</>}
               </small>
               <div className="reference-template-card-actions">
                 <Link

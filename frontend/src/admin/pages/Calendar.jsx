@@ -1,6 +1,7 @@
 import { hasModuleAccess, hasFullModuleAccess } from '../../utils/moduleAccess';
+import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
 import StudioSelect from '../components/common/StudioSelect';
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Plus,
@@ -16,20 +17,27 @@ import {
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import EventForm from "../components/calendar/EventForm";
+import CalendarWeek from '../components/calendar/CalendarWeek';
+import SectionSelectionIndicator from './SectionSelectionIndicator';
+import { useSectionArrival } from './useSectionArrival';
 import CalendarInsights from "../components/calendar/CalendarInsights";
-import { calendarMonthGrid, calendarMonthLoad, shiftCalendarMonth } from "../components/calendar/calendarData";
+import { calendarCreationRequest, calendarMonthGrid, calendarMonthLoad, calendarWeekDays, indexCalendarDays, shiftCalendarMonth } from "../components/calendar/calendarData";
 import { safeStudioReturn } from '../../utils/studioNavigation';
 import { deriveCrewSchedule } from "../components/operations/crewSchedule";
 import { operationAPI } from "../components/operations/operationsUtils";
 import { useAuth } from "../../context/AuthContext";
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
+import ScheduledWorkAction from '../components/operations/ScheduledWorkAction';
+import { nextCalendarSession } from '../components/operations/nextScheduledWork';
 import { useStudioIdentity } from "../../utils/studioIdentity";
-import { eventOnStudioDay, eventStartDay, studioDayKey, studioDateTimeToISO } from "../../utils/studioTime";
+import { eventOnStudioDay, eventStartDay, shiftDayKey, studioDayKey, studioDateTimeToISO } from "../../utils/studioTime";
 import { eventScheduleLabel } from "../../utils/eventSchedule";
 import { useStudioPreferences } from '../components/common/StudioPreferences';
 import { formatWorkspaceDate, formatWorkspaceTime, resolveWorkspaceTimezone } from '../../utils/workspaceLocale';
 import '../components/calendar/calendarRefinements.css';
 import './calendarWorkspace.css';
 import './schedulingRefinement.css';
+import './studioCalendarDesk.css';
 import { GOOGLE_PREVIEW_MESSAGE, googleCalendarHandoff, googleConnectionError } from "../components/calendar/googleConnection";
 import {
   WorkspaceHeader,
@@ -43,6 +51,31 @@ import {
   workspaceRequest,
   recordError,
 } from "../components/operations/workspaceData";
+const emptyCalendarRecords = [];
+
+function useCalendarSchedule(events, { query, crewFilter, month, selected, timezone, dateLabel, agendaScope }) {
+  const visible = useMemo(() => events.filter(
+    (event) =>
+      (crewFilter === "all" ||
+        (event.teamMembers || []).includes(crewFilter)) &&
+      [event.title, event.location, event.type]
+        .join(" ")
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  ), [events, crewFilter, query]);
+  const days = useMemo(() => calendarMonthGrid(month), [month]);
+  const dayLabels = useMemo(() => new Map(days.map(day => [day, dateLabel(day)])), [days, dateLabel]);
+  const eventsByDay = useMemo(() => indexCalendarDays(visible, days, timezone), [visible, days, timezone]);
+  const monthLoad = useMemo(() => calendarMonthLoad(visible, month, timezone, eventsByDay), [visible, month, timezone, eventsByDay]);
+  const monthEvents = monthLoad.events;
+  const selectedEvents = useMemo(() => {
+    const items = eventsByDay.get(selected) ?? visible.filter(event => eventOnStudioDay(event, selected, timezone));
+    return [...items].sort((a, b) => new Date(a.start) - new Date(b.start));
+  }, [eventsByDay, visible, selected, timezone]);
+  const agendaEvents = useMemo(() => agendaScope === 'day' ? selectedEvents : [...monthEvents].sort((a, b) => new Date(a.start) - new Date(b.start)), [agendaScope, selectedEvents, monthEvents]);
+  return { visible, days, eventsByDay, dayLabels, selectedEvents, monthLoad, agendaEvents };
+}
+
 function CalendarEventEditor({ timezone, ...props }) {
   // One editing session uses one resolved zone. Later settings refreshes must
   // not remount the form or reinterpret a time the user has already entered.
@@ -51,11 +84,13 @@ function CalendarEventEditor({ timezone, ...props }) {
 }
 export default function Calendar() {
   const { user } = useAuth();
+  const canSchedule = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'calendar');
+  const canRemove = canSchedule && (!IS_COMMERCIAL_DEPLOYMENT || (user?.workspaceRole || user?.workspace?.role) !== 'staff');
   const { identity, loading: identityLoading } = useStudioIdentity();
   const { preferences } = useStudioPreferences();
   const timezone = resolveWorkspaceTimezone(preferences, identity?.timezone);
   const time = value => formatWorkspaceTime(value, preferences, identity?.timezone);
-  const dateLabel = (key, options) => formatWorkspaceDate(key, preferences, identity?.timezone, options);
+  const dateLabel = useCallback((key, options) => formatWorkspaceDate(key, preferences, identity?.timezone, options), [preferences, identity?.timezone]);
   const eventTime = event => eventScheduleLabel(event, timezone, { date: dateLabel, time });
   const isPreview = user?.isPreview === true;
   const [sessionParams, setSessionParams]=useSearchParams();
@@ -64,21 +99,21 @@ export default function Calendar() {
     hasModuleAccess(user, 'crew') ? '/api/photographers' : null,
     hasModuleAccess(user, 'enquiries') ? '/api/leads' : null,
   ]);
-  const [events = [], crew = [], leads = []] = data;
+  const [events = emptyCalendarRecords, crew = emptyCalendarRecords, leads = emptyCalendarRecords] = data;
   const eventId = sessionParams.get('event');
   const linkedEvent = events.find(event => String(event._id) === eventId);
   const linkedDay = linkedEvent ? eventStartDay(linkedEvent, timezone) : '';
-  const connection = useWorkspaceData(["/api/calendar/sync-status"]);
+  const connection = useWorkspaceData([isPreview ? null : "/api/calendar/sync-status"]);
   const sync = connection.data[0] || {};
   const [monthState, setMonth] = useState(null),
     [selectedState, setSelected] = useState(null),
     [view, setView] = useState(() =>
-      window.innerWidth < 680 ? "agenda" : "month",
+      window.innerWidth < 680 ? "agenda" : IS_COMMERCIAL_DEPLOYMENT ? "week" : "month",
     ),
     [agendaScope, setAgendaScope] = useState("month"),
     [query, setQuery] = useState(""),
     [crewFilter, setCrewFilter] = useState("all"),
-    [editingState, setEditing] = useState(()=>sessionParams.get("new")==="1"?{}:sessionParams.get("contact")?{
+    [editingState, setEditing] = useState(()=>IS_COMMERCIAL_DEPLOYMENT ? undefined : sessionParams.get("new")==="1"?{}:sessionParams.get("contact")?{
       title:"Client session",type:"Meeting",contactId:sessionParams.get("contact"),studioProjectId:sessionParams.get("project")||null,
     }:undefined),
     [detailState, setDetail] = useState(null),
@@ -91,10 +126,14 @@ export default function Calendar() {
   const todayKey = studioDayKey(new Date(), timezone);
   const month = linkedDay ? linkedDay.slice(0, 7) : monthState || todayKey.slice(0, 7);
   const selected = linkedDay || selectedState || todayKey;
-  const editing = editingState && !editingState.start ? { ...editingState, start: studioDateTimeToISO(`${selected}T10:00`, timezone), end: studioDateTimeToISO(`${selected}T11:00`, timezone) } : editingState;
+  const creationRequest = IS_COMMERCIAL_DEPLOYMENT && !identityLoading
+    ? calendarCreationRequest(sessionParams, { day: selected, timezone, leads: data[2], loading: loading && !error })
+    : null;
+  const editDraft = creationRequest?.event ?? editingState;
+  const editing = editDraft && !editDraft.start ? { ...editDraft, start: studioDateTimeToISO(`${selected}T10:00`, timezone), end: studioDateTimeToISO(`${selected}T11:00`, timezone) } : editDraft;
   const detail = linkedEvent || detailState;
   const setupMessage = isPreview ? GOOGLE_PREVIEW_MESSAGE : sync.setupMessage || "";
-  const googleStatus = connection.loading ? 'Checking connection…' : connection.error ? 'Connection unavailable' : isPreview ? 'Sample preview' : sync.configured === false ? 'Setup required' : sync.isSynced ? sync.syncError ? 'Reconnect required' : 'Connected' : 'Not connected';
+  const googleStatus = isPreview ? 'Sample preview' : connection.loading ? 'Checking connection…' : connection.error ? 'Connection unavailable' : sync.configured === false ? 'Setup required' : sync.isSynced ? sync.syncError ? 'Reconnect required' : 'Connected' : 'Not connected';
   useEffect(() => {
     if (!hasFullModuleAccess(user)) return;
     let socket, cancelled = false;
@@ -104,21 +143,10 @@ export default function Calendar() {
     else connect();
     return () => { cancelled = true; socket?.disconnect(); };
   }, [reload, user, user?.workspace?.id]);
-  const visible = events.filter(
-    (event) =>
-      (crewFilter === "all" ||
-        (event.teamMembers || []).includes(crewFilter)) &&
-      [event.title, event.location, event.type]
-        .join(" ")
-        .toLowerCase()
-        .includes(query.toLowerCase()),
+  const { visible, days, eventsByDay, dayLabels, selectedEvents, monthLoad, agendaEvents } = useCalendarSchedule(
+    events, { query, crewFilter, month, selected, timezone, dateLabel, agendaScope },
   );
-  const days = calendarMonthGrid(month);
-  const selectedEvents = visible
-    .filter((event) => eventOnStudioDay(event, selected, timezone))
-    .sort((a, b) => new Date(a.start) - new Date(b.start));
-  const monthEvents = calendarMonthLoad(visible, month, timezone).events;
-  const agendaEvents = agendaScope === 'day' ? selectedEvents : [...monthEvents].sort((a, b) => new Date(a.start) - new Date(b.start));
+  const monthEvents = monthLoad.events;
   const returnTo = safeStudioReturn(sessionParams.get('returnTo'), '');
   const closeDetail = () => {
     setDetail(null);
@@ -130,8 +158,39 @@ export default function Calendar() {
     const timer = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(timer);
   }, []);
-  const schedule = deriveCrewSchedule(crew, events, now);
+  const schedule = useMemo(() => deriveCrewSchedule(crew, events, now), [crew, events, now]);
+  const nextEvent = IS_COMMERCIAL_DEPLOYMENT && !loading && !error
+    ? nextCalendarSession(view === 'agenda' && agendaScope === 'day' ? selectedEvents : month === todayKey.slice(0, 7) ? visible : monthEvents, now, timezone)
+    : null;
+  const weekDays = calendarWeekDays(selected);
+  const calendarPanel = useRef(null);
+  const dayAgendaFocus = useRef(false);
+  const dayHeading = useRef(null);
+  const openDayAgenda = day => {
+    dayAgendaFocus.current = true;
+    setMonth(day.slice(0, 7));
+    setSelected(day);
+    setView('agenda');
+    setAgendaScope('day');
+  };
+  useEffect(() => {
+    if (!dayAgendaFocus.current || view !== 'agenda' || agendaScope !== 'day') return;
+    dayAgendaFocus.current = false;
+    dayHeading.current?.focus({ preventScroll: true });
+  }, [view, agendaScope, selected]);
+  const period = view === 'week' ? weekDays[0] : view === 'agenda' && agendaScope === 'day' ? selected : month;
+  const selection = ['week', 'month', 'agenda'].indexOf(view) + '/' + period;
+  useSectionArrival(calendarPanel, selection, '.sx-calendar-motion-surface');
+  const rangeLabel = view === 'week'
+    ? dateLabel(weekDays[0], { month: 'short', day: 'numeric', year: undefined }) + ' – ' + dateLabel(weekDays[6], { month: 'short', day: 'numeric', year: 'numeric' })
+    : dateLabel(month + '-01', { month: 'long', year: 'numeric', day: undefined });
   const changeMonth = (offset) => {
+    if (view === 'week') {
+      const nextDay = shiftDayKey(selected, offset * 7);
+      setMonth(nextDay.slice(0, 7));
+      setSelected(nextDay);
+      return;
+    }
     const next = shiftCalendarMonth(month, offset);
     setMonth(next);
     setSelected(`${next}-01`);
@@ -142,15 +201,24 @@ export default function Calendar() {
     setEditing({ start, end });
     setSaveError("");
   };
+  const closeEditor = () => {
+    setEditing(undefined);
+    setSaveError('');
+    if (creationRequest) setSessionParams(current => {
+      const next = new URLSearchParams(current);
+      ['new', 'contact', 'project'].forEach(key => next.delete(key));
+      return next;
+    }, { replace: true });
+  };
   const newRequest=useRef('');
-  useEffect(()=>{if(sessionParams.get('new')!=='1'||newRequest.current===sessionParams.toString())return;
+  useEffect(()=>{if(IS_COMMERCIAL_DEPLOYMENT||sessionParams.get('new')!=='1'||newRequest.current===sessionParams.toString())return;
     const signature=sessionParams.toString();let active=true;Promise.resolve().then(()=>{if(active){newRequest.current=signature;openNew();}});return()=>{active=false;};
     // Existing openNew uses the configured studio timezone.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[sessionParams,timezone]);
 
   const save = async (values) => {
-    if (busy) return;
+    if (busy || !canSchedule) return;
     setBusy(true);
     setSaveError("");
     try {
@@ -159,7 +227,7 @@ export default function Calendar() {
         "/api/calendar" + (editing?._id ? "/" + editing._id : ""),
         values,
       );
-      setEditing(undefined);
+      closeEditor();
       reload();
       if (result.syncWarning) toast(result.syncWarning);
       else toast.success("Studio event saved");
@@ -171,7 +239,7 @@ export default function Calendar() {
   };
   const remove = async (event) => {
     event.preventDefault();
-    if (busy) return;
+    if (busy || !canRemove) return;
     setBusy(true);
     try {
       const result = await workspaceRequest("delete", "/api/calendar/" + deleting._id);
@@ -216,17 +284,7 @@ export default function Calendar() {
       setSyncBusy(false);
     }
   };
-  return (
-    <div className="studio-calendar-page scheduling-workspace scheduling-calendar">
-      <WorkspaceHeader
-        title="Studio calendar"
-        description="Plan your shoots, consultations and crew assignments."
-      >
-        <button className="studio-button primary" onClick={openNew} disabled={identityLoading}>
-          <Plus size={15} />
-          Schedule event
-        </button>
-      </WorkspaceHeader>
+  const googleConnection = <>
       <section className="scheduling-connection" aria-label="Google Calendar connection">
         <div className="scheduling-connection-copy">
           <CalendarDays size={19} aria-hidden="true" />
@@ -248,26 +306,40 @@ export default function Calendar() {
       </section>
       <WorkspaceError error={connectionError || (callbackResult === "error" ? "Google authorization was not completed. Please connect again and approve the calendar permissions." : "")} />
       {callbackResult === "success" && sync.isSynced && !sync.syncError && <p className="workspace-info" role="status">Google Calendar is connected. Your events will synchronize with the studio calendar.</p>}
+  </>;
+  return (
+    <div className="studio-calendar-page scheduling-workspace scheduling-calendar">
+      <WorkspaceHeader
+        title={IS_COMMERCIAL_DEPLOYMENT ? "Calendar" : "Studio calendar"}
+        description="Plan your shoots, consultations and crew assignments."
+      >
+        {canSchedule && <button className="studio-button primary" onClick={openNew} disabled={identityLoading}>
+          <Plus size={15} />
+          Schedule event
+        </button>}
+      </WorkspaceHeader>
+      {creationRequest && !canSchedule && <p className="workspace-info" role="status">Your workspace access allows you to view events. Ask a studio administrator to schedule this session.</p>}
+      {!IS_COMMERCIAL_DEPLOYMENT && googleConnection}
       <WorkspaceError error={error} retry={reload} />
       {returnTo && <Link className="studio-button small calendar-return-link" to={returnTo}><ChevronLeft size={15} /> Back to previous page</Link>}
       {eventId && !loading && !error && !linkedEvent && <WorkspaceError error="This event could not be found. It may have been removed or is no longer accessible." />}
-      <section className="studio-card workspace-calendar">
+      <section className="studio-card workspace-calendar" ref={calendarPanel}>
         <div className="workspace-calendar-heading">
           <div className="workspace-calendar-nav">
             <div className="workspace-calendar-paging">
               <button
                 className="studio-icon-button"
-                aria-label="Previous month"
+                aria-label={view === "week" ? "Previous week" : "Previous month"}
                 onClick={() => changeMonth(-1)}
               >
                 <ChevronLeft size={17} />
               </button>
               <h2>
-                {dateLabel(`${month}-01`, { month: "long", year: "numeric", day: undefined })}
+                {rangeLabel}
               </h2>
               <button
                 className="studio-icon-button"
-                aria-label="Next month"
+                aria-label={view === "week" ? "Next week" : "Next month"}
                 onClick={() => changeMonth(1)}
               >
                 <ChevronRight size={17} />
@@ -285,17 +357,18 @@ export default function Calendar() {
               Today
             </button>
           </div>
-          <div className="studio-tabs workspace-view-tabs">
-            {["month", "agenda"].map((mode) => (
+          <div className="studio-tabs workspace-view-tabs" data-section-selector={IS_COMMERCIAL_DEPLOYMENT ? "pill" : undefined} role="group" aria-label="Calendar view">
+            {(IS_COMMERCIAL_DEPLOYMENT ? ["week", "month", "agenda"] : ["month", "agenda"]).map((mode) => (
               <button
                 key={mode}
                 className={view === mode ? "active" : ""}
                 onClick={() => { setView(mode); if (mode === "agenda") setAgendaScope("month"); }}
                 aria-pressed={view === mode}
               >
-                {mode === "month" ? "Month" : "Agenda"}
+                {mode === "week" ? "Week" : mode === "month" ? "Month" : "Agenda"}
               </button>
             ))}
+            {IS_COMMERCIAL_DEPLOYMENT && <SectionSelectionIndicator selection={view} />}
           </div>
         </div>
         <div className="studio-toolbar scheduling-calendar-filters">
@@ -319,9 +392,23 @@ export default function Calendar() {
           </StudioSelect></label>
           {(query.trim() || crewFilter !== 'all') && <button type="button" className="studio-button scheduling-clear-filters" onClick={() => { setQuery(''); setCrewFilter('all'); }}>Clear filters</button>}
         </div>
-        {view === 'agenda' && <div className="workspace-agenda-heading"><div><h3>{agendaScope === 'day' ? dateLabel(selected) : 'Agenda for ' + dateLabel(`${month}-01`, { month: 'long', year: 'numeric', day: undefined })}</h3><p className="studio-muted">{agendaEvents.length} {agendaEvents.length === 1 ? 'event' : 'events'} · {timezone}</p></div>{agendaScope === 'day' && <button type="button" className="studio-button small" onClick={() => setAgendaScope('month')}>Show whole month</button>}</div>}
+        {nextEvent && <ScheduledWorkAction
+          title={'Next event · ' + nextEvent.title}
+          detail={[dateLabel(eventStartDay(nextEvent, timezone)), eventTime(nextEvent), nextEvent.location || 'Venue to confirm'].join(' · ')}
+          action="Review event"
+          onOpen={() => {
+            const day = eventStartDay(nextEvent, timezone);
+            setMonth(day.slice(0, 7));
+            setSelected(day);
+            setDetail(nextEvent);
+          }}
+        />}
+        <div className="sx-calendar-motion-surface">
+        {view === 'agenda' && <div className="workspace-agenda-heading"><div><h3 ref={dayHeading} tabIndex={-1}>{agendaScope === 'day' ? dateLabel(selected) : 'Agenda for ' + dateLabel(`${month}-01`, { month: 'long', year: 'numeric', day: undefined })}</h3><p className="studio-muted">{agendaEvents.length} {agendaEvents.length === 1 ? 'event' : 'events'} · {timezone}</p></div>{agendaScope === 'day' && <button type="button" className="studio-button small" onClick={() => setAgendaScope('month')}>Show whole month</button>}</div>}
         {loading ? (
           <WorkspaceEmpty loading />
+        ) : view === "week" ? (
+          <CalendarWeek selected={selected} today={todayKey} events={visible} timezone={timezone} time={time} openEvent={setDetail} onSelectDay={openDayAgenda} />
         ) : view === "month" ? (
           <>
             <div className="workspace-calendar-scroll">
@@ -339,11 +426,11 @@ export default function Calendar() {
                   </div>
                 ))}
                 {days.map((day) => {
-                  const dayEvents = visible.filter(event => eventOnStudioDay(event, day, timezone));
+                  const dayEvents = eventsByDay.get(day);
                   return (
                     <div
                       role="group"
-                      aria-label={dateLabel(day)}
+                      aria-label={dayLabels.get(day)}
                       className={
                         "workspace-calendar-day" +
                         (day.slice(0, 7) !== month ? " outside" : "") +
@@ -354,9 +441,9 @@ export default function Calendar() {
                       <button
                         className={
                           "workspace-day-number" +
-                          (day === studioDayKey(new Date(), timezone) ? " today" : "")
+                          (day === todayKey ? " today" : "")
                         }
-                        aria-label={"Select " + dateLabel(day) + (dayEvents.length ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}` : '')}
+                        aria-label={"Select " + dayLabels.get(day) + (dayEvents.length ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}` : '')}
                         aria-pressed={day === selected}
                         onClick={() => setSelected(day)}
                       >
@@ -383,11 +470,7 @@ export default function Calendar() {
                       {dayEvents.length > 3 && (
                         <button
                           className="workspace-more-events"
-                          onClick={() => {
-                            setSelected(day);
-                            setAgendaScope("day");
-                            setView("agenda");
-                          }}
+                          onClick={() => openDayAgenda(day)}
                         >
                           More events →
                         </button>
@@ -446,19 +529,21 @@ export default function Calendar() {
             description={query.trim() || crewFilter !== "all" ? "Try another search or choose All crew." : agendaScope === 'day' ? "No events are scheduled for this selected day." : "Schedule the next shoot or consultation for this month."}
           />
         )}
+        </div>
       </section>
+      {IS_COMMERCIAL_DEPLOYMENT && googleConnection}
       <dl className="calendar-summary" aria-label="Calendar summary">
         <div><dt>This month</dt><dd>{loading || error ? '—' : monthEvents.length}<span>events</span></dd></div>
         <div><dt>Upcoming</dt><dd>{loading || error ? '—' : schedule.upcomingEvents.length}<span>events</span></dd></div>
         <div><dt>Crew overlaps</dt><dd>{loading || error ? '—' : schedule.conflicts.length}<span>to review</span></dd></div>
       </dl>
-      <CalendarInsights key={month + timezone} events={visible} month={month} selected={selected} onSelect={setSelected} loading={loading} timezone={timezone} formatDate={dateLabel} />
+      <CalendarInsights key={month + timezone} monthLoad={monthLoad} dayLabels={dayLabels} selected={selected} onSelect={setSelected} loading={loading} />
       {schedule.conflicts.length > 0 && (
         <div className="workspace-info">
           <UsersRound size={17} />
           <p>
             {schedule.conflicts.length} overlapping crew assignments need
-            review. <Link to="/admin/crew">Open Crew & scheduling →</Link>
+            review. {hasModuleAccess(user, 'crew') && <Link to="/admin/crew">Open Crew & scheduling →</Link>}
           </p>
         </div>
       )}
@@ -471,16 +556,16 @@ export default function Calendar() {
           ? "Last Google sync: " + dateLabel(sync.lastSyncAt)
           : ""}
       </p>
-      {editing !== undefined && !identityLoading && (
+      {canSchedule && editing !== undefined && !identityLoading && (
         <CalendarEventEditor
-          key={editing?._id || editing?.contactId || 'new-event'}
+          key={creationRequest?.key || editing?._id || editing?.contactId || 'new-event'}
           initialData={editing}
           timezone={timezone}
           crew={crew}
           leads={leads}
           busy={busy}
           error={saveError}
-          onClose={() => setEditing(undefined)}
+          onClose={closeEditor}
           onSave={save}
         />
       )}{" "}
@@ -490,9 +575,9 @@ export default function Calendar() {
           onClose={closeDetail}
           footer={
             <>
-              {!detail.isReadOnly && (
+              {canSchedule && !detail.isReadOnly && (
                 <>
-                  <button
+                  {canRemove && <button
                     className="studio-button danger"
                     onClick={() => {
                       setDeleting(detail);
@@ -502,7 +587,7 @@ export default function Calendar() {
                   >
                     <Trash2 size={14} />
                     Remove
-                  </button>
+                  </button>}
                   <button
                     className="studio-button primary"
                     onClick={() => {
@@ -543,7 +628,7 @@ export default function Calendar() {
           </div>
         </WorkspaceDialog>
       )}
-      {deleting && (
+      {canRemove && deleting && (
         <WorkspaceDialog
           title="Remove this studio event?"
           onClose={() => setDeleting(null)}

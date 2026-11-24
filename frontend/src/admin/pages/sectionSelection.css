@@ -1,0 +1,20 @@
+#sx-workspace-shell [data-section-selector] { position: relative; isolation: isolate; }
+.sx-section-selection { position: absolute; bottom: 0; display: block; pointer-events: none; border-radius: 999px; }
+.sx-section-selection[hidden] { display: none; }
+[data-section-selector="line"] > .sx-section-selection { height: 3px; background: var(--studio-signature-gradient, #f29b23); }
+#sx-workspace-shell .settings-primary-nav:has(> .sx-section-selection:not([hidden])) > button::after { display: none; }
+[data-section-selector="pill"] > .sx-section-selection {
+  top: 3px; bottom: 3px; z-index: -1; background: var(--studio-surface-2);
+  box-shadow: inset 0 0 0 1px var(--studio-border);
+}
+#sx-workspace-shell .workspace-view-tabs:has(> .sx-section-selection:not([hidden])) > button[aria-pressed=true] {
+  background: transparent; box-shadow: none; border-color: transparent;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-studio-motion=reduced]) .sx-section-selection[data-direction="right"] {
+    transition: right 360ms cubic-bezier(.22,1,.36,1), left 550ms cubic-bezier(.65,0,.35,1);
+  }
+  html:not([data-studio-motion=reduced]) .sx-section-selection[data-direction="left"] {
+    transition: left 360ms cubic-bezier(.22,1,.36,1), right 550ms cubic-bezier(.65,0,.35,1);
+  }
+}

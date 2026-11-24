@@ -1,4 +1,6 @@
+import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import { hasFullModuleAccess } from '../../utils/moduleAccess';
+import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
 import StudioButton from '../components/common/StudioButton';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -13,6 +15,8 @@ import API from '../../utils/apiConfig';
 import { useAuth } from '../../context/AuthContext';
 import StudioAppIcon from '../components/common/StudioAppIcon';
 import SettingsEditor from '../components/settings/SettingsEditor';
+import DocumentAutomationSummary from '../components/settings/DocumentAutomationSummary';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import { SettingsDisclosures } from '../components/settings/SettingsDisclosures';
 import WorkspacePreferences from '../components/settings/WorkspacePreferences';
 import LocalePreferences from '../components/settings/LocalePreferences';
@@ -27,6 +31,8 @@ import { settingsWithDefaults, changedSettingsSections, settingsSectionKeys, res
 import { createSettingsActionGate } from '../../utils/settingsActionGate';
 import './studioSettings.css';
 import './settingsGrouped.css';
+import SectionSelectionIndicator from './SectionSelectionIndicator';
+import { useSectionArrival } from './useSectionArrival';
 
 const sections = [
   ['workspace', 'My workspace', 'Appearance, motion and your overview.', SlidersHorizontal, 'violet', 'Personal', 'dark light daylight system theme animations reduced motion homepage landing dashboard cards order reset'],
@@ -72,14 +78,15 @@ export default function Settings() {
   const saved = data[0], original = baseline || (saved ? settingsWithDefaults(saved) : null), values = form || original;
   const changed = values && original ? changedSettingsSections(values, original) : [];
   const dirty = changed.length > 0;
-  const tab = availableSections.some(section => section.id === params.get('section')) ? params.get('section') : null;
+  const requestedSection = params.get('section') ?? (IS_COMMERCIAL_DEPLOYMENT ? 'profile' : null);
+  const tab = availableSections.some(section => section.id === requestedSection) ? requestedSection : null;
   const current = availableSections.find(section => section.id === tab);
   const personalSection = current?.group === 'Personal';
   const matching = availableSections.filter(section => query.trim().toLowerCase().split(/\s+/).every(word => (section.title + ' ' + t(section.title) + ' ' + section.description + ' ' + section.keywords).toLowerCase().includes(word)));
   const change = (key, value) => { if (!saveLock.current) setForm(previous => ({ ...(previous || original), [key]: value })); };
   const changeNested = (group, key, value) => { if (!saveLock.current) setForm(previous => { const base = previous || original; return { ...base, [group]: { ...base[group], [key]: value } }; }); };
   const selectSection = id => {
-    setParams(previous => { const next = new URLSearchParams(previous); if (id) next.set('section', id); else next.delete('section'); return next; }, { replace: true });
+    setParams(previous => { const next = new URLSearchParams(previous); if (id || IS_COMMERCIAL_DEPLOYMENT) next.set('section', id || 'all'); else next.delete('section'); return next; }, { replace: true });
     setQuery('');
     requestAnimationFrame(() => {
       heading.current?.focus({ preventScroll: true });
@@ -141,6 +148,14 @@ export default function Settings() {
     {changed.includes(section.id) && <span className="settings-unsaved-dot" aria-label="Unsaved changes" />}
     <ChevronRight size={16} aria-hidden="true" />
   </button>;
+  const primarySections = [
+    ['profile', 'Profile'], ['branding', 'Studio'], ['notifications', 'Notifications'],
+    ['workspace', 'Appearance'], ['backups', 'Data'],
+  ].filter(([id]) => availableSections.some(section => section.id === id));
+  const activePrimary = primarySections.find(([id]) => id === tab)?.[0];
+  const selectedNav = browsing ? 'all' : activePrimary;
+  const sectionOrder = [...primarySections.map(([id]) => id), ...availableSections.filter(section => !primarySections.some(([id]) => id === section.id)).map(section => section.id), 'all'];
+  useSectionArrival(pageTop, sectionOrder.indexOf(browsing ? 'all' : tab), '.settings-directory,.settings-content');
   const saveAll = () => {
     const activeForm = document.getElementById('studio-settings-form');
     if (activeForm && !activeForm.reportValidity()) return;
@@ -150,12 +165,17 @@ export default function Settings() {
     saveSettings().catch(() => {});
   };
   return <div className={'studio-settings-page settings-grouped' + (browsing ? ' is-browsing' : ' is-editing')} ref={pageTop}>
-    <header className="settings-page-title"><h1>{t("Settings")}</h1><p>Your studio. Your way.</p></header>
+    <header className="settings-page-title"><WorkspaceMotionTitle>{t("Settings")}</WorkspaceMotionTitle><p>{IS_COMMERCIAL_DEPLOYMENT ? 'Manage your workspace preferences and studio defaults.' : 'Your studio. Your way.'}</p></header>
+    {IS_COMMERCIAL_DEPLOYMENT && <nav className="settings-primary-nav" data-section-selector="line" data-wrap-sections aria-label="Settings sections">
+      {primarySections.map(([id, title]) => <button type="button" key={id} aria-current={activePrimary === id && !query.trim() ? 'page' : undefined} onClick={() => selectSection(id)}>{t(title)}</button>)}
+      <button type="button" aria-current={!current || query.trim() ? 'page' : undefined} onClick={() => selectSection(null)}>{t('All settings')}</button>
+      <SectionSelectionIndicator selection={selectedNav} />
+    </nav>}
     {values && !current && !query.trim() && <button type="button" className="settings-profile-tile" onClick={() => selectSection('profile')}>
       <img src={studioImageUrl(values.profilePhotoUrl || values.logoUrl)} onError={studioImageFallback} alt="" />
       <span><strong>{values.studioName || 'Your studio'}</strong><small>{accountName || 'Studio account'} · Studio profile</small></span><ChevronRight size={21} aria-hidden="true" />
     </button>}
-    <div className="settings-search-row"><label className="settings-search"><Search size={20} aria-hidden="true" /><input type="search" aria-label="Find a setting" placeholder="Search settings" value={query} onChange={event => setQuery(event.target.value)} />{query && <button type="button" aria-label="Clear settings search" onClick={() => setQuery('')}><X size={18} /></button>}</label></div>
+    {(!IS_COMMERCIAL_DEPLOYMENT || browsing) && <div className="settings-search-row"><label className="settings-search"><Search size={20} aria-hidden="true" /><input type="search" aria-label="Find a setting" placeholder="Search settings" value={query} onChange={event => setQuery(event.target.value)} />{query && <button type="button" aria-label="Clear settings search" onClick={() => setQuery('')}><X size={18} /></button>}</label></div>}
     <WorkspaceError error={error} retry={reload} />
     {loading || !values ? <WorkspaceEmpty loading={loading} title="Settings unavailable" description="Retry loading your studio preferences." /> : <>
       {browsing ? <section className="settings-directory" aria-label="All settings" ref={heading} tabIndex={-1}>
@@ -163,7 +183,9 @@ export default function Settings() {
           <div className="settings-results-heading"><h2>Search results</h2><span role="status">{matching.length} {matching.length === 1 ? 'section' : 'sections'} found</span></div>
           {matching.length ? <div className="settings-results-list">{matching.map(section => sectionLink(section))}</div> : <div className="settings-search-empty"><Search size={24} /><h3>No matching settings</h3><p>Try “payments”, “logo”, “notifications” or “language”.</p><button type="button" className="studio-button" onClick={() => setQuery('')}>Browse all settings</button></div>}
         </div> : <>
-          <div className="settings-directory-grid">{groupNames.map(group => <section className="settings-category" key={group}>
+          {IS_COMMERCIAL_DEPLOYMENT && fullAccess && original?.automation && !error &&
+            <DocumentAutomationSummary automation={original.automation} onEdit={canWriteWorkspaceModule(user, 'settings') ? () => selectSection('automation') : undefined} />}
+          <div className="settings-directory-grid">{groupNames.filter(group => !IS_COMMERCIAL_DEPLOYMENT || availableSections.some(section => section.group === group)).map(group => <section className="settings-category" key={group}>
             <header><h2>{t(group)}</h2></header>
             <div className="settings-grouped-rows">{group === 'Personal' && <label className="settings-quick-theme studio-switch-control">
               <StudioAppIcon icon={Moon} tone="indigo" size={34} /><span className="settings-row-label"><strong>Dark mode</strong></span>
@@ -175,7 +197,13 @@ export default function Settings() {
       </section> : <>
         <div className="settings-detail-toolbar"><button type="button" className="settings-back-button" onClick={() => selectSection(null)}><ArrowLeft size={17} />All settings</button><span className="settings-scope-note">{personalSection ? 'Applies to you' : 'Shared with your studio'}</span></div>
         <div className="settings-layout">
-          <aside className="settings-rail"><nav aria-label={current.group + ' settings'}><p className="settings-rail-title">{t(current.group)}</p>{availableSections.filter(section => section.group === current.group).map(section => sectionLink(section, true))}</nav><button type="button" className="settings-rail-browse" onClick={() => selectSection(null)}>Browse all settings<ChevronRight size={14} /></button></aside>
+          <aside className="settings-rail">
+            {IS_COMMERCIAL_DEPLOYMENT && <div className="settings-studio-identity">
+              <img src={studioImageUrl(values.profilePhotoUrl || values.logoUrl)} onError={studioImageFallback} alt="" />
+              <strong>{values.studioName || 'Your studio'}</strong>
+              {accountName && <span>{accountName}</span>}
+            </div>}
+            <nav aria-label={current.group + ' settings'}><p className="settings-rail-title">{t(current.group)}</p>{availableSections.filter(section => section.group === current.group).map(section => sectionLink(section, true))}</nav><button type="button" className="settings-rail-browse" onClick={() => selectSection(null)}>Browse all settings<ChevronRight size={14} /></button></aside>
           <div className="settings-content">
             <header className="settings-section-heading"><StudioAppIcon icon={current.icon} tone={current.tone} size={40} /><div><h2 tabIndex={-1} ref={heading} lang={preferences.language} dir="auto">{t(current.title)}</h2><p>{current.description}</p></div></header>
             <SettingsDisclosures key={tab}>

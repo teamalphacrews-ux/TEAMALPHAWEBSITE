@@ -1,33 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowRight, ArrowUpRight, Banknote, CalendarDays, Check, CheckCheck, ChevronLeft, CreditCard, FileText, FolderPlus, Link2, MapPin, MoreHorizontal, Plus, ShieldCheck, Smartphone, Wallet } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ArrowRight, ArrowUpRight, Banknote, CalendarDays, Check, CheckCheck, FileText, Link2, MapPin, Plus, ShieldCheck, Smartphone, Wallet } from 'lucide-react';
+import ProductPhonePreview from './ProductPhonePreview';
+import { mobileStages } from './productMobileStages';
 import './productMobile.css';
-
-const mobileStages = [
-  {
-    id: 'create', label: 'Create a project', icon: FolderPlus,
-    title: 'A new enquiry. A clear next step.',
-    copy: 'Capture the client, date and venue while the details are fresh. Your next follow-up stays with the project, even when you are between shoots.',
-    moment: 'After a client call', detail: 'Client details → one project',
-  },
-  {
-    id: 'quote', label: 'Build a quote', icon: FileText,
-    title: 'Send a considered proposal, wherever you are.',
-    copy: 'Start with your saved collection, adjust the scope and share a quote link. Your client can review and accept it from their own phone.',
-    moment: 'Between locations', detail: 'Saved collection → shareable quote',
-  },
-  {
-    id: 'invoice', label: 'Issue an invoice', icon: CreditCard,
-    title: 'Keep the booking moving after the yes.',
-    copy: 'An accepted quote can create a draft invoice. Review the amount and payment schedule, then issue it to the same client smart link.',
-    moment: 'After the quote is accepted', detail: 'Studio review → issued invoice',
-  },
-  {
-    id: 'collect', label: 'Collect payments', icon: Wallet,
-    title: 'Make it easy to take the next payment.',
-    copy: 'Share your configured bank or UPI details through the client link. Check the transfer and record the receipt to keep the balance up to date.',
-    moment: 'Before the next event', detail: 'Payment instructions → confirmed receipt',
-  },
-];
 
 function PhoneProject() {
   return <div className="sos-mobile-screen-content">
@@ -79,28 +54,9 @@ const screens = { create: PhoneProject, quote: PhoneQuote, invoice: PhoneInvoice
 
 export default function ProductMobile() {
   const [active, setActive] = useState('create');
-  const [hasMore, setHasMore] = useState(false);
-  const [frameAvailable, setFrameAvailable] = useState(true);
   const tabsRef = useRef(null);
-  const screenRef = useRef(null);
   const stage = mobileStages.find(item => item.id === active);
   const Screen = screens[active];
-
-  useEffect(() => {
-    const screen = screenRef.current;
-    if (!screen) return;
-    screen.scrollTop = 0;
-    const measure = () => setHasMore(screen.scrollHeight - screen.clientHeight - screen.scrollTop > 3);
-    const observer = new ResizeObserver(measure);
-    observer.observe(screen);
-    if (screen.firstElementChild) observer.observe(screen.firstElementChild);
-    screen.addEventListener('scroll', measure, { passive: true });
-    measure();
-    return () => {
-      observer.disconnect();
-      screen.removeEventListener('scroll', measure);
-    };
-  }, [active]);
 
   function selectStage(id) {
     setActive(id);
@@ -146,19 +102,8 @@ export default function ProductMobile() {
       <div data-motion-unit="mobile-device" className={'sos-mobile-stage stage-' + active} id="sos-mobile-panel" role="tabpanel" tabIndex={0} aria-labelledby={'sos-mobile-tab-' + active} aria-describedby="sos-mobile-selection-summary sos-mobile-qualification">
         <div className="sos-mobile-aura" aria-hidden="true"><i/><i/></div>
         <div className="sos-mobile-context" id="sos-mobile-context"><i/><span>{stage.moment}</span><Smartphone size={14}/></div>
-        <div className="sos-mobile-phone">
-          <div className="sos-mobile-device-display">
-            <div className="sos-mobile-status-bar" aria-hidden="true"><span>9:41</span><svg width="43" height="11" viewBox="0 0 43 11" fill="none"><path d="M1 9V7M5 9V5M9 9V2" stroke="currentColor" strokeWidth="2"/><path d="M15 3Q20 -1 25 3M17 5Q20 2 23 5M19 7L20 8L21 7" stroke="currentColor" strokeWidth="1.5"/><rect x="29" y="2" width="11" height="7" rx="1.5" stroke="currentColor"/><path d="M41 4V7" stroke="currentColor"/><path d="M31 4H38V7H31Z" fill="currentColor"/></svg></div>
-            <div className="sos-mobile-browser"><ShieldCheck size={10}/><span>Studio X OS · Mobile browser</span></div>
-            <div className="sos-mobile-app-bar" aria-hidden="true"><ChevronLeft size={17}/><span>studio<span>xos</span></span><MoreHorizontal size={18}/></div>
-            <div ref={screenRef} className="sos-mobile-screen" key={active} role="region" tabIndex={0} aria-label={stage.label + ' sample screen'} aria-describedby="sos-mobile-scroll-help"><Screen/></div>
-            <div className="sos-mobile-home-indicator" aria-hidden="true"/>
-          </div>
-          {frameAvailable && <img className="sos-mobile-device-frame" src="/assets/studio-x-os/devices/iphone-18-pro-2026.png" width="389" height="800" alt="" aria-hidden="true" loading="lazy" decoding="async" onError={() => setFrameAvailable(false)}/>}
-        </div>
-        <div className="sos-mobile-scroll-cue" aria-hidden="true" data-visible={hasMore}><ArrowDown size={13}/><span>Scroll inside the phone to explore</span></div>
-        <span className="sos-mobile-scroll-help" id="sos-mobile-scroll-help">Scroll inside this sample screen, or use the arrow and Page Down keys, to explore the full illustration.</span>
-        <div className="sos-mobile-stage-caption"><span>SAMPLE WORKFLOW</span><p>{stage.detail}</p><small id="sos-mobile-qualification">Interactive illustration · No live account or payment</small></div>
+        <ProductPhonePreview stage={active}><Screen /></ProductPhonePreview>
+        <div className="sos-mobile-stage-caption"><span>SAMPLE WORKFLOW</span><p>{stage.detail}</p><small id="sos-mobile-qualification">Studio X OS in a mobile browser</small></div>
       </div>
       <div className="sos-mobile-benefit" key={active}>
         <p>{stage.copy}</p>

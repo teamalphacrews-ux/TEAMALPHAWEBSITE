@@ -1,0 +1,36 @@
+.studio-commercial-glass .sx-activity-trend { margin-bottom: 16px; }
+.sx-activity-trend-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.sx-activity-trend-heading h2 { font-size: 16px; font-weight: 650; }
+.sx-activity-trend-heading p, .sx-activity-trend-heading > span { color: var(--studio-muted); font-size: 13px; }
+.sx-activity-trend-heading p { margin: 4px 0 0; }
+.sx-activity-trend-heading > span { white-space: nowrap; }
+.sx-activity-trend-heading > span strong { color: var(--studio-text); font-size: 24px; font-variant-numeric: tabular-nums; }
+.sx-activity-bars {
+  display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); align-items: end; gap: clamp(6px,2vw,36px);
+  padding: 0; list-style: none; margin: 22px 0 0;
+}
+.sx-activity-bars li { display: grid; justify-items: center; gap: 5px; }
+.sx-activity-amount, .sx-activity-bars time { font-size: 12px; color: var(--studio-muted); text-align: center; }
+.sx-activity-bars time b { margin-inline-start: 3px; font-weight: 600; }
+.sx-activity-bar-well { height: 96px; width: 100%; position: relative; background: var(--studio-surface-2); border-radius: 12px; overflow: hidden; }
+.sx-activity-bar-well i { position: absolute; bottom: 0; inset-inline: 0; border-radius: inherit; background: var(--studio-text); }
+.sx-activity-bars li:last-child i { background: linear-gradient(135deg,#f8bd57,#ee8420); }
+.sx-activity-filter { display: flex; width: fit-content; padding: 3px; border-radius: 12px; background: var(--studio-surface-2); gap: 3px; margin-block: 14px; }
+.sx-activity-filter button { border: 0; min-height: 40px; padding: 4px 14px; border-radius: 10px; cursor: pointer; font: inherit; font-size: 13px; color: var(--studio-muted); background: transparent; }
+.sx-activity-filter button[aria-pressed="true"] { background: var(--studio-text); color: var(--studio-canvas); }
+.sx-activity-filter button:focus-visible { outline: 2px solid var(--studio-focus); outline-offset: 2px; }
+.sx-activity-filter button span { margin-left: 3px; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion:no-preference) {
+  html:not([data-studio-motion="reduced"]) .sx-activity-bar-well i { animation: sx-activity-rise 560ms cubic-bezier(.22,1,.36,1) both; transform-origin: center bottom; }
+}
+@keyframes sx-activity-rise { from { transform: scaleY(.12); } to { transform: scaleY(1); } }
+@media (max-width:600px) {
+  .sx-activity-bars time b { display: block; }
+  .sx-activity-bar-well { height: 70px; }
+  .sx-activity-filter button { min-height: 44px; }
+}
+
+#sx-workspace-shell .studio-activity-content p { font-size: 14px; line-height: 1.55; }
+#sx-workspace-shell .studio-activity-content time { font-size: 12px; }
+#sx-workspace-shell .studio-activity-actions { gap: 8px; }
+#sx-workspace-shell .sx-activity-filter button { min-height: 44px; }

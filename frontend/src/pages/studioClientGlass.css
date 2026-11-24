@@ -1,0 +1,213 @@
+/* Commercial Smart Links share the workspace material without changing document data. */
+@media screen {
+  .studio-client-glass {
+    --client-ink: #202024;
+    --client-muted: #4b4b52;
+    --client-canvas: #f3f3f5;
+    --client-paper: #fff;
+    --client-subtle: #efeff2;
+    --client-glass: rgb(255 255 255 / .34);
+    --client-glass-strong: rgb(255 255 255 / .38);
+    --client-line: #c8c8ce;
+    --client-glass-line: rgb(255 255 255 / .78);
+    --client-button: #202024;
+    --client-button-ink: #fff;
+    --client-shadow: 0 20px 52px rgb(0 0 0 / .10), inset 0 1px 0 rgb(255 255 255 / .88), inset 0 -1px 0 rgb(255 255 255 / .20);
+    --client-highlight: linear-gradient(135deg,rgb(255 255 255 / .24),transparent 48%,rgb(255 255 255 / .08));
+    --client-radius: 30px;
+    --client-glass-blur: 24px;
+    --client-focus: #51515b;
+    --client-canvas-image: radial-gradient(ellipse at 8% 10%,rgb(255 255 255 / .65),transparent 52%),radial-gradient(ellipse at 94% 60%,rgb(0 0 0 / .025),transparent 55%),linear-gradient(145deg,#f7f7f8,#f0f0f2 62%,#f5f5f6);
+    color: var(--client-ink);
+    background: var(--client-canvas);
+    background-image: var(--client-canvas-image);
+    background-attachment: fixed;
+    font-size: 16px;
+    line-height: 1.65;
+    color-scheme: light;
+    -webkit-font-smoothing: antialiased;
+    scrollbar-color: var(--client-line) transparent;
+    caret-color: var(--client-ink);
+  }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass {
+    --cp-ink: var(--client-ink);
+    --cp-muted: var(--client-muted);
+    --cp-brass: var(--client-focus);
+    --cp-line: var(--client-line);
+    --cp-paper: var(--client-paper);
+    --cp-canvas: var(--client-canvas);
+    --cp-subtle: var(--client-subtle);
+    --cp-hover: var(--client-subtle);
+    --cp-button: var(--client-button);
+    --cp-button-ink: var(--client-button-ink);
+    --cp-shadow: var(--client-shadow);
+    background: var(--client-canvas);
+    background-image: var(--client-canvas-image);
+    font: 16px/1.65 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  .studio-client-glass[data-theme="dark"] {
+    --client-ink: #f4f4f6;
+    --client-muted: #bdbdc5;
+    --client-canvas: #000;
+    --client-paper: #242426;
+    --client-subtle: #2b2b2f;
+    --client-glass: rgb(30 30 34 / .32);
+    --client-glass-strong: rgb(35 35 39 / .38);
+    --client-line: #5d5d65;
+    --client-glass-line: rgb(255 255 255 / .24);
+    --client-button: #f3f3f5;
+    --client-button-ink: #202024;
+    --client-shadow: 0 22px 58px rgb(0 0 0 / .32), inset 0 1px 0 rgb(255 255 255 / .24), inset 0 -1px 0 rgb(255 255 255 / .04);
+    --client-highlight: linear-gradient(135deg,rgb(255 255 255 / .10),transparent 48%,rgb(255 255 255 / .04));
+    --client-focus: #d3d3db;
+    --client-canvas-image: radial-gradient(ellipse at 7% 5%,rgb(255 255 255 / .035),transparent 48%),radial-gradient(ellipse at 95% 58%,rgb(255 255 255 / .018),transparent 53%),linear-gradient(145deg,#08080a,#000 62%,#060608);
+    color-scheme: dark;
+  }
+  .studio-client-glass::selection,.studio-client-glass ::selection { background: var(--client-button); color: var(--client-button-ink); }
+  .studio-client-glass :is(button,a,input,textarea,summary):focus-visible { outline: 3px solid var(--client-focus); outline-offset: 4px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.cp-topbar,.cp-footer) { background: var(--client-glass); background-image: var(--client-highlight); border-color: var(--client-glass-line); box-shadow: inset 0 1px 0 rgb(255 255 255 / .16); -webkit-backdrop-filter: blur(var(--client-glass-blur,24px)); backdrop-filter: blur(var(--client-glass-blur,24px)); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-topbar span { letter-spacing: .02em; font-size: 16px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-topbar small { font-size: 14px; line-height: 1.5; letter-spacing: 0; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-topbar .cp-private-label { font-size: 14px; color: var(--client-muted); background: var(--client-subtle); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-theme-toggle { width: 46px; height: 46px; background: var(--client-glass-strong); border-color: var(--client-line); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.cp-welcome,.cp-feature-card,.cp-journey-card,.cp-card,.cp-payment-action.cp-next-action,.cp-chat-popup) { background: var(--client-glass); background-image: var(--client-highlight); border: 1px solid var(--client-glass-line); box-shadow: var(--client-shadow); -webkit-backdrop-filter: blur(var(--client-glass-blur,24px)) saturate(1.12); backdrop-filter: blur(var(--client-glass-blur,24px)) saturate(1.12); border-radius: var(--client-radius); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-welcome h1 { letter-spacing: -.04em; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.cp-welcome-content,.cp-workspace-heading) > .cp-eyebrow { display: none; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-welcome p { font-size: 16px; line-height: 1.75; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.cp-welcome .cp-eyebrow,.cp-cover-footer,.cp-feature-top,.cp-feature-status,.cp-feature-detail,.cp-feature-footer,.cp-journey-heading h2,.cp-journey-heading > span,.cp-step-label,.cp-journey li > small,.cp-accordion-label small,.cp-money-grid small,.cp-payment-list dt,.cp-payment-list dd,.cp-card-footer,.cp-delivery-meta,.cp-crew-grid li span,.cp-chat-heading p,.cp-message strong,.cp-message time,.cp-compose > label,.cp-compose small,.cp-footer) { font-size: 14px; line-height: 1.6; letter-spacing: 0; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-card {
+    --feature-ink: var(--client-ink);
+    --feature-base: var(--client-subtle);
+    --feature-light: var(--client-paper);
+    --feature-fluid-a: #b8b8c2;
+    --feature-fluid-b: #a6a6b0;
+    color: var(--client-ink);
+    min-height: 250px;
+  }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-fluid { opacity: .09; filter: saturate(0); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.cp-feature-icon,.cp-feature-status) { color: var(--client-ink); background: var(--client-glass-strong); border-color: var(--client-glass-line); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-value { color: var(--client-ink); font-size: clamp(27px,2.6vw,36px); letter-spacing: -.04em; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.cp-feature-detail,.cp-feature-footer) { color: var(--client-muted); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-footer { border-color: var(--client-line); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-card[aria-expanded="true"] { border-color: var(--client-focus); box-shadow: var(--client-shadow); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-card:disabled { background: var(--client-subtle); color: var(--client-muted); border-color: var(--client-line); box-shadow: none; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-card:disabled :is(.cp-feature-status,.cp-feature-value) { color: var(--client-muted); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-card:is(.is-attention,[data-state="attention"]) { border-color: var(--client-line); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-card:is(.is-attention,[data-state="attention"]) .cp-feature-status { color: var(--client-ink); font-weight: 650; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-progress { background: var(--client-line); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-progress i { background: var(--client-button); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-accordion-heading > button { color: var(--client-ink); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-accordion-label > span { color: var(--client-ink); font-size: 18px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.cp-icon,.cp-accordion-chevron) { background: var(--client-glass-strong); border-color: var(--client-glass-line); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.cp-money-grid > div,.cp-empty-inline,.cp-nested-accordion,.cp-payment-action:not(.cp-next-action)) { background: transparent; border-color: var(--client-line); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-section-body { font-size: 16px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.cp-payment-action p,.cp-workspace-heading p,.cp-empty-inline p,.cp-public-update,.cp-muted,.cp-loading,.cp-support-empty,.cp-support-empty p) { font-size: 16px; line-height: 1.75; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.cp-payment-action h3,.cp-empty-inline h3,.cp-crew-grid h3,.cp-chat-heading h2) { font-size: 18px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.cp-button,.cp-earlier,.cp-document-disclosure > summary) { min-height: 46px; font-size: 16px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-button { color: var(--client-ink) !important; background: var(--client-glass-strong); background-image: var(--client-highlight); border-color: var(--client-glass-line); box-shadow: inset 0 1px 0 rgb(255 255 255 / .20); -webkit-backdrop-filter: blur(var(--client-glass-blur,24px)); backdrop-filter: blur(var(--client-glass-blur,24px)); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-button.secondary { color: var(--client-ink) !important; background: var(--client-glass); background-image: var(--client-highlight); border-color: var(--client-glass-line); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-chat-heading,.client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-compose { background: transparent; border-color: var(--client-glass-line); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-messages { background: transparent; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-message { background: var(--client-paper); color: var(--client-ink); border-color: var(--client-line); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-message.client { background: var(--client-subtle); border-color: var(--client-line); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-message p { color: var(--client-ink); font-size: 16px; line-height: 1.75; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-compose textarea { background: var(--client-paper); color: var(--client-ink); border-color: var(--client-line); font-size: 16px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-chat-close { width: 44px; height: 44px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-chat-launcher { background: var(--client-glass-strong); color: var(--client-ink); border-color: var(--client-line); box-shadow: var(--client-shadow); -webkit-backdrop-filter: blur(var(--client-glass-blur,24px)); backdrop-filter: blur(var(--client-glass-blur,24px)); }
+
+  /* The paper remains opaque and preserves the studio's chosen document font/accent. */
+  :is(.shared-quotation,.invoice-public).studio-client-glass { color: #202126; background: var(--client-canvas); background-image: var(--client-canvas-image); color-scheme: light; }
+  .invoice-public.studio-client-glass .invoice-client-hero { position: relative; isolation: isolate; }
+  .invoice-public.studio-client-glass .invoice-client-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: #0000009e; pointer-events: none; }
+  .invoice-public.studio-client-glass .invoice-client-hero h1 { color: #fff !important; }
+  .invoice-public.studio-client-glass .invoice-pay-now { color: var(--invoice-accent-ink); }
+  .invoice-public.studio-client-glass .invoice-client-main > footer a { color: var(--client-muted); text-decoration: underline; }
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-paper,.invoice-paper) { background: #fff; border: 1px solid #e3e6ec; border-radius: 22px; box-shadow: var(--client-shadow); color: #202126; font-size: 16px; line-height: 1.7; }
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-document-header button,.invoice-paper-tools button) { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 1px solid #c8ced8; border-radius: 50%; background: #f5f6f9; color: #3e4755; }
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-meta,.sq-meta small,.invoice-document-meta,.invoice-document-brand span,.sq-table th,.invoice-document-table th,.sq-notes h3,.invoice-document-note > small,.sq-accept > p,.sq-acceptance p) { color: #5b626f; font-size: 14px; line-height: 1.65; letter-spacing: 0; }
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-meta strong,.invoice-document-meta strong,.sq-table td,.sq-table td:first-child > strong,.invoice-document-table td,.sq-paper dl,.invoice-document-totals,.sq-notes p,.invoice-document-note) { color: #202126; font-size: 16px; line-height: 1.7; }
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-table td p,.invoice-document-table p) { color: #5b626f; font-size: 14px; }
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-accept > button,.sq-acceptance button,.invoice-pay-now) { min-height: 48px; border-radius: 999px; font-size: 16px; letter-spacing: 0; }
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-document-header h2 > span,.invoice-status) { background: #eef1f6; color: #46566e; font-size: 14px; letter-spacing: 0; }
+  .shared-quotation.studio-client-glass .sq-hero > small { font-size: 14px; color: #fff; }
+  .shared-quotation.studio-client-glass footer,.invoice-public.studio-client-glass .invoice-client-main > footer { color: var(--client-muted); font-size: 14px; letter-spacing: 0; }
+  .invoice-public-loading.studio-client-glass { font-family: ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color: var(--client-ink); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.shared-quotation,.invoice-public).studio-client-glass { --client-ink: inherit; --client-muted: inherit; --client-canvas: inherit; --client-canvas-image: inherit; --client-shadow: inherit; --client-focus: inherit; background: transparent; }
+  /* Payment instructions are a portal; scope them to an active commercial Smart Link. */
+  body:has(.studio-client-glass) .cmp-payment-overlay { background: rgb(0 0 0 / .34); }
+  body:has(.studio-client-glass) .cmp-payment-overlay[data-theme="dark"] { background: rgb(0 0 0 / .62); }
+  body:has(.studio-client-glass) .cmp-payment-dialog { background: rgb(255 255 255 / var(--payment-surface-opacity,.34)); background-image: linear-gradient(135deg,rgb(255 255 255 / .24),transparent 50%); border-color: rgb(255 255 255 / .78); border-radius: 30px; box-shadow: 0 24px 80px #00000033,inset 0 1px 0 rgb(255 255 255 / .88),inset 0 -1px 0 rgb(255 255 255 / .20); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
+  body:has(.studio-client-glass) .cmp-payment-overlay[data-theme="dark"] .cmp-payment-dialog { background: rgb(30 30 34 / var(--payment-surface-opacity,.32)); background-image: linear-gradient(135deg,rgb(255 255 255 / .10),transparent 50%); border-color: rgb(255 255 255 / .24); box-shadow: 0 24px 80px #0006,inset 0 1px 0 rgb(255 255 255 / .24),inset 0 -1px 0 rgb(255 255 255 / .04); }
+  body:has(.invoice-public.studio-client-glass) .cmp-payment-dialog { --payment-surface-opacity: .95; }
+  body:has(.studio-client-glass) .cmp-payment-dialog :is(.cmp-payment-description,.cmp-payment-help,.cmp-payment-note p,.cmp-payment-unavailable p,.cmp-payment-method-heading p,.cmp-payment-summary span,.cmp-payment-footer > span,.cmp-payment-feedback,.cmp-payment-eyebrow,.cmp-payment-manual p) { font-size: 14px; line-height: 1.7; }
+  body:has(.studio-client-glass) .cmp-payment-dialog :is(.cmp-payment-summary strong,.cmp-payment-method-heading h3,.cmp-payment-bank-details,.cmp-payment-copy-row code,.cmp-payment-action,.cmp-payment-done,.cmp-payment-manual label,.cmp-payment-manual textarea) { font-size: 16px; line-height: 1.7; }
+  body:has(.studio-client-glass) .cmp-payment-dialog .cmp-payment-amount strong { font-size: 28px; letter-spacing: -.03em; }
+  body:has(.studio-client-glass) .cmp-payment-dialog :is(.cmp-payment-copy,.cmp-payment-close,.cmp-payment-done,.cmp-payment-action) { min-width: 44px; min-height: 44px; }
+  body:has(.studio-client-glass) .cmp-payment-dialog .cmp-payment-reference { grid-template-columns: minmax(0,1fr) 44px; }
+  body:has(.studio-client-glass) .cmp-payment-dialog :is(.cmp-payment-summary,.cmp-payment-method,.cmp-payment-footer) { background: transparent; border-color: rgb(255 255 255 / .32); }
+  body:has(.studio-client-glass) .cmp-payment-dialog :is(.cmp-payment-copy,.cmp-payment-close,.cmp-payment-method-icon,.cmp-payment-copy-row,.cmp-payment-manual) { background: #f5f5f7; color: #4b4b52; border-color: #c8c8ce; }
+  body:has(.studio-client-glass) .cmp-payment-overlay[data-theme="dark"] .cmp-payment-dialog :is(.cmp-payment-copy,.cmp-payment-close,.cmp-payment-method-icon,.cmp-payment-copy-row,.cmp-payment-manual) { background: #29292d; color: #d8d8df; border-color: #5d5d65; }
+  body:has(.studio-client-glass) .cmp-payment-dialog :is(.cmp-payment-copy-row code,.cmp-payment-bank-details,.cmp-payment-manual label,.cmp-payment-manual textarea) { color: #414148; }
+  body:has(.studio-client-glass) .cmp-payment-overlay[data-theme="dark"] .cmp-payment-dialog :is(.cmp-payment-copy-row code,.cmp-payment-bank-details,.cmp-payment-manual label,.cmp-payment-manual textarea) { color: #d8d8df; }
+  body:has(.studio-client-glass) .cmp-payment-dialog :is(.cmp-payment-description,.cmp-payment-help,.cmp-payment-note p,.cmp-payment-unavailable p,.cmp-payment-method-heading p,.cmp-payment-summary span,.cmp-payment-footer > span,.cmp-payment-feedback,.cmp-payment-eyebrow,.cmp-payment-manual p) { color: #414148; }
+  body:has(.studio-client-glass) .cmp-payment-overlay[data-theme="dark"] .cmp-payment-dialog :is(.cmp-payment-description,.cmp-payment-help,.cmp-payment-note p,.cmp-payment-unavailable p,.cmp-payment-method-heading p,.cmp-payment-summary span,.cmp-payment-footer > span,.cmp-payment-feedback,.cmp-payment-eyebrow,.cmp-payment-manual p) { color: #c8c8d0; }
+  body:has(.studio-client-glass) .cmp-payment-overlay .cmp-payment-dialog :is(.cmp-payment-action,.cmp-payment-done) { color: #202126; background: rgb(255 255 255 / .38); background-image: linear-gradient(135deg,rgb(255 255 255 / .24),transparent 52%); border-color: rgb(255 255 255 / .78); box-shadow: inset 0 1px 0 rgb(255 255 255 / .60); }
+  body:has(.studio-client-glass) .cmp-payment-overlay[data-theme="dark"] .cmp-payment-dialog :is(.cmp-payment-action,.cmp-payment-done) { color: #f3f5fb; background: rgb(35 35 39 / .38); background-image: linear-gradient(135deg,rgb(255 255 255 / .10),transparent 52%); border-color: rgb(255 255 255 / .30); box-shadow: inset 0 1px 0 rgb(255 255 255 / .20); }
+}
+
+/* Standalone documents follow the device; Smart Links keep their explicit theme control. */
+@media screen and (prefers-color-scheme: dark) {
+  .studio-client-glass:not([data-theme]) {
+    --client-ink: #f4f4f6; --client-muted: #bdbdc5; --client-canvas: #000;
+    --client-paper: #242426; --client-subtle: #2b2b2f; --client-glass: rgb(30 30 34 / .32);
+    --client-glass-strong: rgb(35 35 39 / .38); --client-line: #5d5d65; --client-glass-line: rgb(255 255 255 / .24);
+    --client-button: #f3f3f5; --client-button-ink: #202024;
+    --client-shadow: 0 22px 58px rgb(0 0 0 / .32),inset 0 1px 0 rgb(255 255 255 / .24),inset 0 -1px 0 rgb(255 255 255 / .04); --client-highlight: linear-gradient(135deg,rgb(255 255 255 / .10),transparent 48%,rgb(255 255 255 / .04)); --client-focus: #d3d3db;
+    --client-canvas-image: radial-gradient(ellipse at 7% 5%,rgb(255 255 255 / .035),transparent 48%),radial-gradient(ellipse at 95% 58%,rgb(255 255 255 / .018),transparent 53%),linear-gradient(145deg,#08080a,#000 62%,#060608);
+  }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass :is(.shared-quotation,.invoice-public).studio-client-glass { --client-ink: inherit; --client-muted: inherit; --client-canvas: inherit; --client-canvas-image: inherit; --client-shadow: inherit; --client-focus: inherit; }
+}
+@media screen and (max-width: 900px) {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-card { min-height: 238px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-topbar .cp-private-label { display: none; }
+}
+@media screen and (max-width: 600px) {
+  .studio-client-glass { --client-radius: 24px; --client-glass-blur: 14px; }
+  body:has(.studio-client-glass) .cmp-payment-dialog { border-radius: 24px; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-main { padding: 20px 16px 32px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-topbar { padding: 16px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-topbar small { font-size: 12px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-welcome-content { padding: 26px 22px; width: 100%; max-width: 100%; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-card { padding: 20px 16px; min-height: 255px; border-radius: var(--client-radius); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-top { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-top > span:nth-child(2) { flex-basis: calc(100% - 45px); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-value { font-size: clamp(23px,5vw,30px); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-status { margin-top: 18px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-journey { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-chat-popup { max-height: calc(100dvh - 24px); }
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-paper,.invoice-paper) { border-radius: 18px; padding: 24px 20px; }
+  .shared-quotation.studio-client-glass .sq-document-header { flex-wrap: wrap; }
+  .shared-quotation.studio-client-glass .sq-document-header > div { margin-left: auto; }
+}
+@media screen and (max-width: 359px) {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-grid { grid-template-columns: minmax(0,1fr); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-glass .cp-feature-card { min-height: 220px; }
+}
+@media screen and (prefers-reduced-transparency: reduce) {
+  .studio-client-glass.studio-client-glass.studio-client-glass { --client-glass: var(--client-paper); --client-glass-strong: var(--client-paper); }
+  .studio-client-glass :is(.cp-topbar,.cp-footer,.cp-welcome,.cp-feature-card,.cp-journey-card,.cp-card,.cp-chat-popup,.cp-chat-launcher,.cp-button,.cp-theme-toggle) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  body:has(.studio-client-glass) .cmp-payment-dialog { background: #fff; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  body:has(.studio-client-glass) .cmp-payment-overlay[data-theme="dark"] .cmp-payment-dialog { background: #252527; }
+}
+@media print {
+  .studio-client-glass,.studio-client-glass * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; box-shadow: none !important; text-shadow: none !important; }
+  .studio-client-glass { background: #fff !important; background-image: none !important; color: #111 !important; color-scheme: light; }
+  .studio-client-glass :is(.sq-paper,.invoice-paper) { color: #111 !important; background: #fff !important; border: 0 !important; border-radius: 0 !important; }
+  .studio-client-glass :is(.sq-paper,.invoice-paper) * { color: #111 !important; background: transparent !important; border-color: #ccc !important; }
+  .studio-client-glass :is(.sq-table,.invoice-table-wrap) { overflow: visible !important; }
+  .studio-client-glass :is(.sq-table table,.invoice-document-table) { min-width: 0 !important; width: 100% !important; }
+  .studio-client-glass :is(.sq-paper,.invoice-paper) { break-inside: auto; }
+  .studio-client-glass :is(.sq-table tr,.invoice-document-table tr,.sq-meta,.invoice-document-meta,.sq-paper dl,.invoice-document-totals) { break-inside: avoid; }
+  .studio-client-glass :is(.sq-table thead,.invoice-document-table thead) { display: table-header-group; }
+}

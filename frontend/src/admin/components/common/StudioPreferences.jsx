@@ -6,7 +6,8 @@ import axios from 'axios';
 import { useAuth } from '../../../context/AuthContext';
 import API from '../../../utils/apiConfig';
 import { OVERVIEW_CARDS, defaultOverviewPreferences as defaultPreferences, normalizeOverviewPreferences as normalize, moveOverviewCard } from '../../../utils/overviewPreferences';
-import { cancelStudioThemeTransition, transitionStudioTheme } from '../../../utils/studioThemeTransition';
+import { cancelStudioThemeTransition, transitionCommercialTheme, transitionStudioTheme } from '../../../utils/studioThemeTransition';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
 import { installStudioBrowserTheme } from '../../../utils/studioBrowserTheme';
 import '../../studio-theme-transition.css';
 export { OVERVIEW_CARDS };
@@ -121,7 +122,8 @@ function AccountPreferences({ children, storageKey, token, preview, user }) {
     if (Object.hasOwn(patch, 'theme')) {
       intendedTheme.current = patch.theme;
       const resolve = theme => theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
-      if (resolve(current.current.theme) !== resolve(patch.theme)) return transitionStudioTheme({ origin,
+      const transition = IS_COMMERCIAL_DEPLOYMENT ? transitionCommercialTheme : transitionStudioTheme;
+      if (resolve(current.current.theme) !== resolve(patch.theme)) return transition({ origin,
         reduceMotion: patch.reduceMotion ?? current.current.reduceMotion, commit: () => flushSync(apply) });
       cancelStudioThemeTransition();
     }

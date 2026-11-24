@@ -54,3 +54,18 @@
  .connection-feedback{margin-left:0}.drive-connection-main{flex-wrap:wrap}.drive-connection-main>.connection-status{margin-left:50px}.drive-connection-actions{margin-left:0}.drive-connection-actions>.studio-button{flex:1;justify-content:center}
 }
 @media(prefers-reduced-motion:reduce){.assistant-connections *,.drive-connection *{transition:none!important;animation:none!important}}
+
+#sx-workspace-shell .studio-integrations .assistant-consent { min-height: 44px; align-items: center; }
+#sx-workspace-shell .studio-integrations .assistant-consent input { margin-block-start: 0; }
+@media (max-width: 440px) {
+  #sx-workspace-shell .studio-integrations .assistant-provider-actions {
+    display: grid;
+    gap: 8px;
+    margin-inline: 0;
+  }
+  #sx-workspace-shell .studio-integrations .assistant-provider-actions > .studio-button {
+    margin-inline: 0;
+    justify-content: center;
+    width: 100%;
+  }
+}

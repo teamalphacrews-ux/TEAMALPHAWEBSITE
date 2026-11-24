@@ -1,24 +1,29 @@
 import { createElement, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Camera, CheckCheck, FolderOpen, ShieldCheck, SlidersHorizontal, UsersRound } from 'lucide-react';
-import { ProductScreenImage } from './ProductScreens';
+import { ArrowLeft, ArrowRight, Camera, ShieldCheck, SlidersHorizontal, UsersRound } from 'lucide-react';
+import ProductWorkspaceCapture from './ProductWorkspaceCapture';
 import './productWorkbench.css';
 
 const mediaQuery = '(max-width: 850px), (max-height: 760px), (prefers-reduced-motion: reduce)';
 const capabilities = [
-  { name: 'People', icon: UsersRound, title: 'People, in the right place.', copy: 'Contacts, team invitations and owner, administrator and staff roles. Give each person their own access to your studio workspace.', label: 'YOUR STUDIO · YOUR TEAM' },
-  { name: 'Your view', icon: SlidersHorizontal, title: 'A view that feels like you.', copy: 'Arrange your overview, hide cards you don’t need and bring them back later. Move between daylight and dark modes with considered motion.', label: 'PERSONAL, BY DESIGN' },
-  { name: 'Your brand', icon: Camera, title: 'Your name on the experience.', copy: 'Studio profile, logo, business details and document templates. Present quotes, invoices and client updates with your studio’s identity.', label: 'A CONSIDERED CLIENT EXPERIENCE' },
-  { name: 'Your studio', icon: ShieldCheck, title: 'Space for your own business.', copy: 'Separate studio workspaces keep business records together. Invite your team as you grow, with a plan based on the seats you need.', label: 'ROOM TO GROW' },
+  { name: 'People', screen: 'team', theme: 'light', caption: 'Team members and their workspace roles', icon: UsersRound, title: 'People, in the right place.', copy: 'Contacts, team invitations and owner, administrator and staff roles. Give each person their own access to your studio workspace.', label: 'YOUR STUDIO · YOUR TEAM' },
+  { name: 'Your view', screen: 'overview', theme: 'dark', caption: 'Today’s schedule and studio priorities', icon: SlidersHorizontal, title: 'A view that feels like you.', copy: 'Arrange your overview, hide cards you don’t need and bring them back later. Move between daylight and dark modes with considered motion.', label: 'PERSONAL, BY DESIGN' },
+  { name: 'Your brand', screen: 'studio-brand', theme: 'light', caption: 'Document logo, accent color and typography', icon: Camera, title: 'Your name on the experience.', copy: 'Studio profile, logo, business details and document templates. Present quotes, invoices and client updates with your studio’s identity.', label: 'A CONSIDERED CLIENT EXPERIENCE' },
+  { name: 'Your studio', screen: 'settings', theme: 'dark', caption: 'Settings for the sample workspace', icon: ShieldCheck, title: 'Space for your own business.', copy: 'Separate studio workspaces keep business records together. Invite your team as you grow, with a plan based on the seats you need.', label: 'ROOM TO GROW' },
 ];
 const clamp = value => Math.max(0, Math.min(1, value));
 
-function CapabilityArt({ index }) {
-  return <div className={'sos-feature-art art-' + index} aria-hidden="true">
-    {index === 0 && <div className="sos-art-team"><div><span>YOUR PEOPLE</span><UsersRound size={18}/></div>{[['SY','Studio owner','Owner'],['AK','Photographer','Staff'],['SJ','Studio manager','Admin']].map(([initials,name,role])=><p key={initials}><i>{initials}</i><strong>{name}</strong><small>{role}</small></p>)}</div>}
-    {index === 1 && <ProductScreenImage dark decorative phoneSource={false} className="sos-workbench-screen" sizes="(max-width: 600px) 92vw, 650px" />}
-    {index === 2 && <div className="sos-art-document"><div><Camera size={22}/><span>YOUR STUDIO</span></div><h4>A beautiful beginning.</h4><p>Photography & cinematography</p><div className="sos-art-doc-line"/><div className="sos-art-doc-line"/><div className="sos-art-doc-line short"/><strong>Made personal, by you.<CheckCheck size={17}/></strong></div>}
-    {index === 3 && <div className="sos-art-workspaces"><span><ShieldCheck size={28}/></span><p><Camera size={22}/>Your studio<i>PRIVATE</i></p><p><UsersRound size={22}/>Your people<i>CONNECTED</i></p><p><FolderOpen size={22}/>Your work<i>TOGETHER</i></p></div>}
-  </div>;
+export function CapabilityArt({ index }) {
+  const { screen, theme, caption } = capabilities[index];
+  return (
+    <div className={'sos-feature-art sos-workbench-art art-' + index}>
+      <ProductWorkspaceCapture
+        view={screen}
+        theme={theme}
+        caption={caption}
+        className="sos-workbench-capture"
+      />
+    </div>
+  );
 }
 
 export default function ProductWorkbench() {
@@ -105,7 +110,7 @@ export default function ProductWorkbench() {
             </article>)}
           </div>
         </div>
-        <div className="sos-workbench-bottom"><span>One connected studio. A view of your own.</span><span>Product illustrations · Sample data</span></div>
+        <div className="sos-workbench-bottom"><span>One connected studio. A view of your own.</span><span>Product screen captures · Sample studio</span></div>
       </div>
     </div>
   </section>;

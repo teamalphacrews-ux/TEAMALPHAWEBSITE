@@ -1,0 +1,96 @@
+/* Commercial Smart Link: colored liquid light belongs to each existing project
+   role. Screen-only so authored quotation/invoice paper and print stay intact. */
+@media screen {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] {
+    --radiance-quote-rgb: 193 147 92;
+    --radiance-invoice-rgb: 106 147 181;
+    --radiance-payments-rgb: 232 148 55;
+    --radiance-production-rgb: 190 110 78;
+    --radiance-crew-rgb: 134 138 153;
+    --radiance-quote-accent: #704716;
+    --radiance-invoice-accent: #2a4e68;
+    --radiance-payments-accent: #713d09;
+    --radiance-production-accent: #733c2b;
+    --radiance-crew-accent: #4d4e5f;
+    --radiance-quote-muted: #48392d;
+    --radiance-invoice-muted: #2e4250;
+    --radiance-payments-muted: #4e3927;
+    --radiance-production-muted: #52352c;
+    --radiance-crew-muted: #3e4049;
+  }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme="dark"] {
+    --radiance-quote-accent: #f1cd9b;
+    --radiance-invoice-accent: #bdd9ed;
+    --radiance-payments-accent: #ffbd68;
+    --radiance-production-accent: #f0b69b;
+    --radiance-crew-accent: #ced1dd;
+    --radiance-quote-muted: #eeded0;
+    --radiance-invoice-muted: #d8e7f2;
+    --radiance-payments-muted: #f6dfc4;
+    --radiance-production-muted: #f2dcce;
+    --radiance-crew-muted: #e2e2e9;
+  }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(.tone-quote,#project-quotation) {
+    --radiance-rgb: var(--radiance-quote-rgb); --radiance-accent: var(--radiance-quote-accent); --radiance-muted: var(--radiance-quote-muted);
+  }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(.tone-invoice,#project-invoice) {
+    --radiance-rgb: var(--radiance-invoice-rgb); --radiance-accent: var(--radiance-invoice-accent); --radiance-muted: var(--radiance-invoice-muted);
+  }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(.tone-payments,#project-payments,.cp-next-action) {
+    --radiance-rgb: var(--radiance-payments-rgb); --radiance-accent: var(--radiance-payments-accent); --radiance-muted: var(--radiance-payments-muted);
+  }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(.tone-production,#project-delivery) {
+    --radiance-rgb: var(--radiance-production-rgb); --radiance-accent: var(--radiance-production-accent); --radiance-muted: var(--radiance-production-muted);
+  }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(#project-crew,#project-support,.cp-chat-launcher) {
+    --radiance-rgb: var(--radiance-crew-rgb); --radiance-accent: var(--radiance-crew-accent); --radiance-muted: var(--radiance-crew-muted);
+  }
+
+  /* Section color stays in chrome. Document paper, messages, amounts and
+     accepted/paid/overdue/delivery status treatments retain their own roles. */
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(#project-quotation,#project-invoice,#project-payments,#project-delivery,#project-crew) { border-color: color-mix(in srgb,var(--radiance-accent) 28%,var(--client-glass-line)); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(#project-quotation,#project-invoice,#project-payments,#project-delivery,#project-crew)>.cp-accordion-heading { background: linear-gradient(110deg,rgb(var(--radiance-rgb) / .16),rgb(var(--radiance-rgb) / .04) 74%); border-radius: var(--client-radius,30px); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(#project-quotation,#project-invoice,#project-payments,#project-delivery,#project-crew)>.cp-accordion-heading .cp-accordion-label>span { color: var(--radiance-accent); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(#project-quotation,#project-invoice,#project-payments,#project-delivery,#project-crew)>.cp-accordion-heading .cp-icon { color: var(--radiance-accent); background: var(--radiance-soft-reading); border-color: color-mix(in srgb,var(--radiance-accent) 34%,var(--client-glass-line)); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(#project-quotation,#project-invoice,#project-payments,#project-delivery,#project-crew)>.cp-accordion-heading>button:focus-visible { outline-color: var(--radiance-accent); }
+  .studio-client-radiance[data-theme] .cp-accordion-heading .cp-section-index {
+    color: var(--radiance-muted, var(--client-muted));
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-next-action { background: linear-gradient(115deg,rgb(var(--radiance-rgb) / .18),transparent 76%),var(--client-highlight),var(--client-glass); border-color: color-mix(in srgb,var(--radiance-accent) 35%,var(--client-glass-line)); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-next-action .cp-eyebrow { color: var(--radiance-accent); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] #project-payments>.cp-section-body>h3 { color: var(--radiance-accent); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-journey-card { background: linear-gradient(110deg,rgb(var(--radiance-quote-rgb) / .10),rgb(var(--radiance-invoice-rgb) / .09) 34%,rgb(var(--radiance-payments-rgb) / .09) 65%,rgb(var(--radiance-production-rgb) / .12)),var(--client-highlight),var(--client-glass); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] #project-support { border-color: color-mix(in srgb,var(--radiance-accent) 30%,var(--client-glass-line)); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] #project-support>.cp-chat-heading { background: linear-gradient(110deg,rgb(var(--radiance-rgb) / .17),transparent 85%); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-chat-launcher { background: linear-gradient(135deg,rgb(var(--radiance-rgb) / .18),rgb(var(--radiance-rgb) / .07)),var(--client-glass-strong); color: var(--radiance-accent); border-color: var(--radiance-accent); }
+
+  /* Controls remain 44px; the tool row can wrap without shrinking targets. */
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar { flex-wrap: wrap; gap: 16px 24px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar>div:first-of-type { flex: 1 1 220px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar-tools { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--client-line); border-radius: 999px; background: var(--client-glass-strong); color: var(--client-ink); font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1.4; cursor: pointer; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle>span { max-width: 165px; font-size: 13px; line-height: 1.4; letter-spacing: 0; text-transform: none; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle:hover:not(:disabled) { border-color: var(--client-focus); background: var(--client-paper); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle:disabled { opacity: 1; color: var(--client-muted); cursor: default; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle:focus-visible { outline: 3px solid var(--client-focus); outline-offset: 4px; }
+}
+
+@media screen and (max-width: 600px) {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar { padding: 16px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar>div:first-of-type { flex-basis: 100%; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar-tools { width: 100%; gap: 8px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar-tools .cp-private-label { width: auto; height: auto; min-height: 44px; padding: 8px 12px; font-size: 12px; line-height: 1.4; letter-spacing: 0; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle { width: 44px; height: 44px; padding: 0; flex: 0 0 44px; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle>span { display: none; }
+}
+@media screen and (prefers-reduced-motion: reduce) {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-feature-card { animation: none !important; transition: none !important; }
+}
+@media screen and (prefers-reduced-transparency: reduce) {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-feature-card { background: color-mix(in srgb,var(--radiance-accent) 12%,var(--client-paper)); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media screen and (forced-colors: active) {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(.cp-feature-card,.cp-feature-status,.cp-feature-icon,.cp-card>.cp-accordion-heading,.cp-chat-launcher,.cp-effects-toggle) { background: Canvas; color: CanvasText; border-color: CanvasText; box-shadow: none; }
+}

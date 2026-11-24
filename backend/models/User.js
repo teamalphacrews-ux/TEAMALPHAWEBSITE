@@ -4,6 +4,7 @@ const personalDefaults = preferences.personalDefaults();
 const personalPreferenceFields = {
   ...Object.fromEntries(Object.entries(preferences.PERSONAL_ENUMS).map(([key, choices]) => [key, { type: String, enum: choices, default: personalDefaults[key] }])),
   ...Object.fromEntries(preferences.PERSONAL_BOOLEANS.map(key => [key, { type: Boolean, default: personalDefaults[key] }])),
+  sidebarOrder: { type: [String], default: () => [], validate: preferences.validSidebarOrder },
   timezone: { type: String, default: 'studio', maxlength: 80, validate: preferences.validTimezone },
   notificationVolume: { type: Number, default: 50, min: 0, max: 100, validate: Number.isInteger },
   notificationCategories: { type: [String], enum: preferences.NOTIFICATION_CATEGORIES, default: () => [...preferences.NOTIFICATION_CATEGORIES], validate: value => new Set(value).size === value.length },

@@ -1,0 +1,79 @@
+/* Bring the production, crew and month-calendar controls into the commercial
+   control contract without changing their handlers or the personal product. */
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-crm-project-title {
+  min-height: var(--studio-control-height, 44px);
+  padding-block: 6px;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-crm-project-crew > button,.studio-crm-project-links > a,.studio-crm-project-links > button,.ops-assignment-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--studio-control-height, 44px);
+  gap: var(--studio-control-gap, 8px);
+  padding: 10px 8px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-crm-project-crew > button,.ops-assignment-button) {
+  justify-content: flex-start;
+  text-align: left;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-crm-project-links {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-crm-project-title,.studio-crm-project-crew > button,.studio-crm-project-links > a,.studio-crm-project-links > button,.ops-assignment-button) > svg {
+  width: var(--studio-control-icon-size, 18px);
+  height: var(--studio-control-icon-size, 18px);
+  flex: 0 0 var(--studio-control-icon-size, 18px);
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-crm-project-title,.studio-crm-project-crew > button,.studio-crm-project-links > a,.studio-crm-project-links > button,.ops-assignment-button,.workspace-day-number) {
+  transition: color var(--studio-control-duration, 180ms) ease, background-color var(--studio-control-duration, 180ms) ease, box-shadow var(--studio-control-duration, 180ms) ease;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-crm-project-title,.studio-crm-project-crew > button,.studio-crm-project-links > a,.studio-crm-project-links > button,.ops-assignment-button,.workspace-day-number):focus-visible {
+  outline: 2px solid var(--studio-focus);
+  outline-offset: 3px;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .workspace-day-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--studio-control-height, 44px);
+  height: var(--studio-control-height, 44px);
+  min-width: var(--studio-control-height, 44px);
+  min-height: var(--studio-control-height, 44px);
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-nav-group-toggle {
+  min-height: var(--studio-control-height, 44px);
+  font-size: 12px !important;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-mobile-navigation > :is(a,button) { font-size: 12px; }
+
+@media (max-width: 700px) {
+  /* Seven 44px targets plus each cell's border. Narrower screens can scroll
+     this existing calendar region without overlapping adjacent date targets. */
+  html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .workspace-calendar-grid {
+    grid-template-columns: repeat(7, minmax(45px, 1fr));
+    min-width: 316px;
+    width: 100%;
+  }
+  html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .workspace-calendar-day {
+    min-width: 0;
+    padding: 0;
+  }
+  html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .workspace-day-number {
+    width: 100%;
+    height: 68px;
+    flex-direction: column;
+    gap: 5px;
+    border-radius: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-crm-project-title,.studio-crm-project-crew > button,.studio-crm-project-links > a,.studio-crm-project-links > button,.ops-assignment-button,.workspace-day-number) { transition: none; }
+}
+html[data-studio-motion=reduced] .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-crm-project-title,.studio-crm-project-crew > button,.studio-crm-project-links > a,.studio-crm-project-links > button,.ops-assignment-button,.workspace-day-number) { transition: none; }

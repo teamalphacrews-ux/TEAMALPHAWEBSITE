@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "films": {
+    "hero": {
+      "sourceUrl": "https://cdn.sceneai.art/Hero%20Section%20Video/50b4f304-cdca-4e12-8735-580d225834be.mp4",
+      "desktop": {
+        "path": "/assets/studio-x-os/media/20261115/fluid-hero-1280-ac3c8a467059.mp4",
+        "bytes": 783540,
+        "width": 1280,
+        "height": 736,
+        "duration": 5.033333333333333,
+        "frameCount": 151,
+        "sha256": "ac3c8a46705975e1e54745901e0b7a773cd7802dbcf11fa1a0b58b020794fc93"
+      },
+      "small": {
+        "path": "/assets/studio-x-os/media/20261115/fluid-hero-960-e09ba23b4867.mp4",
+        "bytes": 429263,
+        "width": 960,
+        "height": 552,
+        "duration": 5.033333333333333,
+        "frameCount": 151,
+        "sha256": "e09ba23b4867f37c4f39abd1412b108ffd88cbf27bfbce6b822e18209f81b94a"
+      }
+    },
+    "workbench": {
+      "sourceUrl": "https://cdn.sceneai.art/Hero%20Section%20Video/1bcc8fa3-37f6-4c53-8591-0347e4c7f8ac.mp4",
+      "desktop": {
+        "path": "/assets/studio-x-os/media/20261115/fluid-workbench-1280-864724ce3808.mp4",
+        "bytes": 763060,
+        "width": 1280,
+        "height": 716,
+        "duration": 5.041666666666667,
+        "frameCount": 121,
+        "sha256": "864724ce38083da41fec52b4750b7558ac66a43f39de1441f51dcd78249f5e8a"
+      },
+      "small": {
+        "path": "/assets/studio-x-os/media/20261115/fluid-workbench-960-af2110a65532.mp4",
+        "bytes": 419863,
+        "width": 960,
+        "height": 538,
+        "duration": 5.041666666666667,
+        "frameCount": 121,
+        "sha256": "af2110a6553225ebe05439db5d32948d4ab34e48b380d2e68fbb7b9dfb1bed8c"
+      }
+    },
+    "mobile": {
+      "sourceUrl": "https://cdn.sceneai.art/Hero%20Section%20Video/736fd4a0-70ac-4f44-9633-55769ead6aca.mp4",
+      "desktop": {
+        "path": "/assets/studio-x-os/media/20261115/fluid-mobile-1280-0d67fb894ad0.mp4",
+        "bytes": 1418424,
+        "width": 1280,
+        "height": 720,
+        "duration": 8.0,
+        "frameCount": 192,
+        "sha256": "0d67fb894ad0652ca03df6ced419bfe84a2a682a52f0f95d4db4de53c1abcef7"
+      },
+      "small": {
+        "path": "/assets/studio-x-os/media/20261115/fluid-mobile-960-f3492a168f7d.mp4",
+        "bytes": 765167,
+        "width": 960,
+        "height": 540,
+        "duration": 8.0,
+        "frameCount": 192,
+        "sha256": "f3492a168f7d27872957b61d8542bed6c1ae4b8abf519195692027192a77e187"
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@ import StudioSelect from '../common/StudioSelect';
 import { createElement, useId, useState } from 'react';
 import { Sun, Moon, Monitor, SlidersHorizontal, RotateCcw, Check, Cloud, RefreshCw } from 'lucide-react';
 import { useStudioPreferences } from '../common/StudioPreferences';
-import OverviewCustomizer from '../common/OverviewCustomizer';
+import OverviewCustomizerDialog from '../common/OverviewCustomizerDialog';
 import { SettingsToggle } from './SettingsEditor';
 import { SettingsGroup } from './SettingsDisclosures';
 import { Link } from 'react-router-dom';
@@ -55,6 +55,6 @@ export default function WorkspacePreferences() {
       {confirmReset && <div className="settings-pref-confirm" role="group" aria-label="Confirm preference reset"><p>Reset your personal workspace preferences?</p><div><button type="button" className="studio-button" onClick={() => setConfirmReset(false)}>Cancel</button><button type="button" className="studio-button primary" onClick={() => { resetPreferences(); setConfirmReset(false); setNotice('Default personal preferences applied.'); }}>Reset preferences</button></div></div>}
       {notice && <p className="settings-pref-notice" role="status">{notice}</p>}
     </SettingsGroup>
-    {customizing && <OverviewCustomizer onClose={() => setCustomizing(false)} />}
+    {customizing && <OverviewCustomizerDialog onClose={() => setCustomizing(false)} />}
   </div>;
 }

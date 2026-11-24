@@ -1,0 +1,239 @@
+/* Commercial dashboard. Its color scale also defines the chart encodings. */
+.sx-studio-desk {
+  --desk-panel: #f5f5f6;
+  --desk-expo-out: cubic-bezier(.16,1,.3,1);
+  --desk-power-out: cubic-bezier(.22,.78,.24,1);
+  --desk-expo-in-out: cubic-bezier(.85,0,.15,1);
+  --desk-ink: #171819;
+  --desk-muted: #55585e;
+  --desk-well: #eaebed;
+  --desk-line: #16171a15;
+  --desk-track: #dedfe2;
+  --desk-done: #161718;
+  --desk-done-text: #fff;
+  --desk-moving: linear-gradient(100deg, #fce5c5, #f9cea0 72%, #ee9b40);
+  --desk-stage-waiting: #babdc2;
+  --desk-stage-moving: #e99b44;
+  --desk-stage-review: #eabe80;
+  --desk-shadow: 0 1px 2px #17181a0b, 0 18px 40px -24px #17181a32;
+  color: var(--desk-ink);
+}
+[data-studio-theme=dark] .sx-studio-desk,
+html[data-studio-appearance=dark] .studio-app:not([data-studio-theme=light]) .sx-studio-desk {
+  --desk-panel: #1b1c1e;
+  --desk-ink: #f1f2f4;
+  --desk-muted: #b5b7bc;
+  --desk-well: #28292c;
+  --desk-line: #ffffff17;
+  --desk-track: #35373b;
+  --desk-done: #e9e9eb;
+  --desk-done-text: #17181a;
+  --desk-moving: linear-gradient(100deg, #6e491a, #80521f 74%, #976124);
+  --desk-stage-waiting: #777a80;
+  --desk-stage-moving: #efa63e;
+  --desk-stage-review: #aa8047;
+  --desk-shadow: 0 1px 2px #0005, 0 18px 40px -24px #000a;
+}
+.sx-studio-desk .sx-desk-header,
+.sx-studio-desk .sx-desk-tools,
+.sx-desk-card-head,
+.sx-desk-account header,
+.sx-desk-status-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.sx-studio-desk .sx-desk-header { margin: 0 0 20px; min-height: 101px; align-items: flex-end; }
+.sx-studio-desk .sx-desk-header time { color: var(--desk-muted); font-size: 13px; font-weight: 500; }
+.studio-app .sx-studio-desk .sx-desk-header h1 { margin: 6px 0 3px; font-size: clamp(28px, 3.4vw, 34px); line-height: 1.12; font-weight: 650; letter-spacing: -.042em; color: var(--desk-ink); }
+.studio-app .sx-studio-desk .sx-desk-header p { color: var(--desk-muted); font-size: 14px; margin: 0; }
+.sx-studio-desk .sx-desk-tools { flex: none; gap: 8px; }
+.sx-studio-desk .sx-desk-tools :is(.sx-desk-new, .studio-control-button) { display: inline-flex; justify-content: center; align-items: center; gap: 7px; min-height: 42px; padding: 0 16px; border: 1px solid var(--desk-line); border-radius: 30px; background: var(--desk-panel); color: var(--desk-ink); text-decoration: none; font: inherit; font-size: 13px; font-weight: 600; }
+.sx-studio-desk .sx-desk-tools .sx-desk-new { background: var(--desk-done); color: var(--desk-done-text); border-color: transparent; }
+.sx-desk-flow { container: workdesk / inline-size; display: grid; gap: 16px; }
+/* Two cards share each row in reading order. A lone card takes the whole row. */
+.sx-desk-dashboard { display: flex; flex-wrap: wrap; gap: 16px; }
+.sx-desk-dashboard:empty { display: none; }
+.sx-desk-dashboard > * { flex: 1 1 34%; min-width: 0; }
+.sx-desk-dashboard > :is(.sx-desk-work, .sx-desk-pulse, .sx-up-next) { flex-grow: 4; }
+.studio-app .sx-desk-dashboard > .sx-up-next { margin-block: 0; }
+.studio-app.studio-app .sx-desk-dashboard > .overview-day-schedule { height: auto; }
+.sx-desk-card, .sx-desk-account { min-width: 0; border-radius: 22px; padding: 20px 22px; background: var(--desk-panel); color: var(--desk-ink); box-shadow: var(--desk-shadow); }
+.sx-desk-card-head { align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.studio-app .sx-desk-card-head h2 { color: var(--desk-ink); font-size: 19px; line-height: 1.2; font-weight: 650; letter-spacing: -.033em; margin: 0; }
+.studio-app .sx-desk-card-head p { color: var(--desk-muted); font-size: 13px; line-height: 1.4; margin: 4px 0 0; }
+.sx-desk-key { display: flex; gap: 10px; flex-wrap: wrap; list-style: none; margin: 2px 0 0; padding: 0; color: var(--desk-muted); font-size: 11px; }
+.sx-desk-key li, .sx-desk-status dt { display: flex; gap: 5px; align-items: center; }
+.sx-desk-key i, .sx-desk-status dt i { display: inline-block; width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--desk-track); }
+.sx-desk-key [data-stage="0"], .sx-desk-bars [data-stage="0"] { background: var(--desk-done); color: var(--desk-done-text); }
+.sx-desk-key [data-stage="1"], .sx-desk-bars [data-stage="1"] { background: var(--desk-moving); }
+.sx-desk-work-row { display: grid; grid-template-columns: minmax(92px, 1fr) 45px minmax(70px, 2.95fr) 28px; align-items: center; gap: 8px; min-height: 69px; padding: 9px 0; border-top: 1px solid var(--desk-line); text-decoration: none; color: var(--desk-ink); }
+.sx-desk-work-row:first-child { border-top-color: transparent; }
+.sx-desk-work-name { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 650; }
+.sx-desk-work-name i, .sx-desk-row-arrow { display: inline-grid; place-items: center; color: var(--desk-ink); background: var(--desk-well); width: 28px; height: 28px; border-radius: 50%; flex: none; }
+.sx-desk-row-arrow { background: transparent; border: 1px solid var(--desk-line); transition: background .16s ease, transform .16s ease; }
+.sx-desk-work-row:hover .sx-desk-row-arrow, .sx-desk-work-row:focus-visible .sx-desk-row-arrow { background: var(--desk-well); transform: translate(1px,-1px); }
+.sx-desk-count { display: flex; flex-flow: column; line-height: 1.1; }
+.sx-desk-count strong { font-size: 17px; font-weight: 650; }
+.sx-desk-count small { color: var(--desk-muted); font-size: 10px; line-height: 1.5; }
+.sx-desk-bars { display: flex; align-items: stretch; height: 46px; min-width: 0; }
+.sx-desk-bars > span { min-width: 18px; flex-basis: 0; display: grid; align-items: center; justify-items: end; padding-inline: 5px 8px; border-radius: 100px; color: var(--desk-ink); background: var(--desk-track); font-size: 14px; font-weight: 650; }
+.sx-desk-bars > [data-empty=true] { min-width: 0; padding: 0; overflow: hidden; opacity: 0; }
+.sx-desk-bars > .sx-desk-bar-empty { justify-items: center; flex-grow: 1; background: var(--desk-well); font-size: 12px; color: var(--desk-muted); }
+.sx-desk-text-button, .sx-desk-no-chart button { padding: 8px 0; min-height: 40px; color: var(--desk-ink); text-decoration: underline; }
+.sx-desk-filters, .sx-desk-filters > div { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.sx-desk-filters { gap: 7px; }
+.sx-desk-filters > div { padding: 2px; background: var(--desk-well); border-radius: 30px; box-shadow: inset 0 0 0 1px var(--desk-line); }
+.studio-app .sx-studio-desk .sx-desk-filters :is(select,button) { width: auto; min-height: 32px; height: auto; color: var(--desk-ink); font: inherit; font-size: 12px; font-weight: 550; border: 0; border-radius: 24px; background: transparent; padding: 3px 9px; box-shadow: none; }
+.studio-app .sx-studio-desk .sx-desk-filters select { appearance: auto; border: 1px solid var(--desk-line); background: var(--desk-panel); }
+.studio-app .sx-studio-desk .sx-desk-filters button[aria-pressed=true] { background: var(--desk-panel); box-shadow: 0 1px 4px #0002; }
+.sx-studio-desk .sx-desk-volume { color: var(--desk-muted); margin: 20px 0 16px; line-height: 1.1; font-size: 14px; }
+.sx-desk-volume strong { color: var(--desk-ink); font-size: 36px; font-weight: 600; letter-spacing: -.05em; }
+.sx-desk-plot { display: grid; grid-template-rows: minmax(0,1fr) auto; gap: 8px; height: 228px; }
+.sx-desk-plot-field { position: relative; min-height: 0; isolation: isolate; }
+.sx-desk-plot-bars, .sx-desk-plot-axis { display: grid; grid-auto-columns: minmax(0,1fr); grid-auto-flow: column; }
+.sx-desk-plot-bars { height: 100%; }
+.sx-desk-column { position: relative; height: 100%; margin-inline: clamp(2px, .45vw, 7px); }
+.sx-desk-column-track { height: 100%; overflow: hidden; border-radius: 30px; background: repeating-linear-gradient(125deg, transparent 0 3px, var(--desk-line) 4px 5px); }
+.sx-desk-column-value { height: 100%; border-radius: inherit; background: var(--desk-done); transform-origin: center bottom; transform: scaleY(var(--desk-level)); }
+.sx-desk-column-value[data-current=true] { background: var(--desk-moving); }
+.sx-desk-marker { display: flex; position: absolute; z-index: 2; inset-inline: 0; justify-content: center; bottom: calc(var(--desk-level) * 100%); transform: translateY(50%); pointer-events: none; }
+.sx-desk-marker b { border: 1px solid var(--desk-track); background: var(--desk-panel); color: var(--desk-ink); border-radius: 24px; min-width: 26px; padding: 1px 6px; text-align: center; font-size: 12px; font-weight: 650; line-height: 1.4; }
+.sx-desk-plot-line { pointer-events: none; position: absolute; width: 100%; height: 100%; inset: 0; overflow: visible; }
+.sx-desk-plot-line path { fill: none; stroke: var(--desk-muted); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; }
+.sx-desk-plot-axis { margin-top: 6px; }
+.sx-desk-plot-axis small { text-align: center; font-size: 11px; color: var(--desk-muted); line-height: 1.2; }
+.sx-desk-no-chart { min-height: 180px; display: grid; place-content: center; gap: 8px; color: var(--desk-muted); }
+.sx-desk-account { display: grid; align-content: space-between; color: #211609; background: linear-gradient(155deg, #fbd184 0%, #f5a846 58%, #ed8a25 100%); min-height: 243px; }
+.sx-desk-account header > :is(span,div), .sx-desk-account-link { display: flex; align-items: center; gap: 7px; }
+.sx-desk-account header > span { font-size: 13px; font-weight: 650; }
+.sx-desk-account header a { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #fff4; }
+.sx-desk-account a { color: inherit; text-decoration: none; }
+.sx-desk-account a:hover { text-decoration: underline; }
+.sx-desk-account .sx-desk-account-total { display: flex; flex-direction: column; margin: 4px 0 10px; }
+.sx-desk-account-total strong { font-size: clamp(29px, 3.2vw, 42px); font-weight: 600; letter-spacing: -.048em; line-height: 1.15; overflow-wrap: anywhere; }
+.sx-desk-account-total small, .sx-desk-account dt, .sx-desk-account > small { font-size: 12px; line-height: 1.2; color: #513716; }
+.sx-desk-account dl { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 10px; }
+.sx-desk-account dl > div { min-width: 0; padding: 9px 12px; background: #fff3; border-radius: 12px; }
+.sx-desk-account dd { font-size: 17px; font-weight: 650; margin: 1px 0 0; line-height: 1.25; overflow-wrap: anywhere; }
+.sx-desk-account .sx-desk-account-link, .sx-desk-account > button { justify-self: start; width: max-content; max-width: 100%; padding: 6px 10px; border-radius: 30px; background: #fff4; font-size: 12px; line-height: 1.25; font-weight: 600; }
+.sx-desk-account .overview-hide-card { position: static; color: #211609; }
+.sx-desk-status { min-height: 247px; }
+.sx-desk-card-head > a { padding: 6px 12px; border: 1px solid var(--desk-line); border-radius: 22px; color: var(--desk-ink); font-size: 12px; text-decoration: none; }
+.sx-desk-status-body { gap: 14px; }
+.sx-desk-ring { position: relative; width: clamp(96px, 36%, 140px); flex: none; }
+.sx-desk-ring svg { width: 100%; transform: rotate(-90deg); }
+.sx-desk-ring circle { stroke-width: 11px; stroke: var(--desk-track); fill: none; }
+.sx-desk-ring > div { position: absolute; inset: 0; display: grid; justify-items: center; align-content: center; }
+.sx-desk-ring strong { font-size: 23px; font-weight: 650; line-height: 1.2; }
+.sx-desk-ring small { color: var(--desk-muted); font-size: 12px; }
+.sx-desk-status-body dl { display: grid; flex: 1; gap: 9px; margin: 0; }
+.sx-desk-status-body dl > div { display: flex; justify-content: space-between; align-items: center; gap: 5px; color: var(--desk-muted); font-size: 12px; }
+.sx-desk-status-body dd { color: var(--desk-ink); font-weight: 650; margin: 0; }
+.sx-desk-ring [data-status="0"] { stroke: var(--desk-stage-waiting); }
+.sx-desk-ring [data-status="1"] { stroke: var(--desk-stage-moving); }
+.sx-desk-ring [data-status="2"] { stroke: var(--desk-stage-review); }
+.sx-desk-ring [data-status="3"] { stroke: var(--desk-done); }
+.sx-desk-status dt [data-status="0"] { background: var(--desk-stage-waiting); }
+.sx-desk-status dt [data-status="1"] { background: var(--desk-stage-moving); }
+.sx-desk-status dt [data-status="2"] { background: var(--desk-stage-review); }
+.sx-desk-status dt [data-status="3"] { background: var(--desk-done); }
+.studio-app .sx-studio-desk .studio-quick-action small { color: var(--desk-muted) !important; }
+.sx-desk-flow :focus-visible, .sx-desk-header :focus-visible { outline: 2px solid var(--desk-ink); outline-offset: 3px; }
+/* The reference sequence is card → row → data. Data enters when the API
+   resolves independently of the surrounding cards and their loading state. */
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-studio-motion=reduced]) .sx-studio-desk .sx-desk-dashboard > :is(.sx-desk-card,.sx-desk-account,.studio-card,.overview-day-schedule) {
+    animation: sx-desk-enter 800ms var(--desk-expo-out) calc(var(--desk-order,0) * 60ms) backwards;
+  }
+  .sx-desk-account { --desk-order: 1; }
+  .sx-desk-pulse { --desk-order: 2; }
+  .sx-desk-status { --desk-order: 3; }
+  .sx-desk-dashboard .studio-action-card, .sx-desk-dashboard .sx-up-next { --desk-order: 4; }
+  .sx-desk-dashboard .overview-day-schedule { --desk-order: 5; }
+  html:not([data-studio-motion=reduced]) .sx-desk-work-row {
+    animation: sx-desk-row-enter 550ms var(--desk-power-out) calc(250ms + var(--desk-row,0) * 70ms) backwards;
+  }
+  html:not([data-studio-motion=reduced]) .sx-desk-bars [data-stage] {
+    transform-origin: left center;
+    animation: sx-desk-fill 1s var(--desk-expo-out) calc(350ms + var(--desk-step,0) * 50ms) backwards;
+    transition: flex-grow 800ms var(--desk-expo-in-out), opacity 300ms ease, min-width 300ms ease, padding 300ms ease, margin-inline-start 300ms ease;
+  }
+  html:not([data-studio-motion=reduced]) .sx-desk-ring circle[data-status] {
+    animation: sx-desk-arc 900ms var(--desk-power-out) calc(300ms + var(--desk-step,0) * 180ms) backwards;
+    transition: stroke-dasharray 800ms var(--desk-expo-in-out), stroke-dashoffset 800ms var(--desk-expo-in-out);
+  }
+  html:not([data-studio-motion=reduced]) .sx-desk-plot-line path { animation: sx-desk-draw 1s cubic-bezier(.65,0,.35,1) 1.1s backwards; }
+  html:not([data-studio-motion=reduced]) .sx-desk-marker b {
+    animation: sx-desk-mark 600ms cubic-bezier(.22,1.7,.36,1) calc(700ms + var(--desk-step,0) * 50ms) backwards,
+               sx-desk-fade 400ms ease-out calc(700ms + var(--desk-step,0) * 50ms) backwards;
+  }
+  html:not([data-studio-motion=reduced]) .sx-desk-dashboard .studio-task-row {
+    animation: sx-desk-row-enter 550ms var(--desk-power-out) calc(450ms + var(--desk-row,0) * 40ms) backwards;
+  }
+  .sx-desk-dashboard .studio-task-row:nth-of-type(2) { --desk-row: 1; }
+  .sx-desk-dashboard .studio-task-row:nth-of-type(3) { --desk-row: 2; }
+  .sx-desk-dashboard .studio-task-row:nth-of-type(4) { --desk-row: 3; }
+}
+@keyframes sx-desk-enter { from { opacity: 0; transform: translateY(26px) scale(.985); } }
+@keyframes sx-desk-row-enter { from { opacity: 0; transform: translateY(10px); } }
+@keyframes sx-desk-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes sx-desk-arc { from { stroke-dasharray: 0 100; } }
+@keyframes sx-desk-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes sx-desk-mark { from { transform: scale(.6); } to { transform: scale(1); } }
+@keyframes sx-desk-fade { from { opacity: 0; } to { opacity: 1; } }
+@container workdesk (max-width: 870px) {
+  .sx-desk-dashboard > * { flex-basis: 100%; }
+}
+@container workdesk (max-width: 545px) {
+  .sx-desk-card, .sx-desk-account { padding: 17px 16px; border-radius: 19px; }
+  .sx-desk-work-row { grid-template-columns: minmax(0, 1fr) auto 28px; gap: 5px 10px; }
+  .sx-desk-count { flex-flow: row; align-items: baseline; gap: 5px; }
+  .sx-desk-bars { grid-column: 1/-1; grid-row: 2; height: 32px; }
+  .sx-desk-row-arrow { grid-column: 3; grid-row: 1; }
+  .sx-desk-plot { gap: 6px; height: 176px; }
+  .sx-desk-filters { row-gap: 4px; }
+  .sx-desk-pulse .sx-desk-card-head { gap: 12px; }
+  .sx-desk-plot-axis small { font-size: 10px; }
+}
+@media (max-width: 760px) {
+  .sx-studio-desk .sx-desk-header { flex-flow: column; align-items: flex-start; gap: 12px; }
+}
+@media (pointer: coarse) {
+  .sx-studio-desk .sx-desk-tools :is(.sx-desk-new, .studio-control-button),
+  .studio-app .sx-studio-desk .sx-desk-filters :is(select,button),
+  .sx-desk-account .sx-desk-account-link { min-height: 44px; }
+}
+.sx-studio-desk .sx-desk-tools .sx-desk-new { border-radius: 14px; color: #211609; background: linear-gradient(130deg,#f8c062,#ef8a2a); box-shadow: 0 6px 15px -8px #d77a20aa; }
+.sx-studio-desk .sx-desk-tools .sx-desk-options button { border: 1px solid var(--desk-line); border-radius: 14px; background: var(--desk-panel); color: var(--desk-ink); }
+.sx-desk-status-body dl > div { background: var(--desk-well); padding: 5px 8px; border-radius: 6px; }
+.sx-desk-status-body dl { gap: 5px; }
+.sx-desk-status .sx-desk-card-head > a { color: var(--desk-ink); }
+.sx-desk-pulse { min-height: 423px; }
+.sx-desk-plot-axis small { padding-bottom: 1px; }
+@media (max-width: 760px) { .sx-studio-desk .sx-desk-header { align-items: flex-start; } }
+@container workdesk (max-width: 545px) { .sx-desk-pulse { min-height: auto; } }
+
+#sx-workspace-shell .sx-studio-desk .studio-task-row h3 > a,
+#sx-workspace-shell .sx-studio-desk :is(.sx-desk-account dd,.overview-finance-amounts dd) a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  min-width: 32px;
+  overflow-wrap: anywhere;
+}
+#sx-workspace-shell .sx-studio-desk .ov-area-chart .ov-chart-days {
+  column-gap: 2px;
+  padding-inline: 0;
+}
+#sx-workspace-shell .sx-studio-desk .ov-chart-days button { min-width: 0; padding-inline: 0; }
+@media (pointer: coarse) {
+  #sx-workspace-shell .sx-studio-desk .studio-task-row h3 > a,
+  #sx-workspace-shell .sx-studio-desk :is(.sx-desk-account dd,.overview-finance-amounts dd) a,
+  #sx-workspace-shell .sx-studio-desk .sx-desk-status .sx-desk-card-head > a {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  #sx-workspace-shell .sx-studio-desk .sx-desk-status .sx-desk-card-head > a { display: inline-flex; align-items: center; }
+}

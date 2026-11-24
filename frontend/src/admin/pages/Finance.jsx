@@ -38,6 +38,8 @@ import API from '../../utils/apiConfig';
 import ReceiptCapture from '../components/finance/ReceiptCapture';
 import {WorkspaceActionMenu} from '../components/operations/WorkspaceActionMenu';
 import {useAuth} from '../../context/AuthContext';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
+import AccountCashFlow from '../components/finance/AccountCashFlow';
 import './financeProductionRefinement.css';
 export default function Finance() {
   const navigate=useNavigate();
@@ -220,16 +222,8 @@ export default function Finance() {
     invoices: { title: 'Invoices', description: 'Review invoice balances and update payment records after receiving payment.', search: 'Search invoices by client or status…', empty: 'No invoices yet', hint: 'Create an invoice or accept a quotation to prepare your first invoice.' },
     ledger: { title: 'Cash ledger', description: 'Income and expenses recorded by your studio.', search: 'Search descriptions, categories or status…', empty: 'No transactions yet', hint: 'Record income or an expense to begin your studio cash ledger.' },
   }[tab];
-  return (
-    <div className="finance-workspace-refined">
-      <WorkspaceHeader
-        title="Finance"
-        description="Track what is received, what is due and what your studio spends."
-      >
-        {hasModuleAccess(user, 'invoices') && <StudioButton icon={FileText} onClick={() => navigate("/admin/invoices/new")}>New invoice</StudioButton>}
-        <StudioButton variant="primary" icon={Plus} onClick={() => openEntry(null)}>Record transaction</StudioButton>
-      </WorkspaceHeader>
-      <WorkspaceMetrics
+  const metrics = (
+    <WorkspaceMetrics
         loading={loading || (!!error && !data.length)}
         items={[
           {
@@ -254,6 +248,23 @@ export default function Finance() {
           },
         ].filter(item => item.label !== 'Due now' || hasModuleAccess(user, 'invoices'))}
       />
+  );
+  return (
+    <div className="finance-workspace-refined">
+      <WorkspaceHeader
+        title="Finance"
+        description="Track what is received, what is due and what your studio spends."
+      >
+        {hasModuleAccess(user, 'invoices') && <StudioButton icon={FileText} onClick={() => navigate("/admin/invoices/new")}>New invoice</StudioButton>}
+        <StudioButton variant="primary" icon={Plus} onClick={() => openEntry(null)}>Record transaction</StudioButton>
+      </WorkspaceHeader>
+      {IS_COMMERCIAL_DEPLOYMENT ? <div className="finance-account-overview">
+        <section className="finance-account-card" aria-label="Booking and payment summary">
+          <h2><Wallet size={16} aria-hidden="true" />Studio account</h2>
+          {metrics}
+        </section>
+        <AccountCashFlow entries={entries} loading={loading} unavailable={!!error && !data.length} />
+      </div> : metrics}
       <WorkspaceError error={error} retry={reload} />
       <details className="finance-balance-explainer"><summary><Wallet size={16} />How balances work</summary>
         <p>

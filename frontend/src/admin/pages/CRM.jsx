@@ -1,3 +1,5 @@
+import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
 import StudioSelect from '../components/common/StudioSelect';
@@ -7,13 +9,15 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { AnimatePresence, motion as Motion, useIsPresent } from 'framer-motion';
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
-import { Plus, Search, ArrowUpRight, Users, RefreshCw, CalendarDays, X, Trash2, Archive } from "lucide-react";
+import { Plus, Search, ArrowUpRight, Users, RefreshCw, CalendarDays, Columns3, List, X, Trash2, Archive } from "lucide-react";
 import toast from "react-hot-toast";
 import { invoiceForLead, invoiceDestination } from "../components/operations/invoiceNavigation";
 import StudioLeadForm from "../components/studio/StudioLeadForm";
 import StudioLeadDetails from "../components/studio/StudioLeadDetails";
 import { studioApi, studioAuth, LEAD_STATUSES, money, displayDate, initials, statusClass, leadStatusLabel, matchesLead, matchesLeadStage, mergeLead } from "../components/studio/leadUtils";
 import "../studio-crm.css";
+import "./studioRecordDesk.css";
+import RecordViewSwitch from './RecordViewSwitch';
 import { safeStudioReturn } from '../../utils/studioNavigation';
 import { quotationStatus } from '../../utils/quotationStatus';
 import { enquiryProjectId, enquiryQuoteId, enquiryProjectDestination, enquiryQuoteDestination } from '../../utils/enquiryWorkflow';
@@ -31,7 +35,7 @@ function EnquiryRowActions({ lead, onSelect, onDelete }) {
   }, [lead.status]);
   return <div className="studio-crm-row-actions">
     <button ref={openButton} type="button" className="studio-icon-button" aria-label={`Open ${lead.name}`} onClick={event => { event.stopPropagation(); onSelect(lead); }}>
-      <ArrowUpRight size={18} aria-hidden="true" /><span className="studio-phone-action-label">Open enquiry</span>
+      <ArrowUpRight size={18} aria-hidden="true" /><span className="studio-phone-action-label">Open<span className="enquiry-action-object"> enquiry</span></span>
     </button>
     {!(linkedProject && lead.status === 'Archived') && <StudioButton
       type="button" variant="outline" size="sm"
@@ -41,7 +45,7 @@ function EnquiryRowActions({ lead, onSelect, onDelete }) {
       loadingLabel={`${linkedProject ? 'Archiving' : 'Deleting'} enquiry for ${lead.name}`}
       icon={linkedProject ? Archive : Trash2}
       onClick={event => { event.stopPropagation(); archiveHadFocus.current = linkedProject && document.activeElement === event.currentTarget; return onDelete(lead); }}
-    >{actionLabel}</StudioButton>}
+    ><span>{linkedProject ? 'Archive' : 'Delete'}<span className="enquiry-action-object"> enquiry</span></span></StudioButton>}
   </div>;
 }
 
@@ -86,9 +90,28 @@ function QuoteState({ lead }) {
   return id ? <small><Link className="studio-crm-text-link" to={`/admin/quotations?quote=${encodeURIComponent(id)}`} title={lead.quotationNumber || "Open quotation"} onClick={event => event.stopPropagation()}>{knownValidity ? 'Quote ' + quotationStatus(quote).toLowerCase() : 'View quote'}</Link></small> : null;
 }
 
+function EnquiryPipeline({ leads, finance, onSelect, onDelete }) {
+  const lanes = new Map();
+  LEAD_STATUSES.forEach(stage => lanes.set(stage, []));
+  leads.forEach(lead => {
+    const stage = lead.status || 'New';
+    if (!lanes.has(stage)) lanes.set(stage, []);
+    lanes.get(stage).push(lead);
+  });
+  return <div className="record-pipeline" aria-label="Enquiries by stage">{[...lanes].filter(([, rows]) => rows.length).map(([stage, rows]) =>
+    <section className="record-enquiry-lane" key={stage}><h2><i aria-hidden="true" />{leadStatusLabel(stage)} <span>{rows.length}</span></h2>
+      {rows.map((lead, index) => <article key={lead._id} style={{ '--record-order': Math.min(index, 10) }}><h3><button type="button" onClick={() => onSelect(lead)}>{lead.name}</button></h3>
+        <div className="record-enquiry-project"><ProjectCell lead={lead} /><QuoteState lead={lead} /></div>
+        <dl>{finance && <div><dt>Project value</dt><dd>{money(lead.totalAmount)}</dd></div>}
+          <div><dt>Follow-up</dt><dd>{displayDate(lead.followUpDate, 'Not scheduled')}</dd></div></dl>
+        <EnquiryRowActions lead={lead} onSelect={onSelect} onDelete={onDelete} />
+      </article>)}</section>)}</div>;
+}
+
 export function EnquiriesView({ leads = [], loading = false, error = "", query = "", onQuery = () => {}, status = "All", onStatus = () => {}, sort = "newest", onSort = () => {}, onSelect = () => {}, onCreate = () => {}, onDelete = () => {}, onRefresh = () => {}, navigation = null }) {
   const { user } = useAuth();
   const reducedMotion = useReducedStudioMotion();
+  const [view, setView] = useState(IS_COMMERCIAL_DEPLOYMENT ? 'pipeline' : 'list');
   const finance = hasModuleAccess(user, 'finance');
   const open = leads.filter((lead) => !["Converted", "Archived"].includes(lead.status));
   const converted = leads.filter((lead) => lead.status === "Converted");
@@ -104,9 +127,12 @@ export function EnquiriesView({ leads = [], loading = false, error = "", query =
     if (sort === "oldest") return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
   });
-  return <div className="studio-enquiries-page">
-    <div className="studio-page-heading"><div><h1>Enquiries</h1><p className="studio-muted">Follow up, prepare quotations and keep each client moving forward.</p></div><div className="studio-heading-actions">{hasModuleAccess(user, 'projects') && <Link className="studio-button" to="/admin/studio-projects">View projects <ArrowUpRight size={15} /></Link>}<button className="studio-button primary" onClick={onCreate}><Plus size={17} />New enquiry</button></div></div>
+  return <div className={'studio-enquiries-page' + (IS_COMMERCIAL_DEPLOYMENT ? ' record-enquiries' : '')}>
+    <div className="studio-page-heading"><div><WorkspaceMotionTitle>Enquiries</WorkspaceMotionTitle><p className="studio-muted">{IS_COMMERCIAL_DEPLOYMENT && !loading && !error ? `${open.length} open · ${attention.length} need attention` : 'Follow up, prepare quotations and keep each client moving forward.'}</p></div><div className="studio-heading-actions">{hasModuleAccess(user, 'projects') && <Link className="studio-button" to="/admin/studio-projects">View projects <ArrowUpRight size={15} /></Link>}<button className="studio-button primary" onClick={onCreate}><Plus size={17} />New enquiry</button></div></div>
     {navigation}
+    {IS_COMMERCIAL_DEPLOYMENT && <RecordViewSwitch value={view} onChange={setView} label="Enquiry view"
+      views={[{ id: 'pipeline', label: 'Pipeline', icon: Columns3 }, { id: 'list', label: 'List', icon: List }]}
+      surfaceSelector=".record-pipeline,.studio-crm-table-scroll" />}
     <section className="studio-card studio-crm-table-card" aria-label="Enquiry pipeline" aria-busy={loading}>
       <div className="studio-toolbar studio-crm-toolbar">
         <div className="studio-search studio-crm-search"><Search size={18} aria-hidden="true" /><input aria-label="Search enquiries" value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Search enquiries" autoComplete="off" />{query && <button type="button" className="studio-crm-clear-search" aria-label="Clear enquiry search" onClick={() => onQuery("")}><X size={16} aria-hidden="true" /></button>}</div>
@@ -117,7 +143,7 @@ export function EnquiriesView({ leads = [], loading = false, error = "", query =
         </div>
       </div>
       <div className="studio-crm-stage-filters" role="group" aria-label="Filter by enquiry stage">{stages.map(stage => <button type="button" key={stage} aria-pressed={status === stage} onClick={() => onStatus(stage)} className={status === stage ? "active" : ""}>{stage === "All" ? "All enquiries" : leadStatusLabel(stage)}<span>{countForStage(stage)}</span></button>)}</div>
-      {error ? <div className="studio-error studio-crm-load-error" role="alert"><p>{error}</p><button className="studio-button small" onClick={onRefresh}>Try again</button></div> : <div className="studio-crm-table-scroll"><table role="table" aria-label="Enquiries" className="studio-table studio-crm-table studio-phone-record-table"><thead role="rowgroup"><tr role="row"><th role="columnheader">Client</th><th role="columnheader">Project & date</th><th role="columnheader">Stage</th>{finance && <th role="columnheader">Project value</th>}<th role="columnheader">Next follow-up</th><th role="columnheader"><span className="studio-crm-sr-only">Actions</span></th></tr></thead><tbody role="rowgroup">
+      {error ? <div className="studio-error studio-crm-load-error" role="alert"><p>{error}</p><button className="studio-button small" onClick={onRefresh}>Try again</button></div> : view === 'pipeline' && !loading && filtered.length ? <EnquiryPipeline leads={filtered} finance={finance} onSelect={onSelect} onDelete={onDelete} /> : <div className="studio-crm-table-scroll"><table role="table" aria-label="Enquiries" className="studio-table studio-crm-table studio-phone-record-table"><thead role="rowgroup"><tr role="row"><th role="columnheader">Client</th><th role="columnheader">Project & date</th><th role="columnheader">Stage</th>{finance && <th role="columnheader">Project value</th>}<th role="columnheader">Next follow-up</th><th role="columnheader"><span className="studio-crm-sr-only">Actions</span></th></tr></thead><tbody role="rowgroup">
         <AnimatePresence initial={false}>{loading ? <tr role="row" key="loading"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><RefreshCw size={25} className="studio-crm-spin" /><h3>Loading your enquiries…</h3><p>Bringing the latest conversations into view.</p></div></td></tr> : filtered.length ? filtered.map((lead) => <EnquiryRow key={lead._id} lead={lead} onSelect={onSelect} reducedMotion={reducedMotion}><td role="cell" data-label="Client"><div className="studio-crm-client"><span className="studio-crm-avatar">{initials(lead.name)}</span><div><strong>{lead.name}</strong><small>{lead.email}</small></div></div></td><td role="cell" data-label="Project & date"><ProjectCell lead={lead} /></td><td role="cell" data-label="Stage"><AnimatePresence initial={false} mode="wait"><Motion.span key={lead.status} className={`studio-badge studio-crm-badge ${statusClass(lead.status)}`} initial={{ opacity: reducedMotion ? 1 : .35 }} animate={{ opacity: 1 }} exit={{ opacity: reducedMotion ? 1 : .35 }} transition={{ duration: reducedMotion ? 0 : .1 }}>{leadStatusLabel(lead.status)}</Motion.span></AnimatePresence><QuoteState lead={lead} /></td>{finance && <td role="cell" data-label="Project value"><strong>{money(lead.totalAmount)}</strong><small>{lead.paymentStatus || "Unpaid"}</small></td>}<td role="cell" data-label="Follow-up"><span className={`studio-crm-followup-cell ${lead.followUpDate && new Date(lead.followUpDate) < new Date() ? "overdue" : ""}`}>{lead.followUpDate && <CalendarDays size={13} />}{displayDate(lead.followUpDate, "Not scheduled")}</span></td><td role="cell" data-label="Actions"><EnquiryRowActions lead={lead} onSelect={onSelect} onDelete={onDelete} /></td></EnquiryRow>) : <tr role="row" key="empty"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><Users size={28} /><h3>{leads.length ? "No matching enquiries" : "No enquiries yet"}</h3><p>{leads.length ? "Try a different search or clear your filters." : "Add your first enquiry and keep every detail in one place."}</p>{leads.length ? <button type="button" className="studio-button" onClick={clearFilters}>Clear filters</button> : <button type="button" className="studio-button primary" onClick={onCreate}><Plus size={16} />Add an enquiry</button>}</div></td></tr>}</AnimatePresence>
       </tbody></table></div>}
       {!loading && !error && <div className="studio-crm-table-footer"><span role="status">{hasFilters ? `${filtered.length} of ${leads.length}` : leads.length} {leads.length === 1 ? "enquiry" : "enquiries"}{status !== "All" && ` · ${leadStatusLabel(status)}`}</span>{hasFilters && <button type="button" className="studio-crm-text-link" onClick={clearFilters}>Clear filters</button>}</div>}
@@ -232,6 +258,6 @@ export default function CRM() {
     {requestedLeadId && !loading && !error && !activeLead && <div className="studio-error" role="status"><span>This enquiry is unavailable or has been removed.</span><Link className="studio-button small" to={safeStudioReturn(returnTo)}>Back to overview</Link></div>}
     <EnquiriesView leads={leads} loading={loading} error={error} query={searchQuery} onQuery={setSearchQuery} status={filterStatus} onStatus={setFilterStatus} sort={sortBy} onSort={setSortBy} onSelect={selectLead} onCreate={() => setShowLeadForm(true)} onDelete={deleteLead} onRefresh={() => { setLoading(true); setError(""); fetchLeads(); }} />
     {showLeadForm && <StudioLeadForm onClose={closeLeadForm} onSaved={createLead} />}
-    {activeLead && <StudioLeadDetails key={activeLead._id} lead={activeLead} onClose={closeLead} onUpdate={updateLead} onGenerateInvoice={hasModuleAccess(user, 'invoices') ? openInvoice : null} existingInvoice={invoiceForLead(invoices, activeLead)} onOpenProject={hasModuleAccess(user, 'projects') ? lead => continueEnquiry(lead, 'project') : null} onPrepareQuote={hasModuleAccess(user, 'quotations') && hasModuleAccess(user, 'projects') ? lead => continueEnquiry(lead, 'quote') : null} workflowBusy={workflowBusy} workflowError={workflowError} />}
+    {activeLead && <StudioLeadDetails key={activeLead._id} lead={activeLead} onClose={closeLead} onUpdate={updateLead} onGenerateInvoice={hasModuleAccess(user, 'invoices') ? openInvoice : null} existingInvoice={invoiceForLead(invoices, activeLead)} onOpenProject={hasModuleAccess(user, 'projects') ? lead => continueEnquiry(lead, 'project') : null} onPrepareQuote={hasModuleAccess(user, 'quotations') && (hasModuleAccess(user, 'projects') || (IS_COMMERCIAL_DEPLOYMENT && enquiryQuoteId(activeLead))) ? lead => continueEnquiry(lead, 'quote') : null} workflowBusy={workflowBusy} workflowError={workflowError} />}
   </div>;
 }

@@ -1,5 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const { createHash } = require("node:crypto");
 const Invoice = require("../models/Invoice");
 const StudioConfig = require("../models/StudioConfig");
 const { invoiceIssuer } = require("../utils/invoiceBranding");
@@ -21,6 +22,7 @@ const wrap = (fn) => async (req, res) => {
       error: err.status
         ? err.message
         : "Unable to complete invoice request. Please retry.",
+      ...(err.status === 409 && typeof err.code === "string" ? { code: err.code } : {}),
     });
   }
 };
@@ -47,6 +49,53 @@ async function linked(values) {
         );
     }
 }
+function editConflict() {
+  return Object.assign(new Error("This invoice changed while you were editing. Review the latest version before saving."), {
+    status: 409,
+    code: "invoice_edit_conflict",
+  });
+}
+function checkEditVersion(body, invoice) {
+  if (Object.hasOwn(body, "editVersion")) {
+    if (!Number.isSafeInteger(body.editVersion) || body.editVersion < 0 ||
+        body.editVersion !== (invoice.editVersion ?? 0)) throw editConflict();
+    return;
+  }
+  if (body.updatedAt != null) {
+    if (!invoice.updatedAt || new Date(body.updatedAt).getTime() !== +invoice.updatedAt) throw editConflict();
+    return;
+  }
+  if (Object.hasOwn(body, "advancePaid") &&
+      (Object.keys(body).some(key => key !== "advancePaid" && key !== "status") ||
+       Number(body.advancePaid) < (invoice.advancePaid ?? 0))) {
+    throw editConflict();
+  }
+}
+function currentEditFilter(invoice) {
+  const editVersion = invoice.editVersion ?? 0;
+  return {
+    _id: invoice._id,
+    ...(editVersion ? { editVersion } : {
+      $or: [{ editVersion: 0 }, { editVersion: { $exists: false } }],
+    }),
+    ...(invoice.updatedAt ? { updatedAt: invoice.updatedAt } : { updatedAt: { $exists: false } }),
+  };
+}
+function invoiceCreationId(key, actorId) {
+  if (key == null) return null;
+  if (typeof key !== "string" || !/^[a-f0-9]{32}$/.test(key)) {
+    throw Object.assign(new Error("Invalid invoice creation key."), { status: 400 });
+  }
+  // The collection is already workspace-scoped. The _id index is unique even
+  // in older workspaces and across app instances.
+  return createHash("sha256")
+    .update(JSON.stringify(["studio-invoice-creation-v1", actorId, key]))
+    .digest("hex")
+    .slice(0, 24);
+}
+function sendCreationReplay(res, invoice) {
+  return res.json({ ...invoice.toObject(), creationReplayed: true });
+}
 router.get(
   "/",
   wrap(async (req, res) => {
@@ -56,9 +105,18 @@ router.get(
 router.get("/delivery-status", (req, res) =>
   res.json({ emailConfigured: mailerReady(), scheduledEmailSupported: true }),
 );
+router.get("/register", wrap(async (req, res) => {
+  const { listInvoiceRegister } = require("../utils/invoiceRegister");
+  res.json(await listInvoiceRegister(Invoice, req.query));
+}));
 router.post(
   "/",
   wrap(async (req, res) => {
+    const creationId = invoiceCreationId(req.body.creationKey, req.user.id);
+    if (creationId) {
+      const previous = await Invoice.findById(creationId);
+      if (previous) return sendCreationReplay(res, previous);
+    }
     const studio = await StudioConfig.findOne({ key: "studio" }) || {};
     const { invoiceWithDefaults, clientLinkOptions } = require('../utils/documentDefaults');
     const values = invoiceWithDefaults(req.body, studio, invoiceValues);
@@ -69,11 +127,29 @@ router.post(
         studio,
       );
     await linked(values);
-    const i = new Invoice(values);
+    const i = new Invoice(creationId ? { ...values, _id: creationId } : values);
     i.clientLinkOptions = clientLinkOptions(studio);
-    if (!i.documentNumber) i.documentNumber = await require('../services/documentNumbering').nextDocumentNumber('invoice', studio, i.invoiceDate, Invoice);
-    await i.save();
-    res.status(201).json(i);
+    const { nextDocumentNumber, persistNumberedInvoice } = require("../services/documentNumbering");
+    let created = false;
+    try {
+      const save = async documentNumber => {
+        if (documentNumber) i.documentNumber = documentNumber;
+        const invoice = await i.save();
+        created = true;
+        return invoice;
+      };
+      const invoice = creationId && !i.documentNumber
+        ? await persistNumberedInvoice({ invoiceId: creationId, studio, date: i.invoiceDate, persist: save })
+        : await save(i.documentNumber || await nextDocumentNumber("invoice", studio, i.invoiceDate, Invoice));
+      if (!created) return sendCreationReplay(res, invoice);
+      res.status(201).json(invoice);
+    } catch (err) {
+      if (creationId && err.code === 11000) {
+        const previous = await Invoice.findById(creationId);
+        if (previous) return sendCreationReplay(res, previous);
+      }
+      throw err;
+    }
   }),
 );
 router.get(
@@ -84,6 +160,7 @@ router.put(
   "/:id",
   wrap(async (req, res) => {
     const i = await load(req.params.id);
+    checkEditVersion(req.body, i);
     const values = invoiceValues(req.body, i.toObject());
     if (values.discountType !== i.discountType || Number(values.discountValue || 0) !== Number(i.discountValue ?? i.discount ?? 0)) await require('../services/studioSecurity').assertPermission(req.user.id, 'discounts');
     if (values.documentStatus === 'Sent' && i.documentStatus !== 'Sent') await require('../services/studioSecurity').assertPermission(req.user.id, 'invoiceIssue');
@@ -92,13 +169,13 @@ router.put(
         (await StudioConfig.findOne({ key: "studio" })) || {},
       );
     await linked(values);
-    res.json(
-      await Invoice.findByIdAndUpdate(
-        i._id,
-        { $set: values },
-        { new: true, runValidators: true },
-      ),
+    const updated = await Invoice.findOneAndUpdate(
+      currentEditFilter(i),
+      { $set: values, $inc: { editVersion: 1 } },
+      { new: true, runValidators: true },
     );
+    if (!updated) throw editConflict();
+    res.json(updated);
   }),
 );
 router.post(
@@ -106,6 +183,7 @@ router.post(
   require('../services/studioSecurity').requirePermission('invoiceIssue'),
   wrap(async (req, res) => {
     const invoice = await load(req.params.id);
+    checkEditVersion(req.body || {}, invoice);
     if (
       invoice.status === "Cancelled" ||
       invoice.documentStatus === "Cancelled"
@@ -120,12 +198,12 @@ router.post(
       );
     const issued = await Invoice.findOneAndUpdate(
       {
-        _id: invoice._id,
+        ...currentEditFilter(invoice),
         status: { $ne: "Cancelled" },
         documentStatus: { $ne: "Cancelled" },
-        ...(invoice.updatedAt ? { updatedAt: invoice.updatedAt } : {}),
       },
       {
+        $inc: { editVersion: 1 },
         $set: {
           ...values,
           documentStatus: "Sent",
@@ -134,10 +212,7 @@ router.post(
       },
       { new: true, runValidators: true },
     );
-    if (!issued)
-      return res
-        .status(409)
-        .json({ error: "The invoice changed. Reload before issuing it." });
+    if (!issued) throw editConflict();
     res.json(issued);
   }),
 );

@@ -4,15 +4,19 @@ const LANDING_PAGES = ['/admin', '/admin/crm', '/admin/calendar', '/admin/studio
 const LANGUAGES = ['en', 'hi', 'bn', 'mr', 'te', 'ta', 'gu', 'ur', 'kn', 'or', 'ml'];
 const REGIONS = ['IN', 'US', 'GB', 'AE', 'SG', 'AU', 'CA'];
 const NOTIFICATION_CATEGORIES = ['enquiries', 'calendar', 'tasks', 'finance', 'messages', 'system'];
-const PERSONAL_ENUMS = { mobileTab: ['projects','finance'], overviewMode: ['today','insights'], textSize: ['compact','comfortable'], language: LANGUAGES, region: REGIONS, dateFormat: ['day-first', 'month-first', 'iso'], timeFormat: ['12h', '24h'], numberFormat: ['indian', 'international'], notificationTone: ['chime', 'soft', 'bell'] };
+const PERSONAL_ENUMS = { sidebarSort: ['default', 'alphabetical', 'custom'], mobileTab: ['projects','finance'], overviewMode: ['today','insights'], textSize: ['compact','comfortable'], language: LANGUAGES, region: REGIONS, dateFormat: ['day-first', 'month-first', 'iso'], timeFormat: ['12h', '24h'], numberFormat: ['indian', 'international'], notificationTone: ['chime', 'soft', 'bell'] };
 const PERSONAL_BOOLEANS = ['notificationBadges', 'notificationToasts', 'notificationSound', 'quietHoursEnabled', 'showInspiration', 'showActivityStreak'];
 const validClockTime = value => typeof value === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
+function validSidebarOrder(value) {
+  return Array.isArray(value) && value.length <= 64 && new Set(value).size === value.length
+    && value.every(path => typeof path === 'string' && /^\/admin(?:\/[a-z][a-z0-9-]{0,47})?$/.test(path));
+}
 function validTimezone(value) {
   if (value === 'studio') return true;
   if (typeof value !== 'string' || value.length > 80 || !/^(?:[A-Za-z_]+(?:\/[A-Za-z0-9_+-]+)+|UTC|GMT)$/.test(value)) return false;
   try { new Intl.DateTimeFormat('en', { timeZone: value }).format(); return true; } catch { return false; }
 }
-const personalDefaults = () => ({ mobileTab: 'projects', overviewMode: 'today', textSize: 'compact', showInspiration: true, showActivityStreak: false, language: 'en', region: 'IN', timezone: 'studio', dateFormat: 'day-first', timeFormat: '12h', numberFormat: 'indian', notificationBadges: true, notificationToasts: true, notificationSound: false, notificationVolume: 50, notificationTone: 'chime', notificationCategories: [...NOTIFICATION_CATEGORIES], quietHoursEnabled: false, quietHoursStart: '22:00', quietHoursEnd: '08:00' });
+const personalDefaults = () => ({ sidebarSort: 'default', sidebarOrder: [], mobileTab: 'projects', overviewMode: 'today', textSize: 'compact', showInspiration: true, showActivityStreak: false, language: 'en', region: 'IN', timezone: 'studio', dateFormat: 'day-first', timeFormat: '12h', numberFormat: 'indian', notificationBadges: true, notificationToasts: true, notificationSound: false, notificationVolume: 50, notificationTone: 'chime', notificationCategories: [...NOTIFICATION_CATEGORIES], quietHoursEnabled: false, quietHoursStart: '22:00', quietHoursEnd: '08:00' });
 const defaults = () => ({ theme: 'light', reduceMotion: false, landingPage: '/admin', layoutVersion: 3, visibleCards: [...CARD_IDS], cardOrder: [...DEFAULT_CARD_ORDER], ...personalDefaults() });
 function parsePreferences(body) {
   const fail = () => { throw Object.assign(new Error('Choose valid workspace, language, region and notification preferences.'), { status: 400 }); };
@@ -31,6 +35,10 @@ function parsePreferences(body) {
   }
   for (const [key, options] of Object.entries(PERSONAL_ENUMS)) if (body[key] !== undefined) { if (!options.includes(body[key])) fail(); result[key] = body[key]; }
   for (const key of PERSONAL_BOOLEANS) if (body[key] !== undefined) { if (typeof body[key] !== 'boolean') fail(); result[key] = body[key]; }
+  if (body.sidebarOrder !== undefined) {
+    if (!validSidebarOrder(body.sidebarOrder)) fail();
+    result.sidebarOrder = [...body.sidebarOrder];
+  }
   if (body.timezone !== undefined) { if (!validTimezone(body.timezone)) fail(); result.timezone = body.timezone; }
   if (body.notificationVolume !== undefined) { if (!Number.isInteger(body.notificationVolume) || body.notificationVolume < 0 || body.notificationVolume > 100) fail(); result.notificationVolume = body.notificationVolume; }
   if (body.notificationCategories !== undefined) {
@@ -40,4 +48,4 @@ function parsePreferences(body) {
   for (const key of ['quietHoursStart', 'quietHoursEnd']) if (body[key] !== undefined) { if (!validClockTime(body[key])) fail(); result[key] = body[key]; }
   return result;
 }
-module.exports = { CARD_IDS, DEFAULT_CARD_ORDER, LANDING_PAGES, LANGUAGES, REGIONS, NOTIFICATION_CATEGORIES, PERSONAL_ENUMS, PERSONAL_BOOLEANS, personalDefaults, validTimezone, validClockTime, defaults, parsePreferences };
+module.exports = { CARD_IDS, DEFAULT_CARD_ORDER, LANDING_PAGES, LANGUAGES, REGIONS, NOTIFICATION_CATEGORIES, PERSONAL_ENUMS, PERSONAL_BOOLEANS, personalDefaults, validSidebarOrder, validTimezone, validClockTime, defaults, parsePreferences };

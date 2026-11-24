@@ -100,6 +100,69 @@ test("invoice business snapshots persist through partial edits and override curr
   assert.equal(publicValue.clientAddress, "Client billing address");
   assert.equal(publicValue.title, "Wedding collection");
 });
+test("invoice edits compare their saved revision and reject a concurrent payment overwrite", async t => {
+  process.env.JWT_SECRET = "invoice-edit-test";
+  const token = jwt.sign({ user: { id: adminUserId, role: "admin" } }, process.env.JWT_SECRET);
+  const id = "507f1f77bcf86cd799439022";
+  const url = "/" + id;
+  let stored = new Invoice({
+    ...invoiceValues({ ...sample, advancePaid: 100.11 }),
+    _id: id,
+    editVersion: 4,
+    updatedAt: new Date("2026-11-22T12:00:00Z"),
+  });
+  t.mock.method(Invoice, "findById", async () => Invoice.hydrate(stored.toObject()));
+  t.mock.method(StudioConfig, "findOne", async () => ({ studioName: "Test Studio" }));
+  t.mock.method(Invoice, "findOneAndUpdate", async (filter, update) => {
+    if (filter.editVersion !== stored.editVersion) return null;
+    stored = new Invoice({
+      ...stored.toObject(), ...update.$set, editVersion: stored.editVersion + update.$inc.editVersion,
+      updatedAt: new Date(+stored.updatedAt + 1),
+    });
+    return stored;
+  });
+  const oldCopy = stored.toObject();
+  const record = await dispatch(adminRoutes, "PUT", url, token, { editVersion: 4, advancePaid: 140.55 });
+  assert.equal(record.status, 200);
+  assert.equal(record.body.editVersion, 5);
+  const stale = await dispatch(adminRoutes, "PUT", url, token, { ...oldCopy, notes: "Only change the note." });
+  assert.equal(stale.status, 409);
+  assert.equal(stale.body.code, "invoice_edit_conflict");
+  const legacy = { ...oldCopy, notes: "Only change the note." };
+  delete legacy.editVersion;
+  assert.equal((await dispatch(adminRoutes, "PUT", url, token, legacy)).status, 409);
+  delete legacy.updatedAt;
+  assert.equal((await dispatch(adminRoutes, "PUT", url, token, legacy)).status, 409);
+  const recovered = await dispatch(adminRoutes, "PUT", url, token, { editVersion: 5, notes: "Only change the note." });
+  assert.equal(recovered.status, 200);
+  assert.equal(recovered.body.advancePaid, 140.55);
+  assert.equal(recovered.body.notes, "Only change the note.");
+});
+test("same manual creation key replays a saved invoice and a different key creates a separate draft", async t => {
+  process.env.JWT_SECRET = "invoice-create-test";
+  const token = jwt.sign({ user: { id: adminUserId, role: "admin" } }, process.env.JWT_SECRET);
+  const docs = new Map();
+  t.mock.method(Invoice, "findById", async id => docs.get(String(id)) || null);
+  t.mock.method(Invoice.prototype, "save", async function () {
+    // Represents MongoDB's mandatory per-collection _id uniqueness.
+    if (docs.has(String(this._id))) throw Object.assign(new Error("Duplicate"), { code: 11000 });
+    docs.set(String(this._id), this);
+    return this;
+  });
+  t.mock.method(StudioConfig, "findOne", async () => ({ studioName: "Test Studio" }));
+  const payload = { ...sample, discountValue: 0, documentNumber: "TEST-MANUAL-001", creationKey: "a".repeat(32) };
+  const attempts = await Promise.all([
+    dispatch(adminRoutes, "POST", "/", token, payload),
+    dispatch(adminRoutes, "POST", "/", token, payload),
+  ]);
+  assert.deepEqual(attempts.map(result => result.status).sort(), [200, 201]);
+  assert.equal(String(attempts[0].body._id), String(attempts[1].body._id));
+  assert.equal(attempts.find(result => result.status === 200).body.creationReplayed, true);
+  const second = await dispatch(adminRoutes, "POST", "/", token, { ...payload, creationKey: "b".repeat(32) });
+  assert.equal(second.status, 201);
+  assert.notEqual(String(second.body._id), String(attempts[0].body._id));
+  assert.equal(docs.size, 2);
+});
 test("business details validate logo URLs and exclude private injected fields", () => {
   for (const logoUrl of ["javascript:alert(1)", "http://example.com/logo.png", "https://user:secret@example.com/logo.png", "/assets/../private.png"]) {
     assert.throws(() => invoiceValues({ ...sample, issuer: { name: "Team Alpha", logoUrl } }), { status: 400 });

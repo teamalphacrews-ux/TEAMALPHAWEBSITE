@@ -8,6 +8,7 @@ import { toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
 import EstimatePreview from "./EstimatePreview";
 import useStudioDialog from "../studio/useStudioDialog";
+import { newInvoiceCreationKey } from "../operations/invoiceSave";
 
 export default function InvoiceForm({ onClose, initialData = null, initialClientName = "" }) {
   const token = localStorage.getItem('token');
@@ -34,6 +35,7 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const inFlight = useRef(false);
+  const creationKey = useRef(null);
   const dialogRef = useStudioDialog(onClose, { canClose: !loading });
 
   const previewRef = useRef(null);
@@ -95,14 +97,16 @@ export default function InvoiceForm({ onClose, initialData = null, initialClient
         discount,
         extraCharges,
         total: grandTotal,
-        status: initialData?.status || 'Pending'
       };
 
       if (initialData?._id) {
-        await axios.put(`${API}/api/invoices/${initialData._id}`, payload, authHeader);
+        await axios.put(`${API}/api/invoices/${initialData._id}`, {
+          ...payload, editVersion: initialData.editVersion, updatedAt: initialData.updatedAt,
+        }, authHeader);
         toast.success("Changes saved to Database!");
       } else {
-        await axios.post(`${API}/api/invoices`, payload, authHeader);
+        creationKey.current ||= newInvoiceCreationKey();
+        await axios.post(`${API}/api/invoices`, { ...payload, creationKey: creationKey.current }, authHeader);
         toast.success("Estimate saved to Database!");
       }
       if (onClose) onClose();

@@ -7,6 +7,8 @@ import ClientPaymentDialog from "./ClientPaymentDialog";
 import { API_BASE_URL } from "../utils/apiConfig";
 import { resolveStudioImage } from '../utils/settingsDefaults';
 import "../admin/pages/invoiceWorkspace.css";
+import "./studioClientGlass.css";
+import { IS_COMMERCIAL_DEPLOYMENT } from "../saas/release";
 const money = (value) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
     Number(value || 0),
@@ -16,6 +18,17 @@ import {
   invoiceRows as rows,
   downloadInvoice,
 } from "../utils/invoiceDocument";
+
+// Choose the higher-contrast label for the studio's own invoice accent.
+function invoiceAccentInk(hex) {
+  const [r, g, b] = hex.slice(1).match(/../g).map(pair => {
+    const value = parseInt(pair, 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return (luminance + 0.05) / 0.05 > 1.05 / (luminance + 0.05) ? "#000" : "#fff";
+}
+
 export function InvoiceDocument({ invoice, preview = false }) {
   const [payment, setPayment] = useState(false),
     [pdfError, setPdfError] = useState("");
@@ -40,6 +53,9 @@ export function InvoiceDocument({ invoice, preview = false }) {
   });
   const next = payments.find((p) => p.remaining > 0);
   const design = i.design || {};
+  const accent = /^#[a-f\d]{6}$/i.test(design.accentColor || "")
+    ? design.accentColor
+    : "#1f2927";
   const safeCover =
     /^\/assets\/[\w./-]+$/.test(design.coverUrl || "") ||
     /^https:\/\//.test(design.coverUrl || "")
@@ -47,16 +63,15 @@ export function InvoiceDocument({ invoice, preview = false }) {
       : "/assets/studio-wedding.webp";
   return (
     <div
-      className={`invoice-public font-${design.fontFamily || "modern"}`}
+      className={`invoice-public font-${design.fontFamily || "modern"}${IS_COMMERCIAL_DEPLOYMENT ? " studio-client-glass" : ""}`}
       style={{
-        "--invoice-accent": /^#[a-f\d]{6}$/i.test(design.accentColor || "")
-          ? design.accentColor
-          : "#1f2927",
+        "--invoice-accent": accent,
+        "--invoice-accent-ink": invoiceAccentInk(accent),
       }}
     >
       <meta name="robots" content="noindex,nofollow" />
       <meta name="referrer" content="no-referrer" />
-      {preview && (
+      {preview && !IS_COMMERCIAL_DEPLOYMENT && (
         <div className="invoice-preview-strip">
           Previewing invoice as studio owner.
         </div>
@@ -319,7 +334,7 @@ export default function PublicInvoice() {
   return state.token === token && state.invoice ? (
     <InvoiceDocument invoice={state.invoice} />
   ) : (
-    <div className="invoice-public-loading">
+    <div className={`invoice-public-loading${IS_COMMERCIAL_DEPLOYMENT ? " studio-client-glass" : ""}`}>
       <h1>Your invoice</h1>
       <p role="status">
         {(state.token === token && state.error) || "Loading your invoice…"}

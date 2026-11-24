@@ -104,3 +104,17 @@
 }
 @media(prefers-reduced-motion:reduce){.project-contact-workspace :is(.reference-icon-button,.reference-back,.reference-list-row){transition:none}}
 .studio-app[data-studio-motion="reduced"] .project-contact-workspace :is(.reference-icon-button,.reference-back,.reference-list-row){transition:none}
+
+.sx-client-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-bottom: 20px;
+  padding: 4px 0 18px;
+  border-bottom: 1px solid var(--studio-border);
+}
+.sx-client-next > div { flex: 1 1 15rem; min-width: 0; }
+.sx-client-next h2 { margin: 0 0 4px; font-size: 16px; color: var(--studio-text); }
+.sx-client-next p { margin: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; color: var(--studio-muted); }

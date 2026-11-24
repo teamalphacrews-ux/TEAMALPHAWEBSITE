@@ -166,3 +166,22 @@
 .studio-action-sheet-items>button,.studio-action-sheet-items>a{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:12px;border:0;border-radius:12px;background:transparent;color:var(--studio-text);font:500 14px/1.5 var(--studio-font);text-align:left;white-space:normal;text-decoration:none}
 .studio-action-sheet-items>:hover{background:var(--studio-canvas)}
 .studio-action-sheet :is(button,a):focus-visible{outline:2px solid #5383ef;outline-offset:-2px}
+
+/* Keep neighbouring communication actions on one baseline when a label wraps. */
+@media (max-width: 760px) {
+  #sx-workspace-shell :is(.project-support, .studio-email-page, .studio-whatsapp-page) .studio-heading-actions {
+    align-items: stretch;
+  }
+  #sx-workspace-shell :is(.project-support, .studio-email-page, .studio-whatsapp-page) .studio-heading-actions > .studio-button {
+    padding-inline: 10px;
+    gap: 6px;
+  }
+  #sx-workspace-shell .ops-data-workspace .workspace-metric-label {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  #sx-workspace-shell .ops-data-workspace .studio-metric small {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}

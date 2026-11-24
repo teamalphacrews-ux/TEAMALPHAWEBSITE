@@ -39,3 +39,15 @@
 .overview-reset-recovery{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:12px;border:1px solid var(--studio-border);border-radius:12px;font-size:13px;line-height:1.5;background:var(--studio-canvas);color:var(--studio-text)}
 .studio-ops .overview-preference-status button{min-height:44px;padding:8px 4px;font-size:12px}
 @media(max-width:360px){.overview-arrange-arrows{flex-direction:column;gap:0}}
+
+@media (max-width: 400px) {
+  .studio-commercial-workspace .studio-ops .overview-arrange-row {
+    display: grid;
+    grid-template-columns: 44px minmax(0,1fr) auto;
+    gap: 6px;
+    padding: 8px 6px;
+  }
+  .studio-commercial-workspace .overview-arrange-row > .studio-app-icon { display: none; }
+  .studio-commercial-workspace .overview-arrange-row .overview-drag-handle { grid-area: 1 / 1; }
+  .studio-commercial-workspace .overview-arrange-arrows { flex-flow: row; gap: 2px; }
+}

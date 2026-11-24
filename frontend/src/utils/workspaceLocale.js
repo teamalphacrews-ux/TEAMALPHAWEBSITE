@@ -1,4 +1,5 @@
 import { studioTimezone, studioDateTimeToISO } from './studioTime.js';
+import { displayDateTime, displayNumber } from './displayFormatters.js';
 
 const languages = ['en', 'hi', 'bn', 'mr', 'te', 'ta', 'gu', 'ur', 'kn', 'or', 'ml'];
 const regions = ['IN', 'US', 'GB', 'AE', 'SG', 'AU', 'CA'];
@@ -18,8 +19,8 @@ export function formatWorkspaceDate(value, preferences, studioZone, options) {
   const timezone = resolveWorkspaceTimezone(preferences, studioZone), date = dateValue(value, timezone);
   if (!date) return 'Not set';
   const locale = workspaceLocale(preferences);
-  if (options) return new Intl.DateTimeFormat(locale, { ...options, timeZone: timezone }).format(date);
-  const parts = Object.fromEntries(new Intl.DateTimeFormat(locale, { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date).map(part => [part.type, part.value]));
+  if (options) return displayDateTime(locale, { ...options, timeZone: timezone }).format(date);
+  const parts = Object.fromEntries(displayDateTime(locale, { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date).map(part => [part.type, part.value]));
   if (preferences?.dateFormat === 'iso') return `${parts.year}-${parts.month}-${parts.day}`;
   if (preferences?.dateFormat === 'month-first') return `${parts.month}/${parts.day}/${parts.year}`;
   return `${parts.day}/${parts.month}/${parts.year}`;
@@ -28,11 +29,11 @@ export function formatWorkspaceDate(value, preferences, studioZone, options) {
 export function formatWorkspaceTime(value, preferences, studioZone) {
   const timezone = resolveWorkspaceTimezone(preferences, studioZone), date = dateValue(value, timezone);
   if (!date) return 'Time not set';
-  return new Intl.DateTimeFormat(workspaceLocale(preferences), { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: preferences?.timeFormat === '24h' ? 'h23' : 'h12' }).format(date);
+  return displayDateTime(workspaceLocale(preferences), { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: preferences?.timeFormat === '24h' ? 'h23' : 'h12' }).format(date);
 }
 
 export function formatWorkspaceNumber(value, preferences, options = {}) {
   if (value == null || value === '' || !Number.isFinite(Number(value))) return '—';
   // Keep clear standard digits; grouping is an explicit user preference.
-  return new Intl.NumberFormat(preferences?.numberFormat === 'international' ? 'en-US' : 'en-IN', options).format(Number(value));
+  return displayNumber(preferences?.numberFormat === 'international' ? 'en-US' : 'en-IN', options).format(Number(value));
 }

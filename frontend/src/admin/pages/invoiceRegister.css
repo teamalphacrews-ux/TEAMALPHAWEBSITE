@@ -17,7 +17,10 @@
 .invoice-register-deadline { min-width:130px; }
 .invoice-register-timing { display:block; color:var(--studio-muted); font-size:11px; margin-top:4px; }
 .invoice-register-timing.is-overdue { color:var(--studio-text); font-weight:600; }
-.invoice-register-footer { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; padding-top:16px; border-top:1px solid var(--studio-border); color:var(--studio-muted); font-size:11px; line-height:1.7; }
+.invoice-register-footer { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:16px; border-top:1px solid var(--studio-border); color:var(--studio-muted); font-size:12px; line-height:1.7; }
+.invoice-register-footer span { display:block; }
+.invoice-register-pages { display:flex; gap:8px; }
+.invoice-register-pages .studio-button { min-height:44px; }
 @media (max-width:768px) {
   .invoice-register-heading { display:block; }
   .invoice-register-zone { display:block; text-align:left; margin-top:8px; }

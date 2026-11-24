@@ -17,24 +17,22 @@
 .sos-prismatic .sos-workbench-copy h3 { font-family: var(--sos-display); font-size: clamp(32px,3.4vw,48px); line-height: 1.1; letter-spacing: -.035em; color: #f3f6ff; }
 .sos-prismatic .sos-workbench-copy > p { color: #b4c5e5; font-size: 16px; line-height: 1.85; margin-top: 24px; max-width: 39ch; }
 .sos-workbench-label { color: #bfd1f4; font-size: 12px; line-height: 1.6; margin-top: 35px; }
-.sos-prismatic .sos-workbench .sos-feature-art { grid-column: auto; grid-row: auto; width: 100%; height: 100%; min-height: 480px; margin: 0; border-radius: 0; background: transparent; overflow: hidden; }
-.sos-prismatic .sos-workbench .sos-art-team { width: min(85%,500px); max-width: none; padding: 30px; background: #111b2d; border-color: #647ea8; border-radius: 18px; box-shadow: 0 40px 60px #02040c55; transform: perspective(1400px) rotateY(-10deg) rotateZ(2deg); }
-.sos-prismatic .sos-workbench .sos-art-team > div { font-size: 12px; padding-bottom: 24px; color: #b7cae9; }
-.sos-prismatic .sos-workbench .sos-art-team p { padding-block: 22px; font-size: 15px; gap: 14px; border-color: #354c73; }
-.sos-prismatic .sos-workbench .sos-art-team p > i { width: 38px; height: 38px; font-size: 12px; }
-.sos-prismatic .sos-workbench .sos-art-team p > strong { font-size: 15px; }
-.sos-prismatic .sos-workbench .sos-art-team p > small { font-size: 12px; padding: 6px 9px; }
-.sos-prismatic .sos-workbench .sos-overview-preview.is-compact { width: 96%; height: 88%; border-radius: 14px; transform: perspective(1500px) rotateY(-8deg) rotateZ(1.5deg); box-shadow: 0 35px 65px #02040c66; }
-.sos-prismatic .sos-workbench .sos-art-document { width: 66%; padding: 34px; background: #e7edf5; transform: perspective(1300px) rotateY(-10deg) rotateZ(-4deg); box-shadow: 0 36px 55px #03051255; }
-.sos-prismatic .sos-workbench .sos-art-document > div:first-child { font-size: 12px; color: #52698b; }
-.sos-prismatic .sos-workbench .sos-art-document h4 { font-family: var(--sos-display); font-size: 34px; line-height: 1.12; letter-spacing: -.04em; }
-.sos-prismatic .sos-workbench .sos-art-document > p { font-size: 14px !important; color: #52698b !important; }
-.sos-prismatic .sos-workbench .sos-art-document > strong { font-size: 12px; color: #52698b; }
-.sos-prismatic .sos-workbench .sos-art-workspaces { width: min(80%,500px); max-width: none; gap: 16px; }
-.sos-prismatic .sos-workbench .sos-art-workspaces > span { width: 70px; height: 70px; margin-bottom: 18px; background: #2a3359; color: #d2d1ff; }
-.sos-prismatic .sos-workbench .sos-art-workspaces p { padding: 26px; font-size: 17px !important; border-color: #65719e; box-shadow: 0 20px 30px #02040c33; }
-.sos-prismatic .sos-workbench .sos-art-workspaces p:nth-of-type(2) { transform: translateX(24px); }
-.sos-prismatic .sos-workbench .sos-art-workspaces i { font: 500 12px/1.5 Inter,sans-serif; letter-spacing: .02em; color: #bdc5eb; }
+.sos-prismatic .sos-workbench .sos-workbench-art {
+  display: grid;
+  grid-column: auto;
+  grid-row: auto;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding: clamp(16px, 2vw, 32px);
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+.sos-workbench-art .sos-workbench-capture { width: 100%; min-width: 0; margin: 0; }
 .sos-workbench-plate.plate-1 { background: #1a1c34; border-color: #7c7ab0; }
 .sos-workbench-plate.plate-2 { background: #182537; border-color: #667e9e; }
 .sos-workbench-plate.plate-3 { background: #221e37; border-color: #8479a7; }
@@ -51,15 +49,11 @@
 @media (max-width:1100px) {
   .sos-prismatic .sos-workbench-copy h3 { font-size: 35px; }
   .sos-workbench-copy { padding: 32px; }
-  .sos-prismatic .sos-workbench .sos-art-team { padding: 22px; }
-  .sos-prismatic .sos-workbench .sos-art-team p > strong { font-size: 13px; }
-  .sos-prismatic .sos-workbench .sos-art-workspaces p { padding: 21px; font-size: 15px !important; }
 }
 @media (max-width:850px), (max-height:760px) {
   .sos-prismatic .sos-workbench { padding-block: 85px 40px; }
   .sos-workbench-plate { min-height: 430px; }
   .sos-workbench-arrows { display: none; }
-  .sos-prismatic .sos-workbench .sos-feature-art { min-height: 400px; }
 }
 @media (max-width:600px) {
   .sos-prismatic .sos-workbench { padding-block: 75px 30px; }
@@ -72,30 +66,12 @@
   .sos-prismatic .sos-workbench-copy h3 { font-size: 32px; }
   .sos-prismatic .sos-workbench-copy > p { font-size: 15px; margin-top: 18px; }
   .sos-workbench-label { margin-top: 24px; }
-  .sos-prismatic .sos-workbench .sos-feature-art { height: 350px; min-height: 350px; border-bottom: 1px solid #6e83ac55; }
-  .sos-prismatic .sos-workbench .sos-art-team { width: 84%; transform: none; padding: 18px; }
-  .sos-prismatic .sos-workbench .sos-art-team > div { font-size: 12px; padding-bottom: 18px; }
-  .sos-prismatic .sos-workbench .sos-art-team p { padding-block: 17px; gap: 10px; }
-  .sos-prismatic .sos-workbench .sos-art-team p > i { width: 30px; height: 30px; font-size: 12px; }
-  .sos-prismatic .sos-workbench .sos-art-team p > strong { font-size: 12px; }
-  .sos-prismatic .sos-workbench .sos-art-team p > small { font-size: 12px; padding: 4px 7px; }
-  .sos-prismatic .sos-workbench .sos-overview-preview.is-compact { width: 92%; height: 88%; transform: none; }
-  .sos-prismatic .sos-workbench .sos-art-document { padding: 26px; width: 68%; transform: rotate(-3deg); }
-  .sos-prismatic .sos-workbench .sos-art-document h4 { font-size: 27px; }
-  .sos-prismatic .sos-workbench .sos-art-document > p { font-size: 12px !important; }
-  .sos-prismatic .sos-workbench .sos-art-workspaces { width: 80%; }
-  .sos-prismatic .sos-workbench .sos-art-workspaces p { padding: 18px; gap: 10px; font-size: 13px !important; }
-  .sos-prismatic .sos-workbench .sos-art-workspaces i { font-size: 12px; }
-  .sos-prismatic .sos-workbench .sos-art-workspaces p:nth-of-type(2) { transform: translateX(9px); }
+  .sos-prismatic .sos-workbench .sos-workbench-art { padding: 16px; border-bottom: 1px solid #6e83ac55; }
   .sos-workbench-bottom { flex-direction: column; gap: 6px; font-size: 12px; }
 }
 @media (max-width:380px) {
   .sos-workbench-copy { padding: 23px; }
-  .sos-prismatic .sos-workbench .sos-art-team p { gap: 7px; }
-  .sos-prismatic .sos-workbench .sos-art-team p > small { padding: 3px 5px; }
-  .sos-prismatic .sos-workbench .sos-art-document { width: 75%; }
 }
 @media (prefers-reduced-motion:reduce) {
-  .sos-prismatic .sos-workbench :is(.sos-art-team,.sos-overview-preview.is-compact,.sos-art-document,.sos-art-workspaces p) { transform: none; }
   .sos-prismatic .sos-workbench-rail { transform: none; }
 }

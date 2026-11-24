@@ -8,6 +8,7 @@ const invoiceSchema = new mongoose.Schema(
     },
     sourceRevision: Number,
     sourceQuoteNumber: String,
+    editVersion: { type: Number, default: 0 },
     contactId: { type: mongoose.Schema.Types.ObjectId, ref: "StudioContact" },
     leadId: { type: mongoose.Schema.Types.ObjectId, ref: "Lead" },
     studioProjectId: {
@@ -129,5 +130,8 @@ invoiceSchema.index(
   },
 );
 invoiceSchema.index({ shareTokenHash: 1 }, { unique: true, sparse: true });
+invoiceSchema.index({ documentNumber: 1 });
+invoiceSchema.index({ createdAt: -1, _id: -1 });
+invoiceSchema.index({ invoiceDate: -1, _id: 1 });
 module.exports =
   mongoose.models.Invoice || mongoose.model("Invoice", invoiceSchema);

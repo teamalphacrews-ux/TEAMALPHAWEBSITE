@@ -1,0 +1,57 @@
+.sos-product .sos-workspace-capture {
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+  align-self: center;
+}
+.sos-product .sos-workspace-capture picture {
+  display: block;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 17%);
+  border-radius: 12px;
+  background: #111213;
+}
+.sos-product .sos-workspace-capture img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.sos-product .sos-workspace-capture figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #d6d5d8;
+  font: 550 14px/1.45 var(--sx-public-font, system-ui);
+}
+.sos-product .sos-workspace-capture figcaption a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.sos-product .sos-workspace-capture figcaption a:focus-visible {
+  outline: 2px solid var(--sos-focus, #f6bd70);
+  outline-offset: 2px;
+}
+.sos-product .sos-workspace-capture .sos-capture-phone-link { display: none; }
+.sos-product .sos-workspace-capture.sos-capture-journey { align-self: center; margin: auto 0; }
+@media (max-width: 600px) {
+  .sos-product .sos-workspace-capture picture:has(source) {
+    width: min(100%, 290px);
+    margin-inline: auto;
+  }
+  .sos-product .sos-workspace-capture .sos-capture-phone-link { display: inline-flex; }
+  .sos-product .sos-workspace-capture .sos-capture-desktop-link { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sos-product .sos-capture-reminders { animation: sos-reveal-reminder-capture 400ms ease-out both; }
+  @keyframes sos-reveal-reminder-capture {
+    from { opacity: .7; transform: translateY(5px); }
+    to { opacity: 1; transform: none; }
+  }
+}

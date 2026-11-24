@@ -1,7 +1,8 @@
 import { createElement, useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowRight, ArrowUpRight, CalendarDays, Camera, Check, CheckCheck, Clapperboard, FileText, Link2, MapPin, MessageCircle, ShieldCheck, UsersRound, Wallet } from 'lucide-react';
+import { ArrowDown, ArrowRight, CheckCheck, Clapperboard, FileText, MessageCircle, UsersRound, Wallet } from 'lucide-react';
 import './productJourney.css';
 import './productProjectTable.css';
+import ProductWorkspaceCapture from './ProductWorkspaceCapture';
 
 const chapters = [
   { id:'enquiry', label:'Enquire', icon:MessageCircle, eyebrow:'START WITH THE PERSON', title:'Enquiries, managed.\nOpportunities, in view.', copy:'A name, a date, a story waiting to happen. Keep the brief and next follow-up with the enquiry, so a promising conversation does not disappear between messages.', outcome:'From first hello to a considered proposal.', detail:'Brief · Event details · Follow-up' },
@@ -11,41 +12,10 @@ const chapters = [
   { id:'deliver', label:'Deliver', icon:Clapperboard, eyebrow:'THE EXPERIENCE CONTINUES AFTER THE SHOOT', title:'From the final edit.\nTo their forever keepsakes.', copy:'Track the photographs, films and album through post-production. Show the assigned people, progress and approved delivery links through the same client smart link.', outcome:'One link, from the first proposal to the final frame.', detail:'Editing · Review · Approved delivery links' },
 ];
 
-function JourneyPreview({ active, focusable = true }) {
-  const chapter = chapters[active];
-  return <div className={'sos-journey-preview preview-'+chapter.id} role="region" tabIndex={focusable ? 0 : -1} aria-label={chapter.label+' sample project preview'}>
-    <header className="sos-journey-screenbar"><div><Camera size={16}/><span>YOUR STUDIO<span>STUDIO X OS</span></span></div><span><i/>SAMPLE PROJECT</span></header>
-    <div className="sos-journey-project"><span className="sos-journey-monogram">AR</span><div><strong>Anika & Rohan</strong><span>Wedding · Bengaluru · 08 November</span></div><Link2 size={17}/></div>
-    <div className="sos-journey-content" key={chapter.id} tabIndex={focusable ? 0 : -1} role="group" aria-label={chapter.label+' sample project details'}>
-      {active === 0 && <div className="sos-journey-enquiry">
-        <div className="sos-journey-message"><span><MessageCircle size={14}/> NEW ENQUIRY</span><p>“We’re getting married this November. We’d love to have you tell our story.”</p><small>Photography + cinematography · Two events</small></div>
-        <div className="sos-journey-details"><div><CalendarDays size={15}/><span>Wedding date<strong>08 November</strong></span></div><div><MapPin size={15}/><span>Event city<strong>Bengaluru</strong></span></div></div>
-        <div className="sos-journey-followup"><div><span><CalendarDays size={19}/></span><p>Next follow-up<strong>Discuss the collection</strong></p><ArrowUpRight size={19}/></div><p>Coverage preferences, venue and the next conversation — all in view.</p></div>
-        <div className="sos-journey-connected"><CheckCheck size={16}/><span>Ready to prepare their quotation.</span></div>
-      </div>}
-      {active === 1 && <div className="sos-journey-quote">
-        <div className="sos-journey-paper"><header><Camera size={23}/><span>YOUR STUDIO<small>Photography & cinematography</small></span><span>QUOTE<br/>DEMO-001</span></header><h4>A story worth remembering.</h4><p>Prepared for Anika & Rohan</p><div className="sos-journey-paper-row"><span>Wedding photography<small>Two events · Candid & traditional</small></span><span>Included</span></div><div className="sos-journey-paper-row"><span>Cinematic wedding film<small>Story, sound & the moments between</small></span><span>Included</span></div><div className="sos-journey-paper-total"><span>Your collection</span><strong>₹1,80,000</strong></div></div>
-        <div className="sos-journey-accepted"><span><Check size={18}/></span><div><strong>Proposal accepted</strong><small>The agreed collection stays with the project.</small></div></div>
-      </div>}
-      {active === 2 && <div className="sos-journey-planning">
-        <div className="sos-journey-event"><span><small>NOV</small>08</span><div><h4>The wedding day</h4><p><MapPin size={12}/>Bengaluru · Ceremony coverage</p><span>09:00 AM IST</span></div></div>
-        <div className="sos-journey-mini-heading"><UsersRound size={15}/><span>THE PEOPLE BEHIND THE WORK</span></div>
-        <div className="sos-journey-crew-grid">{[['AK','Arun','Photography','Candid moments'],['SJ','Sara','Cinematography','Ceremony & story'],['KR','Kiran','Photography','Traditional coverage'],['NR','Nisha','Post-production','Album design']].map(([initials,name,role,job])=><div key={name}><span>{initials}</span><strong>{name}<small>{role}</small></strong><p>{job}</p></div>)}</div>
-        <div className="sos-journey-connected"><FileText size={15}/><span>The event brief stays with their assignments.</span></div>
-      </div>}
-      {active === 3 && <div className="sos-journey-collect">
-        <div className="sos-journey-invoice-top"><span>INVOICE DEMO-001<small>Reviewed & issued by your studio</small></span><span><Check size={11}/>Issued</span></div><div className="sos-journey-invoice-value"><span>Project total</span><strong>₹1,80,000</strong><div><i/><i/><i/></div></div>
-        <div className="sos-journey-payment-list">{[['01','Booking payment','Receipt recorded','₹45,000'],['02','Before the wedding','Next milestone','₹90,000'],['03','Final delivery','Scheduled','₹45,000']].map(([number,title,state,value],index)=><div key={title}><span>{index===0?<Check size={15}/>:number}</span><p><strong>{title}</strong><small>{state}</small></p><b>{value}</b></div>)}</div>
-        <div className="sos-journey-payment-note"><ShieldCheck size={14}/><p>Your studio records and verifies payments.<br/>Bank transfers are not automatically confirmed.</p></div>
-      </div>}
-      {active === 4 && <div className="sos-journey-deliver">
-        <div className="sos-journey-delivery-heading"><span>THE FINAL CHAPTER</span><h4>Every detail, moving forward.</h4><p>Project progress, shared through their smart link.</p></div>
-        <div className="sos-journey-deliveries">{[[Camera,'Photographs','Arun · Photo editor','Delivery link ready',100],[Clapperboard,'Cinematic film','Sara · Film editor','Story & sound',68],[FileText,'Wedding album','Nisha · Designer','Client design review',85]].map(([Icon,title,person,state,progress])=><div key={title}><span>{createElement(Icon,{size:19})}</span><div><strong>{title}<small>{state}</small></strong><p>{person}</p><i><span style={{width:progress+'%'}}/></i></div></div>)}</div>
-        <div className="sos-journey-connected"><Link2 size={16}/><span>One private link. Their whole project story.</span></div>
-      </div>}
-    </div>
-    <footer><span>{createElement(chapter.icon,{size:14})}{chapter.label}</span><span>0{active+1}<em>/</em>05</span></footer>
-  </div>;
+const journeyScreens = ['enquiries', 'client-smart-link-quote', 'project-detail', 'client-smart-link-payments', 'project-delivery'];
+
+export function JourneyCapture({ active }) {
+  return <ProductWorkspaceCapture view={journeyScreens[active]} className="sos-capture-journey" phoneSource={false} />;
 }
 
 const compactQuery = '(max-width: 850px), (max-height: 760px), (prefers-reduced-motion: reduce)';
@@ -203,14 +173,14 @@ export default function ProductJourney() {
     <div ref={runway} className="sos-project-runway">
       <div ref={pin} className="sos-project-pin">
         <div className="sos-container sos-project-stage">
-          <header className="sos-project-identity"><span className="sos-project-avatar">AR</span><div><strong>Anika & Rohan</strong><span>Wedding · Bengaluru · 08 November</span></div><div className="sos-project-sample"><span>Sample project</span><strong>0{active + 1}<em>/</em>05</strong></div></header>
+          <header className="sos-project-identity"><span className="sos-project-avatar">AR</span><div><strong>Anika & Rohan</strong><span>Wedding · Bengaluru</span></div><div className="sos-project-sample"><span>Sample project</span><strong>0{active + 1}<em>/</em>05</strong></div></header>
           <div ref={navigation} className="sos-journey-navigation" role="group" aria-label="Jump to a project workflow stage" onKeyDown={keyNavigation}>{chapters.map((chapter, index) => <button type="button" key={chapter.id} aria-pressed={active === index} aria-controls={'sos-chapter-' + chapter.id} onClick={() => choose(index)}><span>0{index + 1}</span>{createElement(chapter.icon, { size: 16 })}<strong>{chapter.label}</strong><ArrowRight size={14}/></button>)}</div>
           <div className="sos-project-composition">
             <div className="sos-project-copy">{chapters.map((chapter, index) => <article key={chapter.id} id={'sos-chapter-' + chapter.id} className={'sos-journey-chapter' + (active === index ? ' is-active' : '')} hidden={active !== index} aria-hidden={active !== index}>
               <h3>{chapter.title.split('\n').map((line, lineIndex) => <span key={line}>{lineIndex > 0 && <br/>}{line}</span>)}</h3><p>{chapter.copy}</p><div className="sos-journey-outcome"><CheckCheck size={17}/><span>{chapter.outcome}</span></div><span className="sos-journey-chapter-detail">{chapter.detail}</span>
             </article>)}<div className="sos-project-scroll-note"><ArrowDown size={14}/><span>{compact ? 'Choose a stage to follow the project.' : 'Scroll to follow the project. Or choose a stage above.'}</span></div></div>
             <div className="sos-project-deck">{chapters.map((chapter, index) => <div key={chapter.id} ref={node => { plateRefs.current[index] = node; }} className="sos-project-plate" data-active={active === index} inert={active !== index} aria-hidden={active !== index}>
-              <JourneyPreview active={index} focusable={active === index}/><span className="sos-project-plate-caption">{chapter.label} · Sample data</span>
+              <JourneyCapture active={index}/>
             </div>)}</div>
           </div>
           <div className="sos-project-timeline" aria-hidden="true"><i/></div>

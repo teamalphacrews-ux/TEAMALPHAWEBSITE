@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deriveCrewSchedule } from '../src/admin/components/operations/crewSchedule.js';
+import { deriveCrewSchedule, nextCrewAction } from '../src/admin/components/operations/crewSchedule.js';
 
 const now = Date.parse('2026-10-16T00:00:00Z');
 const crew = [{ _id: 'photographer', name: 'Anu Nair' }, { _id: 'filmmaker', name: 'Raj' }];
@@ -72,4 +72,27 @@ test('includes ongoing assignments until their end time', () => {
   }], now);
   assert.equal(result.upcomingEvents.length, 1);
   assert.equal(result.assignments.get('photographer').length, 1);
+});
+
+test('crew action reviews the earliest collision independent of roster order and points to an editable event', () => {
+  const records = [
+    event('late-a', '15:00', '17:00'), event('late-b', '16:00', '18:00'),
+    event('early-a', '09:00', '12:00', ['Raj']), { ...event('early-b', '10:00', '11:00', ['Raj']), isReadOnly: true },
+    { ...event('empty', '08:00', '09:00', []), type: 'Wedding' },
+  ];
+  const { upcomingEvents, conflicts } = deriveCrewSchedule(crew, records, now);
+  const action = nextCrewAction(upcomingEvents, conflicts);
+  assert.equal(action.kind, 'overlap');
+  assert.equal(action.event._id, 'early-a');
+  assert.equal(action.other._id, 'early-b');
+  assert.equal(action.member.name, 'Raj');
+});
+
+test('crew action offers assignment only for an editable unstaffed shoot', () => {
+  const meeting = { ...event('meeting', '08:00', '09:00', []), type: 'Meeting' };
+  const imported = { ...event('readonly', '09:00', '10:00', []), type: 'Wedding', isReadOnly: true };
+  const shoot = { ...event('portrait', '11:00', '13:00', [' ']), type: 'Engagement' };
+  assert.deepEqual(nextCrewAction([meeting, imported, shoot], []), { event: shoot, kind: 'unassigned' });
+  assert.deepEqual(nextCrewAction([meeting, imported], []), { event: meeting, kind: 'scheduled' });
+  assert.equal(nextCrewAction([], []), null);
 });

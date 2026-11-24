@@ -1,3 +1,4 @@
+import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess, hasFullModuleAccess } from '../../utils/moduleAccess';
 import StudioButton from '../components/common/StudioButton';
@@ -7,6 +8,10 @@ import { useEffect, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../../utils/branding";
 import { quotationDefaults, addDocumentDays, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
 import { API_BASE_URL } from '../../utils/apiConfig';
+import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
+import DocumentNextStep from '../components/operations/DocumentNextStep';
+import { documentClientContext, projectIncludesClient, quoteNextStep } from '../components/operations/documentGuidance';
 import { quotationStatus } from '../../utils/quotationStatus';
 import { documentClientLink } from '../../utils/documentClientLink';
 import { removeQuoteItem, restoreQuoteItem } from '../utils/quoteItemUndo';
@@ -145,6 +150,8 @@ function Toggle({ label, checked, onChange, help }) {
 }
 export default function Quotations() {
   const { user } = useAuth();
+  const canWriteQuotes = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'quotations');
+  const canUseTemplates = !IS_COMMERCIAL_DEPLOYMENT || (user?.workspaceRole || user?.workspace?.role) !== 'staff';
   const fullAccess = hasFullModuleAccess(user);
   const [searchParams, setSearchParams] = useSearchParams(),
     location = useLocation();
@@ -154,7 +161,7 @@ export default function Quotations() {
     "/api/studio/quotations",
     hasModuleAccess(user, 'enquiries') ? '/api/leads' : null,
     "/api/studio/settings",
-    "/api/studio/quote-templates",
+    canUseTemplates ? "/api/studio/quote-templates" : null,
     hasModuleAccess(user, 'contacts') ? '/api/contacts' : null,
     hasModuleAccess(user, 'projects') ? '/api/studio-projects' : null,
   ]);
@@ -397,6 +404,16 @@ export default function Quotations() {
   };
   const linkedProject = projects.find(project => String(project._id) === String(form.studioProjectId));
   const linkedProjectName = linkedProject?.name || current?.studioProjectId?.name || 'View linked project';
+  const invoiceId = current?.invoiceId?._id || current?.invoiceId;
+  const invoicePending = IS_COMMERCIAL_DEPLOYMENT && invoiceId && current?.autoCreateInvoice === true && !current.invoiceGeneratedAt && !current.invoiceReady;
+  const canSeeInvoices = hasModuleAccess(user, 'invoices');
+  const nextStep = IS_COMMERCIAL_DEPLOYMENT ? quoteNextStep({
+    status: status(current || form), totalPaise: total, hasInvoice: Boolean(invoiceId), linkRevoked: Boolean(current?.linkRevokedAt),
+    canSeeInvoices, invoicePending, canShare: fullAccess && canWriteQuotes, editing: canWriteQuotes && mode === 'editor', readOnly: !canWriteQuotes,
+  }) : null;
+  const guidance = <DocumentNextStep step={nextStep}
+    href={nextStep?.action === 'invoice' ? '/admin/invoices/' + invoiceId : nextStep?.action === 'register' ? '/admin/invoices' : undefined}
+    focusTarget={nextStep?.action === 'price' ? (form.items?.length ? 'sx-quote-price' : 'sx-quote-add-item') : undefined} />;
   const needsDraftRecovery = !offline.online || !!offline.candidate || ['uncertain', 'unavailable'].includes(offline.status);
   const reminderSummary = !form.remindersEnabled ? 'Off' : form.reminderDays?.length
     ? `${form.reminderDays.length} email reminder${form.reminderDays.length === 1 ? '' : 's'}` : 'On · choose reminder days';
@@ -575,11 +592,12 @@ export default function Quotations() {
       </button>
       <button onClick={() => act("duplicate")}>Duplicate</button>
       {fullAccess && ['Sent', 'Accepted'].includes(current?.status) && <>
-        <button onClick={() => manageClientLink(false)}>Revoke smart client link</button>
+        <button className="studio-document-destructive" onClick={() => manageClientLink(false)}>Revoke smart client link</button>
         <button onClick={() => manageClientLink(true)}>Regenerate smart client link</button>
       </>}
       {!current?.acceptedAt && current?.status !== "Accepted" && (
         <button
+          className="studio-document-destructive"
           onClick={() => {
             setModal("cancel");
             setActionMenu(false);
@@ -589,6 +607,7 @@ export default function Quotations() {
         </button>
       )}
       <button
+        className="studio-document-destructive"
         onClick={() => {
           setModal("archive");
           setActionMenu(false);
@@ -658,31 +677,40 @@ export default function Quotations() {
   };
   useEffect(() => {
     const signature = location.search;
-    if(searchParams.get('new')==='1'&&prefilled.current!==signature&&(!loading||!navigator.onLine)){
-      let active=true;Promise.resolve().then(()=>{if(active){prefilled.current=signature;setDraft(defaultForm(settings));setMode('wizard');}});
-      return()=>{active=false;};
-    }
-    if (
-      !signature ||
-      prefilled.current === signature ||
-      loading ||
-      !data.length
-    )
+    const newQuote = searchParams.get('new') === '1';
+    if (!signature) {
+      prefilled.current = '';
       return;
+    }
+    const waiting = newQuote ? loading && navigator.onLine : loading || !data.length;
+    if (prefilled.current === signature || waiting) return;
     let active = true;
     Promise.resolve().then(() => {
       if (!active) return;
       prefilled.current = signature;
+      if (newQuote) {
+        if (!canWriteQuotes) { setMode('list'); return; }
+        const fields = defaultForm(settings);
+        if (IS_COMMERCIAL_DEPLOYMENT) {
+          const { contact, projectId } = documentClientContext(searchParams, projects, contacts);
+          if (contact) Object.assign(fields, { contactId: contact._id, clientName: [contact.firstName, contact.lastName].filter(Boolean).join(' '), email: contact.email });
+          fields.studioProjectId = projectId;
+        }
+        setDraft(fields);
+        setMode('wizard');
+        return;
+      }
       if (searchParams.get("quote") === currentRef.current?._id) return;
       const quote = quotes.find((q) => q._id === searchParams.get("quote"));
       if (quote) {
         loadQuote(quote);
+        if (IS_COMMERCIAL_DEPLOYMENT && (!canWriteQuotes || quote.status !== 'Draft')) setMode('detail');
         return;
       }
       const template = templates.find(
         (t) => t._id === searchParams.get("template"),
       );
-      if (template) {
+      if (template && canWriteQuotes) {
         formRef.current = defaultForm(settings);
         applyTemplate(template);
         setMode("wizard");
@@ -692,7 +720,7 @@ export default function Quotations() {
       const contact = contacts.find(
         (c) => c._id === searchParams.get("contact"),
       );
-      if (contact) {
+      if (contact && canWriteQuotes) {
         const f = {
           ...defaultForm(settings),
           clientName: [contact.firstName, contact.lastName]
@@ -713,6 +741,11 @@ export default function Quotations() {
     // Query-driven navigation initializes a specific document only after its records load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, data, location.search]);
+  const statusFilters = (
+    <div className="qw-list-filters" role="group" aria-label="Filter quotations by status">
+      {quoteFilters.map(value => <button type="button" key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value}</button>)}
+    </div>
+  );
   const visible = quotes.filter(
     (q) =>
       (filter === "All" || status(q) === filter) &&
@@ -727,9 +760,9 @@ export default function Quotations() {
   };
   const openListQuote = quote => {
     loadQuote(quote);
-    setMode(quote.status === "Draft" ? "editor" : "detail");
+    setMode(canWriteQuotes && quote.status === "Draft" ? "editor" : "detail");
   };
-  const quoteActionsMenu = (fullAccess || mode === "editor") && (
+  const quoteActionsMenu = canWriteQuotes && (fullAccess || mode === "editor") && (
     <WorkspaceActionMenu label="Actions" className="qw-menu" menuClassName="qw-dropdown qw-editor-action-menu" open={actionMenu} onOpenChange={setActionMenu} disabled={busy}>
       {mode === "editor" && <>
         <button onClick={() => { setActionMenu(false); saveDraft().catch(() => {}); }}><Save size={16}/>Save to studio</button>
@@ -744,19 +777,20 @@ export default function Quotations() {
       {mode === "list" && (
         <>
           <header className="qw-list-header">
-            <div><h1>Quotations</h1><p>Prepare quotes, share them with clients and follow their decisions.</p></div>
+            <div><WorkspaceMotionTitle>Quotations</WorkspaceMotionTitle><p>Prepare quotes, share them with clients and follow their decisions.</p></div>
             <div className="qw-list-actions">
-              <Link className="studio-button" to="/admin/quote-templates"><Copy size={15} />Templates</Link>
-              <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>
+              {canUseTemplates && <Link className="studio-button" to="/admin/quote-templates"><Copy size={15} />Templates</Link>}
+              {canWriteQuotes && <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>}
             </div>
           </header>
+          {IS_COMMERCIAL_DEPLOYMENT && statusFilters}
           <section className="qw-list-panel" aria-label="Quotation list">
             <div className="qw-list-toolbar">
               <label className="studio-search qw-list-search"><Search size={17} aria-hidden="true" /><input aria-label="Search quotes" placeholder="Search quote or client name" value={search} onChange={event => setSearch(event.target.value)} /></label>
               <label className="qw-list-status-filter"><span>Status</span><StudioSelect className="studio-input" aria-label="Quote status" value={filter} onChange={event => setFilter(event.target.value)}>{quoteFilters.map(value => <option key={value}>{value}</option>)}</StudioSelect></label>
               <span className="qw-list-count" role="status">{error ? 'Unavailable' : loading ? 'Loading…' : `${visible.length} of ${quotes.length} quotes`}</span>
             </div>
-            <div className="qw-list-filters" role="group" aria-label="Filter quotations by status">{quoteFilters.map(value => <button type="button" key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value}</button>)}</div>
+            {!IS_COMMERCIAL_DEPLOYMENT && statusFilters}
             {error ? <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={reload}>Retry</button></div> : loading ? <div className="qw-list-empty" role="status"><span className="studio-loader" />Loading quotations…</div> : visible.length ? <>
               <div className="qw-list-columns" aria-hidden="true"><span>Client / quote</span><div className="qw-quote-metadata"><span>Reference</span><span>Amount</span><span>Accept by</span><span>Status</span></div><span /></div>
               <div className="qw-quote-records">{visible.map(quote => <article className="qw-quote-row" key={quote._id} aria-labelledby={'quote-list-' + quote._id}>
@@ -780,17 +814,18 @@ export default function Quotations() {
               onClick={() => {
                 setDirty(false);
                 setMode("list");
+                if (IS_COMMERCIAL_DEPLOYMENT) setSearchParams({});
               }}
             >
               <X size={18} /> New Quote
             </button>
           </header>
           <div className="qw-wizard"><OfflineDraftStatus draft={offline}/>
-            <h1>
+            <WorkspaceMotionTitle>
               {step === 0
                 ? "How would you like to start?"
                 : "Who is this quote for?"}
-            </h1>
+            </WorkspaceMotionTitle>
             {step === 0 ? (
               <>
                 <button
@@ -871,7 +906,7 @@ export default function Quotations() {
                 {form.contactId && <Field label="Project">
                   <StudioSelect title="Project" value={form.studioProjectId || ""} onChange={e => change("studioProjectId", e.target.value)}>
                     <option value="">Select a project</option>
-                    {projects.filter(p => String(p.contactId?._id || p.contactId) === form.contactId).map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                    {projects.filter(p => IS_COMMERCIAL_DEPLOYMENT ? projectIncludesClient(p, form.contactId) : String(p.contactId?._id || p.contactId) === form.contactId).map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
                   </StudioSelect>
                   <small>Link a project to keep this quote visible in its enquiry.</small>
                 </Field>}
@@ -943,7 +978,7 @@ export default function Quotations() {
               <button
                 aria-label="Edit quote number"
                 disabled={
-                  !!current?.acceptedAt || current?.status === "Accepted"
+                  !canWriteQuotes || !!current?.acceptedAt || current?.status === "Accepted"
                 }
                 onClick={() => {
                   setModalValue(form.documentNumber || "");
@@ -967,17 +1002,17 @@ export default function Quotations() {
               {status(current || { status: "Draft" })}
             </span>
             <span className="qw-save-state" role="status" aria-live="polite">{saveState}</span></>}
-            <div className="qw-header-actions qw-quotation-toolbar" data-layout={mode === "detail" && current?.invoiceId ? "with-invoice" : mode}>
+            <div className="qw-header-actions qw-quotation-toolbar" data-layout={mode === "detail" && invoiceId && nextStep?.action !== "invoice" ? "with-invoice" : mode}>
               {mode === "editor" ? (
                 <>
                   <StudioButton type="button" className="qw-preview-action" disabled={busy} onClick={preview} loadingLabel="Preparing preview">Preview</StudioButton>
-                  {fullAccess && <StudioButton type="button" variant="primary" className="qw-primary" icon={Link2} disabled={busy} onClick={openClientLink} loadingLabel="Preparing client link">Share client link</StudioButton>}
+                  {fullAccess && <StudioButton type="button" variant="primary" className="qw-primary" icon={Link2} disabled={busy} onClick={openClientLink} loadingLabel="Preparing client link" title="Share client link">{IS_COMMERCIAL_DEPLOYMENT ? "Share link" : "Share client link"}</StudioButton>}
                   {quoteActionsMenu}
                 </>
               ) : (
                 <>
                   {quoteActionsMenu}
-                  {!current?.acceptedAt && current?.status !== "Accepted" && (
+                  {canWriteQuotes && !current?.acceptedAt && current?.status !== "Accepted" && (
                     <button
                       onClick={() => {
                         if (["Cancelled", "Declined"].includes(form.status))
@@ -989,15 +1024,15 @@ export default function Quotations() {
                     </button>
                   )}
                   <button onClick={preview}>View quote</button>
-                  {hasModuleAccess(user, 'invoices') && current?.invoiceId && (
+                  {canSeeInvoices && invoiceId && !invoicePending && nextStep?.action !== 'invoice' && (
                     <Link
                       className="qw-primary"
-                      to={`/admin/invoices/${current.invoiceId}`}
+                      to={`/admin/invoices/${invoiceId}`}
                     >
                       View invoice
                     </Link>
                   )}
-                  {fullAccess && <button className={current?.invoiceId ? "qw-button" : "qw-primary"} disabled={busy} onClick={openClientLink}>
+                  {fullAccess && (canWriteQuotes || current?.status === 'Accepted') && <button className={current?.invoiceId ? "qw-button" : "qw-primary"} disabled={busy} onClick={openClientLink}>
                     Smart client link
                   </button>}
                 </>
@@ -1102,6 +1137,7 @@ export default function Quotations() {
               <section className="qw-editor-scroll">
                 {needsDraftRecovery && <OfflineDraftStatus draft={offline} compact/>}
                 <div className="qw-paper">
+                  {IS_COMMERCIAL_DEPLOYMENT && !needsDraftRecovery && guidance}
                   <Field label="Quote title">
                     <input
                       className="qw-title"
@@ -1158,6 +1194,7 @@ export default function Quotations() {
                         }
                       /></label>
                       <label className="studio-document-number-field"><span className="studio-phone-field-label">Unit price (₹)</span><input
+                        id={IS_COMMERCIAL_DEPLOYMENT && index === 0 ? 'sx-quote-price' : undefined}
                         aria-label={`Price ${index + 1}`}
                         type="number"
                         min="0"
@@ -1204,6 +1241,7 @@ export default function Quotations() {
                           <Copy size={12} />
                         </button>
                         <button
+                          className="studio-document-destructive"
                           aria-label={`Delete item ${index + 1}`}
                           disabled={form.items.length === 1}
                           onClick={() => deleteItem(index)}
@@ -1215,7 +1253,8 @@ export default function Quotations() {
                   ))}
                   <div className="qw-total-area">
                     <button
-                      className="qw-text-button"
+                      className="qw-text-button studio-document-add"
+                      id={IS_COMMERCIAL_DEPLOYMENT ? 'sx-quote-add-item' : undefined}
                       disabled={form.items?.length >= 40}
                       onClick={() => { setDeletedItem(null); change("items", [...form.items, blankItem()]); }}
                     >
@@ -1282,6 +1321,7 @@ export default function Quotations() {
             </div>
           ) : (
             <section className="qw-detail">
+              {IS_COMMERCIAL_DEPLOYMENT && guidance}
               <div className="qw-detail-summary">
                 <div>
                   <span>Quote to</span>
@@ -1314,12 +1354,12 @@ export default function Quotations() {
                 <div>
                   Invoice
                   <strong>
-                    {current.invoiceId ? (
-                      <Link to={`/admin/invoices/${current.invoiceId}`}>
-                        {String(current.invoiceId).slice(-6).toUpperCase()}
+                    {invoiceId && !invoicePending && (!IS_COMMERCIAL_DEPLOYMENT || canSeeInvoices) ? (
+                      <Link to={`/admin/invoices/${invoiceId}`}>
+                        {String(invoiceId).slice(-6).toUpperCase()}
                       </Link>
                     ) : (
-                      "None"
+                      invoicePending && canSeeInvoices ? "Preparing" : "None"
                     )}
                   </strong>
                 </div>
@@ -1601,6 +1641,7 @@ export default function Quotations() {
                 modal !== "history" && (
                   <button
                     className="qw-primary"
+                    data-document-intent={["cancel", "archive", "leave"].includes(modal) ? "destructive" : undefined}
                     disabled={busy}
                     onClick={async () => {
                       const generation = generationRef.current;

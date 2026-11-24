@@ -1,7 +1,7 @@
 import { hasModuleAccess } from '../../utils/moduleAccess';
 import { useState, useEffect } from 'react';
 import { Webhook, Copy, Check, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import API_BASE_URL from '../../utils/apiConfig';
@@ -18,12 +18,23 @@ const sampleJson = JSON.stringify(sample, null, 2);
 
 export default function Integrations() {
   const { user } = useAuth();
+  const { hash, key } = useLocation();
   const preview = user?.isPreview === true;
   const [status, setStatus] = useState(null);
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
   const [copied, setCopied] = useState('');
   const endpoint = API_BASE_URL + '/api/webhooks/enquiries';
+  useEffect(() => {
+    if (hash !== '#drive' && hash !== '#assistants') return;
+    // Wait for the workspace's route scroll reset before following the fragment.
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById(hash.slice(1));
+      target?.scrollIntoView({ block: 'start', behavior: 'instant' });
+      target?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [hash, key]);
   useEffect(() => {
     if (preview) return;
     const controller = new AbortController();
@@ -39,10 +50,12 @@ export default function Integrations() {
   return <div className="studio-integrations">
     <WorkspaceHeader title="Integrations" description="Your writing assistants, studio backups and connected services." />
     <AssistantConnections />
-    <DriveBackupConnection />
-    {hasModuleAccess(user, 'email') && <GmailConnectionCard />}
-    {hasModuleAccess(user, 'whatsapp') && <WhatsAppConnectionCard />}
-    {hasModuleAccess(user, 'calendar') && <section className="studio-card studio-gmail-card"><IntegrationLogo brand="google-calendar" size={47} /><div><h2>Google Calendar</h2><p>Connect your studio calendar and manage event synchronization.</p><small>Your Calendar connection is managed from the Calendar workspace.</small></div><Link className="studio-button" to="/admin/calendar">Open calendar <ArrowRight size={15} /></Link></section>}
+    <div className="studio-integration-services">
+      <DriveBackupConnection />
+      {hasModuleAccess(user, 'email') && <GmailConnectionCard />}
+      {hasModuleAccess(user, 'whatsapp') && <WhatsAppConnectionCard />}
+      {hasModuleAccess(user, 'calendar') && <section className="studio-card studio-gmail-card"><IntegrationLogo brand="google-calendar" size={47} /><div><h2>Google Calendar</h2><p>Connect your studio calendar and manage event synchronization.</p><small>Your Calendar connection is managed from the Calendar workspace.</small></div><Link className="studio-button" to="/admin/calendar">Open calendar <ArrowRight size={15} /></Link></section>}
+    </div>
     {error && <div className="studio-error" role="alert">{error}<button className="studio-button small" onClick={() => setRefresh(value => value + 1)}><RefreshCw size={13} />Retry</button></div>}
     <section className="studio-card studio-webhook-intro"><span className="studio-webhook-icon"><Webhook size={25} strokeWidth={1.3} /></span><div><h2>Website enquiries</h2><p>Connect a form or automation to create new leads in Team Alpha CRM.</p></div><span className={'studio-badge ' + (status?.configured ? 'green' : 'gold')}>{preview ? 'Preview only' : status ? status.configured ? 'Configured' : 'Setup needed' : error ? 'Status unavailable' : 'Checking configuration…'}</span></section>
     <div className="studio-integration-grid">

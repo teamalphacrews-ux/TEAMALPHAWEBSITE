@@ -272,6 +272,14 @@
 .studio-app.studio-app .studio-enquiries-page .studio-crm-stage-filters button { display:inline-flex; align-items:center; gap:8px; min-height:40px; padding:8px 11px; font-size:12px; font-weight:500; border-radius:8px; }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-stage-filters button.active { background:var(--control-accent-soft, #edf3ff); color:var(--control-accent-ink, #2455bc); }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-stage-filters button span { min-width:19px; margin:0; font-size:11px; font-variant-numeric:tabular-nums; }
+.studio-commercial-glass .studio-enquiries-page .studio-crm-stage-filters button > span {
+  background: var(--studio-surface-2);
+  color: var(--studio-muted);
+}
+.studio-commercial-glass .studio-enquiries-page .studio-crm-stage-filters button[aria-pressed="true"] > span {
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+}
 .studio-app.studio-app .studio-enquiries-page .studio-crm-table { min-width:860px; }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-table th { padding:14px 18px; font-size:11px; font-weight:500; letter-spacing:.02em; text-transform:none; background:var(--studio-surface); color:var(--studio-muted); }
 .studio-app.studio-app .studio-enquiries-page .studio-crm-table td { padding:17px 18px; font-size:13px; line-height:1.5; vertical-align:middle; color:var(--studio-text); }

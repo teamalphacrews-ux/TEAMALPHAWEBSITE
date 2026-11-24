@@ -1,5 +1,6 @@
 import { useAuth } from '../../../context/AuthContext';
 import { hasModuleAccess, hasFullModuleAccess } from '../../../utils/moduleAccess';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
 import StudioSelect from '../common/StudioSelect';
 import {useState,useRef} from 'react';
 import {Link} from 'react-router-dom';
@@ -14,7 +15,7 @@ import {useStudioIdentity} from '../../../utils/studioIdentity';
 import {formatWorkspaceDate,resolveWorkspaceTimezone} from '../../../utils/workspaceLocale';
 import {studioDayKey} from '../../../utils/studioTime';
 import {recordId,phoneHref,emailHref,directionsHref,deliveryHref} from '../../../utils/projectWorkspace';
-import {projectChecklistSummary,projectReadinessActions} from './projectReadiness';
+import {projectChecklistSummary,projectNextStep,projectReadinessActions} from './projectReadiness';
 import './projectWorkspace.css';
 const stages=['Not started','In progress','Editing','In review','Awaiting your selection','Ready','Uploaded to Drive','Delivered'];
 function ClientLink({quote}){
@@ -22,11 +23,42 @@ function ClientLink({quote}){
  const open=async()=>{if(busy)return;setBusy(true);setError('');try{const result=await workspaceRequest('get','/api/studio/quotations/'+quote._id+'/client-link'),u=new URL(result.url);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||u.search||u.hash||!/^\/quote\/(?:[a-f\d]{24}\.)?[a-f\d]{64}$/i.test(u.pathname))throw new Error('Invalid client link');setURL(u.href);}catch(e){setError(recordError(e));}finally{setBusy(false);}};
  return <><button type="button" className="studio-button" onClick={open} disabled={busy}><Link2 size={15}/>{busy?'Opening…':'Client smart link'}</button><WorkspaceError error={error}/>{url&&<OperationsModal title="Share client smart link" onClose={()=>setURL('')} footer={<button type="button" className="studio-button" onClick={()=>setURL('')}>Done</button>}><p className="studio-muted">This link follows the saved client visibility settings.</p><input className="studio-input" aria-label="Client smart link" value={url} readOnly onFocus={e=>e.target.select()}/><div className="project-hub-actions"><button type="button" className="studio-button primary" onClick={async()=>{try{await navigator.clipboard.writeText(url);toast.success('Link copied');}catch{toast.error('Select and copy the link above.');}}}><Copy size={15}/>Copy link</button>{navigator.share&&<button type="button" className="studio-button" onClick={()=>navigator.share({title:'Your project',url}).catch(()=>{})}><Share2 size={15}/>Share</button>}<a className="studio-button" href={url} target="_blank" rel="noreferrer">Open link<ArrowUpRight size={15}/></a></div></OperationsModal>}</>;
 }
-export function ProjectOverview({detail,onTab}){
+export function ProjectOverview({detail,onTab,refreshing,loadError}){
  const {user}=useAuth();
  const {project,quotations=[],invoices=[],sessions=[],production={}}=detail,{preferences}=useStudioPreferences(),{identity}=useStudioIdentity(),timezone=resolveWorkspaceTimezone(preferences,identity?.timezone);
  const contact=project.contactId,phone=phoneHref(contact?.phone),email=emailHref(contact?.email),directions=directionsHref(project.location),quote=quotations.find(r=>r.status==='Accepted')||quotations.find(r=>r.status==='Sent'),tasks=production.tasks||[];
- const checklist=projectChecklistSummary(tasks),readiness=projectReadinessActions(detail,user);
+ const checklist=projectChecklistSummary(tasks);
+ const readiness=IS_COMMERCIAL_DEPLOYMENT ? [] : projectReadinessActions(detail,user);
+ const next=IS_COMMERCIAL_DEPLOYMENT && !refreshing && !loadError ? projectNextStep(detail,user,{timezone}) : null;
+ if(IS_COMMERCIAL_DEPLOYMENT) return <>
+  <section className="studio-card project-hub-overview sx-project-overview">
+   <div className="sx-project-next-step">
+    <div className="project-hub-intro"><h2>Next step</h2><p className="sx-project-description">{next?.label || (refreshing ? 'Refreshing the project…' : 'Refresh this project to see its next step.')}</p></div>
+    {next?.href && <Link className="studio-button primary" to={next.href}>{next.action}<ArrowUpRight size={16} aria-hidden="true"/></Link>}
+    {next?.tab && <button type="button" className="studio-button primary" onClick={()=>onTab(next.tab)}>{next.action}<ArrowUpRight size={16} aria-hidden="true"/></button>}
+   </div>
+   <div className="project-hub-actions sx-project-contact-actions">
+    {hasFullModuleAccess(user) && (quote ? <ClientLink quote={quote}/> : <button type="button" className="studio-button" onClick={()=>onTab('documents')}><Link2 size={15} aria-hidden="true"/>Prepare client link</button>)}
+    {phone && <a className="studio-button" href={phone}><Phone size={15} aria-hidden="true"/>Call client</a>}
+    {email && <a className="studio-button" href={email}><Mail size={15} aria-hidden="true"/>Email client</a>}
+    {directions && <a className="studio-button" href={directions} target="_blank" rel="noreferrer">Directions<ArrowUpRight size={15} aria-hidden="true"/></a>}
+   </div>
+
+  </section>
+  {hasModuleAccess(user,'calendar') && <section className="studio-card project-hub-section sx-project-schedule"><header><CalendarDays size={18} aria-hidden="true"/><h2>Shoot schedule</h2></header>{sessions.length ? <ContactSessions sessions={sessions}/> : <p className="studio-muted">No sessions are scheduled for this project yet.</p>}<div className="project-hub-actions"><Link className="studio-button" to={'/admin/calendar?'+new URLSearchParams({contact:recordId(contact),project:recordId(project)})}>Schedule a session<Plus size={15} aria-hidden="true"/></Link><Link className="studio-button" to={'/admin/shoot-day'+(project.startDate?'?date='+studioDayKey(project.startDate,timezone):'')}>Open shoot day<ArrowUpRight size={15} aria-hidden="true"/></Link></div></section>}
+  {hasModuleAccess(user,'production') && <section className="studio-card project-hub-section sx-project-work">
+   <header><CheckCircle2 size={18} aria-hidden="true"/><h2>Delivery checklist</h2><button type="button" className="studio-button small" onClick={()=>onTab('delivery')}>View checklist<ArrowUpRight size={14} aria-hidden="true"/></button></header>
+   {tasks.length ? <ul className="sx-project-work-list">{[...tasks].sort((a,b)=>Number(a.status==='completed')-Number(b.status==='completed')).slice(0,4).map(task=>{
+    const completed = task.status === 'completed';
+    const StateIcon = completed ? CheckCircle2 : Circle;
+    return <li key={task._id}>
+     <span className={'sx-project-work-state' + (completed ? ' is-complete' : '')} aria-hidden="true"><StateIcon size={18}/></span>
+     <span><strong>{task.title}</strong><span className="sr-only">{completed ? 'Completed' : 'Pending'}</span><small>{task.deliveryType || 'Other'}{task.dueDate ? ' · Due '+formatWorkspaceDate(task.dueDate,preferences,identity?.timezone) : ''}</small></span>
+     <span className="sx-project-work-stage">{task.productionStage || 'Not started'}</span>
+    </li>;
+   })}</ul> : <p className="studio-muted">No delivery tasks yet. Prepare your checklist in Delivery.</p>}
+  </section>}
+ </>;
  return <><section className="studio-card project-hub-overview"><div className="project-hub-intro"><span className="studio-eyebrow">PROJECT WORKSPACE</span><h2>Your next steps, connected.</h2><p>{project.startDate?formatWorkspaceDate(project.startDate,preferences,identity?.timezone):'Date to be confirmed'}{project.location?' · '+project.location:''}</p></div><div className="project-hub-actions">{hasFullModuleAccess(user) && (quote?<ClientLink quote={quote}/>:<button type="button" className="studio-button" onClick={()=>onTab('documents')}><Link2 size={15}/>Prepare client link</button>)}{phone&&<a className="studio-button" href={phone}><Phone size={15}/>Call client</a>}{email&&<a className="studio-button" href={email}><Mail size={15}/>Email client</a>}{directions&&<a className="studio-button" href={directions} target="_blank" rel="noreferrer">Directions<ArrowUpRight size={15}/></a>}</div><div className="project-hub-shortcuts">{[['documents',(hasModuleAccess(user,'quotations')?quotations.length:0)+(hasModuleAccess(user,'invoices')?invoices.length:0),'Quotes & invoices'],['crew',(production.crew||[]).length,'Assigned crew'],['delivery',checklist.value,checklist.label]].filter(([tab])=>tab==='documents'?(hasModuleAccess(user,'quotations')||hasModuleAccess(user,'invoices')):hasModuleAccess(user,tab==='delivery'?'production':'crew')).map(([tab,value,label])=><button type="button" key={tab} onClick={()=>onTab(tab)}><strong className={typeof value==='string'&&value==='Not started'?'is-label':undefined}>{value}</strong><span>{label}</span><ArrowUpRight size={15}/></button>)}</div>{readiness.length>0&&<section className="project-hub-readiness" aria-label="Project readiness"><h3>Project readiness</h3><ul>{readiness.map(step=><li key={step.key}><span>{step.label}</span>{step.href?<Link className="studio-button small" to={step.href}>{step.action}<ArrowUpRight size={14}/></Link>:<button type="button" className="studio-button small" onClick={()=>onTab(step.tab)}>{step.action}<ArrowUpRight size={14}/></button>}</li>)}</ul></section>}</section>{hasModuleAccess(user,'calendar')&&<section className="studio-card project-hub-section"><header><CalendarDays size={18}/><h2>Shoot schedule</h2></header>{sessions.length?<ContactSessions sessions={sessions}/>:<p className="studio-muted">No sessions are scheduled for this project yet.</p>}<div className="project-hub-actions"><Link className="studio-button" to={'/admin/calendar?'+new URLSearchParams({contact:recordId(contact),project:recordId(project)})}>Schedule a session<Plus size={15}/></Link><Link className="studio-button" to={'/admin/shoot-day'+(project.startDate?'?date='+studioDayKey(project.startDate,timezone):'')}>Open shoot day<ArrowUpRight size={15}/></Link></div></section>}</>;
 }
 export function ProjectOperations({production,mode,onSaved,projectId}){

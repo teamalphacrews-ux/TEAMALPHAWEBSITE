@@ -52,6 +52,8 @@ html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-refere
 .studio-overview-reference .ov-change.is-down { color: var(--ov-change-negative); }
 .studio-overview-reference .ov-number-note { color: var(--studio-muted); font-size: 12px; line-height: 1.5; margin: 4px 0 0; }
 .studio-overview-reference .ov-area-chart { margin: 6px -20px 0; }
+.studio-commercial-glass .ov-area-chart .ov-draw-line { stroke: var(--ov-accent-edge); }
+.studio-commercial-glass :is(.ov-area-chart,.ov-rhythm-chart) circle { fill: var(--ov-accent-edge); }
 .studio-overview-reference .ov-area-chart > svg { width: 100%; height: 100px; display: block; overflow: visible; }
 .studio-overview-reference .ov-chart-days { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 4px; }
 .studio-overview-reference .ov-area-chart .ov-chart-days { padding: 0 15px; }
@@ -114,6 +116,8 @@ html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-refere
 .studio-app.studio-app .studio-overview-reference .studio-task-row { min-height: 59px; padding: 10px 0; }
 .studio-app.studio-app .studio-overview-reference .studio-task-row h3 { font-size: 11px; }
 .studio-app.studio-app .studio-overview-reference .studio-task-row p { font-size: 10px; }
+.studio-app.studio-commercial-glass .studio-overview-reference .studio-data-note,
+.studio-commercial-glass .studio-overview-reference [data-overview-card="actionQueue"] .studio-task-row p { color: var(--studio-muted); }
 .studio-app.studio-app .studio-overview-reference .overview-feature-card.finance { --feature-ink: var(--studio-text); background: var(--studio-surface); border: 0; border-radius: 18px; padding: 20px; box-shadow: none; min-height: 280px; }
 .studio-app.studio-app .studio-overview-reference .overview-feature-card.finance::before { border: 0; }
 .studio-app.studio-app .studio-overview-reference .overview-finance-profit { color: var(--studio-text); font-size: 32px; }

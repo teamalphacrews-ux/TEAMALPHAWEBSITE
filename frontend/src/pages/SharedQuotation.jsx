@@ -7,8 +7,12 @@ import { CheckCircle2, Download, Printer } from "lucide-react";
 import { API_BASE_URL } from "../utils/apiConfig";
 import { resolveStudioImage } from '../utils/settingsDefaults';
 import { workspaceRequest } from "../admin/components/operations/workspaceData";
+import StudioProductBrand from "../components/StudioProductBrand";
 import "./sharedQuotation.css";
+import "./studioClientGlass.css";
+import { IS_COMMERCIAL_DEPLOYMENT } from "../saas/release";
 import ClientProjectWorkspace from "./ClientProjectWorkspace";
+import "./clientSmartLinkDocuments.css";
 const money = (v) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -108,7 +112,7 @@ export default function SharedQuotation() {
       }
     : {};
   const document = (
-    <div className="shared-quotation" style={style}>
+    <div className={`shared-quotation${IS_COMMERCIAL_DEPLOYMENT ? " studio-client-glass" : ""}`} style={style}>
       <meta name="robots" content="noindex,nofollow" />
       <meta name="referrer" content="no-referrer" />
       {preview && (
@@ -117,9 +121,10 @@ export default function SharedQuotation() {
         </div>
       )}
       {!quote ? (
-        <main className="sq-loading">
+        <main className={IS_COMMERCIAL_DEPLOYMENT ? "sq-smart-link-state" : "sq-loading"}>
+          {IS_COMMERCIAL_DEPLOYMENT && <StudioProductBrand tone="inverse" />}
           <h1>Your quotation</h1>
-          <p role="status">{error || "Loading your quote…"}</p>
+          <p role={IS_COMMERCIAL_DEPLOYMENT && error ? "alert" : "status"}>{error || "Loading your quote…"}</p>
         </main>
       ) : (
         <>
@@ -304,7 +309,7 @@ export default function SharedQuotation() {
             </section>
           </main>
           <footer>
-            TEAM ALPHA · STUDIO OS
+            {IS_COMMERCIAL_DEPLOYMENT ? quote.studio.name : "TEAM ALPHA · STUDIO OS"}
             {quote.studio.email && (
               <a href={`mailto:${quote.studio.email}`}>{quote.studio.email}</a>
             )}

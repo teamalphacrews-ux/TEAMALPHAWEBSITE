@@ -5,6 +5,7 @@ import {OperationsModal} from '../operations/OperationsUI';
 import {useAuth} from '../../../context/AuthContext';
 import {hasFullModuleAccess} from '../../../utils/moduleAccess';
 import API from '../../../utils/apiConfig';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
 const labels={contacts:'Contacts',projects:'Projects',enquiries:'Enquiries',quotations:'Quotations',invoices:'Invoices'};
 export default function WorkspaceRecordSearch(){
  const {user}=useAuth(),location=useLocation();
@@ -13,9 +14,10 @@ export default function WorkspaceRecordSearch(){
 }
 function RecordSearch(){
  const {token,user}=useAuth();
+ const shortcutLabel = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K';
  const [open,setOpen]=useState(false),[query,setQuery]=useState(''),[groups,setGroups]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const session=String(user?.workspace?.id||user?.workspace?._id||'legacy')+':'+String(user?._id||user?.id||'');
- const active=useRef(0);
+ const active=useRef(0), inputRef=useRef(null);
  useEffect(()=>{
    const shortcut=e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'&&!document.querySelector('[aria-modal=true]')){e.preventDefault();setOpen(true);}};
    window.addEventListener('keydown',shortcut);return()=>window.removeEventListener('keydown',shortcut);
@@ -31,8 +33,8 @@ function RecordSearch(){
   },250);
   return()=>{clearTimeout(timer);controller.abort();};
  },[query,open,token,session]);
- return <><button className="studio-icon-button studio-record-search-trigger" type="button" aria-label="Search clients, projects and documents" onClick={()=>setOpen(true)}><Search size={18}/></button>{open&&<OperationsModal title="Search your studio" description="Find clients, projects, enquiries and documents." onClose={()=>setOpen(false)}>
-  <label className="studio-search"><Search size={18}/><input type="search" data-autofocus aria-label="Search workspace records" placeholder="Name, phone, quote or invoice…" value={query} maxLength={80} onChange={e=>{setQuery(e.target.value);setGroups([]);setError('');setBusy(e.target.value.trim().length>=2);}}/>{query&&<button type="button" className="studio-icon-button" aria-label="Clear record search" onClick={()=>{setQuery('');setBusy(false);setGroups([]);}}><X size={15}/></button>}</label>
+ return <><button className="studio-icon-button studio-record-search-trigger" type="button" aria-label="Search clients, projects and documents" onClick={()=>setOpen(true)}><Search size={18}/>{IS_COMMERCIAL_DEPLOYMENT&&<><span className="sx-record-search-label">Search clients, projects, documents</span><span className="sx-record-search-short">Search</span><kbd className="sx-record-search-key" aria-hidden="true">{shortcutLabel}</kbd></>}</button>{open&&<OperationsModal title="Search your studio" description="Find clients, projects, enquiries and documents." onClose={()=>setOpen(false)}>
+  <label className="studio-search"><Search size={18}/><input ref={inputRef} type="search" data-autofocus aria-label="Search workspace records" placeholder="Name, phone, quote or invoice…" value={query} maxLength={80} onChange={e=>{setQuery(e.target.value);setGroups([]);setError('');setBusy(e.target.value.trim().length>=2);}}/>{query&&<button type="button" className="studio-icon-button" aria-label="Clear record search" onClick={()=>{setQuery('');setBusy(false);setGroups([]);setError('');inputRef.current?.focus();}}><X size={15}/></button>}</label>
   <div className="studio-record-results" role="status">{busy?<p><Loader2 size={16}/>Searching your studio…</p>:error?<p className="studio-error">{error}</p>:query.trim().length<2?<p className="studio-muted">Enter at least two characters.</p>:groups.every(group=>!group.results?.length)?<p className="studio-muted">No matching records. Try another name or document number.</p>:groups.filter(group=>group.results?.length).map(group=><section key={group.kind}><h3>{labels[group.kind]||'Records'}</h3>{group.results.map(row=><Link key={row.id} to={row.path} onClick={()=>setOpen(false)}><strong>{row.label}</strong><small>{row.subtitle}</small></Link>)}</section>)}</div>
  </OperationsModal>}</>;
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from '../../../context/AuthContext';
 import { hasModuleAccess } from '../../../utils/moduleAccess';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
 import { WorkspaceDialog, WorkspaceField } from "../operations/WorkspaceUI";
 import { DEFAULT_STUDIO_TIMEZONE, studioDateTimeInput, studioDateTimeToISO, studioDayKey, shiftDayKey, validStudioDay } from '../../../utils/studioTime';
 export default function EventForm({
@@ -31,8 +32,9 @@ export default function EventForm({
     lead: initialData?.lead?._id || initialData?.lead || "",
   }));
   const change = (name, value) => setForm((c) => ({ ...c, [name]: value,
-    ...(name === 'lead' && value !== c.lead ? { contactId: '', studioProjectId: '' } : {}),
+    ...(name === 'lead' && (value !== c.lead || (IS_COMMERCIAL_DEPLOYMENT && !value)) ? { contactId: '', studioProjectId: '' } : {}),
   }));
+  const contextOnly = IS_COMMERCIAL_DEPLOYMENT && !form.lead && Boolean(form.studioProjectId || form.contactId);
   const submit = (event) => {
     event.preventDefault();
     if (busy) return;
@@ -90,10 +92,13 @@ export default function EventForm({
         <WorkspaceField
           label="Linked enquiry / project"
           name="lead"
-          value={form.lead}
-          onChange={change}
+          value={contextOnly ? 'current-context' : form.lead}
+          onChange={(name, value) => { if (value !== 'current-context') change(name, value); }}
           options={[
+            ...(contextOnly ? [{ value: 'current-context', label: form.studioProjectId ? 'Current project' : 'Current client' }] : []),
             { value: "", label: "Studio event" },
+            ...(IS_COMMERCIAL_DEPLOYMENT && form.lead && !leads.some(lead => lead._id === form.lead)
+              ? [{ value: form.lead, label: 'Linked enquiry / project' }] : []),
             ...leads.map((l) => ({ value: l._id, label: l.name })),
           ]}
         />

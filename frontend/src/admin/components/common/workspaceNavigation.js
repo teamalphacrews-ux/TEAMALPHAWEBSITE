@@ -1,5 +1,11 @@
 import { LayoutDashboard, UsersRound, Wallet, CalendarDays, MessageSquare, Bell, Folder, Clapperboard, Webhook, FileText, ReceiptText, HardDrive, UserRound, Mail, MessageCircle, Layers3 } from 'lucide-react';
-import { SAAS_RELEASE_ENABLED } from '../../../saas/release';
+import { IS_COMMERCIAL_DEPLOYMENT, SAAS_RELEASE_ENABLED } from '../../../saas/release';
+
+// Both dashboard URLs are valid entry points. Use the mounted form so NavLink's
+// exact match sets aria-current on the dashboard without matching its subpages.
+export function workspaceNavTarget(path, pathname) {
+  return IS_COMMERCIAL_DEPLOYMENT && path === '/admin' && pathname === '/admin/' ? pathname : path;
+}
 
 export const workspaceIconTones = {
   '/admin': 'blue', '/admin/crm': 'cyan', '/admin/studio-projects': 'indigo',

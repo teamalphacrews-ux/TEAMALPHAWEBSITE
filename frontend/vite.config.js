@@ -5,6 +5,7 @@ import { hostname } from "node:os";
 import { createWebsiteRouter } from "./website-server.mjs";
 import react from "@vitejs/plugin-react";
 import { transformDeploymentHtml } from "./src/saas/releaseConfig.js";
+import { commercialHomepage } from './commercial-homepage/build.mjs';
 
 // https://vite.dev/config/
 function websiteGateway(env) {
@@ -24,6 +25,7 @@ export default defineConfig(({ mode }) => ({
   // Unprefixed environment values stay in the Node server and are never defined in client code.
   plugins: [
     react(),
+    commercialHomepage(),
     websiteGateway({ ...loadEnv(mode, process.cwd(), ""), ...process.env }),
     {
       name: "studio-deployment-identity",

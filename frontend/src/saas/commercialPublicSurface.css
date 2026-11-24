@@ -1,0 +1,239 @@
+/* Public product and client screens share the workspace type and interaction rhythm.
+   Tenant documents and their print styles have their own typography. */
+:where(.sos-product, .saas-product-auth, .studio-docs, .client-project.studio-client-glass) {
+  --sx-public-font: Urbanist, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sx-public-ease: cubic-bezier(.22, 1, .36, 1);
+  --sx-public-night: #111213;
+  --sx-public-panel: #1b1c1e;
+  --sx-public-well: #222326;
+  --sx-public-ink: #f0f0f1;
+  --sx-public-muted: #b3b5ba;
+  --sx-public-edge: rgb(255 255 255 / 14%);
+  --sx-public-accent: #f4a43a;
+  --sx-public-action: linear-gradient(135deg, #f8c062, #f4a43a 52%, #ef8a2a);
+  --sx-public-on-action: #1c1304;
+}
+
+@media screen {
+  .sos-product.sos-prismatic.sos-reactor {
+    --sos-display: var(--sx-public-font);
+    --sos-paper: var(--sx-public-night);
+    --sos-surface: var(--sx-public-panel);
+    --sos-tools-surface: var(--sx-public-panel);
+    --sos-surface-raised: var(--sx-public-well);
+    --sos-ink: var(--sx-public-ink);
+    --sos-heading: var(--sx-public-ink);
+    --sos-heading-accent: #f6b95e;
+    --sos-text-secondary: var(--sx-public-muted);
+    --sos-text-support: var(--sx-public-muted);
+    --sos-text-strong: #e9e9eb;
+    --sos-action-fill: var(--sx-public-accent);
+    --sos-action-fill-hover: #f7b14f;
+    --sos-action-surface: var(--sx-public-accent);
+    --sos-action-surface-hover: #f7b14f;
+    --sos-action-ink: var(--sx-public-on-action);
+    --sos-progress: var(--sx-public-accent);
+    --sos-boundary: var(--sx-public-edge);
+    --sos-boundary-subtle: rgb(255 255 255 / 8%);
+    --sos-focus: #f6b95e;
+    font-family: var(--sx-public-font);
+    background-color: var(--sx-public-night);
+  }
+  .sos-product.sos-prismatic.sos-reactor .sos-header {
+    padding: 0;
+    border-bottom: 1px solid var(--sx-public-edge);
+    background: rgb(17 18 19 / 93%);
+    backdrop-filter: blur(18px);
+  }
+  .sos-product.sos-prismatic.sos-reactor .sos-header .sos-header-inner {
+    width: min(100%, 1560px);
+    height: auto;
+    min-height: 68px;
+    padding: 8px clamp(16px, 3vw, 40px);
+    margin: 0 auto;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .sos-product.sos-prismatic.sos-reactor .sos-desktop-nav > a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: #d2d3d6;
+    font-family: var(--sx-public-font);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .sos-product.sos-prismatic.sos-reactor .sos-desktop-nav > a:hover { color: #f6b95e; }
+  .sos-product.sos-prismatic.sos-reactor :is(.sos-button,.sos-reference-primary,.sos-reference-secondary),
+  .saas-product-auth.saas-auth :is(.saas-primary,.saas-social-button,.saas-auth-signin strong) {
+    border-radius: 10px;
+    font-family: var(--sx-public-font);
+    transition: background-color 180ms var(--sx-public-ease), border-color 180ms var(--sx-public-ease), transform 180ms var(--sx-public-ease);
+  }
+  .sos-product.sos-prismatic.sos-reactor :is(.sos-button.dark,.sos-button.light,.sos-reference-primary),
+  .saas-product-auth.saas-auth .saas-primary:not(:disabled) {
+    color: var(--sx-public-on-action);
+    background: var(--sx-public-action);
+    border-color: rgb(255 255 255 / 12%);
+  }
+  .sos-product.sos-prismatic.sos-reactor .sos-header-actions > .sos-button {
+    color: var(--sx-public-ink);
+    background: var(--sx-public-well);
+    border: 1px solid var(--sx-public-edge);
+  }
+  .sos-product.sos-prismatic.sos-reactor .sos-menu-button {
+    color: var(--sx-public-ink);
+    background: var(--sx-public-well);
+    border-color: var(--sx-public-edge);
+    border-radius: 10px;
+  }
+
+  .studio-app.saas-auth.saas-product-auth,
+  .studio-app.saas-auth.saas-product-auth.saas-login-reference {
+    --login-font: var(--sx-public-font);
+    --studio-text: var(--sx-public-ink);
+    --studio-muted: var(--sx-public-muted);
+    --studio-canvas: var(--sx-public-night);
+    --studio-surface: var(--sx-public-panel);
+    font-family: var(--sx-public-font);
+    background-color: var(--sx-public-night);
+  }
+  .studio-app.saas-product-auth.saas-auth .saas-auth-layout {
+    background: var(--sx-public-panel);
+    border: 1px solid var(--sx-public-edge);
+    border-radius: 22px;
+    overflow: hidden;
+  }
+  .studio-app.saas-product-auth.saas-login-reference .saas-auth-layout {
+    grid-template-columns: minmax(0,.92fr) minmax(0,1.08fr);
+    align-items: stretch;
+    gap: 0;
+    width: calc(100% - 56px);
+    max-width: 1120px;
+    padding: 0;
+    margin-block: clamp(80px,6vw,88px) clamp(32px,6vw,80px);
+    background: rgb(27 28 30 / 89%);
+  }
+  .studio-app.saas-product-auth.saas-auth .saas-auth-card {
+    max-width: none;
+    padding: clamp(22px,4vw,56px);
+  }
+  .studio-app.saas-product-auth.saas-auth .saas-auth-aside {
+    padding: clamp(22px,4vw,56px);
+    background: linear-gradient(155deg,rgb(244 164 58 / 12%),transparent 64%),rgb(17 18 19 / 74%);
+    border-left: 1px solid var(--sx-public-edge);
+  }
+  .studio-app.saas-product-auth.saas-auth :is(h1,.saas-auth-aside h2,.saas-auth-aside h2 em) {
+    font-family: var(--sx-public-font) !important;
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: -.035em;
+  }
+  .studio-app.saas-product-auth.saas-auth .saas-auth-aside h2 em { color: #f6b95e; }
+  .studio-app.saas-product-auth.saas-login-reference .saas-login-motion-toggle:disabled {
+    opacity: 1;
+    color: var(--sx-public-muted);
+  }
+  .studio-app.saas-product-auth.saas-auth .saas-field input {
+    min-height: 48px;
+    border-radius: 10px;
+    background: var(--sx-public-night);
+    color: var(--sx-public-ink);
+  }
+  .studio-app.saas-product-auth.saas-auth :is(.saas-info,.saas-trial-note,.saas-invite-summary) {
+    background: var(--sx-public-well);
+    color: var(--sx-public-ink);
+    border: 1px solid var(--sx-public-edge);
+    border-radius: 14px;
+  }
+
+  .studio-docs[data-docs-view] {
+    --docs-ink: var(--sx-public-ink);
+    --docs-body: #d2d3d6;
+    --docs-muted: var(--sx-public-muted);
+    --docs-line: var(--sx-public-edge);
+    font-family: var(--sx-public-font);
+    background: var(--sx-public-night);
+  }
+  .studio-docs .docs-header { background: var(--sx-public-night); }
+  .studio-docs .docs-header-inner { min-height: 68px; padding-block: 10px; }
+  .studio-docs .docs-layout { padding-top: 28px; }
+  .studio-docs .docs-sidebar { top: 96px; max-height: calc(100dvh - 120px); }
+  .studio-docs .docs-hub-intro { margin-bottom: 28px; }
+  .studio-docs .docs-hub-intro h1 {
+    margin-bottom: 12px;
+    font-size: clamp(32px,4vw,52px);
+    font-weight: 650;
+    letter-spacing: -.035em;
+  }
+  .studio-docs .docs-hub-intro h1 em { color: #f6b95e; font-family: inherit; font-style: normal; font-weight: 550; }
+  .studio-docs .docs-search { background: var(--sx-public-well); border-radius: 14px; margin-top: 22px; }
+  .studio-docs :is(.docs-all-guides.is-current,.docs-category-filter button[aria-pressed=true],.docs-nav-group a[aria-current=page]) {
+    background: rgb(244 164 58 / 16%);
+    border-color: transparent;
+    color: #f6b95e;
+  }
+  .studio-docs .docs-guide-group {
+    padding: clamp(16px,2vw,24px);
+    background: var(--sx-public-panel);
+    border: 1px solid var(--sx-public-edge);
+    border-radius: 22px;
+  }
+  .studio-docs .docs-guide-group + .docs-guide-group { margin-top: 16px; }
+  .studio-docs .docs-guide-link { padding: 16px 4px; min-height: 64px; }
+  .studio-docs .docs-guide-link:last-child { border-bottom: 0; }
+  .studio-docs .docs-guide-link h3 { font-weight: 600; font-size: 18px; }
+  .studio-docs .docs-guide-link p { margin-top: 4px; }
+  .studio-docs .docs-guide-link:hover { background: var(--sx-public-well); }
+  .studio-docs .docs-guide-link > svg { color: #f6b95e; }
+  .studio-docs .docs-footer { background: var(--sx-public-night); }
+
+  .client-project.cp-dashboard.studio-client-glass[data-theme] {
+    --client-ink: #1d1e20;
+    --client-muted: #56595f;
+    --client-canvas: #e6e7ea;
+    --client-glass: rgb(245 245 246 / 91%);
+    --client-glass-strong: #f7f7f8;
+    --client-glass-line: rgb(20 22 26 / 12%);
+    --client-canvas-image: none;
+    --client-highlight: none;
+    --client-shadow: 0 1px 2px #14161a0a, 0 14px 32px -22px #14161a47;
+    --client-radius: 22px;
+    --client-focus: #8f5404;
+    font-family: var(--sx-public-font);
+  }
+  .client-project.cp-dashboard.studio-client-glass[data-theme=dark] {
+    --client-ink: var(--sx-public-ink);
+    --client-muted: var(--sx-public-muted);
+    --client-canvas: var(--sx-public-night);
+    --client-glass: rgb(27 28 30 / 91%);
+    --client-glass-strong: #1f2023;
+    --client-glass-line: var(--sx-public-edge);
+    --client-shadow: 0 1px 2px #0000004d, 0 18px 40px -24px #000000b3;
+    --client-focus: #f6b95e;
+  }
+  .client-project.cp-dashboard.studio-client-glass[data-theme] .cp-main { padding-top: 24px; }
+  .client-project.cp-dashboard.studio-client-glass[data-theme] :is(.cp-button,.cp-effects-toggle,.cp-theme-toggle) { border-radius: 10px; }
+}
+
+@media screen and (min-width: 960px) {
+  .studio-docs .docs-layout:not(.has-article) { grid-template-columns: 244px minmax(0,1fr); gap: 28px; }
+}
+@media screen and (max-width: 800px) {
+  .studio-app.saas-product-auth.saas-login-reference .saas-auth-layout { grid-template-columns: minmax(0,1fr); width: calc(100% - 32px); }
+  .studio-app.saas-product-auth.saas-auth .saas-auth-aside { border-left: 0; border-top: 1px solid var(--sx-public-edge); }
+}
+@media screen and (max-width: 959px) {
+  .studio-docs .docs-sidebar { position: static; max-height: none; }
+  .studio-docs .docs-layout { padding-top: 0; }
+}
+@media screen and (prefers-reduced-motion: no-preference) {
+  .studio-docs .docs-main, .saas-product-auth .saas-auth-card {
+    animation: sx-public-enter 320ms var(--sx-public-ease) both;
+  }
+  .studio-docs .docs-guide-link > svg { transition: transform 180ms var(--sx-public-ease); }
+  .studio-docs .docs-guide-link:hover > svg { transform: translateX(3px); }
+  @keyframes sx-public-enter { from { opacity: .65; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+}

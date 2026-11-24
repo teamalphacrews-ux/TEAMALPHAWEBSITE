@@ -1,0 +1,47 @@
+.studio-commercial-glass .sx-team-desk .saas-workspace-tabs { margin: 16px 0; }
+.sx-team-roster { margin-bottom: 22px; }
+.sx-team-desk .sx-team-roster .saas-section-heading { margin-bottom: 14px; align-items: center; }
+.sx-team-desk .sx-seat-count { font-size: 13px; color: var(--studio-muted); }
+.sx-team-desk .sx-team-roster .saas-member-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,220px),1fr)); gap: 16px; }
+.studio-commercial-glass .sx-team-desk .sx-team-roster .saas-member {
+  display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 10px 6px;
+  min-width: 0; border-radius: 22px; padding: 20px; border: 1px solid var(--studio-border);
+  background: var(--studio-surface); color: var(--studio-text);
+}
+.sx-team-desk .sx-team-roster .saas-member-avatar {
+  grid-row: 1; grid-column: 1; place-self: start; width: 45px; height: 45px; border-radius: 50%;
+  background: #f5cd91; color: #38240d; font-weight: 700; font-size: 15px;
+}
+.sx-team-desk .sx-team-roster .saas-member:nth-child(3n+2) .saas-member-avatar { background: #ced4de; color: #262d39; }
+.sx-team-desk .sx-team-roster .saas-member:nth-child(3n+3) .saas-member-avatar { background: #e4c6bb; color: #3b261f; }
+.sx-team-desk .sx-team-roster .saas-member-identity { grid-column: 1/-1; grid-row: 2; min-width: 0; }
+.sx-team-desk .sx-team-roster .saas-member-identity > strong { font-size: 17px; font-weight: 650; }
+.sx-team-desk .sx-team-roster .saas-member-identity span { color: var(--studio-muted); font-size: 13px; overflow-wrap: anywhere; }
+.sx-team-desk .sx-team-roster .saas-member-role-label { grid-row: 3; grid-column: 1/-1; width: fit-content; border-radius: 9px; background: var(--studio-surface-2); color: var(--studio-text); padding: 4px 9px; }
+.sx-team-desk .sx-team-roster .saas-member-role { grid-column: 1/-1; grid-row: 3; width: 100%; max-width: 100%; }
+.sx-team-desk .sx-team-roster .saas-member > .studio-icon-button { grid-row: 1; grid-column: 2; justify-self: end; }
+@media (max-width:520px) {
+  .sx-team-desk .sx-team-roster .saas-member-list { gap: 10px; }
+  .studio-commercial-glass .sx-team-desk .sx-team-roster .saas-member { padding: 16px; }
+}
+
+.saas-tab-compact-label { display: none; }
+@media (max-width: 540px) {
+  #sx-workspace-shell .saas-workspace-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    overflow: visible;
+  }
+  #sx-workspace-shell .saas-workspace-tabs button {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding-inline: 5px;
+    white-space: normal;
+  }
+  #sx-workspace-shell .saas-workspace-tabs button:focus-visible { outline-offset: -3px; }
+  #sx-workspace-shell .saas-tab-full-label { display: none; }
+  #sx-workspace-shell .saas-tab-compact-label { display: inline; }
+  #sx-workspace-shell .sx-team-desk .studio-heading-actions { align-items: stretch; }
+}

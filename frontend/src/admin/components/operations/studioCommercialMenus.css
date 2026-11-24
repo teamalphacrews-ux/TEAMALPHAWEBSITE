@@ -1,0 +1,95 @@
+/* Shared commercial choices and actions. Portals carry the same appearance
+   preferences as their trigger, while their reading layer stays legible. */
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass.studio-action-popover {
+  position: fixed;
+  z-index: 1800;
+  display: block;
+  min-height: 0;
+  height: auto;
+  max-width: calc(100vw - 24px);
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  background-image: none;
+  color: var(--studio-text);
+  font-family: var(--studio-font);
+  isolation: isolate;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass.studio-action-popover .studio-action-popover-menu {
+  position: static;
+  inset: auto;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  max-height: inherit;
+  overflow: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--studio-glass-border);
+  border-radius: 16px;
+  background: var(--studio-glass-highlight), var(--studio-glass-strong);
+  box-shadow: 0 14px 36px rgb(0 0 0 / .18), var(--studio-glass-rim);
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+  transform-origin: top right;
+  animation: var(--sx-pop-animation, sx-workspace-pop-in 400ms cubic-bezier(.34,1.68,.64,1) both);
+}
+html .studio-action-popover[data-placement=above] .studio-action-popover-menu { transform-origin: bottom right; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-action-popover-menu,.studio-action-sheet-items) > :is(button,a) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--studio-text);
+  text-align: start;
+  text-decoration: none;
+  font: 500 14px/1.45 var(--studio-font);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-action-popover-menu,.studio-action-sheet-items) > :is(button,a):is(:hover,:focus-visible) { background: var(--studio-selected); color: var(--studio-text); }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-action-popover-menu,.studio-action-sheet-items) > :is(button,a):focus-visible { outline: 2px solid var(--studio-focus); outline-offset: -2px; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-action-popover-menu,.studio-action-sheet-items) > :is(button,a):is(.danger,.studio-document-destructive) { color: var(--studio-danger-ink); }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-action-popover-menu,.studio-action-sheet-items) > :is(button,a):is(.danger,.studio-document-destructive):is(:hover,:focus-visible) { background: var(--studio-danger-surface); }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-action-popover-menu,.studio-action-sheet-items) > button:disabled { color: var(--studio-muted); opacity: .6; cursor: not-allowed; background: transparent; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-action-popover-menu,.studio-action-sheet-items) > :is(button,a) > svg { width: 18px; height: 18px; flex: 0 0 18px; color: currentColor; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.studio-action-sheet,.studio-select-sheet) { animation: var(--sx-sheet-animation, studio-commercial-sheet-enter 180ms cubic-bezier(.16, 1, .3, 1)); }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-select-sheet-header > div > span { display: none; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-select-sheet-header h2 { margin: 0; font-size: 18px; line-height: 1.4; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-select-sheet-header > button { border-radius: 14px; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-select-options > button { min-height: 48px; font-size: 16px; }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-select-options > button:focus-visible { outline-color: var(--studio-focus); }
+html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .studio-select-search:focus-within { outline-color: var(--studio-focus); }
+@keyframes studio-commercial-sheet-enter { from { opacity: .9; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  html .studio-app.studio-commercial-glass :is(.studio-action-popover-menu,.studio-action-sheet,.studio-select-sheet) { animation: none !important; }
+}
+html[data-studio-motion=reduced] .studio-app.studio-commercial-glass :is(.studio-action-popover-menu,.studio-action-sheet,.studio-select-sheet) { animation: none !important; }
+
+@keyframes sx-workspace-pop-in {
+  from { opacity:0; transform:translateY(-6px) scale(.92); }
+  to { opacity:1; transform:none; }
+}
+@keyframes sx-workspace-pop-out {
+  to { opacity:0; transform:scale(.96); }
+}
+@keyframes sx-workspace-sheet-in { from { transform:translateY(100%); } to { transform:none; } }
+@keyframes sx-workspace-sheet-out { to { transform:translateY(100%); } }
+
+@media (prefers-reduced-motion:no-preference) {
+  .studio-action-popover[data-leaving] { --sx-pop-animation:sx-workspace-pop-out 150ms cubic-bezier(.55,.055,.675,.19) forwards; }
+  .studio-action-sheet-overlay { --sx-sheet-animation:sx-workspace-sheet-in 600ms cubic-bezier(.16,1,.3,1) both; }
+  .studio-action-sheet-overlay[data-leaving] { --sx-sheet-animation:sx-workspace-sheet-out 320ms cubic-bezier(.64,0,.78,0) forwards; }
+}

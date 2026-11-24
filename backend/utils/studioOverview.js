@@ -22,6 +22,7 @@ function buildStudioOverview(data, now = new Date()) {
         pipeline,
         upcomingEvents: data.events.map(event => ({
             _id: event._id, title: event.title, start: event.start, end: event.end,
+            ...(data.scheduledFollowUps ? { allDay: event.allDay === true, startDate: event.startDate || '', endDateExclusive: event.endDateExclusive || '' } : {}),
             type: event.type, location: event.location || '', teamMembers: event.teamMembers || [],
             lead: event.lead || null
         })),
@@ -31,6 +32,7 @@ function buildStudioOverview(data, now = new Date()) {
                 _id: task.lead._id, name: task.lead.name, eventDate: task.lead.eventDate || null
             } : null
         })),
+        ...(data.scheduledFollowUps ? { scheduledFollowUps: data.scheduledFollowUps, draftInvoices: data.draftInvoices } : {}),
         recentEnquiries: data.recentLeads.map(lead => ({
             _id: lead._id, name: lead.name, eventType: lead.eventType || '',
             eventDate: lead.eventDate || null, status: lead.status,

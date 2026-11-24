@@ -1,18 +1,17 @@
+import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import { hasFullModuleAccess, canAccessStudioPath } from '../../utils/moduleAccess';
 import { workspacePrimaryItems, workspaceNavigationGroups } from '../components/common/workspaceNavigation';
 import StudioButton from '../components/common/StudioButton';
-import { useState, useEffect, useRef } from 'react';
-import { motion as Motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Plus, ArrowUpRight, CalendarDays, MessageSquare, Folder, Clapperboard, Check, RefreshCw, ArrowRight, CircleCheck, FileText, Wallet, ChevronRight, GripVertical, X, Sparkles, ArrowDown, Undo2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import StudioAppIcon from '../components/common/StudioAppIcon';
 import { useStudioPreferences } from '../components/common/StudioPreferences';
-import OverviewCustomizer from '../components/common/OverviewCustomizer';
+import OverviewCustomizerDialog from '../components/common/OverviewCustomizerDialog';
 import OverviewFinanceCard from '../components/finance/OverviewFinanceCard';
-import useReducedStudioMotion from '../components/operations/useReducedStudioMotion';
 import { useStudioIdentity } from '../../utils/studioIdentity';
 import { formatWorkspaceDate, formatWorkspaceTime, formatWorkspaceNumber, resolveWorkspaceTimezone } from '../../utils/workspaceLocale';
 import { studioText } from '../../utils/studioTranslations';
@@ -22,27 +21,57 @@ import { recordDestination } from '../../utils/studioNavigation';
 import { leadStatusLabel } from '../components/studio/leadUtils';
 import { OverviewWelcome, BookingInsight, RhythmInsight, ActivityInsight, PipelineRings, WeekStrip } from '../components/overview/OverviewInsights';
 import OverviewDaySchedule from '../components/overview/OverviewDaySchedule';
+import OverviewNextActions from '../components/overview/OverviewNextActions';
+import CommercialWorkdesk, { WorkdeskHeader } from '../components/overview/CommercialWorkdesk';
+import { studioDayKey } from '../../utils/studioTime';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
+import { workspaceId } from '../../saas/workspaceValues';
+import { assignedOverviewAction } from '../../utils/overviewNextActions';
+import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
 import './overviewDashboard.css';
 import './overviewReference.css';
 import './overviewPhone.css';
 import './overviewRecovery.css';
 import './overviewReflow.css';
 
+const OverviewCardGrid = lazy(() => import('../components/overview/OverviewCardGrid'));
 const API = import.meta.env.VITE_API_URL || '';
 const statusClass = status => status === 'Converted' ? 'green' : ['Meeting', 'Negotiation'].includes(status) ? 'gold' : '';
 const initials = name => name?.split(/\s+/).filter(part => /[a-zA-Z0-9]/.test(part)).slice(0, 2).map(part => part[0]).join('') || 'TA';
 
 export default function Dashboard() {
-  const { user } = useAuth();
-  if (hasFullModuleAccess(user)) return <FullDashboard />;
+  const { user, token } = useAuth();
+  if (hasFullModuleAccess(user)) return <FullDashboard key={IS_COMMERCIAL_DEPLOYMENT ? workspaceId(user?.workspace) + ':' + token : 'personal'} />;
   const links = [...workspacePrimaryItems, ...workspaceNavigationGroups.flatMap(group => group.items), { name: 'Invoices', path: '/admin/invoices', icon: FileText }, { name: 'Settings', path: '/admin/settings', icon: Folder }].filter((item, index, items) => item.path !== '/admin' && canAccessStudioPath(user, item.path) && items.findIndex(other => other.path === item.path) === index);
-  return <div><div className="studio-page-heading"><div><span className="studio-eyebrow">YOUR WORKSPACE</span><h1>Welcome{user?.firstName ? ', ' + user.firstName : ''}</h1><p className="studio-muted">Open an area assigned to your account.</p></div></div><section className="studio-card"><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>{links.map(item => <Link key={item.path} className="studio-button" to={item.path}><item.icon size={18} />{item.name}<ArrowUpRight size={15} /></Link>)}</div>{!links.length && <p className="studio-muted">No modules have been assigned yet. Ask a team administrator to update your access.</p>}</section></div>;
+  const action = IS_COMMERCIAL_DEPLOYMENT ? assignedOverviewAction(links) : null;
+  const otherLinks = links.filter(item => item.path !== action?.path);
+  return <div>
+    <div className="studio-page-heading"><div><span className="studio-eyebrow">YOUR WORKSPACE</span><WorkspaceMotionTitle>Welcome{user?.firstName ? ', ' + user.firstName : ''}</WorkspaceMotionTitle><p className="studio-muted">Open an area assigned to your account.</p></div></div>
+    {action && <section className="studio-card sx-up-next" aria-labelledby="assigned-start-title">
+      <h2 id="assigned-start-title">Where to start</h2>
+      <p className="sx-up-next-meta">{action.detail}</p>
+      <Link className="studio-button primary sx-assigned-action" to={action.path}>{action.label}<ArrowRight size={16} aria-hidden="true" /></Link>
+    </section>}
+    {(otherLinks.length > 0 || !links.length) && <section className="studio-card"><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12 }}>{otherLinks.map(item => <Link key={item.path} className="studio-button" to={item.path}><item.icon size={18} />{item.name}<ArrowUpRight size={15} /></Link>)}</div>{!links.length && <p className="studio-muted">No modules have been assigned yet. Ask a team administrator to update your access.</p>}</section>}
+  </div>;
 }
 function FullDashboard() {
   const { user, logout } = useAuth();
   const { preferences, toggleCard, resetCards, update } = useStudioPreferences();
-  const observedReducedMotion = useReducedStudioMotion();
-  const reducedMotion = preferences.reduceMotion || observedReducedMotion;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedView = IS_COMMERCIAL_DEPLOYMENT ? searchParams.get('view') : null;
+  const explicitView = requestedView === 'today' || requestedView === 'insights';
+  const todayMode = (explicitView ? requestedView : preferences.overviewMode) === 'today';
+  const chooseView = overviewMode => {
+    update({ overviewMode });
+    if (explicitView) setSearchParams(previous => {
+      const next = new URLSearchParams(previous);
+      next.set('view', overviewMode);
+      return next;
+    }, { replace: true });
+  };
+  const requestOwnerActions = IS_COMMERCIAL_DEPLOYMENT && todayMode;
+  const canCreateEnquiry = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'enquiries');
   const { identity } = useStudioIdentity();
   const timezone = resolveWorkspaceTimezone(preferences, identity?.timezone);
   const t = text => studioText(preferences.language, text);
@@ -76,11 +105,12 @@ function FullDashboard() {
       const revision = taskRevision.current;
       try {
         const result = await axios.get(API + '/api/dashboard/studio-overview', {
-          headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }, signal: controller.signal, params: { timezone },
+          headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }, signal: controller.signal,
+          params: { timezone, ...(requestOwnerActions ? { nextActions: '1' } : {}) },
         });
         // Keep an already-running sample server usable without resetting its temporary records.
         // Production insights always come from the workspace-scoped backend aggregates.
-        if (import.meta.env.DEV && user?.isPreview && !result.data.insights) {
+        if (import.meta.env.DEV && user?.isPreview && !requestOwnerActions && !result.data.insights) {
           try {
             const headers = { Authorization: 'Bearer ' + localStorage.getItem('token') };
             const [leads, tasks, events, { buildPreviewOverviewInsights }] = await Promise.all([
@@ -107,9 +137,9 @@ function FullDashboard() {
       }
     };
     load();
-    const timer = setInterval(load, 60000);
+    const timer = setInterval(() => { if (!IS_COMMERCIAL_DEPLOYMENT || !document.hidden) load(); }, 60000);
     return () => { controller.abort(); clearInterval(timer); };
-  }, [refreshKey, logout, timezone, user?.isPreview]);
+  }, [refreshKey, logout, timezone, user?.isPreview, requestOwnerActions]);
 
   const changeTaskStatus = async (task, status) => {
     // Catch repeat taps before React renders the loading state.
@@ -197,7 +227,7 @@ function FullDashboard() {
     activityMap: <ActivityInsight insights={overview?.insights} loading={!overview && !error} remove={remove('activityMap', 'Activity map')} />,
     upcomingSchedule: <OverviewDaySchedule timezone={timezone} preferences={preferences} refreshKey={refreshKey} remove={remove('upcomingSchedule', 'Upcoming schedule')} />,
     actionQueue: (<section ref={element => taskControls.current.set('queue', element)} id="overview-work" tabIndex={-1} className="studio-card studio-action-card overview-workspace-card" aria-labelledby="overview-tasks-title" data-overview-card="actionQueue">
-          <div className="studio-card-heading"><div><h3 id="overview-tasks-title" lang={preferences.language} dir="auto">{t('Action queue')}<span className="studio-inline-count">{summary.pendingTasks ?? '—'}</span></h3><p className="studio-card-subtitle">{work.overdueTasks ? work.overdueTasks + ' overdue. Start with the earliest deadline.' : 'Your next tasks, ordered by deadline.'}</p></div><div className="overview-card-actions"><Link to="/admin/post-production">View all<ArrowUpRight size={14} /></Link>{remove('actionQueue', 'Action queue')}</div></div>
+          <div className="studio-card-heading"><div><h3 id="overview-tasks-title" lang={preferences.language} dir="auto">{IS_COMMERCIAL_DEPLOYMENT && todayMode ? 'Up next for you' : t('Action queue')}<span className="studio-inline-count">{summary.pendingTasks ?? '—'}</span></h3><p className="studio-card-subtitle">{work.overdueTasks ? work.overdueTasks + ' overdue. Start with the earliest deadline.' : 'Your next tasks, ordered by deadline.'}</p></div><div className="overview-card-actions"><Link to="/admin/post-production">View all<ArrowUpRight size={14} /></Link>{remove('actionQueue', 'Action queue')}</div></div>
 
           <div className="studio-task-list">
             {recoverableTasks.length > 0 && <div className="ov-task-recovery" aria-label="Recently completed tasks">
@@ -235,15 +265,14 @@ function FullDashboard() {
                 </Link></li>
               ))}
             </ul>
-          ) : <div className="studio-empty"><MessageSquare size={26} /><span>{overview && !error ? 'Your next enquiry will appear here.' : emptyLabel}</span>{overview && !error && <Link to="/admin/crm?new=1" className="studio-button small"><Plus size={14} />{t('New enquiry')}</Link>}</div>}
+          ) : <div className="studio-empty"><MessageSquare size={26} /><span>{overview && !error ? 'Your next enquiry will appear here.' : emptyLabel}</span>{overview && !error && canCreateEnquiry && <Link to="/admin/crm?new=1" className="studio-button small"><Plus size={14} />{t('New enquiry')}</Link>}</div>}
         </section>),
     quickActions: (<div className="overview-quick-wrapper" data-overview-card="quickActions">{remove('quickActions', 'Quick access')}<nav className="studio-quick-actions" aria-label="Quick access">
         {quickActions.map(action => <Link to={action.path} className="studio-quick-action" key={action.path}><StudioAppIcon icon={action.icon} tone={action.tone} size={40} /><span><strong>{t(action.title)}</strong><small>{action.note}</small></span><ArrowUpRight size={16} aria-hidden="true" /></Link>)}
       </nav></div>),
-    financePulse: (<OverviewFinanceCard refreshKey={refreshKey} motionActive={true} remove={remove('financePulse', 'Finance pulse')} />),
+    financePulse: (<OverviewFinanceCard workdesk={IS_COMMERCIAL_DEPLOYMENT && todayMode} refreshKey={refreshKey} motionActive={true} remove={remove('financePulse', 'Finance pulse')} />),
   };
 
-  const todayMode = preferences.overviewMode === 'today';
   const overviewContext = todayMode && overview
     ? `${work.todayEvents} ${work.todayEvents === 1 ? 'event' : 'events'} remaining today · ${work.overdueTasks} overdue ${work.overdueTasks === 1 ? 'task' : 'tasks'}`
     : dateFormat(today, { weekday: 'long', day: 'numeric', month: 'short' });
@@ -251,27 +280,24 @@ function FullDashboard() {
     todayMode, showInspiration: preferences.showInspiration, showActivityStreak: preferences.showActivityStreak,
   });
   const welcome = <OverviewWelcome key={ideaRevision} name={user?.firstName || identity?.name || 'your studio'} greeting={greeting} date={dateFormat(today, { day: 'numeric', month: 'short', year: 'numeric' })} todayCount={overview ? work.todayEvents : null} pending={summary.pendingTasks} />;
-  const layoutRevision = `${todayMode ? 'today' : 'insights'}:${layoutItems.map(item => item.id).join(',')}`;
+  const workdesk = IS_COMMERCIAL_DEPLOYMENT && todayMode;
+  const nextActions = workdesk && !error && <OverviewNextActions overview={overview} now={today} timezone={timezone} date={dateFormat} time={timeFormat} canCreateEnquiry={canCreateEnquiry} />;
+  const deskHasCards = preferences.visibleCards.some(id => !['activityMap', 'enquiryPipeline', 'bookingMomentum'].includes(id));
   return (
-    <div className="studio-overview studio-overview-modern overview-organized studio-overview-reference overview-phone-refined">
-      <div className="ov-page-toolbar"><div><span className="ov-page-eyebrow">YOUR CREATIVE WORKSPACE</span><h1>Studio overview</h1><p className="ov-page-context">{overviewContext}</p></div></div>
+    <div className={'studio-overview studio-overview-modern overview-organized studio-overview-reference overview-phone-refined' + (IS_COMMERCIAL_DEPLOYMENT ? ' sx-studio-desk' : '')}>
+      {IS_COMMERCIAL_DEPLOYMENT ? <WorkdeskHeader greeting={greeting} name={user?.firstName || identity?.name || 'your studio'} today={studioDayKey(today, timezone)} date={dateFormat} todayMode={todayMode}
+        context={overview && todayMode ? `${formatWorkspaceNumber(summary.pendingTasks, preferences)} ${summary.pendingTasks === 1 ? 'task' : 'tasks'} on your list, ${work.todayEvents} ${work.todayEvents === 1 ? 'session' : 'sessions'} remaining today.` : overviewContext}
+        chooseView={chooseView} onCustomize={() => setCustomizing(true)} canCreateTask={canWriteWorkspaceModule(user, 'production')} />
+        : <div className="ov-page-toolbar"><div><span className="ov-page-eyebrow">YOUR CREATIVE WORKSPACE</span><WorkspaceMotionTitle>Studio overview</WorkspaceMotionTitle><p className="ov-page-context">{overviewContext}</p></div></div>}
       {error && <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={() => setRefreshKey(value => value + 1)}><RefreshCw size={14} />Retry</button></div>}
-      <div className="ov-view-controls"><div role="group" aria-label="Overview view"><button type="button" aria-pressed={todayMode} onClick={()=>update({overviewMode:'today'})}>Today</button><button type="button" aria-pressed={!todayMode} onClick={()=>update({overviewMode:'insights'})}>Insights</button></div><div className="ov-view-tools">{!todayMode && visibleOrder.includes('actionQueue') && <a className="ov-phone-work-link" href="#overview-work">Jump to work<ArrowDown size={14} aria-hidden="true" /></a>}<Link className="studio-button ov-shoot-day-link" to="/admin/shoot-day" aria-label="Open Shoot day" title="Shoot day"><CalendarDays size={15}/><span>Shoot day</span></Link><button type="button" className="studio-button ov-customize-button" aria-label="Customize overview" title="Customize overview" onClick={() => setCustomizing(true)}><GripVertical size={17}/><span>Customize</span></button></div></div>
-      <div className={'ov-reference-grid'+(todayMode?' is-today':'')}>
-        {layoutItems.map(({ id, spans }) => <Motion.div
-          key={id}
-          className={'ov-layout-slot ' + (id === 'inspiration' ? 'ov-welcome-slot' : id === 'activityStreak' ? 'ov-week-slot' : 'ov-reference-slot ov-slot-' + id)}
-          data-overview-slot={id}
-          style={{ '--ov-span-desktop': spans.desktop, '--ov-span-tablet': spans.tablet, '--ov-span-phone': spans.phone }}
-          layout={reducedMotion ? false : 'position'}
-          layoutDependency={layoutRevision}
-          initial={false}
-          transition={{ layout: { duration: reducedMotion ? 0 : 0.28, ease: [0.16, 1, 0.3, 1] } }}
-        >{id === 'inspiration' ? welcome : id === 'activityStreak' ? <WeekStrip insights={overview?.insights} /> : cardContent[id]}</Motion.div>)}
-      </div>
+      {!IS_COMMERCIAL_DEPLOYMENT && <div className="ov-view-controls"><div role="group" aria-label="Overview view"><button type="button" aria-pressed={todayMode} onClick={()=>chooseView('today')}>Today</button><button type="button" aria-pressed={!todayMode} onClick={()=>chooseView('insights')}>Insights</button></div><div className="ov-view-tools">{!todayMode && visibleOrder.includes('actionQueue') && <a className="ov-phone-work-link" href="#overview-work">Jump to work<ArrowDown size={14} aria-hidden="true" /></a>}<Link className="studio-button ov-shoot-day-link" to="/admin/shoot-day" aria-label="Open Shoot day" title="Shoot day"><CalendarDays size={15}/><span>Shoot day</span></Link><button type="button" className="studio-button ov-customize-button" aria-label="Customize overview" title="Customize overview" onClick={() => setCustomizing(true)}><GripVertical size={17}/><span>Customize</span></button></div></div>}
+      {workdesk ? <CommercialWorkdesk overview={overview} overviewError={error} refreshOverview={refreshOverview} preferences={preferences} timezone={timezone} now={today} date={dateFormat} refreshKey={refreshKey} cardContent={cardContent} remove={remove} nextActions={nextActions} welcome={welcome}/> : <Suspense fallback={<div className="studio-loading" role="status">Loading overview cards…</div>}>
+        <OverviewCardGrid items={layoutItems} todayMode={todayMode} reduceMotion={preferences.reduceMotion}
+          renderCard={id => id === 'inspiration' ? welcome : id === 'activityStreak' ? <WeekStrip insights={overview?.insights} /> : cardContent[id]} />
+      </Suspense>}
 
-      {!visibleOrder.length && <div className="studio-card overview-empty"><Sparkles size={24} /><h2>{preferences.visibleCards.length ? 'Choose your daily workspace.' : 'Make room for what matters.'}</h2><p>{preferences.visibleCards.length ? 'Your saved cards are in Insights. Add a schedule or action queue for Today.' : 'Add the cards you need, or restore the default layout.'}</p><div><button type="button" className="studio-button" onClick={() => setCustomizing(true)}>Choose cards</button>{preferences.visibleCards.length ? <button type="button" className="studio-button primary" onClick={() => update({ overviewMode: 'insights' })}>View Insights</button> : <button type="button" className="studio-button primary" onClick={resetCards}>Reset to default</button>}</div></div>}
-      {customizing && <OverviewCustomizer onClose={() => setCustomizing(false)} />}
+      {(workdesk ? !deskHasCards : !visibleOrder.length) && <div className="studio-card overview-empty"><Sparkles size={24} /><h2>{preferences.visibleCards.length ? 'Choose your daily workspace.' : 'Make room for what matters.'}</h2><p>{preferences.visibleCards.length ? 'Your saved cards are in Insights. Add a schedule or action queue for Today.' : 'Add the cards you need, or restore the default layout.'}</p><div><button type="button" className="studio-button" onClick={() => setCustomizing(true)}>Choose cards</button>{preferences.visibleCards.length ? <button type="button" className="studio-button primary" onClick={() => chooseView('insights')}>View Insights</button> : <button type="button" className="studio-button primary" onClick={resetCards}>Reset to default</button>}</div></div>}
+      {customizing && <OverviewCustomizerDialog onClose={() => setCustomizing(false)} />}
 
       <div className="studio-data-note"><span className={'studio-status-dot' + (error ? ' offline' : '')} />{error ? 'Connection interrupted' : overview ? 'Connected to your studio' : 'Connecting to your studio'}{overview && <span>Last updated {timeFormat(overview.generatedAt)} {timezone}</span>}<StudioButton type="button" variant="icon" icon={RefreshCw} label="Refresh studio overview" onClick={refreshOverview} /></div>
     </div>

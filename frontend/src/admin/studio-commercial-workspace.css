@@ -1,0 +1,560 @@
+/* Commercial workspace pages. Material and theme roles are supplied by the
+   commercial foundation; personal Team Alpha workspaces never match this scope. */
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass :is(.studio-overview-reference,.project-contact-workspace,.studio-settings-page,.studio-integrations) {
+  --workspace-section-gap: 28px;
+  --workspace-panel-pad: clamp(20px, 2vw, 28px);
+  color: var(--studio-text);
+  min-width: 0;
+  max-width: 1600px;
+  margin-inline: auto;
+  font-size: 16px;
+  line-height: 1.55;
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass :is(.project-contact-workspace,.studio-settings-page) { background: transparent; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass :is(.ov-page-toolbar,.project-contact-heading,.settings-page-title) { margin-bottom: 28px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass :is(.project-contact-heading-copy>p,.settings-page-title p,.ov-page-context) {
+  max-width: 70ch;
+  margin-top: 9px;
+  color: var(--studio-muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass :is(.reference-heading h1,.settings-page-title h1,.studio-overview-reference .ov-page-toolbar h1) {
+  font-size: clamp(28px, 2.8vw, 38px) !important;
+  font-weight: 600 !important;
+  line-height: 1.18;
+  letter-spacing: -.03em;
+  color: var(--studio-text);
+  text-wrap: balance;
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass :is(.project-contact-workspace,.studio-settings-page,.studio-overview-reference) :is(button,a,summary,input,textarea,select):focus-visible {
+  outline: 2px solid var(--studio-focus);
+  outline-offset: 3px;
+}
+
+/* A single continuous material per panel; records and form groups stay flat. */
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass :is(
+  .studio-overview-reference.overview-organized .ov-card,
+  .studio-overview-reference.overview-organized .overview-workspace-card,
+  .studio-overview-reference.overview-organized .overview-feature-card.finance,
+  .studio-overview-reference.overview-organized .overview-day-schedule,
+  .studio-overview-reference.overview-organized .ov-week-strip,
+  .studio-overview-reference.overview-organized .studio-quick-action,
+  .project-contact-register .reference-table-scroll,
+  .project-contact-register .reference-mobile-record,
+  .project-contact-detail .reference-section,
+  .project-hub .project-hub-section,
+  .project-hub .project-hub-overview,
+  .settings-grouped .settings-profile-tile,
+  .settings-grouped .settings-grouped-rows,
+  .settings-grouped .settings-results-list,
+  .settings-grouped .settings-group,
+  .settings-grouped .settings-pref-section,
+  .settings-grouped .settings-rail,
+  .settings-grouped .settings-save-bar
+) {
+  background: var(--studio-glass-highlight), var(--studio-glass-bg);
+  border: 1px solid var(--studio-glass-border);
+  border-radius: var(--studio-radius-panel, 30px);
+  box-shadow: var(--studio-glass-shadow);
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+  backdrop-filter: blur(22px) saturate(1.08);
+  color: var(--studio-text);
+}
+
+/* Overview: the saved order and spans remain the layout's source of truth. */
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized { --ov-gap: 20px; --ov-track: var(--studio-surface-2); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-page-toolbar { align-items: flex-start; margin-bottom: 24px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-page-toolbar .ov-page-eyebrow { display: none; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-page-context { margin-bottom: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-reference-grid { gap: var(--ov-gap); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-reference-grid>.ov-layout-slot { grid-column: span var(--ov-span-desktop, 6); min-width: 0; order: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is(.ov-card,.overview-workspace-card,.overview-feature-card.finance,.overview-day-schedule) { padding: var(--workspace-panel-pad); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-stat {
+  background: var(--studio-glass-highlight), var(--studio-glass-bg) !important;
+  border: 1px solid var(--studio-glass-border) !important;
+  border-radius: var(--studio-radius-panel, 30px) !important;
+  box-shadow: var(--studio-glass-shadow) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.08);
+  backdrop-filter: blur(22px) saturate(1.08);
+  padding: 0;
+  overflow: hidden;
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-stat-content { min-height: 176px; padding: 24px; gap: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-metric-top { min-height: 40px; padding-right: 30px; font-size: 14px; line-height: 1.5; gap: 12px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-metric-value { font-size: 36px; letter-spacing: -.03em; line-height: 1.15; margin-block: 14px 10px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-metric-foot { font-size: 14px; line-height: 1.5; margin-top: auto; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is(.ov-card-heading h2,.studio-card-heading h3,.overview-day-top h2,.ov-week-strip h2) { font-size: 18px; line-height: 1.4; letter-spacing: -.015em; color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is(.ov-card-heading p,.studio-card-subtitle) { font-size: 14px; line-height: 1.55; color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-card-heading { gap: 8px 12px; margin-bottom: 22px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-card-heading { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; padding-right: 0; margin-bottom: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-card-actions { display: flex; align-items: center; gap: 6px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-card-actions>a { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; color: var(--studio-muted); font-size: 14px; white-space: nowrap; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-hide-card { width: 44px; height: 44px; min-height: 44px; color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-card-actions>.overview-hide-card { position: static; flex: 0 0 44px; margin: -5px -12px 0 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is(
+  .ov-period,.ov-number-note,.ov-number-row small,.ov-change,.ov-card-bottom,.ov-chart-toolbar,
+  .ov-chart-legend,.ov-heatmap-orientation,.ov-heatmap-foot,.ov-heatmap-foot p,.ov-heatmap-foot span,
+  .ov-chart-data,.ov-chart-data table,.ov-ring small,.ov-rings a>span,.ov-ring-caption,
+  .ov-week-strip p,.ov-week-days small,.overview-finance-profit-label,
+  .overview-finance-amounts dt,.overview-finance-amounts small,.overview-finance-note,
+  .overview-day-zone,.overview-day-axis span,.overview-day-footer,.overview-day-footer a,
+  .overview-day-empty span,.studio-quick-action small,.studio-data-note
+) { font-size: 14px; line-height: 1.55; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is(.ov-chart-days button,.ov-rhythm-days,.ov-rhythm-scale,.ov-heatmap-hour-labels) { font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-heatmap-hour-labels { grid-template-rows: repeat(6,18px); line-height: 18px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-heatmap-day { grid-template-rows: repeat(6,18px); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-chart-data { max-width: 100%; overflow-x: auto; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-chart-data :is(th,td) { padding: 10px 8px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-chart-days button:is(:hover,[aria-pressed=true]) { color: var(--studio-text); background: var(--studio-selected); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-chart-selector { background: var(--studio-surface-2); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-chart-selector button[aria-pressed=true] { background: var(--studio-glass-highlight), var(--studio-glass-strong); color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is(.ov-period,.studio-client-initials) { background: var(--studio-surface-2); color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-task-row { display: grid; grid-template-columns: 44px minmax(0,1fr) auto; gap: 12px; min-height: 86px; padding-block: 16px; border-color: var(--studio-border); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-task-row h3 { font-size: 16px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-task-row p { font-size: 14px; line-height: 1.5; margin-top: 5px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-task-check { width: 44px; min-width: 44px; min-height: 44px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-task-due { font-size: 14px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-enquiry-list { column-gap: 28px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-enquiry-row { gap: 12px; padding-block: 18px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-enquiry-person strong { font-size: 16px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-enquiry-person small { font-size: 14px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-quick-actions { gap: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-quick-action { min-height: 112px; padding: 22px; gap: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-quick-action strong { font-size: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-task-recovery { background: var(--studio-surface-2); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is(.ov-recovery-heading,.ov-recovery-row>span,.ov-recovery-error) { font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-finance-amounts { gap: 18px; margin-top: 8px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-finance-amounts dd { font-size: clamp(20px,2vw,26px); line-height: 1.35; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-finance-note { color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-feature-card.finance { --feature-ink: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is(.overview-finance-waves,.overview-fluid-glow,.overview-day-landscape,.ov-welcome-light,.ov-welcome-glass) { display: none; }
+
+/* The existing photography remains, softened into the black/white identity. */
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome { background: var(--studio-glass-highlight), var(--studio-glass-bg); border: 1px solid var(--studio-glass-border); border-radius: var(--studio-radius-panel, 30px); box-shadow: var(--studio-glass-shadow); padding: 30px; min-height: 330px; color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome-photo { filter: grayscale(1); mix-blend-mode: normal; opacity: .34; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome::before { background: none; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome-copy { max-width: calc(100% - 180px); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome-copy>span { font-size: 14px; color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-inspiration-category { font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-inspiration-story h2 { max-width: 18ch; margin-block: 10px 16px; color: var(--studio-text); font-size: clamp(28px,2.5vw,40px) !important; line-height: 1.12; letter-spacing: -.03em; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-inspiration-story p { max-width: 58ch; min-height: 0; color: var(--studio-muted); font-size: 16px; line-height: 1.6; margin-bottom: 20px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-inspiration-actions { gap: 10px 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-inspiration-actions>a { background: var(--studio-accent); color: var(--studio-on-accent); min-height: 44px; font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-inspiration-actions>button { min-height: 44px; font-size: 14px; color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome-note { display: grid; border: 0; background: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; transform: none; width: 150px; right: 24px; bottom: 26px; padding: 0; color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome-note :is(small,span) { font-size: 14px; color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome-note strong { font-size: 18px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is(.overview-day-top h2,.overview-day-empty strong) { color: var(--studio-text); font-size: 18px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is(.overview-day-zone,.overview-day-zone span,.overview-day-axis span,.overview-day-empty span,.overview-day-footer,.overview-day-empty>svg) { color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is(.overview-day-navigation button,.overview-day-empty button) { border-color: var(--studio-control-border); color: var(--studio-text); background: var(--studio-surface-2); font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-day-navigation button:hover:not(:disabled) { background: var(--studio-hover); color: var(--studio-text); border-color: var(--studio-border); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-day-timeline { background-image: none; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-day-event { height: 54px; padding: 7px 10px; border-radius: 10px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-day-lane { height: 54px; margin-bottom: 8px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-day-event :is(strong,span) { font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-day-footer { border-color: var(--studio-border); margin-top: 18px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-day-footer a { color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-week-strip { padding: 20px 24px; gap: 18px; }
+
+/* Contacts and projects: clear registers with a contained horizontal scroll. */
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-workspace { padding: 4px 0 36px; min-height: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-heading { align-items: flex-start; gap: 24px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-heading-actions { gap: 10px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register-tools { gap: 12px; margin-bottom: 18px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-search { max-width: 560px; background: var(--studio-glass-highlight), var(--studio-glass-bg); border-color: var(--studio-glass-border); min-height: 48px; border-radius: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-search input { font-size: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass :is(.project-contact-result-count,.project-contact-filter-count) { font-size: 14px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .project-contact-filters { margin-bottom: 18px; gap: 8px; padding: 4px 0 12px; border-color: var(--studio-border); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .project-contact-filters>button { min-height: 44px; padding: 9px 14px; border-radius: 999px; color: var(--studio-muted); font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .project-contact-filters>button.active { color: var(--studio-text); background: var(--studio-selected); border-color: var(--studio-glass-border); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-table-scroll { overflow-x: auto; max-width: 100%; padding: 4px 20px; scrollbar-width: thin; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-table { background: transparent; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-table :is(th,td) { background: transparent; border-color: var(--studio-border); padding: 16px 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-table th { font-size: 14px; line-height: 1.5; font-weight: 500; color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-table td { color: var(--studio-text); font-size: 16px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-table :is(th,td):first-child { padding-left: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-table :is(th,td):last-child { padding-right: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-table tbody tr:last-child td { border-bottom: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-table tbody tr:hover td { background: var(--studio-hover); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-name-link { gap: 12px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-workspace .reference-avatar { background: var(--studio-surface-2); color: var(--studio-text); font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-avatar.small { width: 36px; height: 36px; font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-workspace .reference-status { font-size: 14px; line-height: 1.5; padding: 5px 10px; letter-spacing: .02em; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-mobile-record { padding: 20px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-mobile-record-heading h2 { color: var(--studio-text); font-size: 18px; line-height: 1.45; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register :is(.reference-mobile-contact-info,.reference-mobile-record-meta dd) { font-size: 16px; line-height: 1.55; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register :is(.reference-mobile-record-meta dt,.reference-mobile-record-action) { font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-mobile-record-meta { border-color: var(--studio-border); }
+
+/* Detail pages use primary work and a quieter factual sidebar. */
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-workspace.project-contact-detail a.reference-back,
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-workspace>a.reference-back { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border-radius: 999px; color: var(--studio-text); background: transparent; opacity: 1; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-workspace.project-contact-detail .reference-heading>a.reference-back { width: 44px; height: 44px; padding: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-workspace a.reference-back>svg { color: inherit; opacity: 1; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-workspace.project-contact-detail a.reference-back:hover,
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-workspace>a.reference-back:hover { color: var(--studio-text); background: var(--studio-hover); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-workspace.project-contact-detail a.reference-back:focus-visible,
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-workspace>a.reference-back:focus-visible { color: var(--studio-text); background: var(--studio-selected); outline: 2px solid var(--studio-focus); outline-offset: 3px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail>.reference-heading { margin-bottom: 28px; gap: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-detail-grid { grid-template-columns: minmax(0,1.65fr) minmax(280px,1fr); gap: 24px; align-items: start; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-detail-grid.project-hub-wide { grid-template-columns: minmax(0,1fr); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-section { position: relative; margin-bottom: 24px; padding: var(--workspace-panel-pad); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-section-heading { min-height: 44px; margin-bottom: 20px; padding-bottom: 16px; border-color: var(--studio-border); gap: 12px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-section h2 { font-size: 20px !important; font-weight: 600 !important; line-height: 1.4; letter-spacing: -.015em; color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail aside { padding-top: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail aside .reference-section-heading { box-sizing: border-box; padding-right: 60px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail aside .reference-section>.reference-info-edit { position: absolute; top: calc(var(--workspace-panel-pad) - 8px); right: calc(var(--workspace-panel-pad) - 6px); z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 44px; min-width: 44px; height: 44px; min-height: 44px; margin: 0; padding: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-details { grid-template-columns: minmax(78px,.6fr) minmax(0,1.4fr); gap: 18px 16px; font-size: 16px; line-height: 1.6; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-details dt { color: var(--studio-muted); font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-details dd { color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-contact-identity { margin-block: 0 24px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-contact-identity strong { font-size: 18px; color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-contact-identity small { color: var(--studio-muted); font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-list-row { background: transparent; padding: 18px 0; border-color: var(--studio-border); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-list-row:hover { background: var(--studio-hover); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-list-row strong { font-size: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-list-row small { font-size: 14px; line-height: 1.6; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail :is(.reference-empty,.reference-group-label,.reference-project-notes small) { font-size: 14px; line-height: 1.6; color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-action-list { grid-template-columns: minmax(0,1fr); gap: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-action-list>button { min-height: 88px; padding: 18px 0; border: 0; border-bottom: 1px solid var(--studio-border); border-radius: 0; background: transparent; color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-action-list>button:hover { background: var(--studio-hover); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-action-list strong { font-size: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-action-list small { font-size: 14px; line-height: 1.6; color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-action-icon { background: transparent; color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-project-note { background: var(--studio-surface-2); border-color: var(--studio-control-border); font-size: 16px; min-height: 128px; padding: 14px; margin-bottom: 12px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-project-notes p { font-size: 16px; line-height: 1.6; color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .project-contact-detail-tabs { display: flex; gap: 6px; padding: 5px; margin-bottom: 24px; max-width: 100%; border: 1px solid var(--studio-glass-border); background: var(--studio-glass-highlight), var(--studio-glass-bg); border-radius: 14px; overflow-x: auto; scrollbar-width: thin; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .project-contact-detail-tabs>button { flex: 1 0 auto; min-height: 44px; padding: 10px 16px; font-size: 14px; color: var(--studio-muted); border: 0; border-radius: 10px; background: transparent; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .project-contact-detail-tabs>button:is(.active,[aria-selected=true]) { color: var(--studio-text); background: var(--studio-glass-highlight), var(--studio-selected); box-shadow: none; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .project-contact-detail-tabs>button::after { display: none; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub :is(.project-hub-section,.project-hub-overview) { padding: var(--workspace-panel-pad); margin-bottom: 24px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub :is(.project-hub-intro h2,.project-hub-section h2) { font-size: 22px; line-height: 1.4; letter-spacing: -.02em; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub .project-hub-intro>p { font-size: 16px; line-height: 1.6; margin-block: 10px 22px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub .project-hub-shortcuts { gap: 0; margin-top: 24px; border-top: 1px solid var(--studio-border); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub .project-hub-shortcuts>button { min-height: 100px; padding: 18px 14px 4px; border: 0; border-radius: 0; background: transparent; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub .project-hub-shortcuts>button+button { border-left: 1px solid var(--studio-border); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub .project-hub-shortcuts span { font-size: 14px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub :is(.project-hub-crew strong,.project-hub-task strong) { font-size: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub :is(.project-hub-crew small,.project-hub-task small,.project-hub-task p,.project-hub-task a,.project-hub-readiness li) { font-size: 14px; line-height: 1.6; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub .project-hub-readiness { margin-top: 28px; padding-top: 22px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub .project-hub-readiness h3 { font-size: 18px; }
+
+/* Settings: broad directory, narrow readable forms, persistent save actions. */
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-settings-page.settings-grouped { --settings-row-surface: var(--studio-glass-bg); --settings-row-hover: var(--studio-hover); --settings-separator: var(--studio-border); --settings-secondary: var(--studio-muted); --settings-accent: var(--studio-focus); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-settings-page.settings-grouped.is-browsing { max-width: 1100px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-page-title { text-align: left; margin-block: 4px 28px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-page-title p { display: block; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-profile-tile { padding: 24px; gap: 20px; margin-bottom: 24px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-profile-tile strong { font-size: 22px; letter-spacing: -.02em; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-profile-tile small { font-size: 14px; line-height: 1.6; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-search-row { margin-bottom: 32px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-search { min-height: 52px; border: 1px solid var(--studio-glass-border); border-radius: 14px; background: var(--studio-glass-highlight), var(--studio-glass-bg); box-shadow: none; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-search input { color: var(--studio-text); font-size: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-search button { min-width: 44px; min-height: 44px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-directory-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 32px 24px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-category { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-category>header { padding: 0 4px 12px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-category h2 { font-size: 18px !important; font-weight: 600; text-transform: none; letter-spacing: -.015em; color: var(--studio-text); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped :is(.settings-grouped-rows,.settings-results-list) { overflow: hidden; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-grouped-rows>:is(.settings-directory-link,.settings-quick-theme),
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-results-list>.settings-directory-link { min-height: 88px; padding: 18px 20px; gap: 14px; background: transparent; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped :is(.settings-grouped-rows,.settings-results-list)>*+*::before { left: 20px; right: 20px; background: var(--studio-border); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-row-label strong { font-size: 16px; line-height: 1.5; letter-spacing: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped :is(.settings-grouped-rows,.settings-results-list) .settings-row-label small { font-size: 14px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-directory-link>.settings-row-value { display: block; font-size: 14px; max-width: 30%; white-space: normal; overflow-wrap: anywhere; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped :is(.settings-directory-note,.settings-scope-note,.settings-results-heading>span) { font-size: 14px; line-height: 1.6; color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-directory-note { padding: 0 4px; margin-top: 24px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-layout { grid-template-columns: 240px minmax(0,1fr); gap: 28px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-content { max-width: 960px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-rail { padding: 16px 10px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-rail-title { font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--studio-muted); margin: 0 12px 12px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-directory-link.is-compact { padding: 12px; min-height: 56px; font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-directory-link.is-current { background: var(--studio-selected); color: var(--studio-text); box-shadow: none; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-rail-browse { padding: 16px 12px 0; font-size: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-detail-toolbar { gap: 18px; padding-bottom: 20px; margin-bottom: 24px; border-color: var(--studio-border); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-back-button { color: var(--studio-text); font-size: 16px; min-height: 44px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-section-heading { margin-bottom: 24px; padding-bottom: 22px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-section-heading h2 { font-size: 26px !important; line-height: 1.3; letter-spacing: -.025em; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-section-heading p { font-size: 16px; line-height: 1.6; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped :is(.settings-group,.settings-pref-section) { margin-bottom: 20px; padding: var(--workspace-panel-pad); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-group.settings-disclosure { border-radius: var(--studio-radius-panel, 30px); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-disclosure-heading>button { padding: 22px 24px; min-height: 92px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-disclosure-heading strong { font-size: 18px; line-height: 1.4; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-disclosure-heading small { font-size: 14px; line-height: 1.6; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-group-content { padding: 24px; border-color: var(--studio-border); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped :is(.settings-editor .studio-field,.settings-toggle strong,.settings-group-heading h3,.settings-pref-section h3) { font-size: 16px !important; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped :is(.settings-editor .studio-field small,.settings-group-heading>p,.settings-pref-section p,.settings-toggle small,.settings-help,.settings-profile-photo p,.settings-check,.settings-pref-status,.settings-pref-theme small,.settings-notification-test>span,.settings-notification-zone) { font-size: 14px; line-height: 1.6; color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-editor .studio-input { font-size: 16px; min-height: 48px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-editor .studio-form-grid { gap: 22px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-pref-theme-label strong { font-size: 16px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-toggle { padding-block: 20px; gap: 20px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped :is(.settings-template,.settings-mail-status,.settings-locale-preview,.settings-locale-language-preview,.settings-pref-confirm) { padding: 20px 0; background: transparent; border: 0; border-block: 1px solid var(--studio-border); border-radius: 0; box-shadow: none; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-template .settings-production-stage { border-color: var(--studio-border); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-save-bar { bottom: max(20px,env(safe-area-inset-bottom)); background: var(--studio-glass-highlight), var(--studio-glass-bg); padding: 18px 22px; gap: 20px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-save-bar strong { font-size: 16px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-save-bar small { font-size: 14px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-save-actions { gap: 10px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-save-actions .studio-button { min-height: 44px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped :is(.settings-directory-link,.settings-profile-tile):hover { background: var(--studio-hover); }
+
+@media (max-width: 1100px) {
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-detail-grid { grid-template-columns: minmax(0,1fr); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-detail-grid aside { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-detail-grid .reference-contact-sidebar { display: block; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-layout { grid-template-columns: 210px minmax(0,1fr); gap: 22px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-directory-grid { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 850px) {
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-reference-grid>.ov-layout-slot { grid-column: span var(--ov-span-tablet,6); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-enquiry-list { grid-template-columns: minmax(0,1fr); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome-copy { max-width: 100%; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome-note { position: static; width: auto; margin-top: 24px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome { display: block; }
+}
+@media (max-width: 768px) {
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-layout { grid-template-columns: minmax(0,1fr); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-rail { position: static; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-contact-heading { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 12px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-contact-actions { grid-column: 1/-1; display: flex; gap: 10px; flex-wrap: wrap; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail.project-hub>.reference-heading { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 14px 12px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .project-hub-header-actions { grid-column: 1/-1; width: 100%; justify-content: flex-start; margin-left: 0; gap: 10px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .project-hub-header-actions>.studio-select { max-width: 100%; }
+}
+@media (max-width: 600px) {
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass :is(.studio-overview-reference,.project-contact-workspace,.studio-settings-page) { --workspace-panel-pad: 20px; --workspace-section-gap: 24px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass :is(.reference-heading h1,.settings-page-title h1,.studio-overview-reference .ov-page-toolbar h1) { font-size: 28px !important; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized { --ov-gap: 18px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-reference-grid>.ov-layout-slot { grid-column: 1/-1; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-page-toolbar { margin-bottom: 20px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-stat-content { min-height: 164px; padding: 22px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-metric-top { font-size: 14px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-card-heading { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-card-actions { justify-content: space-between; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .overview-card-actions>.overview-hide-card { display: inline-flex; margin: 0 -10px 0 0; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-task-row { grid-template-columns: 44px minmax(0,1fr); gap: 4px 12px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-task-check { grid-row: 1/3; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-task-due { grid-column: 2; justify-self: start; margin-top: 4px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome { min-height: 0; padding: 24px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome-note { display: grid; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-welcome-photo { width: 100%; opacity: .18; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-quick-actions { grid-template-columns: minmax(0,1fr); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-week-strip { padding: 20px; flex-wrap: wrap; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .ov-week-days { gap: 8px; width: 100%; justify-content: space-between; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-heading { flex-wrap: wrap; margin-bottom: 24px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-heading-copy { flex: 1 1 100%; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-heading-actions { justify-content: flex-start; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register-tools { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-result-count { grid-column: 1/-1; margin-left: 0; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-register .reference-search { width: 100%; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-detail-grid aside { display: block; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .reference-details { grid-template-columns: 86px minmax(0,1fr); gap: 16px 12px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-contact-detail .project-contact-detail-tabs>button { padding-inline: 12px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub :is(.project-hub-shortcuts,.project-hub-task-add) { grid-template-columns: minmax(0,1fr); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub .project-hub-shortcuts>button { min-height: 80px; padding: 16px 4px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub .project-hub-shortcuts>button+button { border-left: 0; border-top: 1px solid var(--studio-border); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .project-hub .project-hub-task-add>label { grid-column: auto; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-page-title { text-align: left; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-grouped-rows>:is(.settings-directory-link,.settings-quick-theme),
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-results-list>.settings-directory-link { padding: 18px 16px; gap: 12px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-directory-link>.settings-row-value { display: block; max-width: 28%; font-size: 14px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-profile-tile { padding: 20px; gap: 16px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-profile-tile strong { font-size: 20px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped :is(.settings-group-content,.settings-disclosure-heading>button) { padding: 20px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped :is(.settings-editor .studio-form-grid,.settings-milestone,.settings-production-stage,.settings-connection-grid,.settings-notification-controls,.settings-pref-themes,.settings-locale-preview) { grid-template-columns: minmax(0,1fr); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-production-stage>.settings-check { grid-column: auto; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-production-stage>button { grid-column: auto; justify-self: start; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-milestone>.studio-field:first-child { grid-column: auto; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-save-bar { flex-direction: column; align-items: stretch; gap: 14px; padding: 18px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-save-actions { display: flex; flex-wrap: wrap; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .settings-grouped .settings-save-actions>.studio-button { flex: 1 1 auto; }
+}
+
+/* Overview color is wayfinding: one hue per working module, carried by its
+   heading, clear specular region and interactive selection. Values and statuses
+   retain their own meaning; the canvas and primary actions stay neutral. */
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized {
+  --ov-blue-accent: #244fa8;
+  --ov-blue-muted: #455671;
+  --ov-blue-tint: rgb(70 121 224 / .12);
+  --ov-blue-highlight: rgb(70 121 224 / .16);
+  --ov-blue-edge: #244fa8;
+  --ov-blue-focus: #244fa8;
+  --ov-violet-accent: #6539a8;
+  --ov-violet-muted: #5d4e6b;
+  --ov-violet-tint: rgb(153 108 228 / .11);
+  --ov-violet-highlight: rgb(153 108 228 / .15);
+  --ov-violet-edge: #6539a8;
+  --ov-violet-focus: #6539a8;
+  --ov-emerald-accent: #14644c;
+  --ov-emerald-muted: #3f5e54;
+  --ov-emerald-tint: rgb(57 171 139 / .10);
+  --ov-emerald-highlight: rgb(57 171 139 / .13);
+  --ov-emerald-edge: #14644c;
+  --ov-emerald-focus: #14644c;
+  --ov-amber-accent: #76500b;
+  --ov-amber-muted: #67563c;
+  --ov-amber-tint: rgb(219 164 63 / .10);
+  --ov-amber-highlight: rgb(219 164 63 / .13);
+  --ov-amber-edge: #76500b;
+  --ov-amber-focus: #76500b;
+}
+html[data-studio-appearance="dark"] .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass:not([data-studio-theme="light"]) .studio-overview-reference.overview-organized,
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass[data-studio-theme="dark"] .studio-overview-reference.overview-organized {
+  --ov-blue-accent: #a6c8ff;
+  --ov-blue-muted: #acc0dd;
+  --ov-blue-tint: rgb(101 155 255 / .13);
+  --ov-blue-highlight: rgb(101 155 255 / .13);
+  --ov-blue-edge: #a6c8ff;
+  --ov-blue-focus: #a6c8ff;
+  --ov-violet-accent: #d3b4ff;
+  --ov-violet-muted: #c0aed7;
+  --ov-violet-tint: rgb(170 125 245 / .13);
+  --ov-violet-highlight: rgb(170 125 245 / .13);
+  --ov-violet-edge: #d3b4ff;
+  --ov-violet-focus: #d3b4ff;
+  --ov-emerald-accent: #86ddb9;
+  --ov-emerald-muted: #a3c9bb;
+  --ov-emerald-tint: rgb(59 183 143 / .12);
+  --ov-emerald-highlight: rgb(59 183 143 / .12);
+  --ov-emerald-edge: #86ddb9;
+  --ov-emerald-focus: #86ddb9;
+  --ov-amber-accent: #f3ca86;
+  --ov-amber-muted: #cfbfa6;
+  --ov-amber-tint: rgb(226 166 70 / .10);
+  --ov-amber-highlight: rgb(226 166 70 / .10);
+  --ov-amber-edge: #f3ca86;
+  --ov-amber-focus: #f3ca86;
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is([data-overview-card="upcomingSchedule"],[data-overview-card="upcomingEvents"]) {
+  --ov-module-accent: var(--ov-blue-accent); --ov-module-muted: var(--ov-blue-muted); --ov-module-tint: var(--ov-blue-tint); --ov-module-highlight: var(--ov-blue-highlight); --ov-module-edge: var(--ov-blue-edge); --ov-module-focus: var(--ov-blue-focus);
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is([data-overview-card="openEnquiries"],[data-overview-card="bookedProjects"],[data-overview-card="bookingMomentum"],[data-overview-card="enquiryPipeline"],[data-overview-card="recentEnquiries"]) {
+  --ov-module-accent: var(--ov-violet-accent); --ov-module-muted: var(--ov-violet-muted); --ov-module-tint: var(--ov-violet-tint); --ov-module-highlight: var(--ov-violet-highlight); --ov-module-edge: var(--ov-violet-edge); --ov-module-focus: var(--ov-violet-focus);
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is([data-overview-card="financePulse"],.studio-quick-action[href="/admin/finance"]) {
+  --ov-module-accent: var(--ov-emerald-accent); --ov-module-muted: var(--ov-emerald-muted); --ov-module-tint: var(--ov-emerald-tint); --ov-module-highlight: var(--ov-emerald-highlight); --ov-module-edge: var(--ov-emerald-edge); --ov-module-focus: var(--ov-emerald-focus);
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is([data-overview-card="actionQueue"],[data-overview-card="pendingTasks"]) {
+  --ov-module-accent: var(--ov-amber-accent); --ov-module-muted: var(--ov-amber-muted); --ov-module-tint: var(--ov-amber-tint); --ov-module-highlight: var(--ov-amber-highlight); --ov-module-edge: var(--ov-amber-edge); --ov-module-focus: var(--ov-amber-focus);
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is([data-overview-card="upcomingSchedule"],[data-overview-card="upcomingEvents"],[data-overview-card="openEnquiries"],[data-overview-card="bookedProjects"],[data-overview-card="bookingMomentum"],[data-overview-card="enquiryPipeline"],[data-overview-card="recentEnquiries"],[data-overview-card="financePulse"],[data-overview-card="actionQueue"],[data-overview-card="pendingTasks"],.studio-quick-action[href="/admin/finance"]) {
+  --studio-glass-highlight: linear-gradient(145deg, var(--ov-module-highlight), transparent 48%, var(--ov-module-tint));
+  --studio-muted: var(--ov-module-muted);
+  --studio-focus: var(--ov-module-focus);
+  --studio-selected: var(--ov-module-tint);
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized [data-overview-card] :is(.ov-card-heading h2,.studio-card-heading h3,.studio-metric-top>span,.overview-day-top h2,.overview-feature-label),
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized .studio-quick-action[href="/admin/finance"] strong { color: var(--ov-module-accent,var(--studio-text)); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized [data-overview-card] .studio-app-icon {
+  color: var(--ov-module-accent,var(--studio-text)); background: transparent; box-shadow: none;
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized [data-overview-card] .studio-app-icon::before { display: none; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized [data-overview-card] .studio-app-icon svg { color: inherit; filter: none; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized [data-overview-card] :is(.studio-empty>svg,.ov-card-bottom:hover,.overview-card-actions>a:hover) { color: var(--ov-module-accent,var(--studio-text)); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is([data-overview-card="bookingMomentum"],[data-overview-card="enquiryPipeline"]) .ov-chart-days button:is([aria-pressed=true],:hover) {
+  color: var(--ov-module-accent); background: var(--ov-module-tint); box-shadow: inset 0 0 0 1px var(--ov-module-edge);
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized [data-overview-card="upcomingSchedule"] .overview-day-navigation button:hover:not(:disabled) {
+  color: var(--ov-module-accent); background: var(--ov-module-tint); border-color: var(--ov-module-edge);
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized [data-overview-card="upcomingSchedule"] .overview-day-navigation button:disabled { color: var(--ov-module-muted); opacity: 1; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized [data-overview-card] :is(.overview-finance-profit,.overview-finance-amounts dd,.studio-metric-value) { color: var(--studio-text); }
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized :is([data-overview-card="upcomingSchedule"],[data-overview-card="upcomingEvents"],[data-overview-card="openEnquiries"],[data-overview-card="bookedProjects"],[data-overview-card="bookingMomentum"],[data-overview-card="enquiryPipeline"],[data-overview-card="recentEnquiries"],[data-overview-card="financePulse"],[data-overview-card="actionQueue"],[data-overview-card="pendingTasks"],.studio-quick-action[href="/admin/finance"]) { --studio-glass-highlight: none; }
+}
+
+/* Local rhythm corrections: connected services, contact records and the user's
+   intentionally empty Overview remain the same tasks in the same material. */
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations { display: flex; flex-direction: column; gap: 28px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations>:is(.studio-page-heading,.studio-webhook-intro,.studio-integration-outro,.studio-error) { margin-block: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-connections { gap: 24px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .connections-section-heading { gap: 24px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .connections-section-heading p { max-width: 70ch; font-size: 16px; line-height: 1.6; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations :is(.assistant-provider-list,.assistant-draft-workspace,.drive-connection) {
+  background: var(--studio-glass-highlight), var(--studio-glass-bg); border: 1px solid var(--studio-glass-border); border-radius: var(--studio-radius-panel,30px); box-shadow: var(--studio-glass-shadow); -webkit-backdrop-filter: blur(var(--studio-glass-blur,22px)); backdrop-filter: blur(var(--studio-glass-blur,22px));
+}
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations :is(.assistant-provider,.assistant-draft-workspace,.studio-integration-services>.drive-connection,.studio-integration-services>.studio-gmail-card) { padding: var(--workspace-panel-pad); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-provider-heading { gap: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations :is(.assistant-provider-heading p,.assistant-setup,.assistant-context small,.assistant-consent,.assistant-draft-footer p,.connection-feedback) { font-size: 14px; line-height: 1.6; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-provider-actions { margin-left: 54px; gap: 20px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-intro { margin-bottom: 24px; gap: 14px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-intro h3 { font-size: 20px; line-height: 1.4; margin-bottom: 6px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-intro p { font-size: 16px; line-height: 1.6; max-width: 70ch; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-form { grid-template-columns: minmax(210px,.75fr) minmax(0,1.75fr); grid-template-areas: "options context" "options consent" "footer footer"; gap: 16px 28px; align-items: start; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-options { grid-area: options; grid-template-columns: minmax(0,1fr); gap: 18px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-options label { font-size: 14px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-context { grid-area: context; font-size: 16px; line-height: 1.5; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-workspace .assistant-context textarea.studio-input { min-height: 160px; height: 160px; padding: 14px 16px; font-size: 16px; line-height: 1.6; resize: vertical; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-consent { grid-area: consent; margin: 0; padding: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-footer { grid-area: footer; gap: 20px; padding-top: 20px; margin-top: 4px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services { display: grid; grid-template-columns: minmax(0,1fr); gap: 24px; min-width: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services>:is(.drive-connection,.studio-gmail-card) { margin: 0; min-width: 0; min-height: 148px; align-items: center; border-radius: var(--studio-radius-panel,30px); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services>.studio-gmail-card { display: grid; grid-template-columns: 47px minmax(0,1fr) auto; gap: 18px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-gmail-card>div:nth-child(2) { min-width: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-gmail-card-actions { justify-content: flex-end; gap: 14px; margin: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services>.drive-connection { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 20px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .drive-connection-main { display: grid; grid-template-columns: 47px minmax(0,1fr) auto; gap: 16px; align-items: center; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .drive-connection-main>.integration-logo { justify-self: center; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .drive-connection-actions { margin: 0; gap: 10px; justify-content: flex-end; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .drive-connection>.connection-feedback { grid-column: 1/-1; margin: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services :is(h2,h3) { font-size: 20px; line-height: 1.4; margin: 0 0 7px; letter-spacing: -.02em; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services p { font-size: 16px; line-height: 1.6; color: var(--studio-muted); max-width: 70ch; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services small { font-size: 14px; line-height: 1.6; color: var(--studio-muted); }
+
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail>.reference-contact-heading { display: grid; grid-template-columns: 44px minmax(0,1fr) auto; align-items: start; gap: 16px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-contact-title { min-height: 44px; gap: 12px; align-items: center; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-contact-actions { align-self: start; gap: 10px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail>.project-contact-detail-tabs { margin-bottom: 24px; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-list-row { box-sizing: border-box; min-height: 88px; padding: 18px 16px; gap: 20px; border-radius: var(--studio-radius-control,12px); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-list-row:last-child { border-bottom: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-list-row>span:first-child { min-width: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-contact-sidebar .reference-section { height: auto; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-avatar { color: var(--studio-text); background: var(--studio-surface-2); border: 1px solid var(--studio-border); opacity: 1; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-avatar>* { color: inherit; background: transparent; }
+
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized>.overview-empty { display: grid; grid-template-columns: 32px minmax(0,1fr) auto; align-items: start; gap: 8px 18px; min-height: 0; height: auto; padding: 24px; margin: 24px 0 0; text-align: left; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized>.overview-empty>svg { grid-column: 1; grid-row: 1/3; margin-top: 3px; color: var(--studio-muted); }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized>.overview-empty h2 { grid-column: 2; margin: 0; color: var(--studio-text); font-size: 20px; line-height: 1.4; letter-spacing: -.02em; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized>.overview-empty p { grid-column: 2; max-width: 70ch; margin: 0; color: var(--studio-muted); font-size: 16px; line-height: 1.6; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized>.overview-empty>div { grid-column: 3; grid-row: 1/3; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px; max-width: 340px; margin: 0; }
+.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized>.ov-reference-grid:empty+.overview-empty { margin-top: 0; }
+@media (max-width: 1100px) {
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-form { grid-template-columns: minmax(0,1fr); grid-template-areas: "options" "context" "consent" "footer"; gap: 20px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-options { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services>.studio-gmail-card { grid-template-columns: 47px minmax(0,1fr); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-gmail-card-actions,
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services>.studio-gmail-card>.studio-button { grid-column: 2; justify-content: flex-start; justify-self: start; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services>.drive-connection { grid-template-columns: minmax(0,1fr); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .drive-connection-actions { margin-left: 63px; justify-content: flex-start; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized>.overview-empty { grid-template-columns: 32px minmax(0,1fr); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized>.overview-empty>div { grid-column: 2; grid-row: auto; justify-content: flex-start; max-width: none; margin-top: 10px; }
+}
+@media (max-width: 900px) {
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail>.reference-contact-heading { grid-template-columns: 44px minmax(0,1fr); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-contact-actions { grid-column: 2; justify-content: flex-start; }
+}
+@media (max-width: 600px) {
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations { --workspace-panel-pad: 20px; gap: 24px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-provider-actions { margin-left: 0; flex-wrap: wrap; gap: 12px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-options { grid-template-columns: minmax(0,1fr); }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-draft-footer { flex-direction: column; align-items: stretch; gap: 16px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services>:is(.drive-connection,.studio-gmail-card) { min-height: 0; gap: 16px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .drive-connection-main { grid-template-columns: 47px minmax(0,1fr); gap: 12px 16px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .drive-connection-main>.connection-status { grid-column: 2; justify-self: start; margin: 0; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-gmail-card-actions,
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .studio-integration-services>.studio-gmail-card>.studio-button { grid-column: 1/-1; width: 100%; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .drive-connection-actions { margin-left: 0; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-contact-actions { grid-column: 1/-1; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-contact-actions>:is(.reference-more,.reference-create-menu) { width: 100%; min-width: 0; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-contact-actions>:is(.reference-more,.reference-create-menu)>button { width: 100%; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .contact-detail-workspace.project-contact-detail .reference-list-row { padding: 16px 12px; gap: 14px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized>.overview-empty { padding: 20px; margin-top: 20px; gap: 12px; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized>.overview-empty>svg { grid-row: 1; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-overview-reference.overview-organized>.overview-empty :is(p,div) { grid-column: 1/-1; }
+}
+@media (max-width: 420px) {
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-provider-heading { display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 8px 12px; align-items: start; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-provider-heading>div { grid-column: 2; min-width: 0; }
+  .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .studio-integrations .assistant-provider-heading>.connection-status { grid-column: 2; justify-self: start; max-width: 100%; margin: 0; }
+}

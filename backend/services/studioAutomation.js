@@ -1,3 +1,4 @@
+const { acceptedQuoteDestination } = require('../utils/acceptedQuoteDestination');
 const crypto = require('node:crypto');
 const { DEFAULTS } = require('../utils/studioSettings');
 function indiaClock(value = new Date()) {
@@ -17,8 +18,8 @@ function createAutomationRunner({ Config, Notification, Quotation, Invoice, Task
     const settings = { ...DEFAULTS.automation, ...(studio?.automation?.toObject?.() || studio?.automation || {}) };
     const stamp = now(), clock = indiaClock(stamp);
     if (settings.notifyQuoteAccepted) {
-      const rows = await Quotation.find({ status: 'Accepted', acceptedAt: { $gte: new Date(stamp.getTime() - 7 * 86400000) } }).select('_id clientName documentNumber').limit(100).lean();
-      for (const row of rows) await notify('quote-accepted:' + row._id, { title: 'Quotation accepted', description: `${row.clientName} accepted quotation ${row.documentNumber || String(row._id).slice(-6)}.`, type: 'System', link: '/admin/quotations?quote=' + row._id });
+      const rows = await Quotation.find({ status: 'Accepted', acceptedAt: { $gte: new Date(stamp.getTime() - 7 * 86400000) } }).select('_id clientName documentNumber invoiceId invoiceGeneratedAt').limit(100).lean();
+      for (const row of rows) await notify('quote-accepted:' + row._id, { title: 'Quotation accepted', description: `${row.clientName} accepted quotation ${row.documentNumber || String(row._id).slice(-6)}.`, type: 'System', link: acceptedQuoteDestination(row, '/admin/quotations?quote=' + row._id) });
     }
     if (settings.notifyPaymentOverdue) {
       const rows = await Invoice.find({ documentStatus: 'Sent', status: 'Pending', dueDate: { $lt: clock.start } }).select('_id clientName total advancePaid').limit(100).lean();

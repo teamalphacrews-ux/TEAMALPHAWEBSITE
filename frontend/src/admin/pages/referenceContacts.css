@@ -176,6 +176,14 @@
   background: #f2f3f4;
   color: #7d8682;
 }
+html:not([data-studio-appearance="dark"]) .studio-commercial-glass .reference-workspace .reference-status.lead {
+  color: #365984;
+}
+.studio-commercial-glass .reference-workspace .reference-status.other,
+.studio-commercial-glass .reference-workspace .reference-status.neutral {
+  background: var(--studio-surface-2);
+  color: var(--studio-muted);
+}
 .reference-status.inquiry {
   background: #fdf9eb;
   color: #ac8d32;
@@ -501,6 +509,9 @@
 .reference-additional-clients legend {
   color: #727c75;
   font-size: 12px;
+}
+.studio-commercial-workspace .reference-additional-clients legend {
+  color: var(--studio-muted);
 }
 .reference-additional-clients label {
   display: flex;

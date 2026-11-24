@@ -64,6 +64,24 @@ test('one contact can have several projects without merging enquiries',async()=>
   const [first,second]=await Promise.all(['p1','p2'].map(id=>s.pipeline.ensureProject(id)));
   assert.notEqual(first._id,second._id); assert.equal(s.Lead.records.size,2); assert.equal(first.email,second.email);
 });
+test('opening the enquiry list does not invoke link repair', async t => {
+  const { stack } = require('../routes/leadroutes');
+  const handler = stack.find(layer => layer.route?.path === '/' && layer.route.methods.get).route.stack[0].handle;
+  const pipeline = require('../services/enquiryPipeline');
+  const lead = { _id: 'l1', name: 'Test enquiry' };
+  t.mock.method(pipeline, 'reconcile', async () => assert.fail('An ordinary GET must not repair links'));
+  t.mock.method(require('../models/Lead'), 'find', () => ({ populate: () => ({ sort: async () => [lead] }) }));
+  let received;
+  await handler({}, { json(value) { received = value; }, status() { assert.fail('The register GET failed'); } });
+  assert.deepEqual(received, [lead]);
+});
+test('a healthy project link can be repaired again without rewriting the enquiry or project', async t => {
+  const { pipeline, Lead, Project } = setup();
+  const first = await pipeline.ensureProject('p1');
+  t.mock.method(Lead, 'findOneAndUpdate', async () => assert.fail('A healthy enquiry should keep its original timestamp'));
+  t.mock.method(Project, 'updateOne', async () => assert.fail('A healthy project should keep its original timestamp'));
+  assert.deepEqual(await pipeline.ensureProject('p1'), first);
+});
 test('sharing and acceptance advance enquiry without inventing payments or losing operations',async()=>{
   const existing={_id:'l1',studioProjectId:'p1',name:'Maya Rao',email:'maya@example.test',status:'Follow-up',paymentStatus:'Deposit Paid',depositAmount:5000,tasks:['task-1'],people:['editor'],cloudLink:'https://example.test/gallery',followUpDate:new Date('2028-01-03')};
   const s=setup({leads:[existing],quotes:[quote('q1','Sent')]});

@@ -29,3 +29,16 @@ export function invoiceDestination(invoices, lead) {
     params.set("project", recordId(lead.studioProjectId));
   return `/admin/invoices/new?${params}`;
 }
+
+// A newly saved draft keeps its editor while its URL changes to the server ID.
+// Every other record, creation context and workspace gets an isolated editor.
+export function invoiceEditorKey(scope, id, location, promotion) {
+  if (id && promotion?.scope === scope && promotion.id === id && !location.search) return promotion.key;
+  return JSON.stringify(id ? [scope, 'record', id] : [scope, 'new', location.key, location.search]);
+}
+
+export async function loadInvoiceRecord(id, request) {
+  const invoice = await request('get', '/api/invoices/' + encodeURIComponent(id));
+  if (!invoice || String(invoice._id) !== id) throw new Error('The requested invoice could not be verified.');
+  return invoice;
+}

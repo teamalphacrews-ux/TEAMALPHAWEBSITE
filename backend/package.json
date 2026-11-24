@@ -28,6 +28,11 @@
     "devDependencies": {
         "nodemon": "^3.0.2"
     },
+    "overrides": {
+        "nodemon": {
+            "minimatch": "11.0.9"
+        }
+    },
     "engines": {
         "node": ">=22.22.0 <27"
     }

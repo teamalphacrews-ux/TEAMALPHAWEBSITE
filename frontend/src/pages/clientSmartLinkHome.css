@@ -1,0 +1,250 @@
+/* The commercial Smart Link shares the public homepage's film and type.
+   Keep the tenant's document paper and its print layout independent. */
+@media screen {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] {
+    --client-canvas: #f6f5f3;
+    --client-glass: #fff;
+    --client-glass-line: rgb(33 29 25 / 16%);
+    --client-shadow: none;
+    --client-canvas-image: none;
+    --client-focus: #865011;
+    font-family: var(--sx-public-font);
+    --smart-action: var(--sx-public-action);
+    --smart-action-ink: var(--sx-public-on-action);
+
+    &[data-theme="dark"] {
+      --client-canvas: #080808;
+      --client-glass: #141415;
+      --client-glass-strong: #202022;
+      --client-glass-line: rgb(255 255 255 / 17%);
+      --client-focus: #f6c17a;
+    }
+
+    & .cp-topbar {
+      min-height: 72px;
+      background: var(--client-canvas);
+      box-shadow: none;
+    }
+
+    & .cp-topbar > div:first-child > span {
+      font-size: 16px;
+      font-weight: 650;
+      line-height: 1.25;
+      letter-spacing: -.015em;
+      text-transform: none;
+    }
+
+    & .cp-topbar small {
+      margin-top: 3px;
+      font-size: 13px;
+      letter-spacing: 0;
+      color: var(--client-muted);
+    }
+
+    & :is(.cp-theme-toggle, .cp-effects-toggle, .cp-button, .cp-private-label) {
+      border-radius: 100px;
+    }
+
+    & .cp-welcome {
+      min-height: clamp(240px, 25vw, 328px);
+      align-items: center;
+      background: #09090a;
+      color: #fff;
+      border: 1px solid rgb(255 255 255 / 13%);
+      border-radius: var(--client-radius);
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    & .cp-fluid-cover, & .cp-fluid-cover :is(img, video) {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    & .cp-fluid-cover { z-index: 0; }
+    & .cp-fluid-cover-video { opacity: 0; }
+    & .cp-fluid-cover[data-playing="true"] .cp-fluid-cover-video { opacity: 1; }
+    & .cp-fluid-cover :is(img, video) {
+      object-fit: cover;
+      object-position: center 56%;
+      filter: saturate(.76);
+    }
+
+    & .cp-welcome .cp-cover-image {
+      display: block;
+      z-index: 0;
+      inset: 0 0 0 auto;
+      width: 50%;
+      height: 100%;
+      border-radius: 0;
+      mask-image: linear-gradient(to right, transparent, black 45%);
+    }
+
+    & .cp-cover-shade {
+      display: block;
+      z-index: 0;
+      background: linear-gradient(90deg, rgb(5 5 8 / 91%), rgb(5 5 8 / 81%) 35%, rgb(5 5 8 / 24%) 77%),
+        linear-gradient(0deg, rgb(5 5 8 / 58%), transparent 54%);
+    }
+
+    & .cp-welcome-content {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      padding: clamp(28px, 4vw, 56px);
+    }
+
+    & .cp-welcome h1 {
+      max-width: 78%;
+      margin: 0;
+      color: white;
+      font: 550 clamp(40px, 5.4vw, 76px)/1.05 var(--sx-public-font);
+      letter-spacing: -.04em;
+      text-wrap: balance;
+    }
+
+    & .cp-welcome p {
+      max-width: 68%;
+      margin: 8px 0 0;
+      color: #f6e9db;
+      font: italic 400 clamp(24px, 2.6vw, 38px)/1.2 Georgia, Cambria, serif;
+      letter-spacing: -.025em;
+      text-wrap: balance;
+    }
+
+    & .cp-cover-footer {
+      justify-content: flex-start;
+      gap: 8px 20px;
+      margin-top: 24px;
+      padding: 0;
+      border: 0;
+      color: #f3f1ef;
+      font-size: 14px;
+    }
+
+    & .cp-cover-footer > span:first-child { color: #e2dfdb; font-variant-numeric: tabular-nums; }
+    & .cp-status-dot { background: #ffc787; box-shadow: none; }
+
+    & .cp-feature-grid { gap: clamp(10px, 1.4vw, 18px); }
+
+    & button.cp-feature-card {
+      padding: clamp(16px, 1.7vw, 24px);
+      color: var(--client-ink);
+      background: var(--client-glass);
+      border: 1px solid var(--client-glass-line);
+      border-radius: 14px;
+      box-shadow: none;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      transform: none;
+      transition: none;
+    }
+    & .cp-feature-card:not(:disabled):is(:hover, [aria-expanded="true"]) {
+      border-color: var(--client-focus);
+      box-shadow: none;
+      transform: none;
+    }
+    & .cp-feature-card:focus-visible {
+      outline: 3px solid var(--client-focus);
+      outline-offset: 3px;
+    }
+
+    & .cp-feature-top {
+      color: var(--client-ink);
+      font-size: 16px;
+      font-weight: 650;
+      line-height: 1.25;
+    }
+    & .cp-feature-icon {
+      width: 28px;
+      height: 28px;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      color: var(--radiance-accent);
+    }
+    & .cp-feature-status {
+      align-self: flex-start;
+      margin: 20px 0 6px;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--client-muted);
+      font: 550 13px/1.45 var(--sx-public-font);
+    }
+    & .cp-feature-value {
+      color: var(--client-ink);
+      font: 600 clamp(27px, 2.65vw, 39px)/1.1 var(--sx-public-font);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.035em;
+    }
+    & :is(.cp-feature-detail, .cp-feature-footer) {
+      color: var(--client-muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    & .cp-feature-footer {
+      color: var(--client-ink);
+      align-items: center;
+      padding-top: 16px;
+      border: 0;
+      font-weight: 650;
+    }
+    & .cp-feature-progress { background: color-mix(in srgb, var(--radiance-accent) 20%, var(--client-glass)); }
+    & .cp-feature-progress i { background: var(--radiance-accent); }
+    & button.cp-feature-card:disabled {
+      background: var(--client-glass);
+      border-color: var(--client-glass-line);
+      box-shadow: none;
+    }
+    & .cp-feature-card:disabled :is(.cp-feature-status, .cp-feature-value, .cp-feature-detail, .cp-feature-footer) { color: var(--client-muted); }
+    & .cp-payment-action.cp-next-action, & .cp-journey-card {
+      background: var(--client-glass);
+      border-color: var(--client-glass-line);
+      box-shadow: none;
+    }
+
+    & .cp-next-action .cp-button {
+      color: var(--smart-action-ink) !important;
+      background: var(--smart-action);
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    & .cp-next-action .cp-button:hover { background: #ffc570; }
+    & .cp-workspace-heading h2 { letter-spacing: -.035em; }
+    & .cp-card { box-shadow: none; }
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] {
+    & .cp-topbar { flex-wrap: nowrap; gap: 12px; padding: 12px 16px; }
+    & .cp-topbar > div:first-child { flex: 1 1 auto; gap: 10px; }
+    & .cp-topbar-tools { flex: 0 0 auto; width: auto; flex-wrap: nowrap; }
+    & .cp-topbar img { width: 36px; height: 36px; flex-shrink: 0; }
+    & .cp-welcome { min-height: 228px; }
+    & .cp-welcome-content { padding: 26px 22px; }
+    & .cp-welcome h1 { max-width: 100%; font-size: 39px; }
+    & .cp-welcome p { max-width: 100%; font-size: 24px; }
+    & .cp-cover-shade { background: linear-gradient(90deg, rgb(5 5 8 / 85%), rgb(5 5 8 / 55%)); }
+    & .cp-cover-footer { flex-direction: column; align-items: flex-start; gap: 4px; }
+  }
+}
+
+@media (forced-colors: active) {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-welcome :is(.cp-fluid-cover, .cp-cover-image, .cp-cover-shade) { display: none; }
+}
+
+@media screen and (max-width: 600px) {
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] {
+    & .cp-feature-card .cp-feature-top { flex-wrap: nowrap; }
+    & .cp-feature-value { font-size: clamp(23px, 5.8vw, 31px); }
+    & .cp-feature-top { font-size: 15px; }
+    & .cp-feature-icon { width: 28px; height: 28px; }
+  }
+}

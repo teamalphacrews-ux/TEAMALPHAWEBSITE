@@ -73,15 +73,15 @@ test('legacy User documents receive safe personal defaults and the schema persis
   const legacy = new User({ studioPreferences: { theme: 'dark', visibleCards: [] } }).studioPreferences;
   assert.equal(legacy.language, 'en'); assert.equal(legacy.region, 'IN'); assert.equal(legacy.timezone, 'studio');
   assert.equal(legacy.notificationSound, false); assert.equal(legacy.notificationBadges, true); assert.equal(legacy.quietHoursEnabled, false);
-  const chosen = { ...defaults(), language: 'ur', region: 'AE', timezone: 'Asia/Dubai', notificationSound: true, notificationCategories: ['finance', 'messages'], quietHoursStart: '21:00' };
+  const chosen = { ...defaults(), sidebarSort: 'custom', sidebarOrder: ['/admin/calendar','/admin'], language: 'ur', region: 'AE', timezone: 'Asia/Dubai', notificationSound: true, notificationCategories: ['finance', 'messages'], quietHoursStart: '21:00' };
   const document = new User({ studioPreferences: chosen });
   assert.equal(document.studioPreferences.validateSync(), undefined);
   assert.deepEqual(document.toObject().studioPreferences, chosen);
-  for (const patch of [{ language: 'xx' }, { timezone: 'Asia/Fake' }, { notificationVolume: 0.5 }, { notificationCategories: ['unknown'] }, { quietHoursEnd: '99:00' }]) assert.ok(new User({ studioPreferences: patch }).studioPreferences.validateSync());
+  for (const patch of [{ language: 'xx' }, { timezone: 'Asia/Fake' }, { notificationVolume: 0.5 }, { notificationCategories: ['unknown'] }, { sidebarOrder: ['//external'] }, { sidebarSort: 'other' }, { quietHoursEnd: '99:00' }]) assert.ok(new User({ studioPreferences: patch }).studioPreferences.validateSync());
   const copy = defaults(); copy.notificationCategories.pop(); assert.equal(defaults().notificationCategories.length, 6);
 });
 
-test('language and sound PATCH then GET round trip is scoped to the account and preserves unrelated preferences', async t => {
+test('personal preference PATCH then GET round trip is scoped to the account and preserves unrelated preferences', async t => {
   const jwt = require('jsonwebtoken'), User = require('../models/User');
   const id = '507f1f77bcf86cd79943fd02'; process.env.JWT_SECRET = 'preferences-test-secret';
   let stored = { ...defaults(), theme: 'dark', cardOrder: [...defaults().cardOrder].reverse() }, captured;
@@ -93,12 +93,13 @@ test('language and sound PATCH then GET round trip is scoped to the account and 
   } }));
   const token = jwt.sign({ user: { id, role: 'admin' } }, process.env.JWT_SECRET), router = require('../routes/studioPreferencesRoutes');
   const call = (method, body) => new Promise((resolve, reject) => router.handle({ method, url: '/preferences', body, headers: { authorization: 'Bearer ' + token }, header: name => name.toLowerCase() === 'authorization' ? 'Bearer ' + token : undefined }, { set() {}, status(status) { this.statusCode = status; return this; }, json(body) { resolve({ status: this.statusCode || 200, body }); } }, reject));
-  const patch = { language: 'kn', region: 'IN', notificationSound: true, notificationVolume: 20, notificationCategories: ['calendar'], quietHoursEnabled: true };
+  const patch = { sidebarSort: 'custom', sidebarOrder: ['/admin/calendar', '/admin'], language: 'kn', region: 'IN', notificationSound: true, notificationVolume: 20, notificationCategories: ['calendar'], quietHoursEnabled: true };
   const saved = await call('PATCH', patch);
   assert.equal(saved.status, 200); assert.deepEqual(captured.filter, { _id: id, role: 'admin' });
   assert.deepEqual(captured.update.$set, Object.fromEntries(Object.entries(patch).map(([key, value]) => ['studioPreferences.' + key, value])));
   const loaded = await call('GET'); assert.equal(loaded.status, 200);
   assert.deepEqual(loaded.body.preferences, saved.body.preferences);
   assert.equal(loaded.body.preferences.theme, 'dark'); assert.deepEqual(loaded.body.preferences.cardOrder, [...defaults().cardOrder].reverse());
+  assert.equal(loaded.body.preferences.sidebarSort, 'custom'); assert.deepEqual(loaded.body.preferences.sidebarOrder, patch.sidebarOrder);
   assert.equal(loaded.body.preferences.language, 'kn'); assert.equal(loaded.body.preferences.notificationVolume, 20);
 });

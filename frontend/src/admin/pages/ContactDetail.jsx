@@ -1,8 +1,12 @@
+import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import { useAuth } from '../../context/AuthContext';
+import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
 import { hasModuleAccess } from '../../utils/moduleAccess';
 import { useId, useState } from "react";
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
+import { clientNextAction } from '../components/contacts/clientNextAction';
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, ArrowRight, Pencil } from "lucide-react";
 import StudioSelect from "../components/common/StudioSelect";
 import toast from "react-hot-toast";
 import {
@@ -32,12 +36,19 @@ import {
 } from "../components/contacts/ContactRelatedTables";
 import "./referenceContacts.css";
 import "./projectContactRefinement.css";
+import "./studioRecordDesk.css";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 export default function ContactDetail() {
+  const { id } = useParams();
+  return <ContactRecord key={IS_COMMERCIAL_DEPLOYMENT ? id : undefined} id={id} />;
+}
+function ContactRecord({ id }) {
   const { user } = useAuth();
   const tabs = ['Overview', 'Documents', ...(hasModuleAccess(user, 'finance') && hasModuleAccess(user, 'invoices') ? ['Payments'] : []), ...(hasModuleAccess(user, 'calendar') ? ['Sessions'] : [])];
-  const { id } = useParams(),
-    navigate = useNavigate();
+  const navigate = useNavigate();
+  const canEditContact = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'contacts');
+  const canStartProject = hasModuleAccess(user, 'projects') && (!IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'projects'));
+  const canSchedule = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'calendar');
   const { data, loading, error, reload } = useWorkspaceData([
       "/api/contacts/" + id,
       "/api/contacts",
@@ -83,6 +94,7 @@ export default function ContactDetail() {
     sessions = [],
     documents = [],
   } = detail;
+  const nextAction = IS_COMMERCIAL_DEPLOYMENT && !loading && !error ? clientNextAction(user, detail) : null;
   const name = `${contact.firstName} ${contact.lastName || ""}`.trim(),
     address = [
       contact.addressLine1,
@@ -137,11 +149,11 @@ export default function ContactDetail() {
           <ArrowLeft size={18} />
         </Link>
         <div className="reference-contact-title">
-          <h1>{name}</h1>
+          <WorkspaceMotionTitle>{name}</WorkspaceMotionTitle>
         <StudioSelect
           className={`reference-status-select ${contact.contactType.toLowerCase()}`}
           aria-label="Contact type"
-          disabled={busy}
+          disabled={busy || !canEditContact}
           value={contact.contactType}
           onChange={(event) => changeType(event.target.value)}
         >
@@ -151,12 +163,12 @@ export default function ContactDetail() {
         </StudioSelect>
         </div>
         <div className="reference-contact-actions">
-        <WorkspaceActionMenu label="Contact actions">
+        {canEditContact && <WorkspaceActionMenu label="Contact actions">
             <button onClick={() => setEditing(true)}>Edit contact</button>
             <button onClick={archive}>
               {contact.archived ? "Restore contact" : "Archive contact"}
             </button>
-        </WorkspaceActionMenu>
+        </WorkspaceActionMenu>}
         {contact.archived ? (
           <span className="reference-status neutral">Archived</span>
         ) : (
@@ -169,30 +181,35 @@ export default function ContactDetail() {
         </div>
       </div>
       <WorkspaceError error={error} retry={reload} />
+      <div className="reference-tabs project-contact-detail-tabs" style={{ '--project-contact-tab-count': tabs.length }} role="tablist" aria-label="Contact sections" onKeyDown={navigateTabs}>
+        {tabs.map((label) => (
+          <button
+            className={label === tab ? "active" : ""}
+            type="button"
+            role="tab"
+            id={`${tabsId}-tab-${label}`}
+            aria-controls={`${tabsId}-panel-${label}`}
+            aria-selected={label === tab}
+            tabIndex={label === tab ? 0 : -1}
+            key={label}
+            onClick={() => setTab(label)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="reference-detail-grid">
         <div style={{ minWidth: 0 }}>
-          <div className="reference-tabs project-contact-detail-tabs" style={{ '--project-contact-tab-count': tabs.length }} role="tablist" aria-label="Contact sections" onKeyDown={navigateTabs}>
-            {tabs.map((label) => (
-              <button
-                className={label === tab ? "active" : ""}
-                type="button"
-                role="tab"
-                id={`${tabsId}-tab-${label}`}
-                aria-controls={`${tabsId}-panel-${label}`}
-                aria-selected={label === tab}
-                tabIndex={label === tab ? 0 : -1}
-                key={label}
-                onClick={() => setTab(label)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
           <div role="tabpanel" id={`${tabsId}-panel-Overview`} aria-labelledby={`${tabsId}-tab-Overview`} hidden={tab !== 'Overview'} tabIndex={0}>{tab === "Overview" && (
             <>
+              {nextAction && <section className="sx-client-next" aria-label="Next step for this client">
+                <div><h2>Next step</h2><p>{nextAction.message}</p></div>
+                {nextAction.to ? <Link className="studio-button" to={nextAction.to}>{nextAction.label}<ArrowRight size={16} aria-hidden="true" /></Link> :
+                  nextAction.label && <button type="button" className="studio-button" onClick={() => setNewProject(true)}>{nextAction.label}<ArrowRight size={16} aria-hidden="true" /></button>}
+              </section>}
               {hasModuleAccess(user, 'projects') && <ReferenceSection
                 title="Projects"
-                action={() => setNewProject(true)}
+                action={!canStartProject || (IS_COMMERCIAL_DEPLOYMENT && contact.archived) ? undefined : () => setNewProject(true)}
               >
                 {projects.length ? (
                   <div className="reference-list">
@@ -221,13 +238,13 @@ export default function ContactDetail() {
                   </div>
                 ) : (
                   <p className="reference-empty">
-                    No projects yet. Use Create new to start one for this contact.
+                    {IS_COMMERCIAL_DEPLOYMENT ? "No projects yet." : "No projects yet. Use Create new to start one for this contact."}
                   </p>
                 )}
               </ReferenceSection>}
               <ReferenceSection
                 title="Recent conversations"
-                action={() => openDocument("Message")}
+                action={canEditContact ? () => openDocument("Message") : undefined}
               >
                 <ContactConversations
                   documents={documents}
@@ -256,7 +273,7 @@ export default function ContactDetail() {
           {tabs.includes('Sessions') && <div role="tabpanel" id={`${tabsId}-panel-Sessions`} aria-labelledby={`${tabsId}-tab-Sessions`} hidden={tab !== 'Sessions'} tabIndex={0}>{tab === "Sessions" && (
             <ReferenceSection
               title="Sessions"
-              action={() => navigate(`/admin/calendar?contact=${id}`)}
+              action={canSchedule ? () => navigate(`/admin/calendar?contact=${id}`) : undefined}
             >
               <ContactSessions sessions={sessions} />
             </ReferenceSection>
@@ -264,13 +281,13 @@ export default function ContactDetail() {
         </div>
         <aside className="reference-contact-sidebar">
           <ReferenceSection title="Contact details">
-            <button
+            {canEditContact && <button
               className="reference-info-edit reference-icon-button"
               aria-label="Edit contact info"
               onClick={() => setEditing(true)}
             >
               <Pencil size={17} />
-            </button>
+            </button>}
             <div className="reference-contact-identity">
               <span className="reference-avatar">
                 {contact.firstName[0]}
@@ -308,7 +325,7 @@ export default function ContactDetail() {
               </dd>
               <dt>Note</dt>
               <dd>
-                <ContactNote
+                {canEditContact ? <ContactNote
                   note={contact.note}
                   onSave={async (note) => {
                     await workspaceRequest("patch", "/api/contacts/" + id, {
@@ -316,13 +333,13 @@ export default function ContactDetail() {
                     });
                     await reload();
                   }}
-                />
+                /> : contact.note || "—"}
               </dd>
             </dl>
           </ReferenceSection>
         </aside>
       </div>
-      {editing && (
+      {editing && canEditContact && (
         <ContactForm
           record={contact}
           onClose={() => setEditing(false)}
@@ -332,7 +349,7 @@ export default function ContactDetail() {
           }}
         />
       )}
-      {newProject && hasModuleAccess(user, 'projects') && (
+      {newProject && canStartProject && (
         <ProjectForm
           contact={contact}
           contacts={contacts}
@@ -345,6 +362,7 @@ export default function ContactDetail() {
       {document && (
         <ContactDocumentForm
           {...document}
+          readOnly={!canEditContact}
           contact={contact}
           onClose={() => setDocument(null)}
           onSaved={() => {

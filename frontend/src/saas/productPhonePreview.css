@@ -1,0 +1,106 @@
+.sos-phone-preview {
+  width: min(100%, clamp(278px, 25vw, 346px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #eae9e7;
+}
+.sos-phone-preview-device {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  aspect-ratio: 389 / 800;
+  filter: drop-shadow(0 22px 24px rgb(0 0 0 / 34%));
+}
+.sos-phone-preview-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+.sos-phone-preview-device[data-frame-failed] {
+  background: #19191b;
+  border-radius: 18% / 8.75%;
+  box-shadow: inset 0 0 0 2px #727273, inset 0 0 0 4px #252526;
+}
+.sos-phone-preview-display {
+  --phone-paper: #f8f7f4;
+  --phone-ink: #242320;
+  position: absolute;
+  inset: 1.75% 4.37018%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 14.93% / 6.865%;
+  color: var(--phone-ink);
+  background: var(--phone-paper);
+}
+@media (prefers-color-scheme: dark) {
+  .sos-phone-preview-display:not([data-screen-failed]) {
+    --phone-paper: #151618;
+    --phone-ink: #f4f2ee;
+  }
+}
+.sos-phone-preview-status {
+  min-height: 0;
+  flex: 0 0 6.35%;
+  padding: 0 6%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--phone-ink);
+  font: 650 11px/1 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+.sos-phone-preview-status span { display: inline-flex; align-items: center; gap: 3px; }
+.sos-phone-preview-status svg { width: 11px; height: 11px; stroke-width: 2.5; }
+.sos-phone-preview-status svg:last-child { width: 16px; }
+.sos-phone-preview-screen {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  color: var(--phone-ink);
+  background: var(--phone-paper);
+}
+.sos-phone-preview-screen::-webkit-scrollbar { display: none; }
+.sos-phone-preview-screen:focus-visible { outline: 2px solid #b46e17; outline-offset: -2px; }
+.sos-phone-preview-screen picture, .sos-phone-preview-screen img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.sos-phone-preview-home {
+  height: 2.5%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.sos-phone-preview-home i { width: 30%; height: 3px; border-radius: 99px; background: var(--phone-ink); }
+.sos-phone-preview-unavailable { padding: 20px; font: 500 14px/1.5 system-ui, sans-serif; }
+.sos-phone-preview .sos-phone-preview-open {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.sos-phone-preview-open:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+.sos-phone-preview .sos-phone-preview-open[data-theme="dark"] { display: none; }
+@media (prefers-color-scheme: dark) {
+  .sos-phone-preview .sos-phone-preview-open[data-theme="light"] { display: none; }
+  .sos-phone-preview .sos-phone-preview-open[data-theme="dark"] { display: inline-flex; }
+}
+@media (max-width: 850px) {
+  .sos-phone-preview { width: min(100%, 315px); }
+}

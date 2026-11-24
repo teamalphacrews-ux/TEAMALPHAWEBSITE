@@ -11,7 +11,7 @@ export function CompactContacts({ contacts, onEdit }) {
         <div className="reference-mobile-record-heading">
           <span className="reference-avatar small" aria-hidden="true">{`${contact.firstName?.[0] || ""}${contact.lastName?.[0] || ""}`.toUpperCase() || "?"}</span>
           <h2><Link to={`/admin/contacts/${contact._id}`}>{name}</Link></h2>
-          <button type="button" className="reference-icon-button" aria-label={`Edit ${name}`} onClick={() => onEdit(contact)}><Pencil size={16} aria-hidden="true" /></button>
+          {onEdit && <button type="button" className="reference-icon-button" aria-label={`Edit ${name}`} onClick={() => onEdit(contact)}><Pencil size={16} aria-hidden="true" /></button>}
         </div>
         <div className="reference-mobile-contact-info">
           {contact.email && <a href={`mailto:${contact.email}`}>{contact.email}</a>}

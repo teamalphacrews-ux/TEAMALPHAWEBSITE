@@ -1,8 +1,10 @@
+import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import StudioButton from '../components/common/StudioButton';
 import StudioSelect from '../components/common/StudioSelect';
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -13,6 +15,9 @@ import {
   CheckCircle2,
   Circle,
   Clock3,
+  Columns3,
+  List,
+  UserRound,
   Film,
   FolderOpen,
   ListChecks,
@@ -37,6 +42,13 @@ import {
 import "./studioOperations.css";
 import ApplyProductionTemplate from '../components/settings/ApplyProductionTemplate';
 import './financeProductionRefinement.css';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
+import './studioCommercialTasks.css';
+import './studioRecordDesk.css';
+import RecordViewSwitch from './RecordViewSwitch';
+import { recordPositions, settleRecordPositions } from './recordTransitions';
+import ScheduledWorkAction from '../components/operations/ScheduledWorkAction';
+import { nextProductionTask } from '../components/operations/nextScheduledWork';
 
 const getLeadId = (task) =>
   typeof task.lead === "object" ? task.lead?._id : task.lead;
@@ -45,11 +57,80 @@ const isOverdue = (task, today) =>
   task.dueDate &&
   new Date(task.dueDate).getTime() < today;
 
+const taskBoardLanes = [
+  { id: 'planned', title: 'To do', stages: ['Not started'] },
+  { id: 'working', title: 'In progress', stages: ['In progress', 'Editing'] },
+  { id: 'review', title: 'Review', stages: ['In review', 'Awaiting your selection'] },
+  { id: 'delivery', title: 'Delivery', stages: ['Ready', 'Uploaded to Drive', 'Delivered'] },
+  { id: 'complete', title: 'Completed', stages: [] },
+];
+const taskLane = task => task.status === 'completed'
+  ? 'complete'
+  : taskBoardLanes.find(lane => lane.stages.includes(task.productionStage))?.id || 'planned';
+
+function CommercialTaskBoard({ tasks, getProject, crew, today, busyId, openEditor, toggleTask, requestDelete, canWrite, canDelete, moveTask }) {
+  const [dragged, setDragged] = useState(null);
+  const [dropLane, setDropLane] = useState(null);
+  const finishDrag = () => { setDragged(null); setDropLane(null); };
+  return <div className="sx-task-board" role="region" aria-label="Production task board" tabIndex={0}>
+    {taskBoardLanes.map(lane => {
+      const items = tasks.filter(task => taskLane(task) === lane.id);
+      return <section className="sx-task-lane" data-lane={lane.id} key={lane.id} aria-labelledby={'sx-task-lane-' + lane.id}
+        data-drop-target={dropLane === lane.id || undefined}
+        onDragOver={event => {
+          if (!dragged || !canWrite || taskLane(dragged) === lane.id) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          setDropLane(lane.id);
+        }}
+        onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget)) setDropLane(null); }}
+        onDrop={event => {
+          if (!dragged || !canWrite) return;
+          event.preventDefault();
+          if (taskLane(dragged) !== lane.id) moveTask(dragged, lane);
+          finishDrag();
+        }}>
+        <header className="sx-task-lane-header"><h3 id={'sx-task-lane-' + lane.id}><span aria-hidden="true" />{lane.title}</h3><span className="sx-task-lane-count">{items.length}<span className="ops-sr-only"> {items.length === 1 ? 'task' : 'tasks'}</span></span></header>
+        <div className="sx-task-lane-items">
+          {items.length ? items.map((task, index) => {
+            const project = getProject(task);
+            const done = task.status === 'completed';
+            const late = isOverdue(task, today);
+            const assignee = task.assignee?.name || crew.find(person => person._id === task.assignee)?.name;
+            return <article className={'sx-task-card' + (done ? ' is-complete' : '')} key={task._id} aria-busy={busyId === task._id}
+              data-record-key={task._id} data-dragging={dragged?._id === task._id || undefined} style={{ '--record-order': Math.min(index, 6) }}
+              draggable={canWrite && !busyId} onDragStart={event => {
+                if (!canWrite || busyId) return;
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', task._id);
+                setDragged(task);
+              }} onDragEnd={finishDrag}>
+              <p className="sx-task-card-project"><span aria-hidden="true" />{project?.name || (getLeadId(task) ? 'Linked project' : 'Studio task')}</p>
+              <button type="button" data-task-action="open" className="sx-task-card-title" disabled={Boolean(busyId)} onClick={() => openEditor(task)}>{task.title}</button>
+              <div className="sx-task-card-top"><span className="sx-task-type">{task.deliveryType || 'Other'}</span>{late && <span className="sx-task-overdue">Overdue</span>}</div>
+              <span className={'sx-task-stage' + (done ? ' is-complete' : '')}>{done ? 'Completed' : task.productionStage || 'Not started'}</span>
+              {task.clientVisible && <span className="sx-task-client-state">Client-visible update</span>}
+              <div className="sx-task-card-meta"><span className={late ? 'is-overdue' : ''}><CalendarDays size={13} aria-hidden="true" />{task.dueDate ? operationDate(task.dueDate) : 'No due date'}</span><span>{assignee ? <i className="record-assignee" aria-hidden="true">{assignee.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('')}</i> : <UserRound size={13} aria-hidden="true" />}{assignee || (task.assignee ? 'Assigned crew' : 'Unassigned')}</span></div>
+              {canWrite && <footer className="sx-task-card-actions">
+                <button type="button" data-task-action="complete" className="sx-task-complete" disabled={Boolean(busyId)} aria-label={`${done ? 'Reopen' : 'Complete'} task: ${task.title}`} onClick={() => toggleTask(task)}>{done ? <CheckCircle2 size={16} aria-hidden="true" /> : <Circle size={16} aria-hidden="true" />}{done ? 'Reopen' : 'Complete'}</button>
+                <button type="button" className="sx-task-icon" disabled={Boolean(busyId)} aria-label={'Edit task: ' + task.title} onClick={() => openEditor(task)}><Pencil size={15} aria-hidden="true" /></button>
+                {canDelete && <button type="button" className="sx-task-icon" disabled={Boolean(busyId)} aria-label={'Delete task: ' + task.title} onClick={() => requestDelete(task)}><Trash2 size={15} aria-hidden="true" /></button>}
+              </footer>}
+            </article>;
+          }) : <p className="sx-task-lane-empty">No tasks in this stage.</p>}
+        </div>
+      </section>;
+    })}
+  </div>;
+}
+
 export default function PostProduction() {
   const { user } = useAuth();
+  const canWrite = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'production');
+  const canDelete = canWrite && (!IS_COMMERCIAL_DEPLOYMENT || (user?.workspaceRole || user?.workspace?.role) !== 'staff');
   const canCrew = hasModuleAccess(user, 'crew');
   const canEnquiries = hasModuleAccess(user, 'enquiries');
-  const [search] = useSearchParams();
+  const [search, setSearch] = useSearchParams();
   const [crew, setCrew] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [leads, setLeads] = useState([]);
@@ -58,6 +139,15 @@ export default function PostProduction() {
   const [projectError, setProjectError] = useState("");
   const [crewError, setCrewError] = useState("");
   const [query, setQuery] = useState("");
+  const viewKey = 'studioxos-task-view:' + (user?._id || user?.id || 'current');
+  const [taskView, setTaskView] = useState(() => {
+    if (!IS_COMMERCIAL_DEPLOYMENT) return 'list';
+    try { return localStorage.getItem(viewKey) === 'list' ? 'list' : 'board'; } catch { return 'board'; }
+  });
+  const chooseTaskView = next => {
+    setTaskView(next);
+    try { localStorage.setItem(viewKey, next); } catch { /* The selected view still works in this session. */ }
+  };
   const [filter, setFilter] = useState("all");
   const [projectFilter, setProjectFilter] = useState(
     search.get("project") || "all",
@@ -78,7 +168,22 @@ export default function PostProduction() {
   });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [linkNotice, setLinkNotice] = useState("");
   const [busyId, setBusyId] = useState("");
+  const workspace = useRef(null);
+  const previousTaskLayout = useRef(null);
+  useLayoutEffect(() => {
+    const previous = previousTaskLayout.current;
+    if (busyId || !previous || !workspace.current) return;
+    previousTaskLayout.current = null;
+    const container = workspace.current.querySelector('.sx-task-board,.ops-table-scroll');
+    if (container === previous.container) settleRecordPositions(container, previous.positions);
+    if (!previous.focus || !document.hasFocus() || document.activeElement !== document.body) return;
+    const entry = container?.querySelector('[data-record-key="' + CSS.escape(previous.id) + '"]');
+    const control = entry?.querySelector('[data-task-action="' + previous.focus + '"]')
+      || workspace.current.querySelector('.sx-task-view-switch [aria-pressed=true]');
+    control?.focus({ preventScroll: true });
+  }, [tasks, busyId]);
   const [deleting, setDeleting] = useState(null);
   const [today, setToday] = useState(() => new Date().setHours(0, 0, 0, 0));
 
@@ -195,14 +300,14 @@ export default function PostProduction() {
     [tasks, filter, projectFilter, query, sort, getProject, today],
   );
 
-  const openEditor = (task = null) => {
+  const nextTask = IS_COMMERCIAL_DEPLOYMENT && !loading && !loadError ? nextProductionTask(filteredTasks) : null;
+  const openEditor = (task = null, newLeadId = undefined) => {
     setEditing(task);
+    setLinkNotice("");
     setForm({
       title: task?.title || "",
       dueDate: dateInputValue(task?.dueDate),
-      lead:
-        getLeadId(task || {}) ||
-        (!["all", "unassigned"].includes(projectFilter) ? projectFilter : ""),
+      lead: getLeadId(task || {}) || (newLeadId ?? (!["all", "unassigned"].includes(projectFilter) ? projectFilter : "")),
       clientVisible: task?.clientVisible || false,
       clientTitle: task?.clientTitle || "",
       deliveryType: task?.deliveryType || "Photos",
@@ -215,16 +320,50 @@ export default function PostProduction() {
   };
   const openedTask=useRef('');
   useEffect(()=>{
-    const id=search.get('task');if(!id||loading||openedTask.current===id)return;
+    const id=search.get('task');
+    if(!id){openedTask.current='';return;}
+    if(loading||openedTask.current===id)return;
     const task=tasks.find(row=>row._id===id);if(!task)return;let active=true;
-    Promise.resolve().then(()=>{if(active){openedTask.current=id;openEditor(task);}});
+    Promise.resolve().then(()=>{
+      if(!active)return;
+      openedTask.current=id;
+      openEditor(task);
+      if (IS_COMMERCIAL_DEPLOYMENT) setSearch(current => {
+        const next = new URLSearchParams(current);
+        next.delete('task');
+        next.delete('new');
+        return next;
+      }, { replace: true });
+    });
     return()=>{active=false;};
     // Open only the explicitly requested loaded task.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[search,tasks,loading]);
+  useEffect(() => {
+    if (!IS_COMMERCIAL_DEPLOYMENT || !canWrite || loading || search.get('new') !== '1' || search.get('task')) return;
+    const studioProject = search.get('studioProject');
+    const lead = studioProject ? leads.find(item => (item.studioProjectId?._id || item.studioProjectId) === studioProject) : null;
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      openEditor(null, studioProject ? lead?._id || '' : undefined);
+      if (studioProject && !lead) {
+        setLinkNotice('This project has no accessible linked enquiry. The new task will use the project selected below.');
+      }
+      setSearch(current => {
+        const next = new URLSearchParams(current);
+        next.delete('new');
+        next.delete('studioProject');
+        return next;
+      }, { replace: true });
+    });
+    return () => { active = false; };
+    // Consume the creation request once, after the linked project choices load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canWrite, loading, search, leads, setSearch]);
   const saveTask = async (event) => {
     event.preventDefault();
-    if (saving) return;
+    if (saving || !canWrite) return;
     if (!form.title.trim()) {
       setFormError("Give this task a title.");
       return;
@@ -257,7 +396,7 @@ export default function PostProduction() {
         );
       } else {
         response = await axios.post(
-          form.lead
+          form.lead && !IS_COMMERCIAL_DEPLOYMENT
             ? `${operationAPI}/api/leads/${form.lead}/tasks`
             : `${operationAPI}/api/tasks`,
           { ...body, status: "pending" },
@@ -282,15 +421,22 @@ export default function PostProduction() {
       setSaving(false);
     }
   };
-  const toggleTask = async (task) => {
-    if (busyId) return;
+  const updateTaskStage = async (task, changes, feedback) => {
+    if (busyId || !canWrite) return;
+    if (IS_COMMERCIAL_DEPLOYMENT) {
+      const container = workspace.current?.querySelector('.sx-task-board,.ops-table-scroll');
+      const active = document.activeElement;
+      const focus = active?.closest('[data-record-key]')?.dataset.recordKey === task._id ? active.dataset.taskAction : null;
+      previousTaskLayout.current = { container, positions: recordPositions(container), focus, id: task._id };
+    }
     setBusyId(task._id);
     try {
       const response = await axios.patch(
         `${operationAPI}/api/tasks/${task._id}`,
-        { status: task.status === "completed" ? "pending" : "completed" },
+        changes,
         operationAuth(),
       );
+      if (response.data?._id !== task._id) throw new Error("The updated task was not returned.");
       setTasks((current) =>
         current.map((item) =>
           item._id === task._id
@@ -298,17 +444,21 @@ export default function PostProduction() {
             : item,
         ),
       );
-      toast.success(
-        task.status === "completed" ? "Task reopened." : "Task completed.",
-      );
+      toast.success(feedback);
     } catch (error) {
       toast.error(operationError(error, "We couldn't update the task."));
     } finally {
       setBusyId("");
     }
   };
+  const toggleTask = task => updateTaskStage(task,
+    { status: task.status === 'completed' ? 'pending' : 'completed' },
+    task.status === 'completed' ? 'Task reopened.' : 'Task completed.');
+  const moveTask = (task, lane) => updateTaskStage(task,
+    lane.id === 'complete' ? { status: 'completed' } : { productionStage: lane.stages[0] },
+    'Task moved to ' + lane.title.toLowerCase() + '.');
   const deleteTask = async () => {
-    if (saving) return;
+    if (saving || !canDelete) return;
     setSaving(true);
     setFormError("");
     try {
@@ -329,20 +479,21 @@ export default function PostProduction() {
   };
 
   return (
-    <div className="studio-ops production-workspace-refined">
+    <div ref={workspace} className={"studio-ops production-workspace-refined" + (IS_COMMERCIAL_DEPLOYMENT ? " sx-task-page" : "")} data-task-view={IS_COMMERCIAL_DEPLOYMENT ? taskView : undefined}>
       <div className="studio-page-heading">
         <div>
 
-          <h1>Post-production</h1>
+          <WorkspaceMotionTitle>{IS_COMMERCIAL_DEPLOYMENT ? 'Tasks' : 'Post-production'}</WorkspaceMotionTitle>
           <p className="studio-muted">
-            Assign the next step, track deadlines and keep client updates clear.
+            {IS_COMMERCIAL_DEPLOYMENT && !loading && !loadError ? `${pending.length} open ${pending.length === 1 ? 'task' : 'tasks'} · ${dueSoon.length} due in the next 7 days` : 'Assign the next step, track deadlines and keep client updates clear.'}
           </p>
         </div>
-        <div className="studio-heading-actions"><ApplyProductionTemplate onApplied={fetchWorkspace} initialProject={projectFilter === 'all' || projectFilter === 'unassigned' ? '' : projectFilter} /><button className="studio-button primary" onClick={() => openEditor()}>
+        {canWrite && <div className="studio-heading-actions">{(canEnquiries || !IS_COMMERCIAL_DEPLOYMENT) && <ApplyProductionTemplate onApplied={fetchWorkspace} initialProject={projectFilter === 'all' || projectFilter === 'unassigned' ? '' : projectFilter} />}<button className="studio-button primary" onClick={() => openEditor()}>
           <Plus size={16} /> Add task
-        </button></div>
+        </button></div>}
       </div>
-      <div className="studio-metric-grid ops-metrics">
+      {!canWrite && search.get('new') === '1' && <p className="workspace-info" role="status">Your workspace access allows you to view tasks. Ask a studio administrator to create this task.</p>}
+      {IS_COMMERCIAL_DEPLOYMENT ? null : <div className="studio-metric-grid ops-metrics">
         {[
           {
             label: "Pending tasks",
@@ -384,14 +535,17 @@ export default function PostProduction() {
             <small>{metric.detail}</small>
           </div>
         ))}
-      </div>
+      </div>}
       {loadError && (
         <OperationsError onRetry={retryWorkspace}>{loadError}</OperationsError>
+      )}
+      {IS_COMMERCIAL_DEPLOYMENT && !loading && !loadError && search.has('task') && !tasks.some(task => task._id === search.get('task')) && (
+        <OperationsError onRetry={retryWorkspace}>This task is no longer available in this workspace.</OperationsError>
       )}
       <div className="ops-workspace-grid">
         <section className="studio-card ops-task-workspace">
           <div className="ops-section-heading">
-            <div>
+            {!IS_COMMERCIAL_DEPLOYMENT && <div>
               <h2 className="studio-section-title">
                 Task workspace{" "}
                 <span className="ops-count">
@@ -401,8 +555,10 @@ export default function PostProduction() {
               <p className="studio-muted">
                 Open a task to edit its brief, assignment or client update.
               </p>
-            </div>
-            <ListChecks size={19} className="ops-quiet-icon" />
+            </div>}
+            {IS_COMMERCIAL_DEPLOYMENT ? <RecordViewSwitch value={taskView} onChange={chooseTaskView} label="Task view"
+              className="sx-task-view-switch" surfaceSelector=".sx-task-board,.ops-table-scroll"
+              views={[{ id: 'board', label: 'Board', icon: Columns3 }, { id: 'list', label: 'List', icon: List }]} /> : <ListChecks size={19} className="ops-quiet-icon" />}
           </div>
           <div className="studio-phone-filter"><StudioSelect aria-label="Filter tasks by status" value={filter} onChange={event=>setFilter(event.target.value)}>{[{id:"all",label:"All tasks",count:tasks.length},{id:"pending",label:"Pending",count:pending.length},{id:"completed",label:"Completed",count:completed.length},{id:"overdue",label:"Overdue",count:overdue.length}].map(tab=><option key={tab.id} value={tab.id}>{tab.label} · {tab.count}</option>)}</StudioSelect></div><div className="studio-tabs ops-tabs" aria-label="Filter tasks">
             {[
@@ -462,6 +618,18 @@ export default function PostProduction() {
             </label>
           </div>
           {(query || projectFilter !== "all" || filter !== "all") && <div className="production-filter-feedback"><span>Filtered task view</span><StudioButton variant="ghost" onClick={() => { setQuery(""); setProjectFilter("all"); setFilter("all"); }}>Clear filters</StudioButton></div>}
+          {nextTask && <ScheduledWorkAction
+            title={'Next task · ' + nextTask.title}
+            detail={[
+              getProject(nextTask)?.name || (getLeadId(nextTask) ? 'Linked project' : 'Studio task'),
+              Number.isFinite(Date.parse(nextTask.dueDate))
+                ? (isOverdue(nextTask, today) ? 'Overdue · ' : 'Due ') + operationDate(nextTask.dueDate)
+                : 'No due date yet',
+            ].join(' · ')}
+            action={canWrite && !Number.isFinite(Date.parse(nextTask.dueDate)) ? 'Set due date' : 'Review task'}
+            onOpen={() => openEditor(nextTask)}
+            disabled={Boolean(busyId)}
+          />}
           {loading ? (
             <OperationsLoading label="Loading production tasks…" />
           ) : loadError && !tasks.length ? (
@@ -471,7 +639,7 @@ export default function PostProduction() {
               <p>Try again to reconnect to your production workspace.</p>
             </div>
           ) : filteredTasks.length ? (
-            <div className="ops-table-scroll">
+            IS_COMMERCIAL_DEPLOYMENT && taskView === 'board' ? <CommercialTaskBoard tasks={filteredTasks} getProject={getProject} crew={crew} today={today} busyId={busyId} openEditor={openEditor} toggleTask={toggleTask} canWrite={canWrite} canDelete={canDelete} moveTask={moveTask} requestDelete={task => { setDeleting(task); setFormError(''); }} /> : <div className="ops-table-scroll">
               <table role="table" aria-label="Production tasks" className="studio-table ops-task-table studio-phone-record-table">
                 <thead role="rowgroup">
                   <tr role="row">
@@ -490,15 +658,15 @@ export default function PostProduction() {
                     const done = task.status === "completed";
                     return (
                       <tr role="row"
-                        key={task._id}
+                        key={task._id} data-record-key={task._id}
                         aria-busy={busyId === task._id}
                         className={done ? "ops-task-done" : ""}
                       >
                         <td role="cell" data-label="Task & project">
                           <div className="ops-task-title">
                             <button
-                              className={`ops-complete-button ${done ? "is-complete" : ""}`}
-                              disabled={!!busyId}
+                              data-task-action="complete" className={`ops-complete-button ${done ? "is-complete" : ""}`}
+                              disabled={!!busyId || !canWrite}
                               onClick={() => toggleTask(task)}
                               aria-label={`${done ? "Reopen" : "Complete"} task: ${task.title}`}
                             >
@@ -510,7 +678,7 @@ export default function PostProduction() {
                             </button>
                             <div>
                               <button
-                                className="ops-title-button"
+                                data-task-action="open" className="ops-title-button"
                                 disabled={!!busyId}
                                 onClick={() => openEditor(task)}
                               >
@@ -570,18 +738,19 @@ export default function PostProduction() {
                             <span />
                             {done ? "Completed" : "Pending"}
                           </span>
+                          {IS_COMMERCIAL_DEPLOYMENT && <small className="sx-task-list-stage">{task.productionStage || 'Not started'}</small>}
                         </td>
                         <td role="cell" data-label="Actions">
                           <div className="ops-row-actions">
-                            <button
+                            {canWrite && <button
                               className="ops-icon-button"
                               disabled={!!busyId}
                               aria-label={`Edit task: ${task.title}`}
                               onClick={() => openEditor(task)}
                             >
                               <Pencil size={15} />
-                            </button>
-                            <button
+                            </button>}
+                            {canDelete && <button
                               className="ops-icon-button"
                               disabled={!!busyId}
                               aria-label={`Delete task: ${task.title}`}
@@ -591,7 +760,7 @@ export default function PostProduction() {
                               }}
                             >
                               <Trash2 size={15} />
-                            </button>
+                            </button>}
                           </div>
                         </td>
                       </tr>
@@ -625,7 +794,7 @@ export default function PostProduction() {
                   Clear filters
                 </button>
               ) : (
-                <button className="studio-button" onClick={() => openEditor()}>
+                canWrite && <button className="studio-button" onClick={() => openEditor()}>
                   <Plus size={15} /> Add your first task
                 </button>
               )}
@@ -639,7 +808,7 @@ export default function PostProduction() {
                   ? "Task data unavailable"
                   : `${filteredTasks.length} of ${tasks.length} tasks`}
             </span>
-            <span>Pending → Completed</span>
+            <span>{IS_COMMERCIAL_DEPLOYMENT && taskView === 'board' ? 'Grouped by production stage' : 'Pending → Completed'}</span>
           </div>
         </section>
         <aside className="ops-rail">
@@ -683,8 +852,8 @@ export default function PostProduction() {
               ) : (
                 <div className="ops-rail-empty">
                   <CalendarDays size={25} />
-                  <p>No upcoming deadlines.</p>
-                  <small>Add a due date to bring a task into focus.</small>
+                  <p>{IS_COMMERCIAL_DEPLOYMENT && tasks.length > 0 && !pending.length ? 'All production tasks are complete.' : 'No upcoming deadlines.'}</p>
+                  {(pending.length > 0 || !IS_COMMERCIAL_DEPLOYMENT) && <small>Add a due date to bring a task into focus.</small>}
                 </div>
               )}
             </div>
@@ -718,7 +887,14 @@ export default function PostProduction() {
           </section>
         </aside>
       </div>
-      {editing !== undefined && (
+      {!canWrite && editing && (
+        <OperationsModal title={editing.title} onClose={() => setEditing(undefined)}>
+          <p>{getProject(editing)?.name || (getLeadId(editing) ? 'Linked project' : 'Studio task')}</p>
+          <p>{editing.status === 'completed' ? 'Completed' : editing.productionStage || 'Not started'} · {editing.dueDate ? 'Due ' + operationDate(editing.dueDate) : 'No due date'}</p>
+          {editing.clientUpdate && <p>{editing.clientUpdate}</p>}
+        </OperationsModal>
+      )}
+      {canWrite && editing !== undefined && (
         <OperationsModal
           title={editing ? "Edit production task" : "Add production task"}
           description="Give the next step a name, a project and a little clarity."
@@ -743,6 +919,7 @@ export default function PostProduction() {
             className="ops-form production-task-editor"
           >
             {formError && <OperationsError>{formError}</OperationsError>}
+            {linkNotice && <p className="studio-muted">{linkNotice}</p>}
             <label className="studio-field">
               <span>
                 Internal task title <b>*</b>
@@ -930,7 +1107,7 @@ export default function PostProduction() {
           </form>
         </OperationsModal>
       )}
-      {deleting && (
+      {canDelete && deleting && (
         <OperationsModal
           title="Delete this task?"
           description="This removes the task from the active production workspace and its client update. Owners can restore eligible records in Settings → Backups & recovery."

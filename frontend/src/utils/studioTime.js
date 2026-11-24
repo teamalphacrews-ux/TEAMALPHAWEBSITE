@@ -1,3 +1,5 @@
+import { displayDateTime } from './displayFormatters.js';
+
 export const DEFAULT_STUDIO_TIMEZONE = 'Asia/Kolkata';
 const validTimezones = new Map();
 const formatters = new Map();
@@ -40,13 +42,13 @@ export function studioDateTimeInput(value, timezone = DEFAULT_STUDIO_TIMEZONE) {
 export function formatStudioDate(value, options = {}, timezone = DEFAULT_STUDIO_TIMEZONE) {
   if (!value) return 'Not scheduled';
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', ...options, timeZone: studioTimezone(timezone) }).format(date) : 'Not scheduled';
+  return Number.isFinite(date.getTime()) ? displayDateTime('en-IN', { day: 'numeric', month: 'short', year: 'numeric', ...options, timeZone: studioTimezone(timezone) }).format(date) : 'Not scheduled';
 }
 
 export function formatStudioTime(value, timezone = DEFAULT_STUDIO_TIMEZONE) {
   if (value == null || value === '') return 'Time not set';
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('en-IN', { timeZone: studioTimezone(timezone), hour: 'numeric', minute: '2-digit' }).format(date) : 'Time not set';
+  return Number.isFinite(date.getTime()) ? displayDateTime('en-IN', { timeZone: studioTimezone(timezone), hour: 'numeric', minute: '2-digit' }).format(date) : 'Time not set';
 }
 
 export const shiftDayKey = (key, days) => {

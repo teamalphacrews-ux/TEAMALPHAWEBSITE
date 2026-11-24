@@ -1,7 +1,50 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { eventOnStudioDay, formatStudioTime, studioDateTimeInput, studioDateTimeToISO, studioDayBounds, studioDayKey, studioTimezone } from '../src/utils/studioTime.js';
-import { calendarMonthGrid, calendarMonthLoad, shiftCalendarMonth } from '../src/admin/components/calendar/calendarData.js';
+import { calendarCreationRequest, calendarMonthGrid, calendarMonthLoad, indexCalendarDays, shiftCalendarMonth } from '../src/admin/components/calendar/calendarData.js';
+
+test('indexed calendar tiles match daily agendas across DST and adjacent months in source order', () => {
+  const records = [
+    { start: '2026-10-25T23:00:00Z', end: '2026-11-12T00:00:00Z' },
+    { allDay: true, startDate: '2026-10-30', endDateExclusive: '2026-11-03' },
+    { start: '2026-11-01T04:00:00Z', end: '2026-11-02T05:00:00Z' },
+    { start: 'invalid', end: '2026-11-01T00:00:00Z' },
+    { start: '2026-11-01T01:00:00Z', end: '2026-11-01T00:00:00Z' },
+  ];
+  const days = calendarMonthGrid('2026-11');
+  for (const zone of ['America/New_York', 'Asia/Kolkata']) {
+    const index = indexCalendarDays(records, days, zone);
+    for (const day of days) {
+      assert.deepEqual(index.get(day), records.filter(event => eventOnStudioDay(event, day, zone)));
+    }
+    assert.deepEqual(calendarMonthLoad(records, '2026-11', zone, index), calendarMonthLoad(records, '2026-11', zone));
+  }
+});
+
+test('switching between projects for the same contact starts a fresh calendar editor with the requested project', () => {
+  const options = { day: '2026-11-22', timezone: 'Asia/Kolkata', leads: [
+    { _id: 'first-enquiry', studioProjectId: 'first' }, { _id: 'second-enquiry', studioProjectId: 'second' },
+  ] };
+  const first = calendarCreationRequest(new URLSearchParams('new=1&contact=client&project=first'), options);
+  const second = calendarCreationRequest(new URLSearchParams('new=1&contact=client&project=second'), options);
+  assert.notEqual(first.key, second.key);
+  assert.equal(first.event.lead, 'first-enquiry');
+  assert.equal(second.event.lead, 'second-enquiry');
+  assert.equal(second.event.studioProjectId, 'second');
+  assert.equal(second.event.contactId, 'client');
+});
+
+test('calendar project drafts mount after the first lookup and retain their editor identity across refreshes', () => {
+  const params = new URLSearchParams('new=1&project=first');
+  const initial = { day: '2026-11-22', timezone: 'Asia/Kolkata', loading: true };
+  assert.equal(calendarCreationRequest(params, initial), null);
+  const loaded = { ...initial, loading: false, leads: [] };
+  const first = calendarCreationRequest(params, loaded);
+  assert.equal(calendarCreationRequest(params, { ...loaded, loading: true }).key, first.key);
+  const refreshed = { ...loaded, leads: [{ _id: 'newly-linked', studioProjectId: 'first' }], timezone: 'UTC' };
+  assert.equal(calendarCreationRequest(params, refreshed).key, first.key);
+  assert.notEqual(calendarCreationRequest(new URLSearchParams('new=1&project=second'), refreshed).key, first.key);
+});
 
 test('studio dates and input times are independent of the viewing device timezone', () => {
   const instant = '2026-10-24T20:00:00.000Z';

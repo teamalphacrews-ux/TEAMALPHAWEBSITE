@@ -9,7 +9,11 @@ import toast from "react-hot-toast";
 import { X, CalendarDays, MapPin, Mail, Phone, ArrowUpRight, Pencil, Check, Plus, Trash2, Circle, CheckCircle2, Users, Wallet, FolderOpen, FileText, Loader2 } from "lucide-react";
 import StudioLeadForm from "./StudioLeadForm";
 import StudioButton from '../common/StudioButton';
-import { enquiryProjectId, enquiryQuoteId } from '../../../utils/enquiryWorkflow';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
+import { studioDayKey } from '../../../utils/studioTime';
+import { useStudioPreferences } from '../common/StudioPreferences';
+import { canWriteWorkspaceModule } from '../../../utils/workspaceActions';
+import { enquiryNextStep, enquiryProjectId, enquiryQuoteId } from '../../../utils/enquiryWorkflow';
 import useStudioDialog from "./useStudioDialog";
 import { studioApi, studioAuth, initials, statusClass, leadStatusLabel, displayDate, dateInput, money, paidAmount, remainingAmount, populatedTasks, mergeLead } from "./leadUtils";
 
@@ -75,6 +79,8 @@ export default function StudioLeadDetails({ lead: initialLead, onClose, onUpdate
   const inFlight = useRef(false);
   const dialogRef = useStudioDialog(onClose, { canClose: !saving && !workflowBusy });
   const [notes, setNotes] = useState(initialLead.notes || "");
+  const followUpField = useRef(null);
+  const { preferences } = useStudioPreferences();
   const [followUp, setFollowUp] = useState(dateInput(initialLead.followUpDate));
   const [deliveryPasswordChanged, setDeliveryPasswordChanged] = useState(false);
   const [delivery, setDelivery] = useState({ cloudLink: initialLead.cloudLink || "", cloudPassword: initialLead.cloudPassword || "" });
@@ -104,16 +110,27 @@ export default function StudioLeadDetails({ lead: initialLead, onClose, onUpdate
   const progress = tasks.length ? Math.round(completed / tasks.length * 100) : 0;
   const safeCloudLink = /^https?:\/\//i.test(lead.cloudLink || "") ? lead.cloudLink : null;
 
+  const guided = IS_COMMERCIAL_DEPLOYMENT && !isProject;
+  const canUpdate = !guided || canWriteWorkspaceModule(user, 'enquiries');
+  const canCreateProject = canUpdate && (!guided || canWriteWorkspaceModule(user, 'projects'));
+  const canProject = Boolean(onOpenProject) && hasModuleAccess(user, 'projects') &&
+    (!guided || enquiryProjectId(lead) || canCreateProject);
+  const canQuote = Boolean(onPrepareQuote) && hasModuleAccess(user, 'quotations') &&
+    (guided ? enquiryQuoteId(lead) || (canCreateProject && canWriteWorkspaceModule(user, 'quotations')) : hasModuleAccess(user, 'projects'));
+  const next = guided ? enquiryNextStep(lead, {
+    canProject, canQuote, canUpdate, today: studioDayKey(new Date(), preferences.timezone === 'studio' ? user?.workspace?.timezone : preferences.timezone),
+  }) : null;
   return createPortal(<div className="studio-modal-overlay studio-crm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving && !workflowBusy) onClose(); }}>
     <section ref={dialogRef} tabIndex={-1} className={`studio-modal studio-crm-detail ${!isProject ? "studio-crm-enquiry-detail" : ""}`} role="dialog" aria-modal="true" aria-labelledby="studio-lead-detail-title">
       <header className="studio-crm-detail-header"><div className="studio-crm-detail-identity"><span className="studio-crm-avatar large">{initials(lead.name)}</span><div><span className="studio-eyebrow">{isProject ? "PROJECT WORKSPACE" : "ENQUIRY DETAILS"}</span><h2 id="studio-lead-detail-title">{lead.name}</h2><span className={`studio-badge studio-crm-badge ${statusClass(lead.status)}`}>{leadStatusLabel(lead.status)}</span></div></div><div className="studio-crm-detail-actions"><button className="studio-button small" disabled={saving || Boolean(workflowBusy)} onClick={() => setEditing(true)}><Pencil size={15} />Edit details</button><button className="studio-icon-button" aria-label="Close details" disabled={saving || Boolean(workflowBusy)} onClick={onClose}><X size={21} /></button></div></header>
       <div className="studio-tabs studio-crm-detail-tabs">{[{ id: "overview", title: "Overview" }, { id: "tasks", title: `Tasks${tasks.length ? ` · ${tasks.length}` : ""}` }, { id: "delivery", title: "Delivery" }].filter(item => item.id === 'overview' || (item.id === 'tasks' ? production : galleries)).map((item) => <button key={item.id} className={tab === item.id ? "active" : ""} aria-pressed={tab === item.id} onClick={() => setTab(item.id)}>{item.title}</button>)}</div>
       <div className="studio-crm-detail-body">
-        {(onOpenProject || onPrepareQuote) && <section className="studio-card studio-crm-next-steps" aria-label="Enquiry next steps">
-          <div><h3>Continue this enquiry</h3><p className="studio-muted">Keep the client, project and quotation connected.</p></div>
+        {(guided ? tab === "overview" : Boolean(onOpenProject || onPrepareQuote)) && <section className="studio-card studio-crm-next-steps" aria-label="Enquiry next steps">
+          <div><h3>{guided ? 'Next step' : 'Continue this enquiry'}</h3><p className="studio-muted">{guided ? next.description : 'Keep the client, project and quotation connected.'}</p></div>
           <div className="studio-crm-workflow-actions">
-            {onOpenProject && hasModuleAccess(user, 'projects') && <StudioButton type="button" icon={FolderOpen} loading={workflowBusy === 'project'} disabled={saving || Boolean(workflowBusy) || (lead.status === 'Archived' && !enquiryProjectId(lead))} loadingLabel="Preparing linked project" onClick={() => onOpenProject(lead)}>{enquiryProjectId(lead) ? 'Open project' : 'Create project'}</StudioButton>}
-            {onPrepareQuote && hasModuleAccess(user, 'quotations') && hasModuleAccess(user, 'projects') && <StudioButton type="button" variant="primary" icon={FileText} loading={workflowBusy === 'quote'} disabled={saving || Boolean(workflowBusy) || (lead.status === 'Archived' && !enquiryQuoteId(lead))} loadingLabel="Preparing linked quotation" onClick={() => onPrepareQuote(lead)}>{enquiryQuoteId(lead) ? 'View quotation' : 'Create quotation'}</StudioButton>}
+            {next?.action === 'followup' && <StudioButton variant="primary" icon={CalendarDays} disabled={saving || Boolean(workflowBusy)} onClick={() => followUpField.current?.focus()}>{next.label}</StudioButton>}
+            {canProject && (!guided || lead.status !== 'Archived' || enquiryProjectId(lead)) && <StudioButton type="button" variant={next?.action === 'project' ? 'primary' : 'secondary'} icon={FolderOpen} loading={workflowBusy === 'project'} disabled={saving || Boolean(workflowBusy) || (lead.status === 'Archived' && !enquiryProjectId(lead))} loadingLabel="Preparing linked project" onClick={() => onOpenProject(lead)}>{enquiryProjectId(lead) ? 'Open project' : 'Create project'}</StudioButton>}
+            {canQuote && (!guided || lead.status !== 'Archived' || enquiryQuoteId(lead)) && <StudioButton type="button" variant={!guided || next.action === 'quote' ? 'primary' : 'secondary'} icon={FileText} loading={workflowBusy === 'quote'} disabled={saving || Boolean(workflowBusy) || (lead.status === 'Archived' && !enquiryQuoteId(lead))} loadingLabel="Preparing linked quotation" onClick={() => onPrepareQuote(lead)}>{enquiryQuoteId(lead) ? 'View quotation' : 'Create quotation'}</StudioButton>}
           </div>
           {workflowError && <p className="studio-error" role="alert">{workflowError}</p>}
         </section>}
@@ -123,7 +140,7 @@ export default function StudioLeadDetails({ lead: initialLead, onClose, onUpdate
           <section className="studio-card studio-crm-detail-card studio-crm-notes"><div className="studio-crm-section-heading"><div><h3>Studio notes</h3></div></div><form onSubmit={(event) => { event.preventDefault(); patch({ notes }, "Notes saved"); }}><textarea aria-label="Internal studio notes" rows={4} className="studio-input" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Decisions, preferences and details to remember…" /><div className="studio-crm-card-footer"><button className="studio-button small" disabled={saving || notes === (lead.notes || "")}>Save notes</button></div></form></section>
         </div><div className="studio-crm-detail-stack">
           {finance && <section className="studio-card studio-crm-detail-card studio-crm-payment"><div className="studio-crm-section-heading"><div><span className="studio-eyebrow">PROJECT FINANCES</span><h3>Payment summary</h3></div><Wallet size={19} /></div><span className={`studio-badge studio-crm-badge ${statusClass(lead.paymentStatus)}`}>{lead.paymentStatus || "Unpaid"}</span><div className="studio-crm-payment-value">{money(lead.totalAmount)}<small>PROJECT VALUE</small></div><dl><div><dt>Received</dt><dd>{money(paidAmount(lead))}</dd></div><div><dt>Balance due</dt><dd>{money(remainingAmount(lead))}</dd></div></dl><div className="studio-crm-payment-progress"><span style={{ width: `${Number(lead.totalAmount) > 0 ? Math.min(100, paidAmount(lead) / Number(lead.totalAmount) * 100) : 0}%` }} /></div>{onGenerateInvoice && hasModuleAccess(user, 'invoices') && <button className="studio-button studio-crm-full-button" onClick={() => onGenerateInvoice(lead)}><FileText size={16} />{existingInvoice ? "View invoice" : "Create invoice"}<ArrowUpRight size={15} /></button>}<Link className="studio-crm-text-link" to="/admin/finance">Open finance <ArrowUpRight size={14} /></Link></section>}
-          <section className="studio-card studio-crm-detail-card studio-crm-followup"><div className="studio-crm-section-heading"><div><h3>Next follow-up</h3></div></div><p className="studio-crm-followup-date">{displayDate(lead.followUpDate, "No follow-up scheduled")}</p><form onSubmit={(event) => { event.preventDefault(); patch({ followUpDate: followUp || null, ...(lead.status !== "Converted" && lead.status !== "Archived" && followUp ? { status: "Follow-up" } : {}) }, followUp ? "Follow-up scheduled" : "Follow-up cleared"); }}><input aria-label="Next follow-up date" type="date" className="studio-input" value={followUp} onChange={(event) => setFollowUp(event.target.value)} /><div className="studio-crm-card-footer"><button className="studio-button small" disabled={saving}>Save follow-up</button>{lead.followUpDate && <button type="button" className="studio-crm-text-link" onClick={() => { setFollowUp(""); patch({ followUpDate: null }, "Follow-up completed"); }} disabled={saving}>Mark complete</button>}</div></form></section>
+          <section className="studio-card studio-crm-detail-card studio-crm-followup"><div className="studio-crm-section-heading"><div><h3>Next follow-up</h3></div></div><p className="studio-crm-followup-date">{displayDate(lead.followUpDate, "No follow-up scheduled")}</p><form onSubmit={(event) => { event.preventDefault(); patch({ followUpDate: followUp || null, ...(lead.status !== "Converted" && lead.status !== "Archived" && followUp ? { status: "Follow-up" } : {}) }, followUp ? "Follow-up scheduled" : "Follow-up cleared"); }}><input ref={followUpField} aria-label="Next follow-up date" type="date" className="studio-input" value={followUp} onChange={(event) => setFollowUp(event.target.value)} /><div className="studio-crm-card-footer"><button className="studio-button small" disabled={saving}>Save follow-up</button>{lead.followUpDate && <button type="button" className="studio-crm-text-link" onClick={() => { setFollowUp(""); patch({ followUpDate: null }, "Follow-up completed"); }} disabled={saving}>Mark complete</button>}</div></form></section>
           {production && <section className="studio-card studio-crm-detail-card studio-crm-workflow"><div className="studio-crm-workflow-number">{completed}<small> / {tasks.length} tasks</small></div><div className="studio-crm-payment-progress"><span style={{ width: `${progress}%` }} /></div><button className="studio-crm-text-link" onClick={() => setTab("tasks")}>Manage checklist <ArrowUpRight size={14} /></button></section>}
         </div></div>}
         {production && tab === "tasks" && <TaskWorkspace lead={lead} onChange={(next) => { setLead(next); onUpdate(next); }} />}

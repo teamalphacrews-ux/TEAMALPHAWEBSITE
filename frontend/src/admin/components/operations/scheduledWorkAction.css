@@ -1,0 +1,27 @@
+.studio-commercial-glass .sx-scheduled-next {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+  padding: 4px 0 16px;
+  border-bottom: 1px solid var(--studio-border);
+  color: var(--studio-text);
+}
+.studio-commercial-glass .sx-scheduled-next > div {
+  flex: 1 1 18rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.studio-commercial-glass .sx-scheduled-next strong {
+  font-size: 1rem;
+  line-height: 1.45;
+}
+.studio-commercial-glass .sx-scheduled-next p {
+  margin: 4px 0 0;
+  color: var(--studio-muted);
+  font-size: .875rem;
+  line-height: 1.5;
+}
+.studio-commercial-glass .sx-scheduled-next button { min-height: 44px; }

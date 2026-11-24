@@ -1,10 +1,11 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Fragment, Suspense, lazy } from "react";
+import { Fragment, Suspense, lazy, useEffect } from "react";
 import { useAuth } from './context/AuthContext';
 import { StudioPreviewStart, StudioPreviewNavigation } from './native/StudioPreview';
 import { IS_COMMERCIAL_DEPLOYMENT, SAAS_RELEASE_ENABLED } from './saas/release';
 import StudioProductMetadata from './components/StudioProductMetadata';
 import StudioProductBrand from './components/StudioProductBrand';
+import { workspaceId } from './saas/workspaceValues';
 
 // The marketing surface authors its own motion. Load the personal site's route
 // transition runtime only when that deployment is actually rendered.
@@ -46,7 +47,22 @@ const SharedQuotation = lazy(() => import("./pages/SharedQuotation"));
 const AuthPage = lazy(() => import("./components/AuthPage"));
 const SignupPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/AuthPages').then(module => ({ default: module.SignupPage }))) : null;
 const AcceptInvitationPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/AuthPages').then(module => ({ default: module.AcceptInvitationPage }))) : null;
-const ProductHome = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/ProductHome')) : null;
+// A client-side redirect can return an existing app session to the marketing document.
+function OpenCommercialHome() {
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const home = url.pathname === '/' ? '/' : '/studio-os';
+    if (url.pathname === home) window.location.reload();
+    else {
+      url.pathname = home;
+      window.location.replace(url.href);
+    }
+  }, []);
+  return null;
+}
+const ProductHome = IS_COMMERCIAL_DEPLOYMENT && import.meta.env.PROD
+  ? OpenCommercialHome : SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/ProductHome')) : null;
+const ProductDocs = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/ProductDocs')) : null;
 const ProductLoginPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/SocialAuth').then(module => ({ default: module.ProductLoginPage }))) : null;
 const SocialCallbackPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/SocialAuth').then(module => ({ default: module.SocialCallbackPage }))) : null;
 const WorkspacePage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/WorkspacePage')) : null;
@@ -86,9 +102,15 @@ const AdminUserManagement = lazy(() => import("./admin/pages/UserManagement"));
 
 import { Toaster } from "react-hot-toast";
 
+const WorkspaceMotionRoutes = lazy(() => import('./admin/components/common/WorkspaceMotionRoutes'));
+
 function App() {
   const { user } = useAuth();
   const location = useLocation();
+  const inWorkspace = /^\/admin(?:\/|$)/.test(location.pathname);
+  const StudioRoutes = IS_COMMERCIAL_DEPLOYMENT && inWorkspace && user?.role === 'admin' ? WorkspaceMotionRoutes : Routes;
+  const workspaceOwner = user && (user._id || user.id || user.email || '') + '/' + workspaceId(user.workspace);
+  const isDocsPage = /^\/(?:studio-os\/)?docs(?:\/|$)/.test(location.pathname);
   const isStudioPage = IS_COMMERCIAL_DEPLOYMENT || location.pathname.startsWith("/studio-os") || location.pathname === "/auth" || location.pathname === '/signup' || /^\/(?:join|invite)\//.test(location.pathname) || location.pathname === "/admin" || location.pathname.startsWith("/admin/");
 
   return (
@@ -98,11 +120,11 @@ function App() {
       <Toaster position="top-right" containerStyle={isStudioPage ? { top: 'calc(80px + env(safe-area-inset-top, 0px))' } : undefined} toastOptions={{ className: isStudioPage ? "studio-toast" : undefined }} />
       <Suspense
         fallback={
-          isStudioPage ? <div className="studio-product-loading" role="status"><StudioProductBrand /><p>Opening your workspace…</p></div> : <div className="flex h-screen w-full items-center justify-center text-xl">Loading...</div>
+          isStudioPage ? <div className="studio-product-loading" role="status" style={isDocsPage ? { background: '#000', color: '#c8c8cf' } : undefined}><StudioProductBrand tone={isDocsPage ? 'inverse' : 'auto'} /><p>{isDocsPage ? 'Opening guides…' : 'Opening your workspace…'}</p></div> : <div className="flex h-screen w-full items-center justify-center text-xl">Loading...</div>
         }
       >
         <RoutePresence>
-          <Routes location={location}>
+          <StudioRoutes location={location} owner={workspaceOwner}>
             <Route path="/quote/:token" element={<SharedQuotation />} />
             <Route path="/invoice/:token" element={<PublicInvoice />} />
             <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
@@ -140,6 +162,9 @@ function App() {
             {import.meta.env.DEV && <Route path="/native-preview/start" element={<StudioPreviewStart />} />}
             {SAAS_RELEASE_ENABLED && <><Route path="/signup" element={<SignupPage />} />
             <Route path="/studio-os" element={<ProductHome />} />
+            <Route path="/studio-os/docs" element={<ProductDocs />} />
+            <Route path="/studio-os/docs/:slug" element={<ProductDocs />} />
+            {IS_COMMERCIAL_DEPLOYMENT && <><Route path="/docs" element={<ProductDocs />} /><Route path="/docs/:slug" element={<ProductDocs />} /></>}
             <Route path="/studio-os/login" element={<ProductLoginPage />} />
             <Route path="/studio-os/auth/callback" element={<SocialCallbackPage />} />
             <Route path="/join/:token" element={<AcceptInvitationPage />} />
@@ -200,7 +225,7 @@ function App() {
                 <Route path="subscription" element={<WorkspacePage initialTab="subscription" />} /></>}
               </Route>
             </Route>
-          </Routes>
+          </StudioRoutes>
         </RoutePresence>
       </Suspense>
     </div>

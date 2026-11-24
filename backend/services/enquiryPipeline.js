@@ -3,6 +3,12 @@
 const same = (a, b) => String(a?._id || a || "") === String(b?._id || b || "");
 const id = value => value?._id || value;
 const fail = message => Object.assign(new Error(message), { status: 409 });
+const sameValue = (previous, next) => {
+  if (next === null) return previous === null;
+  if (next instanceof Date) return previous instanceof Date && +previous === +next;
+  if (next && typeof next === "object") return same(previous, next);
+  return previous === next;
+};
 function authoritativeQuote(quotes) {
   const rank = { Accepted: 3, Sent: 2, Draft: 1 };
   return quotes.filter(q => rank[q.status]).sort((a, b) =>
@@ -26,8 +32,7 @@ function createPipeline({ Lead, Project, Contact, Quotation, Event }) {
     if (explicitLinks.some(value => lead && !same(value, lead._id)) || (!lead && explicitLinks.length > 1))
       throw fail("This project has conflicting enquiry links. Review them before continuing.");
     if (!lead) {
-      const quotes = await Quotation.find({ studioProjectId: project._id });
-      const candidateId = project.leadId || quotes.find(q => q.lead)?.lead;
+      const candidateId = project.leadId || linkedQuotes.find(q => q.lead)?.lead;
       if (candidateId) {
         const candidate = await Lead.findById(id(candidateId));
         if (candidate) {
@@ -68,13 +73,15 @@ function createPipeline({ Lead, Project, Contact, Quotation, Event }) {
       } else if (!quote && lead.status !== "Converted") {
         Object.assign(values, { quotationId: null, quotationStatus: "", quotationNumber: "" });
       }
+      if (Object.entries(values).every(([key, value]) => sameValue(lead[key], value))) break;
       const updated = await Lead.findOneAndUpdate({ _id: lead._id, status: lead.status }, { $set: values }, { new: true, runValidators: true });
       if (updated) { lead = updated; break; }
       lead = await Lead.findById(lead._id);
       if (!lead) throw fail("The enquiry was removed while linking. Please retry.");
       if (attempt === 3) throw fail("The enquiry changed. Please retry.");
     }
-    await Project.updateOne({ _id: project._id }, { $set: { leadId: lead._id } });
+    if (!same(project.leadId, lead._id))
+      await Project.updateOne({ _id: project._id, leadId: { $ne: lead._id } }, { $set: { leadId: lead._id } });
     await Quotation.updateMany({ studioProjectId: project._id, lead: { $ne: lead._id } }, { $set: { lead: lead._id } });
     if (Event) await Event.updateMany({ studioProjectId: project._id, lead: { $ne: lead._id } }, { $set: { lead: lead._id } });
     if (lead.status === "Converted") await Project.updateOne({ _id: project._id, status: "Inquiry" }, { $set: { status: "Booked" } });
@@ -113,17 +120,21 @@ function createPipeline({ Lead, Project, Contact, Quotation, Event }) {
       name: [contact.firstName, contact.lastName].filter(Boolean).join(" "), email: contact.email, phone: contact.phone || "",
     } });
   }
-  async function reconcile() {
-    // Read repair covers projects created before the unified workflow was added.
-    // Return an explicit warning rather than hiding a broken historic link.
-    const projects = await Project.find().sort({ createdAt: -1 });
+  async function reconcile(options) {
+    // Operators can backfill legacy links in bounded batches without making page
+    // reads create records or change timestamps.
+    const projects = options ? await Project.find(options.after ? { _id: { $gt: options.after } } : {})
+      .select("_id").sort({ _id: 1 }).limit(options.limit + 1).lean()
+      : await Project.find().sort({ createdAt: -1 });
+    const more = options && projects.length > options.limit;
+    if (more) projects.pop();
     const warnings = [];
     for (let start = 0; start < projects.length; start += 10) {
       await Promise.all(projects.slice(start, start + 10).map(project => ensureProject(project._id).catch(err => {
-        warnings.push({ projectId: String(project._id), message: err.message });
+        warnings.push({ projectId: String(project._id), message: err.status === 409 ? err.message : "The project link could not be repaired. Retry this batch." });
       })));
     }
-    return warnings;
+    return options ? { attempted: projects.length, nextAfter: more ? String(projects.at(-1)._id) : null, warnings } : warnings;
   }
   async function syncFromEnquiry(lead, edited) {
     if (!lead.studioProjectId) return;

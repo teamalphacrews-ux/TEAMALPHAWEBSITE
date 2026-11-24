@@ -1,0 +1,25 @@
+.studio-modal-overlay:has(.sx-sidebar-order-editor) { z-index: 220; }
+.sx-sidebar-order-editor { display: grid; gap: 18px; }
+.sx-sidebar-order-editor .studio-field { display: grid; min-width: 0; gap: 6px; }
+.sx-sidebar-order-editor select { width: 100%; min-height: 44px; }
+.sx-sidebar-order-list { margin: 0; padding: 0; list-style: none; }
+.sx-sidebar-order-list li {
+  display: grid;
+  grid-template-columns: 1.5em minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+  padding-block: 5px;
+  color: var(--studio-text);
+  overflow-wrap: anywhere;
+}
+.sx-sidebar-order-list li + li { border-top: 1px solid var(--studio-border); }
+.sx-sidebar-order-position { color: var(--studio-muted); font-variant-numeric: tabular-nums; }
+.sx-sidebar-order-list button { min-width: 44px; min-height: 44px; }
+.sx-sidebar-order-list button[aria-disabled=true] { color: var(--studio-muted); opacity: .5; cursor: default; }
+.sx-order-announcement { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#sx-workspace-shell .sx-desk-organize { width: 100%; }
+.studio-iphone-more-overlay button.sx-more-organize {
+  width: 100%; background: transparent; border-inline: 0; text-align: start;
+  font: inherit; color: var(--studio-text); cursor: pointer;
+}
+.studio-iphone-more-overlay button.sx-more-organize > svg { margin: 0 5px; }

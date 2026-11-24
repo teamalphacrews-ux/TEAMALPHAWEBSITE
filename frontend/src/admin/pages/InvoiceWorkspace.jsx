@@ -1,15 +1,25 @@
+import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
+import { draftScope } from '../../offline/draftVault';
+import { invoiceEditorKey, loadInvoiceRecord } from '../components/operations/invoiceNavigation';
+import { invoiceCreationKey, invoiceEdits, rebaseInvoiceEdits } from '../components/operations/invoiceSave';
 import { useAuth } from '../../context/AuthContext';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
+import DocumentNextStep from '../components/operations/DocumentNextStep';
+import { documentClientContext, projectIncludesClient, invoiceNextStep } from '../components/operations/documentGuidance';
 import { hasModuleAccess } from '../../utils/moduleAccess';
 import StudioSelect from '../components/common/StudioSelect';
 import StudioButton from '../components/common/StudioButton';
 import DocumentSettingsPanel from '../components/common/DocumentSettingsPanel';
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import useStudioDialog from '../components/studio/useStudioDialog';
 import { TEAM_ALPHA_LOGO } from "../../utils/branding";
 import { invoiceDefaults, defaultPaymentSchedule, invoiceScheduleToggle, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
 import { API_BASE_URL } from '../../utils/apiConfig';
 import { documentClientLink } from '../../utils/documentClientLink';
 import {
   Link,
+  useLocation,
   useNavigate,
   useParams,
   useSearchParams,
@@ -213,12 +223,45 @@ function Toggle({ label, checked, onChange, description }) {
     </div>
   );
 }
+function InvoicePreview({ invoice, onClose }) {
+  const commercial = IS_COMMERCIAL_DEPLOYMENT;
+  const dialogRef = useStudioDialog(onClose, { enabled: commercial });
+  const closeButton = (
+    <button className="invoice-preview-close" onClick={onClose}>
+      <X size={16} aria-hidden="true" /> Back to editor
+    </button>
+  );
+  const preview = (
+    <div className="invoice-full-preview" ref={dialogRef}
+      role={commercial ? "dialog" : undefined} aria-modal={commercial || undefined}
+      aria-label={commercial ? "Invoice preview" : undefined}>
+      {commercial ? (
+        <header className="invoice-owner-preview-bar">
+          <span>Client invoice preview</span>
+          {closeButton}
+        </header>
+      ) : closeButton}
+      <InvoiceDocument invoice={invoice} preview />
+    </div>
+  );
+  // Show the client paper outside the editor's theme and control styles.
+  return commercial ? createPortal(preview, document.body) : preview;
+}
+
 export default function InvoiceWorkspace() {
   const { user } = useAuth();
+  const { id } = useParams();
+  const location = useLocation();
+  const [promotion, setPromotion] = useState(null);
+  const scope = draftScope(user);
+  const key = invoiceEditorKey(scope, id, location, promotion);
+  return <InvoiceEditor key={key} id={id} user={user} scope={scope} onPromote={newId => setPromotion({ scope, id: newId, key })} />;
+}
+
+function InvoiceEditor({ id, user, scope, onPromote }) {
   const returnPath = hasModuleAccess(user, 'finance') ? '/admin/finance' : '/admin/invoices';
-  const { id } = useParams(),
-    [search] = useSearchParams(),
-    navigate = useNavigate();
+  const [search] = useSearchParams();
+  const navigate = useNavigate();
   const { setIsFocusMode } = useOutletContext();
   useEffect(() => {
     setIsFocusMode(true);
@@ -232,7 +275,11 @@ export default function InvoiceWorkspace() {
     }),
     [busy, setBusy] = useState(false),
     [loaded, setLoaded] = useState(false),
+    [loadError, setLoadError] = useState(""),
+    [loadAttempt, setLoadAttempt] = useState(0),
     [error, setError] = useState(""),
+    [conflict, setConflict] = useState(false),
+    [overlap, setOverlap] = useState(false),
     [notice, setNotice] = useState(""),
     [modal, setModal] = useState(""),
     [actions, setActions] = useState(false),
@@ -251,11 +298,20 @@ export default function InvoiceWorkspace() {
   const saving = useRef(false),
     shareInput = useRef(null),
     initialized = useRef(false);
+  const editBase = useRef(null);
+  const creationKey = useRef(null);
+  const firstCreate = useRef(null);
+  const mounted = useRef(false);
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   useEffect(() => {
     if (id && savedId.current === id && initialized.current) return;
     let active = true;
     initialized.current = false;
     setLoaded(false);
+    setLoadError("");
     savedId.current = id;
     dirty.current = false;
     const paths = [
@@ -274,11 +330,17 @@ export default function InvoiceWorkspace() {
         let invoice = initial();
         if (id)
           invoice = normalize(
-            await workspaceRequest("get", `/api/invoices/${id}`),
+            await loadInvoiceRecord(id, workspaceRequest),
           );
         else {
           invoice = { ...invoice, ...invoiceDefaults(studio), _useDefaultPaymentSchedule: true };
-          const contact = contacts.find((c) => c._id === search.get("contact"));
+          const { contact, projectId } = IS_COMMERCIAL_DEPLOYMENT
+            ? documentClientContext(search, projects, contacts)
+            : { contact: contacts.find(c => c._id === search.get("contact")), projectId: search.get("project") };
+          if (IS_COMMERCIAL_DEPLOYMENT && !search.has("lead")) {
+            if (search.get("project") && !projectId) throw new Error('The selected project is unavailable for this client.');
+            if (search.get("contact") && !contact) throw new Error('The selected client could not be loaded.');
+          }
           invoice.terms = studio.quotationTerms || "";
           invoice.design = {
             coverUrl: studio.coverImage || "/assets/studio-wedding.webp",
@@ -296,8 +358,7 @@ export default function InvoiceWorkspace() {
               clientPhone: contact.phone || "",
               clientAddress: addressOf(contact),
             };
-          if (search.get("project"))
-            invoice.studioProjectId = search.get("project");
+          if (projectId) invoice.studioProjectId = projectId;
           const lead =
             result[4]?.status === "fulfilled"
               ? result[4].value.find((l) => l._id === search.get("lead"))
@@ -362,6 +423,7 @@ export default function InvoiceWorkspace() {
               result[3].value.emailConfigured,
           });
           setDraft(invoice);
+          editBase.current = invoice;
           setLoaded(true);
           initialized.current = true;
           setSaveState(id ? "Saved to studio" : "Not saved to studio");
@@ -371,14 +433,13 @@ export default function InvoiceWorkspace() {
       })
       .catch((e) => {
         if (active) {
-          setError(recordError(e));
-          setLoaded(true);
+          setLoadError(e.response?.data?.error || e.response?.data?.message || (e.isAxiosError ? 'Check your connection and try again.' : e.message) || 'Please retry.');
         }
       });
     return () => {
       active = false;
     };
-  }, [id, search]);
+  }, [id, search, loadAttempt]);
   const change = (key, value) => {
     version.current++;
     dirty.current = true;
@@ -401,6 +462,8 @@ export default function InvoiceWorkspace() {
     discount +
     tax +
     Math.round(Number(draft.extraCharges || 0) * 100);
+  const nextStep = IS_COMMERCIAL_DEPLOYMENT && loaded && !error
+    ? invoiceNextStep(draft, totalPaise, !canWriteWorkspaceModule(user, 'invoices')) : null;
   const accumulated = draft.paymentSchedule
     .slice(0, -1)
     .reduce((sum, p) => sum + Number(p.amountPaise || 0), 0);
@@ -418,37 +481,65 @@ export default function InvoiceWorkspace() {
     studio: draft.issuer || studioIssuer(context.studio),
   };
   const save = useCallback(async () => {
-    if (saving.current || busy) return null;
+    if (!mounted.current || !initialized.current || saving.current || busy || conflict) return null;
+    if (savedId.current && !dirty.current) return editBase.current;
     saving.current = true;
     const v = version.current;
     setBusy(true);
     setError("");
     setSaveState("Saving to studio…");
     try {
+      const existing = Boolean(savedId.current);
+      const base = editBase.current;
+      const changes = existing ? invoiceEdits(draft, base) : { ...draft, paymentSchedule: schedule };
+      if (existing && (Object.hasOwn(changes, "paymentSchedule") ||
+          (changes.paymentScheduleEnabled && draft._useDefaultPaymentSchedule))) {
+        changes.paymentSchedule = schedule;
+      }
+      if (existing && Object.hasOwn(changes, "items")) {
+        Object.assign(changes, { events: [], deliverables: [], deliverablesPrice: 0 });
+      }
+      if (!existing) {
+        creationKey.current ||= invoiceCreationKey(scope);
+        firstCreate.current ||= creationKey.current.restored ? base : draft;
+        changes.creationKey = creationKey.current.key;
+      }
       const result = await workspaceRequest(
-        savedId.current ? "put" : "post",
+        existing ? "put" : "post",
         `/api/invoices${savedId.current ? `/${savedId.current}` : ""}`,
-        { ...draft, paymentSchedule: schedule },
+        existing ? { ...changes, editVersion: base.editVersion } : changes,
       );
+      if (!mounted.current) return null;
+      const latest = normalize(result);
+      const sentDraft = result.creationReplayed ? firstCreate.current : draft;
+      const resumedEdits = result.creationReplayed && Object.keys(invoiceEdits(draft, sentDraft)).length > 0;
+      editBase.current = latest;
       savedId.current = result._id;
       savedVersion.current = v;
-      if (version.current === v) {
-        dirty.current = false;
-        setSaveState("Saved to studio");
-        setDraft((d) => ({
-          ...d,
-          _id: result._id,
-          documentNumber: result.documentNumber,
-          deliveries: result.deliveries,
-          scheduledDelivery: result.scheduledDelivery,
-          paymentSchedule: (result.paymentSchedule || []).map(p => ({ ...p, dueDate: day(p.dueDate) })),
-          _useDefaultPaymentSchedule: false,
-        }));
+      const hasPendingEdits = version.current !== v || resumedEdits;
+      dirty.current = hasPendingEdits;
+      setSaveState(hasPendingEdits ? "Changes not saved to studio" : "Saved to studio");
+      setDraft(local => ({
+        ...latest,
+        ...invoiceEdits(local, sentDraft),
+        _useDefaultPaymentSchedule: hasPendingEdits && local._useDefaultPaymentSchedule,
+      }));
+      if (result.creationReplayed) {
+        setNotice(resumedEdits
+          ? "The earlier save created this invoice. Review and save your newer edits."
+          : "The earlier save created this invoice. It has been reopened.");
       }
-      if (!id) navigate(`/admin/invoices/${result._id}`, { replace: true });
-      return version.current === v ? result : null;
+      if (!id) {
+        onPromote(result._id);
+        navigate(`/admin/invoices/${result._id}`, { replace: true });
+      }
+      return hasPendingEdits ? null : result;
     } catch (e) {
       setError(recordError(e));
+      if (e.response?.data?.code === "invoice_edit_conflict") {
+        setConflict(true);
+        setModal("");
+      }
       setSaveState("Changes not saved to studio");
       savedVersion.current = v;
       return null;
@@ -456,12 +547,43 @@ export default function InvoiceWorkspace() {
       saving.current = false;
       setBusy(false);
     }
-  }, [busy, draft, schedule, id, navigate]);
+  }, [busy, conflict, draft, schedule, id, navigate, onPromote, scope]);
+
+  const reviewLatest = async (discard = false) => {
+    setBusy(true);
+    const checkedVersion = version.current;
+    try {
+      const latest = normalize(await loadInvoiceRecord(savedId.current, workspaceRequest));
+      if (checkedVersion !== version.current) return;
+      const { local, conflicts } = rebaseInvoiceEdits(draft, editBase.current, latest);
+      if (conflicts.length && !discard) {
+        setOverlap(true);
+        setError("Someone changed a field you edited. Copy any edits you want to keep, then reload the saved invoice.");
+        return;
+      }
+      const hasEdits = !discard && Object.keys(invoiceEdits({ ...latest, ...local }, latest)).length > 0;
+      editBase.current = latest;
+      dirty.current = hasEdits;
+      savedVersion.current = checkedVersion;
+      setDraft(hasEdits ? { ...latest, ...local, _useDefaultPaymentSchedule: draft._useDefaultPaymentSchedule } : latest);
+      setError("");
+      setConflict(false);
+      setOverlap(false);
+      setModal("");
+      setSaveState(hasEdits ? "Changes not saved to studio" : "Saved to studio");
+      setNotice(hasEdits ? "Latest invoice loaded. Review your remaining edits, then choose Save invoice." : "Latest invoice loaded.");
+    } catch (e) {
+      setError(recordError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
   useEffect(() => {
     if (
       !loaded ||
       !id ||
       !dirty.current ||
+      conflict ||
       busy ||
       ["delete", "cancel", "send", "confirm-link", "approve"].includes(modal)
     )
@@ -470,7 +592,7 @@ export default function InvoiceWorkspace() {
       if (dirty.current && version.current !== savedVersion.current) save();
     }, 1800);
     return () => clearTimeout(timer);
-  }, [draft, loaded, id, busy, save, modal]);
+  }, [draft, loaded, id, busy, conflict, save, modal]);
   const itemChange = (index, key, value) =>
     change(
       "items",
@@ -605,7 +727,7 @@ export default function InvoiceWorkspace() {
           "post",
           `/api/invoices/${invoice._id}/duplicate`,
         );
-        navigate(`/admin/invoices/${copy._id}`);
+        if (mounted.current) navigate(`/admin/invoices/${copy._id}`);
       }
       if (name === "revoke") {
         await workspaceRequest("delete", `/api/invoices/${invoice._id}/share`);
@@ -635,11 +757,14 @@ export default function InvoiceWorkspace() {
       const issued = await workspaceRequest(
         "post",
         "/api/invoices/" + invoice._id + "/approve",
+        { editVersion: invoice.editVersion },
       );
+      editBase.current = normalize(issued);
       setDraft((d) => ({
         ...d,
         documentStatus: issued.documentStatus,
         approvedAt: issued.approvedAt,
+        editVersion: issued.editVersion,
       }));
       setModal("");
       setNotice(
@@ -647,6 +772,10 @@ export default function InvoiceWorkspace() {
       );
     } catch (e) {
       setError(recordError(e));
+      if (e.response?.data?.code === "invoice_edit_conflict") {
+        setConflict(true);
+        setModal("");
+      }
     } finally {
       setBusy(false);
     }
@@ -656,12 +785,14 @@ export default function InvoiceWorkspace() {
     try {
       if (modal === "delete") {
         await workspaceRequest("delete", `/api/invoices/${savedId.current}`);
-        navigate(returnPath);
+        if (mounted.current) navigate(returnPath);
       } else {
-        await workspaceRequest("put", `/api/invoices/${savedId.current}`, {
+        const cancelled = await workspaceRequest("put", `/api/invoices/${savedId.current}`, {
           status: "Cancelled",
           documentStatus: "Cancelled",
+          editVersion: editBase.current.editVersion,
         });
+        editBase.current = normalize(cancelled);
         setDraft((d) => ({
           ...d,
           status: "Cancelled",
@@ -672,10 +803,23 @@ export default function InvoiceWorkspace() {
       }
     } catch (e) {
       setError(recordError(e));
+      if (e.response?.data?.code === "invoice_edit_conflict") {
+        setConflict(true);
+        setModal("");
+      }
     } finally {
       setBusy(false);
     }
   };
+  if (loadError) {
+    return <section className="invoice-editor invoice-workspace-refined" aria-label="Invoice unavailable">
+      <div className="invoice-editor-alert" role="alert"><strong>Couldn’t open this invoice</strong><p>{loadError}</p></div>
+      <div className="invoice-toolbar-actions">
+        <StudioButton variant="outline" onClick={() => { setLoadError(""); setLoadAttempt(attempt => attempt + 1); }}>Try again</StudioButton>
+        <Link className="studio-button" to="/admin/invoices">Back to invoices</Link>
+      </div>
+    </section>;
+  }
   if (!loaded)
     return (
       <div className="invoice-editor invoice-workspace-refined">
@@ -726,14 +870,15 @@ export default function InvoiceWorkspace() {
                 <button onClick={() => action("history")} disabled={!id}>
                   Delivery history
                 </button>
-                <button onClick={() => action("revoke")} disabled={!id || !draft.sharedAt || Boolean(draft.linkRevokedAt)}>
+                <button className="studio-document-destructive" onClick={() => action("revoke")} disabled={!id || !draft.sharedAt || Boolean(draft.linkRevokedAt)}>
                   Revoke share link
                 </button>
                 <button onClick={() => action('regenerate')} disabled={draft.documentStatus !== 'Sent'}>Regenerate share link</button>
-                <button onClick={() => action("cancel")} disabled={!id}>
+                <button className="studio-document-destructive" onClick={() => action("cancel")} disabled={!id}>
                   Cancel invoice
                 </button>
                 <button
+                  className="studio-document-destructive"
                   onClick={() => action("delete")}
                   disabled={
                     !id ||
@@ -754,8 +899,13 @@ export default function InvoiceWorkspace() {
         </div>
       </header>
       {error && (
-        <div className="invoice-editor-alert" role="alert">
-          {error}
+        <div className={conflict ? "invoice-editor-alert invoice-editor-conflict" : "invoice-editor-alert"} role="alert">
+          <p>{error}</p>
+          {conflict && (
+            <StudioButton type="button" variant="outline" size="sm" disabled={busy} onClick={() => reviewLatest(overlap)}>
+              {overlap ? "Reload and discard edits" : "Review latest invoice"}
+            </StudioButton>
+          )}
         </div>
       )}
       {notice && (
@@ -878,10 +1028,11 @@ export default function InvoiceWorkspace() {
           >
             Edit document design
           </button>
-          <p className="invoice-issue-guidance">{draft.documentStatus === "Draft" ? "Review and issue this invoice before its payment schedule becomes visible to the client." : draft.documentStatus === "Sent" ? "This invoice is issued. Share its link so your client can review the payment details." : "This invoice is cancelled and client access is closed."}</p>
+          {!IS_COMMERCIAL_DEPLOYMENT && <p className="invoice-issue-guidance">{draft.documentStatus === "Draft" ? "Review and issue this invoice before its payment schedule becomes visible to the client." : draft.documentStatus === "Sent" ? "This invoice is issued. Share its link so your client can review the payment details." : "This invoice is cancelled and client access is closed."}</p>}
         </DocumentSettingsPanel>
 </aside>
         <div className="invoice-editor-content">
+          {nextStep && <DocumentNextStep step={nextStep} focusTarget={nextStep.action && 'sx-invoice-' + nextStep.action} />}
           <section className="invoice-editor-section invoice-business">
             <div className="invoice-business-identity">
               {draft.design.showLogo !== false && (
@@ -958,8 +1109,7 @@ export default function InvoiceWorkspace() {
                     .filter(
                       (p) =>
                         !draft.contactId ||
-                        String(p.contactId?._id || p.contactId) ===
-                          draft.contactId,
+                        (IS_COMMERCIAL_DEPLOYMENT ? projectIncludesClient(p, draft.contactId) : String(p.contactId?._id || p.contactId) === draft.contactId),
                     )
                     .map((p) => (
                       <option key={p._id} value={p._id}>
@@ -970,6 +1120,7 @@ export default function InvoiceWorkspace() {
               </Field>
               <Field
                 label="Client name"
+                id={IS_COMMERCIAL_DEPLOYMENT ? 'sx-invoice-client' : undefined}
                 value={draft.clientName}
                 onChange={(v) => change("clientName", v)}
                 required
@@ -1015,6 +1166,7 @@ export default function InvoiceWorkspace() {
               <div className="invoice-edit-item" key={index}>
                 <div className="invoice-item-copy">
                   <input
+                    id={IS_COMMERCIAL_DEPLOYMENT && index === 0 ? 'sx-invoice-items' : undefined}
                     aria-label={`Item ${index + 1} title`}
                     placeholder="Item name"
                     value={item.title}
@@ -1090,6 +1242,7 @@ export default function InvoiceWorkspace() {
                     <Copy size={15} />
                   </button>
                   <button
+                    className="studio-document-destructive"
                     aria-label={`Delete item ${index + 1}`}
                     disabled={draft.items.length === 1}
                     onClick={() =>
@@ -1105,7 +1258,7 @@ export default function InvoiceWorkspace() {
               </div>
             ))}
             <button
-              className="invoice-text-action"
+              className="invoice-text-action studio-document-add"
               onClick={() => change("items", [...draft.items, emptyItem()])}
               disabled={draft.items.length >= 40}
             >
@@ -1379,6 +1532,7 @@ export default function InvoiceWorkspace() {
               </Field>
               <Field
                 label="Payments received (₹)"
+                id={IS_COMMERCIAL_DEPLOYMENT ? 'sx-invoice-balance' : undefined}
                 type="number"
                 min="0"
                 max={totalPaise / 100}
@@ -1426,15 +1580,7 @@ export default function InvoiceWorkspace() {
         </div>
       </div>
       {modal === "preview" && (
-        <div className="invoice-full-preview">
-          <button
-            className="invoice-preview-close"
-            onClick={() => setModal("")}
-          >
-            <X size={16} /> Back to editor
-          </button>
-          <InvoiceDocument invoice={current} preview />
-        </div>
+        <InvoicePreview invoice={current} onClose={() => setModal("")} />
       )}
       {[
         "business",

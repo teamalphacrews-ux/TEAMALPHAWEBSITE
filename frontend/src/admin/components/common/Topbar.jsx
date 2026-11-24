@@ -1,13 +1,18 @@
 import { canAccessStudioPath, hasFullModuleAccess } from '../../../utils/moduleAccess';
 import StudioButton from './StudioButton';
 import StudioIcon from './StudioIcon';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Search, Menu, ArrowUpRight, CheckCheck, X, Sun, Moon } from 'lucide-react';
+import { Bell, Search, Menu, ArrowUpRight, CheckCheck, X, Sun, Moon, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
-import { SAAS_RELEASE_ENABLED } from '../../../saas/release';
+import { IS_COMMERCIAL_DEPLOYMENT, SAAS_RELEASE_ENABLED } from '../../../saas/release';
+import { workspaceGuideTarget } from '../../../utils/workspaceGuide';
+import WorkspacePageGuide from './WorkspacePageGuide';
+import StudioProductBrand from '../../../components/StudioProductBrand';
+import { formatStudioDate, studioDayKey } from '../../../utils/studioTime';
+import { roleLabel } from '../../../saas/workspaceValues';
 import AdminProfileModal from './AdminProfileModal';
 import { useStudioPreferences } from './StudioPreferences';
 import { useStudioIdentity } from '../../../utils/studioIdentity';
@@ -23,7 +28,7 @@ const destinations = [
   ['Overview', '/admin', 'dashboard studio summary'], ['Enquiries', '/admin/crm', 'leads crm follow-up'],
   ['Quotations', '/admin/quotations', 'proposals pricing services terms'], ['Data & backups', '/admin/data', 'nas storage folders backup checks'], ['Settings', '/admin/settings', 'studio profile configuration'],
   ['Production projects', '/admin/projects', 'weddings bookings'], ['Crew & scheduling', '/admin/crew', 'photographers team assignments'],
-  ['Post production', '/admin/post-production', 'tasks editing delivery'], ['Calendar', '/admin/calendar', 'shoots events dates'],
+  [IS_COMMERCIAL_DEPLOYMENT ? 'Tasks' : 'Post production', '/admin/post-production', 'post-production tasks editing delivery'], ['Calendar', '/admin/calendar', 'shoots events dates'],
   ['Invoices', '/admin/invoices', 'client billing documents'],
   ['Finance', '/admin/finance', 'invoices expenses payments'],
   ['Integrations', '/admin/integrations', 'webhook enquiries connect automation'],
@@ -34,8 +39,10 @@ const destinations = [
 
 import WorkspaceRecordSearch from './WorkspaceRecordSearch';
 import QuickCreate from './QuickCreate';
+import useWorkspaceMotionPresence from './useWorkspaceMotionPresence';
+import { workspaceMotionAllowed } from './workspaceMotion';
 
-export default function Topbar({ onMenuClick }) {
+export default function Topbar({ onMenuClick, nativeNavigation }) {
   const { user, token, logout, updateUser } = useAuth();
   const fullAccess = hasFullModuleAccess(user);
   const { resolvedTheme, preferences, toggleTheme } = useStudioPreferences();
@@ -48,16 +55,28 @@ export default function Topbar({ onMenuClick }) {
   const [notifications, setNotifications] = useState([]);
   const [notificationError, setNotificationError] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationPresence = useWorkspaceMotionPresence(showNotifications, 150);
   const [showProfile, setShowProfile] = useState(false);
   const [markingRead, setMarkingRead] = useState(false);
   const panelRef = useRef(null);
+  useLayoutEffect(() => {
+    if (!panelRef.current || !workspaceMotionAllowed()) return;
+    const controls = panelRef.current.querySelectorAll('.sx-desk-mobile-mark,.studio-record-search-trigger,.sx-desk-date,.studio-quick-create > button,.sx-desk-appearance,.studio-notification-button,.studio-profile-button,.sx-page-guide-trigger');
+    const players = [...controls].filter(control => control.offsetHeight).map((control, index) => control.animate([
+      { opacity: 0, transform: 'translateY(-10px)' }, { opacity: 1, transform: 'none' },
+    ], { duration: 550, delay: 100 + index * 40, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' }));
+    return () => players.forEach(player => player.cancel());
+  }, []);
   const searchInputRef = useRef(null);
   const notificationButtonRef = useRef(null);
   const notificationPreferences = useRef(preferences), studioZone = useRef(identity?.timezone);
   const notificationLogout = useRef(logout);
   const accountId = user?._id || user?.id || user?.email || 'current';
   const searchShortcut = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K';
-  const active = destinations.find(item => item[1] !== '/admin' && (item[1] === location.pathname || location.pathname.startsWith(item[1] + '/')))?.[0] || (location.pathname.startsWith('/admin/invoices/') ? 'Invoice' : 'Overview');
+  const active = destinations.find(item => item[1] !== '/admin' && (item[1] === location.pathname || location.pathname.startsWith(item[1] + '/')))?.[0] || ({ '/admin/templates': 'Quote templates', '/admin/subscription': 'Subscription' }[location.pathname] || 'Overview');
+  const now = new Date();
+  const guide = IS_COMMERCIAL_DEPLOYMENT && canAccessStudioPath(user, location.pathname) && workspaceGuideTarget(location.pathname, location.search);
+  const pageTitle = <strong lang={preferences.language} dir="auto"><span className="studio-topbar-full-title">{t(active)}</span><span className="studio-topbar-phone-title">{t(active === 'Crew & scheduling' ? 'Crew' : active)}</span></strong>;
   useEffect(() => { notificationPreferences.current = preferences; studioZone.current = identity?.timezone; }, [preferences, identity?.timezone]);
   useEffect(() => { notificationLogout.current = logout; }, [logout]);
   useEffect(() => {
@@ -148,16 +167,31 @@ export default function Topbar({ onMenuClick }) {
   const matches = destinations.filter(item => canAccessStudioPath(user, item[1]) && (item[0] + ' ' + t(item[0]) + ' ' + item[2]).toLowerCase().includes(query.toLowerCase()));
   return <>
     <header className="studio-topbar" ref={panelRef}>
-      <div className="studio-topbar-context"><StudioButton type="button" variant="icon" className="studio-menu-button studio-icon-button" label="Open navigation" icon={Menu} onClick={onMenuClick} /><span className="studio-topbar-workspace" lang={preferences.language} dir="auto">{t("Workspace")}</span><span className="studio-breadcrumb-separator" aria-hidden="true">/</span><strong lang={preferences.language} dir="auto"><span className="studio-topbar-full-title">{t(active)}</span><span className="studio-topbar-phone-title">{t(active==="Crew & scheduling"?"Crew":active)}</span></strong></div>
-      <div className="studio-topbar-actions"><WorkspaceRecordSearch /><QuickCreate />
-        <StudioButton type="button" variant="icon" className="studio-icon-button studio-theme-toggle" icon={resolvedTheme === 'dark' ? Sun : Moon} onClick={event => toggleTheme(event.currentTarget)} label={resolvedTheme === 'dark' ? 'Switch to Daylight mode' : 'Switch to Dark mode'} title={resolvedTheme === 'dark' ? 'Daylight mode' : 'Dark mode'} />
+      <div className="studio-topbar-context">{IS_COMMERCIAL_DEPLOYMENT ? (
+        nativeNavigation ? <Link to="/admin" className="sx-desk-mobile-mark" aria-label="Studio X OS overview"><StudioProductBrand compact /></Link>
+          : <button type="button" className="sx-desk-mobile-mark" aria-label="Open navigation" aria-controls="studio-navigation-drawer" onClick={onMenuClick}><Menu size={20} aria-hidden="true" /></button>
+      ) : <StudioButton type="button" variant="icon" className="studio-menu-button studio-icon-button" label="Open navigation" icon={Menu} onClick={onMenuClick} />}<span className="studio-topbar-workspace" lang={preferences.language} dir="auto">{t("Workspace")}</span><span className="studio-breadcrumb-separator" aria-hidden="true">/</span>
+        {guide ? <WorkspacePageGuide key={location.pathname + guide} target={guide} pageName={active}>{pageTitle}</WorkspacePageGuide> : pageTitle}
+      </div>
+      <div className="studio-topbar-actions"><WorkspaceRecordSearch />
+        {IS_COMMERCIAL_DEPLOYMENT && <time className="sx-desk-date" dateTime={studioDayKey(now, identity?.timezone)}>
+          {formatStudioDate(now, { weekday: 'long', day: 'numeric', month: 'long' }, identity?.timezone)}</time>}
+        <QuickCreate />
+        {IS_COMMERCIAL_DEPLOYMENT ? <button type="button" className="studio-theme-toggle sx-desk-appearance" data-theme-choice={resolvedTheme}
+          aria-label={resolvedTheme === 'dark' ? 'Switch to Daylight mode' : 'Switch to Dark mode'}
+          onClick={event => toggleTheme(event.currentTarget)} title={resolvedTheme === 'dark' ? 'Daylight mode' : 'Dark mode'}>
+          <span><Sun size={15} aria-hidden="true" /></span><span><Moon size={15} aria-hidden="true" /></span>
+        </button> : <StudioButton type="button" variant="icon" className="studio-icon-button studio-theme-toggle" icon={resolvedTheme === 'dark' ? Sun : Moon} onClick={event => toggleTheme(event.currentTarget)} label={resolvedTheme === 'dark' ? 'Switch to Daylight mode' : 'Switch to Dark mode'} title={resolvedTheme === 'dark' ? 'Daylight mode' : 'Dark mode'} />}
         <div className="studio-global-search"><Search size={16} /><input ref={searchInputRef} aria-label={t("Find a page")} aria-controls="studio-page-results" aria-expanded={searchOpen} placeholder={t("Find a page") + "…"} value={query} onFocus={() => { setSearchOpen(true); setShowNotifications(false); }} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'ArrowDown') { e.preventDefault(); setSearchOpen(true); panelRef.current?.querySelector('.studio-search-results a')?.focus(); } if (e.key === 'Enter' && matches[0]) { navigate(matches[0][1]); setSearchOpen(false); setQuery(''); } }} /><kbd className="studio-search-shortcut" aria-hidden="true">{searchShortcut}</kbd>
           {searchOpen && <div id="studio-page-results" className="studio-search-results" onKeyDown={event => { if (!['ArrowDown','ArrowUp'].includes(event.key)) return; const links = [...event.currentTarget.querySelectorAll('a')]; const index = links.indexOf(document.activeElement); if (index < 0) return; event.preventDefault(); links[(index + (event.key === 'ArrowDown' ? 1 : links.length - 1)) % links.length]?.focus(); }}><p className="studio-search-label">{t("Find a page")}</p>{matches.length ? matches.map(item => <Link to={item[1]} key={item[1]} onClick={() => { setSearchOpen(false); setQuery(''); }}>{t(item[0])}<ArrowUpRight size={14} /></Link>) : <p className="studio-muted">No matching pages.</p>}</div>}
         </div>
-        {fullAccess && <div className="studio-notification-wrap"><button type="button" className="studio-icon-button studio-notification-button" aria-label={'Notifications' + (badgeUnread ? ', ' + badgeUnread + ' unread' : '')} aria-expanded={showNotifications} aria-controls="studio-notifications" ref={notificationButtonRef} onClick={() => { setShowNotifications(value => !value); setSearchOpen(false); }}><StudioIcon icon={Bell} size={18} />{badgeUnread > 0 && <i />}</button>
-          {showNotifications && <section className="studio-notification-panel" id="studio-notifications" aria-label="Notifications"><div className="studio-notification-heading"><h2>Notifications</h2><StudioButton type="button" variant="icon" className="studio-icon-button" label="Close notifications" icon={X} onClick={closeNotifications} /></div>{notificationError ? <p className="studio-empty">Activity is unavailable. Try again shortly.</p> : notifications.length ? <div className="studio-notification-list">{notifications.slice(0, 6).map(item => <Link key={item._id} to={notificationLink(item)} className={item.isRead ? '' : 'is-unread'} onClick={() => setShowNotifications(false)}><span className="studio-status-dot" /><div><strong>{item.title}</strong><p>{item.description}</p></div></Link>)}</div> : <p className="studio-empty">You’re all caught up.</p>}<div className="studio-notification-footer"><StudioButton type="button" variant="ghost" size="sm" icon={CheckCheck} onClick={markAll} disabled={!unread} loading={markingRead} loadingLabel="Marking notifications as read">Mark all read</StudioButton><Link to="/admin/activity-log" onClick={() => setShowNotifications(false)}>View all <ArrowUpRight size={14} /></Link></div></section>}
+        {fullAccess && <div className="studio-notification-wrap"><button type="button" className="studio-icon-button studio-notification-button" aria-label={'Notifications' + (badgeUnread ? ', ' + badgeUnread + ' unread' : '')} aria-expanded={showNotifications} aria-controls="studio-notifications" ref={notificationButtonRef} onClick={() => { setShowNotifications(value => !value); setSearchOpen(false); }}><StudioIcon icon={Bell} size={18} />{badgeUnread > 0 && (IS_COMMERCIAL_DEPLOYMENT ? <span className="sx-desk-badge" aria-hidden="true">{badgeUnread > 99 ? "99+" : badgeUnread}</span> : <i />)}</button>
+          {notificationPresence.present && <section inert={notificationPresence.leaving} aria-hidden={notificationPresence.leaving || undefined} data-leaving={notificationPresence.leaving || undefined} className="studio-notification-panel" id="studio-notifications" aria-label="Notifications"><div className="studio-notification-heading"><h2>Notifications</h2><StudioButton type="button" variant="icon" className="studio-icon-button" label="Close notifications" icon={X} onClick={closeNotifications} /></div>{notificationError ? <p className="studio-empty">Activity is unavailable. Try again shortly.</p> : notifications.length ? <div className="studio-notification-list">{notifications.slice(0, 6).map(item => <Link key={item._id} to={notificationLink(item)} className={item.isRead ? '' : 'is-unread'} onClick={() => setShowNotifications(false)}><span className="studio-status-dot" /><div><strong>{item.title}</strong><p>{item.description}</p></div></Link>)}</div> : <p className="studio-empty">You’re all caught up.</p>}<div className="studio-notification-footer"><StudioButton type="button" variant="ghost" size="sm" icon={CheckCheck} onClick={markAll} disabled={!unread} loading={markingRead} loadingLabel="Marking notifications as read">Mark all read</StudioButton><Link to="/admin/activity-log" onClick={() => setShowNotifications(false)}>View all <ArrowUpRight size={14} /></Link></div></section>}
         </div>}
-        <span className="studio-topbar-divider" /><button type="button" className="studio-profile-button" onClick={() => setShowProfile(true)} aria-label="Edit your profile"><span className="studio-avatar">{user?.firstName?.[0] || 'A'}{user?.lastName?.[0] || ''}</span></button>
+        <span className="studio-topbar-divider" /><button type="button" className="studio-profile-button" onClick={() => setShowProfile(true)} aria-label="Edit your profile"><span className="studio-avatar">{user?.firstName?.[0] || 'A'}{user?.lastName?.[0] || ''}</span>
+          {IS_COMMERCIAL_DEPLOYMENT && <><span className="sx-desk-profile-name"><strong>{[user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.name || 'Your profile'}</strong>
+            <small>{roleLabel(user?.workspaceRole)}</small></span><ChevronDown className="sx-desk-profile-arrow" size={14} aria-hidden="true" /></>}
+        </button>
       </div>
     </header>
     {showProfile && <AdminProfileModal profile={user} onClose={() => setShowProfile(false)} onSave={updated => { updateUser(updated); setShowProfile(false); toast.success('Profile updated'); }} />}

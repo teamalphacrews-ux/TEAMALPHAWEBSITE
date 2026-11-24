@@ -438,6 +438,13 @@
   background: #ecf8f2;
   color: #227757;
 }
+.invoice-editor-conflict {
+  flex-wrap: wrap;
+}
+.invoice-editor-conflict p {
+  flex: 1 1 16rem;
+  margin: 0;
+}
 .invoice-share-url {
   box-sizing: border-box;
   width: 100%;

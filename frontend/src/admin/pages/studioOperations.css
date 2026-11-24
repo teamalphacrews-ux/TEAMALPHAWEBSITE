@@ -129,6 +129,8 @@
 .studio-ops .ops-conflict-item small { color:var(--brand-accent); font-size:11px; }
 .studio-ops .ops-clear-schedule { text-align:left; color:#8ca08f; padding:8px 0; }
 .studio-ops .ops-clear-schedule > strong { display:block; font-size:11px; font-weight:500; color:#4b6b56; margin:9px 0; }
+.studio-commercial-glass .ops-clear-schedule,
+.studio-commercial-glass .ops-clear-schedule > strong { color:var(--studio-success-ink); }
 .studio-ops .ops-clear-schedule p { font-size:11px; color:var(--brand-muted); line-height:1.8; margin:0; }
 .studio-ops .ops-empty { padding:56px 26px; min-height:280px; }
 .studio-ops .ops-empty h3 { font-size:16px; font-weight:500; margin-top:15px; color:var(--brand-muted); }
@@ -257,3 +259,16 @@
 .ops-published-update { display:block; font-size:11px; color:#6b88af; margin-top:6px; }
 
 .ops-client-visibility>input{width:18px;height:18px;flex:0 0 18px;margin:2px 0 0}.ops-client-visibility>span{min-width:0}
+
+#sx-workspace-shell .scheduling-crew :is(.ops-person-email,.ops-person-phone,.ops-text-link) {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+}
+#sx-workspace-shell .scheduling-crew :is(.ops-person-email,.ops-person-phone):is(:hover,:focus-visible) {
+  text-decoration: underline;
+  text-underline-offset: .16em;
+}
+@media (max-width: 760px), (pointer: coarse) {
+  #sx-workspace-shell .scheduling-crew :is(.ops-person-email,.ops-person-phone,.ops-text-link) { min-height: 44px; }
+}
