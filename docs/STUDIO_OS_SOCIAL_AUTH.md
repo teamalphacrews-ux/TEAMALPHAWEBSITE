@@ -4,7 +4,9 @@ Implemented locally. No provider credentials, callback registrations, production
 
 ## Backend configuration
 
-Use backend private settings only, never `VITE_*` values or committed `.env` files. Set `FRONTEND_URL` to the exact public product origin and configure a working MongoDB connection and strong `JWT_SECRET`. Start with `SAAS_ENABLED=false` and `SAAS_SIGNUP_ENABLED=false`; enable in a staging environment only after configuration and tests. `SAAS_ENABLED=true` permits existing account sign-in. New provider accounts and studios also require `SAAS_SIGNUP_ENABLED=true`.
+Use backend private settings only, never `VITE_*` values or committed `.env` files. Set `FRONTEND_URL` to the exact public product origin and configure a working MongoDB connection and strong `JWT_SECRET`. Start with `SAAS_ENABLED=false` and `SAAS_SIGNUP_ENABLED=false`; enable in a staging environment only after configuration and tests. `SAAS_ENABLED=true` permits existing account sign-in. `SAAS_SIGNUP_ENABLED=true` opens public registration.
+
+For a private first studio, keep public registration closed and set `SAAS_GOOGLE_TESTER_EMAIL` on the backend to one invited Gmail address. The tester uses **Continue with Google** on the sign-in page, confirms their name, and names their new studio. The backend matches the Google-verified address and checks for prior memberships before creating the studio. After setup, the tester can keep signing in through their membership even if you remove this setting.
 
 Google: create a Web application OAuth client for Studio OS identity sign-in, with the product's branding, support contact and privacy/terms URLs. Set `SAAS_GOOGLE_CLIENT_ID`, `SAAS_GOOGLE_CLIENT_SECRET`, and `SAAS_GOOGLE_REDIRECT_URI`. Register the exact redirect URI `https://<backend-host>/api/saas/oauth/google/callback`. Development accepts HTTP only for localhost/127.0.0.1. Requested scopes are only `openid email profile`; this does not connect Calendar, Gmail or Drive.
 

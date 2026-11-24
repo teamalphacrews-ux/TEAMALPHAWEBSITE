@@ -95,6 +95,105 @@ async function ready(f) {
   const finished = await f.auth.callback('google', { state, code: 'authorization-code' });
   return { started, finished, body: { ticket: finished.ticket, browserProof: started.browserProof } };
 }
+
+const testerEmail = 'studio.tester@gmail.com';
+const privateSettings = { ...env, SAAS_SIGNUP_ENABLED: 'false', SAAS_GOOGLE_TESTER_EMAIL: '  Studio.Tester@GMAIL.COM  ' };
+function signedLoginFixture({ environment = privateSettings, claims = {}, account, member } = {}) {
+  const f = fixture({ environment, account, member });
+  let nonce;
+  const auth = createSocialAuth({
+    models: f.models, service: f.service, env: environment, now: () => time,
+    fetchImpl: async url => {
+      if (url === 'https://www.googleapis.com/oauth2/v3/certs' || url === 'https://appleid.apple.com/auth/keys') return jsonResponse({ keys: [jwk] });
+      assert.ok(['https://oauth2.googleapis.com/token', 'https://appleid.apple.com/auth/token'].includes(url));
+      const appleClaims = url.includes('appleid.apple.com') ? { iss: 'https://appleid.apple.com', aud: environment.SAAS_APPLE_CLIENT_ID } : {};
+      return jsonResponse({ id_token: token({ nonce, email: testerEmail, given_name: 'Asha', ...appleClaims, ...claims }) });
+    },
+  });
+  async function authorize(provider = 'google', purpose = 'login') {
+    const started = await auth.start(provider, purpose);
+    const params = new URL(started.authorizationUrl).searchParams;
+    nonce = params.get('nonce');
+    const { ticket } = await auth.callback(provider, { state: params.get('state'), code: 'provider-code' });
+    return { ticket, browserProof: started.browserProof };
+  }
+  return { ...f, auth, authorize };
+}
+test('private Google login provisions one first studio for the configured verified Gmail, then reuses it', async () => {
+  const f = signedLoginFixture({ claims: { email: 'Studio.Tester@Gmail.com' } });
+  const body = await f.authorize();
+  const setup = await f.auth.complete(body, {});
+  assert.equal(setup.needsWorkspace, true);
+  assert.equal(setup.profile.email, testerEmail);
+  assert.deepEqual(f.counts(), { provisions: 0, sessions: 0 });
+  const first = await f.auth.complete({ ...body, studioName: 'Private Studio' }, {});
+  assert.equal(first.user.email, testerEmail);
+  assert.equal(f.models.Membership.rows[0].role, 'owner');
+  const repeat = await f.auth.complete(await f.authorize(), {});
+  assert.equal(repeat.user.workspace.id, first.user.workspace.id);
+  assert.deepEqual(f.counts(), { provisions: 1, sessions: 2 });
+});
+test('closed registration checks the exact Google-verified Gmail and rejects unrelated sign-in methods', async () => {
+  const appleKey = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' }).privateKey.export({ type: 'pkcs8', format: 'pem' });
+  const apple = { ...privateSettings, SAAS_APPLE_CLIENT_ID: 'com.example.studio.web', SAAS_APPLE_TEAM_ID: 'ABCDEFGHIJ', SAAS_APPLE_KEY_ID: '0123456789', SAAS_APPLE_PRIVATE_KEY: appleKey, SAAS_APPLE_REDIRECT_URI: 'https://api.example.com/api/saas/oauth/apple/callback' };
+  for (const [address, configuredEmail, provider] of [
+    ['other@gmail.com', testerEmail, 'google'],
+    ['studio.tester+alias@gmail.com', testerEmail, 'google'],
+    ['owner@example.com', 'owner@example.com', 'google'],
+    [testerEmail, '', 'google'],
+    [testerEmail, testerEmail + ',other@gmail.com', 'google'],
+    [testerEmail, testerEmail, 'apple'],
+  ]) {
+    const f = signedLoginFixture({ environment: { ...apple, SAAS_GOOGLE_TESTER_EMAIL: configuredEmail }, claims: { email: address } });
+    const body = await f.authorize(provider);
+    await assert.rejects(f.auth.complete({ ...body, email: testerEmail, studioName: 'Private Studio' }, {}), { status: 403 });
+    assert.equal(f.models.Account.rows.length, 0);
+    assert.deepEqual(f.counts(), { provisions: 0, sessions: 0 });
+  }
+  const unverified = signedLoginFixture({ claims: { email_verified: false } });
+  await assert.rejects(unverified.authorize(), { status: 401 });
+  assert.deepEqual(unverified.counts(), { provisions: 0, sessions: 0 });
+});
+test('private first-studio access preserves removed memberships, suspended studios and password accounts', async () => {
+  const account = { _id: 'previous-owner', state: 'active', email: testerEmail, oauthProvider: 'google', oauthSubject: 'provider-person-1' };
+  for (const [memberState, studioState] of [['removed', 'active'], ['active', 'suspended']]) {
+    const f = signedLoginFixture({ account, member: true });
+    f.models.Membership.rows[0].state = memberState;
+    f.models.Workspace.rows[0].state = studioState;
+    await assert.rejects(f.auth.complete({ ...await f.authorize(), studioName: 'Another Studio' }, {}), { status: 403 });
+    assert.deepEqual(f.counts(), { provisions: 0, sessions: 0 });
+  }
+  const password = signedLoginFixture({ account: { _id: 'password-owner', state: 'active', email: testerEmail } });
+  await assert.rejects(password.auth.complete(await password.authorize(), {}), { status: 409 });
+  assert.deepEqual(password.counts(), { provisions: 0, sessions: 0 });
+});
+test('private onboarding keeps signup closed even for the configured address and old signup flows', async t => {
+  const environment = { ...privateSettings, SAAS_SIGNUP_ENABLED: 'true' };
+  const f = signedLoginFixture({ environment });
+  const earlierSignup = await f.authorize('google', 'signup');
+  environment.SAAS_SIGNUP_ENABLED = 'false';
+  await assert.rejects(f.auth.start('google', 'signup'), { status: 503 });
+  await assert.rejects(f.auth.complete(earlierSignup, {}), { status: 403 });
+  const keys = ['SAAS_ENABLED', 'SAAS_SIGNUP_ENABLED', 'SAAS_GOOGLE_TESTER_EMAIL'];
+  for (const key of keys) {
+    const previous = process.env[key];
+    process.env[key] = environment[key];
+    t.after(() => { if (previous === undefined) delete process.env[key]; else process.env[key] = previous; });
+  }
+  const router = require('../saas/routes');
+  function request(method, url, body) {
+    return new Promise((resolve, reject) => {
+      const res = { statusCode: 200, status(code) { this.statusCode = code; return this; }, json(data) { resolve({ status: this.statusCode, data }); } };
+      router.handle({ method, url, body, headers: {}, socket: { remoteAddress: '127.0.0.1' } }, res, error => reject(error || new Error('No response')));
+    });
+  }
+  const config = await request('GET', '/config');
+  assert.equal(config.data.enabled, false);
+  assert.equal(JSON.stringify(config.data).toLowerCase().includes(testerEmail), false);
+  const signup = await request('POST', '/signup', { email: testerEmail, studioName: 'Private Studio' });
+  assert.equal(signup.status, 503);
+  assert.match(signup.data.msg, /registration|invite-only/i);
+});
 test('start binds state, nonce, browser proof and S256 PKCE without requesting Gmail/Calendar scopes', async () => {
   const f = fixture(), started = await f.auth.start('google', 'signup'), url = new URL(started.authorizationUrl), flow = f.models.OAuthFlow.rows[0];
   assert.equal(url.origin, 'https://accounts.google.com'); assert.equal(url.searchParams.get('scope'), 'openid email profile');

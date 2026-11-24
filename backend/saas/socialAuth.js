@@ -141,6 +141,15 @@ function createSocialAuth({ models = require('./models'), service = require('./s
     if (!account && await models.Account.exists({ email: flow.profile.email })) throw failure(409, 'This email already has a Studio OS account. Sign in using the method you originally used; accounts are not linked automatically.');
     return account;
   }
+  async function requireWorkspaceRegistration(flow, account) {
+    if (env.SAAS_SIGNUP_ENABLED === 'true') return;
+    const tester = env.SAAS_GOOGLE_TESTER_EMAIL?.trim().toLowerCase();
+    const invited = flow.provider === 'google' && flow.purpose === 'login'
+      && tester?.endsWith('@gmail.com') && flow.profile.email === tester;
+    if (!invited || (account && await models.Membership.exists({ accountId: account._id }))) {
+      throw failure(403, 'No active studio is available and new registration is not open yet.');
+    }
+  }
   async function complete(body, req) {
     enabled();
     if (!HEX_TOKEN.test(body?.ticket || '') || !HEX_TOKEN.test(body?.browserProof || '')) throw failure(401, 'Return to sign in and start again.');
@@ -150,7 +159,7 @@ function createSocialAuth({ models = require('./models'), service = require('./s
     let account = await providerAccount(flow);
     let existing = account && await activeMembership(account);
     if (!existing) {
-      if (env.SAAS_SIGNUP_ENABLED !== 'true') throw failure(403, 'No active studio is available and new registration is not open yet.');
+      await requireWorkspaceRegistration(flow, account);
       if (!body.studioName) return { needsWorkspace: true, profile: { email: flow.profile.email, firstName: flow.profile.firstName, lastName: flow.profile.lastName } };
     }
     // Validate before claiming, so a mistyped display name can be corrected safely.
@@ -178,7 +187,10 @@ function createSocialAuth({ models = require('./models'), service = require('./s
         if (!locked) { lease = null; throw failure(409, 'Your studio is already being prepared. Wait briefly and sign in again.'); }
         // Another browser may already have completed the same identity while this flow was open.
         existing = await activeMembership(account);
-        if (!existing) existing = await service.provisionWorkspace(account, name);
+        if (!existing) {
+          await requireWorkspaceRegistration(flow, account);
+          existing = await service.provisionWorkspace(account, name);
+        }
       }
       if (!await models.Account.exists({ _id: account._id, state: 'active' })) throw failure(403, 'This account is not available.');
       const consumed = await models.OAuthFlow.updateOne({ _id: flow._id, status: 'completing', expiresAt: { $gt: new Date(now()) } }, { $set: { status: 'consumed' }, $unset: { profile: 1, proofHash: 1 } });
