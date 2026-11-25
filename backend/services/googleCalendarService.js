@@ -2,43 +2,53 @@ const { google } = require('googleapis');
 const { v4: uuidv4 } = require('uuid');
 const User = require('../models/User');
 const Event = require('../models/Event');
+const { currentWorkspace } = require('../saas/tenantContext');
+const { activeCalendarOwner, snapshotFilter, withCalendarLease } = require('../saas/calendarConnection');
+const { configuration } = require('../utils/oauthState');
+const { calendarCredential } = require('../utils/calendarCredentials');
 const { googleDateRange, googleEventTimes } = require('../utils/calendarDateRange');
 
 // Concurrent sync lock - prevents race conditions
 const syncingUsers = new Set();
 
+// A second Google account can use the same event ID. Keep disconnected
+// records intact and only reconcile the currently authorized primary calendar.
+function eventKeyPrefix(user) {
+    if (!currentWorkspace()) return '';
+    if (!user.googleCalendarSource) throw new Error('Reconnect Google Calendar to confirm the account.');
+    return user.googleCalendarSource + ':';
+}
+
 /**
  * Gets an authenticated Google Calendar API client for a user.
  */
 async function getCalendarClient(user) {
+    if (process.env.SAAS_ENABLED === 'true' && !currentWorkspace()) throw new Error('A studio workspace is required.');
     if (!user.googleAccessToken || !user.googleRefreshToken) {
         throw new Error('User not connected to Google Calendar');
     }
 
-    const oAuth2Client = new google.auth.OAuth2(
-        process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_REDIRECT_URI
-    );
-
+    const config = currentWorkspace() ? configuration(process.env) : {
+        clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET, redirectUri: process.env.GOOGLE_REDIRECT_URI
+    };
+    const oAuth2Client = new google.auth.OAuth2(config.clientId, config.clientSecret, config.redirectUri);
+    const oldRefresh = user.googleRefreshToken;
     oAuth2Client.setCredentials({
-        access_token: user.googleAccessToken,
-        refresh_token: user.googleRefreshToken,
+        access_token: calendarCredential(user.googleAccessToken, user._id, 'access', 'open'),
+        refresh_token: calendarCredential(oldRefresh, user._id, 'refresh', 'open'),
         expiry_date: user.googleTokenExpiry ? new Date(user.googleTokenExpiry).getTime() : null
     });
 
-    // Handle token refresh
-    oAuth2Client.on('tokens', async (tokens) => {
-        console.log("♻️ Refreshing Google Tokens for user:", user.googleEmail || user.email);
-        if (tokens.refresh_token) {
-            user.googleRefreshToken = tokens.refresh_token;
-        }
-        if (tokens.access_token) {
-            user.googleAccessToken = tokens.access_token;
-            user.googleTokenExpiry = tokens.expiry_date ? new Date(tokens.expiry_date) : null;
-            await user.save();
-            console.log("✅ Tokens saved to DB.");
-        }
+    oAuth2Client.on('tokens', tokens => {
+        if (!tokens.access_token) return;
+        const update = {
+            googleAccessToken: calendarCredential(tokens.access_token, user._id, 'access', 'seal'),
+            googleTokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null
+        };
+        if (tokens.refresh_token) update.googleRefreshToken = calendarCredential(tokens.refresh_token, user._id, 'refresh', 'seal');
+        // A disconnect or newer consent can win while Google refreshes the access token.
+        User.updateOne({ _id: user._id, googleRefreshToken: oldRefresh, ...(currentWorkspace() ? { googleConnectionId: user.googleConnectionId } : {}) }, { $set: update })
+            .catch(() => console.error('Could not persist refreshed calendar credentials.'));
     });
 
     return google.calendar({ version: 'v3', auth: oAuth2Client });
@@ -50,7 +60,7 @@ async function getCalendarClient(user) {
 async function setupGoogleWebhook(user) {
     try {
         const calendar = await getCalendarClient(user);
-        const calendarId = user.googleCalendarId || 'primary';
+        const calendarId = currentWorkspace() ? 'primary' : user.googleCalendarId || 'primary';
         const webhookUrl = process.env.WEBHOOK_URL;
 
         if (!webhookUrl) {
@@ -83,60 +93,74 @@ async function setupGoogleWebhook(user) {
  */
 async function syncToGoogle(event, action, userId) {
     try {
-        console.log(`🚀 Triggering Sync Website -> Google [Action: ${action}] [Event: ${event.title}]`);
-        const user = await User.findById(userId);
+        const workspace = currentWorkspace();
+        if (process.env.SAAS_ENABLED === 'true' && !workspace) return;
+        const projection = '+googleAccessToken +googleRefreshToken';
+        const user = workspace ? await User.findOne({ studioOwner: true, accountDisabled: { $ne: true } }, projection) : await User.findById(userId, projection);
         if (!user || !user.googleAccessToken) {
             console.log("⚠️ Sync skipped: User not connected to Google.");
             return;
         }
 
+        if (workspace && !await activeCalendarOwner(workspace, user._id)) return;
         // Abort if event is read-only (e.g. Google Birthday)
         if (event.isReadOnly) {
-            console.log(`🛡️ Sync aborted: [Event: ${event.title}] is Google-managed and Read-Only.`);
             return;
         }
 
         const calendar = await getCalendarClient(user);
-        const calendarId = user.googleCalendarId || 'primary';
+        const calendarId = currentWorkspace() ? 'primary' : user.googleCalendarId || 'primary';
 
+        const prefix = eventKeyPrefix(user);
+        if (event.googleEventId && !event.googleEventId.startsWith(prefix)) return;
+        const externalId = event.googleEventId?.slice(prefix.length);
         const googleEventResource = {
             summary: event.title,
             description: event.description || '',
             location: event.location || '',
             ...googleEventTimes(event),
+            ...(workspace ? { extendedProperties: { private: { studioXWorkspace: workspace._id } } } : {}),
         };
 
-        console.log("📤 Creating Google Event Payload:", JSON.stringify(googleEventResource, null, 2));
-
-        if (action === 'CREATE') {
-            const response = await calendar.events.insert({
-                calendarId,
-                resource: googleEventResource
-            });
-            console.log("✅ Google Event Inserted:", response.data.id);
-            event.googleEventId = response.data.id;
-            event.lastUpdatedFrom = 'local';
-            await event.save();
-        } else if (action === 'UPDATE' && event.googleEventId) {
-            const response = await calendar.events.update({
-                calendarId,
-                eventId: event.googleEventId,
-                resource: googleEventResource
-            });
-            console.log("✅ Google Event Updated:", response.data.id);
-            event.lastUpdatedFrom = 'local';
-            await event.save();
-        } else if (action === 'DELETE' && event.googleEventId) {
-            await calendar.events.delete({
-                calendarId,
-                eventId: event.googleEventId
-            });
-            console.log("🗑️ Google Event Deleted:", event.googleEventId);
-        }
+        return await withCalendarLease(user, async () => {
+            if (action === 'CREATE') {
+                const response = await calendar.events.insert({
+                    calendarId,
+                    resource: googleEventResource
+                }, { timeout: 15000, retry: false });
+                event.googleEventId = prefix + response.data.id;
+                event.lastUpdatedFrom = 'local';
+                await event.save();
+            } else if (action === 'UPDATE' && event.googleEventId) {
+                const method = workspace ? 'patch' : 'update';
+                await calendar.events[method]({
+                    calendarId,
+                    eventId: externalId,
+                    resource: googleEventResource
+                }, { timeout: 15000, retry: false });
+                event.lastUpdatedFrom = 'local';
+                await event.save();
+            } else if (action === 'DELETE' && event.googleEventId) {
+                await calendar.events.delete({
+                    calendarId,
+                    eventId: externalId
+                }, { timeout: 15000, retry: false });
+            }
+        });
     } catch (error) {
-        console.error("❌ Google Calendar Sync Error:", error.response?.data || error.message);
+        console.error("Google Calendar could not update the remote event.");
         throw error; // Rethrow to catch in routes
     }
+}
+
+async function storeSyncStatus(user, update) {
+    if (!currentWorkspace()) {
+        await User.findByIdAndUpdate(user._id, update);
+        return true;
+    }
+    if (!user.googleConnectionId) return false;
+    const result = await User.updateOne({ _id: user._id, googleConnectionId: user.googleConnectionId }, { $set: update });
+    return result.matchedCount > 0;
 }
 
 /**
@@ -147,15 +171,18 @@ async function syncToGoogle(event, action, userId) {
  */
 async function pollGoogleCalendar(user, io, isFullSync = false) {
     if (!user) return { success: false };
-    if (syncingUsers.has(user._id.toString())) {
+    const workspace = currentWorkspace();
+    if (process.env.SAAS_ENABLED === 'true' && !workspace) return { success: false };
+    const lockId = (workspace?._id || 'personal') + ':' + user._id;
+    if (syncingUsers.has(lockId)) {
         console.log(`⏳ Sync already in progress for ${user.googleEmail || user.email}. Skipping redundant request.`);
         return { success: false, inProgress: true };
     }
 
     try {
-        syncingUsers.add(user._id.toString());
+        syncingUsers.add(lockId);
         const calendar = await getCalendarClient(user);
-        const calendarId = user.googleCalendarId || 'primary';
+        const calendarId = currentWorkspace() ? 'primary' : user.googleCalendarId || 'primary';
 
         // 1. Define sync window
         // For full sync: 1 year back to 2 years ahead
@@ -172,6 +199,8 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
 
         console.log(`📡 Starting ${isFullSync ? 'FULL' : 'DELTA'} Sync for ${user.googleEmail || user.email}...`);
 
+        if (workspace && (!user.googleConnectionId || !user.googleCalendarSource || !await User.exists(snapshotFilter(user)))) return { success: false };
+
         // 2. Fetch all pages of events
         do {
             const response = await calendar.events.list({
@@ -183,130 +212,144 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
                 showDeleted: true,
                 pageToken: pageToken || undefined,
                 maxResults: 250
-            });
+            }, { timeout: 15000 });
 
             if (response.data.timeZone) calendarTimezone = response.data.timeZone;
             if (response.data.items) {
-                googleEvents = googleEvents.concat(response.data.items);
+                const visible = workspace ? response.data.items.filter(item => {
+                    const owner = item.extendedProperties?.private?.studioXWorkspace;
+                    return !owner || owner === workspace._id;
+                }) : response.data.items;
+                googleEvents = googleEvents.concat(visible);
             }
             pageToken = response.data.nextPageToken;
         } while (pageToken);
 
-        const googleEventIds = googleEvents.map(e => e.id);
+        return await withCalendarLease(user, async renew => {
+            const prefix = eventKeyPrefix(user);
+            const googleEventIds = new Set(googleEvents.map(e => prefix + e.id));
 
-        if (googleEvents.length > 0) {
-            console.log(`🔍 Fetched ${googleEvents.length} events from Google.`);
-        }
-
-        // 3. Update/Create Local Events from Google
-        for (const gEvent of googleEvents) {
-            let localEvent = await Event.findOne({ googleEventId: gEvent.id });
-
-            // Deduplication Fallback
-            if (!localEvent && gEvent.status !== 'cancelled') {
-                const gStart = googleDateRange(gEvent, calendarTimezone).start;
-                localEvent = await Event.findOne({
-                    title: gEvent.summary || 'Untitled Event',
-                    start: gStart,
-                    userId: user._id
-                });
-
-                if (localEvent) {
-                    localEvent.googleEventId = gEvent.id;
-                    localEvent.lastUpdatedFrom = 'google';
-                    await localEvent.save();
-                    hasChanges = true;
-                }
+            if (googleEvents.length > 0) {
+                console.log(`🔍 Fetched ${googleEvents.length} events from Google.`);
             }
 
-            if (gEvent.status === 'cancelled') {
-                if (localEvent) {
-                    if (localEvent.origin === 'google') {
-                        await Event.findByIdAndDelete(localEvent._id);
-                        hasChanges = true;
-                    } else {
-                        localEvent.googleEventId = null;
-                        localEvent.lastUpdatedFrom = 'local';
+            // 3. Update/Create Local Events from Google
+            for (const gEvent of googleEvents) {
+                await renew();
+                let localEvent = await Event.findOne({ googleEventId: prefix + gEvent.id });
+
+                // Deduplication Fallback
+                if (!workspace && !localEvent && gEvent.status !== 'cancelled') {
+                    const gStart = googleDateRange(gEvent, calendarTimezone).start;
+                    localEvent = await Event.findOne({
+                        title: gEvent.summary || 'Untitled Event',
+                        start: gStart,
+                        userId: user._id
+                    });
+
+                    if (localEvent) {
+                        localEvent.googleEventId = gEvent.id;
+                        localEvent.lastUpdatedFrom = 'google';
                         await localEvent.save();
                         hasChanges = true;
                     }
                 }
-                continue;
-            }
 
-            const eventData = {
-                title: gEvent.summary || 'Untitled Event',
-                description: gEvent.description || '',
-                ...googleDateRange(gEvent, calendarTimezone),
-                location: gEvent.location || '',
-                userId: user._id,
-                googleEventId: gEvent.id,
-                googleEventType: gEvent.eventType || 'default',
-                type: gEvent.eventType === 'birthday' ? 'Birthday' : 'Other',
-                isReadOnly: gEvent.eventType !== 'default',
-                lastUpdatedFrom: 'google'
-            };
-
-            if (localEvent) {
-                const gUpdated = new Date(gEvent.updated);
-                const missingDateMetadata = !Object.hasOwn(localEvent.toObject(), 'allDay')
-                    || (Boolean(gEvent.start?.date) && (!localEvent.allDay || !localEvent.startDate || !localEvent.endDateExclusive));
-                if (localEvent.updatedAt < gUpdated) {
-                    await Event.findByIdAndUpdate(localEvent._id, eventData);
-                    hasChanges = true;
-                } else if (missingDateMetadata && localEvent.lastUpdatedFrom === 'google' && gEvent.start?.date) {
-                    // Backfill date-only semantics without overwriting newer local titles or crew.
-                    await Event.findByIdAndUpdate(localEvent._id, googleDateRange(gEvent, calendarTimezone));
-                    hasChanges = true;
+                if (gEvent.status === 'cancelled') {
+                    if (localEvent) {
+                        if (localEvent.origin === 'google') {
+                            await Event.findByIdAndDelete(localEvent._id);
+                            hasChanges = true;
+                        } else {
+                            localEvent.googleEventId = undefined;
+                            localEvent.lastUpdatedFrom = 'local';
+                            await localEvent.save();
+                            hasChanges = true;
+                        }
+                    }
+                    continue;
                 }
-            } else {
-                const newEvent = new Event({ ...eventData, origin: 'google' });
-                await newEvent.save();
-                hasChanges = true;
-            }
-        }
 
-        // 4. Cleanup Orphaned Local Events (within the polled window)
-        const windowStart = new Date(timeMin);
-        const windowEnd = new Date(timeMax);
-        const localSyncedEvents = await Event.find({ 
-            userId: user._id, 
-            googleEventId: { $ne: null },
-            start: { $gte: windowStart, $lte: windowEnd }
-        });
+                const eventData = {
+                    title: gEvent.summary || 'Untitled Event',
+                    description: gEvent.description || '',
+                    ...googleDateRange(gEvent, calendarTimezone),
+                    location: gEvent.location || '',
+                    userId: localEvent?.userId || user._id,
+                    googleEventId: prefix + gEvent.id,
+                    googleEventType: gEvent.eventType || 'default',
+                    type: gEvent.eventType === 'birthday' ? 'Birthday' : localEvent?.type || 'Other',
+                    isReadOnly: Boolean(gEvent.eventType && gEvent.eventType !== 'default'),
+                    lastUpdatedFrom: 'google'
+                };
 
-        for (const lEvent of localSyncedEvents) {
-            if (!googleEventIds.includes(lEvent.googleEventId)) {
-                if (lEvent.origin === 'google') {
-                    await Event.findByIdAndDelete(lEvent._id);
-                    hasChanges = true;
+                if (localEvent) {
+                    const gUpdated = new Date(gEvent.updated);
+                    const missingDateMetadata = !Object.hasOwn(localEvent.toObject(), 'allDay')
+                        || (Boolean(gEvent.start?.date) && (!localEvent.allDay || !localEvent.startDate || !localEvent.endDateExclusive));
+                    if (localEvent.updatedAt < gUpdated) {
+                        await Event.findByIdAndUpdate(localEvent._id, eventData);
+                        hasChanges = true;
+                    } else if (missingDateMetadata && localEvent.lastUpdatedFrom === 'google' && gEvent.start?.date) {
+                        // Backfill date-only semantics without overwriting newer local titles or crew.
+                        await Event.findByIdAndUpdate(localEvent._id, googleDateRange(gEvent, calendarTimezone));
+                        hasChanges = true;
+                    }
                 } else {
-                    lEvent.googleEventId = null;
-                    lEvent.lastUpdatedFrom = 'local';
-                    await lEvent.save();
+                    const newEvent = new Event({ ...eventData, origin: 'google' });
+                    await newEvent.save();
                     hasChanges = true;
                 }
             }
-        }
 
-        // 5. Update User sync metadata
-        await User.findByIdAndUpdate(user._id, {
-            googleLastSyncAt: new Date(),
-            googleSyncError: null
-        });
-
-        if (hasChanges && io) {
-            io.to('admin').emit('calendar_update', {
-                action: 'SYNC', 
-                email: user.googleEmail || user.email,
-                lastSyncAt: new Date()
+            // 4. Cleanup Orphaned Local Events (within the polled window)
+            const windowStart = new Date(timeMin);
+            const windowEnd = new Date(timeMax);
+            const localSyncedEvents = await Event.find({
+                ...(workspace ? {} : { userId: user._id }),
+                googleEventId: workspace ? { $regex: '^' + prefix } : { $ne: null },
+                start: { $gte: windowStart, $lte: windowEnd }
             });
-        }
-        console.log(`✅ Sync Completed for ${user.googleEmail || user.email}.`);
-        return { success: true };
 
+            for (const lEvent of localSyncedEvents) {
+                await renew();
+                if (!googleEventIds.has(lEvent.googleEventId)) {
+                    if (lEvent.origin === 'google') {
+                        await Event.findByIdAndDelete(lEvent._id);
+                        hasChanges = true;
+                    } else {
+                        lEvent.googleEventId = undefined;
+                        lEvent.lastUpdatedFrom = 'local';
+                        await lEvent.save();
+                        hasChanges = true;
+                    }
+                }
+            }
+
+            // 5. Update User sync metadata
+            await storeSyncStatus(user, { googleLastSyncAt: new Date(), googleSyncError: null });
+
+            if (hasChanges && io) {
+                io.to('admin').emit('calendar_update', {
+                    action: 'SYNC',
+                    email: user.googleEmail || user.email,
+                    lastSyncAt: new Date()
+                });
+            }
+            console.log(`✅ Sync Completed for ${user.googleEmail || user.email}.`);
+            return { success: true };
+        }, true);
     } catch (error) {
+        if (['calendar_busy', 'calendar_changed'].includes(error.code))
+            return { success: false, inProgress: error.code === 'calendar_busy' };
         let errorMessage = error.message;
+        if (workspace) {
+            const reason = error.response?.data?.error?.errors?.[0]?.reason;
+            if (reason === 'accessNotConfigured' || error.response?.data?.error?.details?.some?.(detail => detail.reason === 'SERVICE_DISABLED'))
+                errorMessage = 'The Google Calendar API is disabled in the Studio X OS Google Cloud project. Ask Studio X OS support to enable it, then sync again.';
+            else if (error.response?.data?.error === 'invalid_grant') errorMessage = 'Calendar permission has expired. Reconnect your Google account.';
+            else errorMessage = 'Google Calendar sync could not finish. Try again or reconnect your account.';
+        }
         if (error.response?.data?.error === 'insufficient_scope' || error.message.includes('insufficient authentication scopes')) {
             errorMessage = "INSUFFICIENT_SCOPES: Please disconnect and reconnect your Google Calendar to grant required permissions.";
             console.error(`❌ Scope Error for ${user.googleEmail || user.email}: ${errorMessage}`);
@@ -315,7 +358,7 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
         }
 
         // Persist error to user model for UI to show
-        await User.findByIdAndUpdate(user._id, { googleSyncError: errorMessage });
+        if (!await storeSyncStatus(user, { googleSyncError: errorMessage })) return { success: false };
         
         if (io) {
             io.to('admin').emit('calendar_update', {
@@ -326,7 +369,7 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
         }
         return { success: false };
     } finally {
-        syncingUsers.delete(user._id.toString());
+        syncingUsers.delete(lockId);
     }
 }
 

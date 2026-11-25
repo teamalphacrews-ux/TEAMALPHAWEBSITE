@@ -3,8 +3,10 @@ const { configuration } = require("./oauthState");
 function calendarConnection(user = {}, env = process.env) {
   let configured = false;
   try { configuration(env); configured = true; } catch { /* Report readiness without exposing credentials. */ }
-  const reconnectRequired = Boolean(user.googleAccessToken && !user.googleRefreshToken);
-  const isSynced = configured && Boolean(user.googleAccessToken && user.googleRefreshToken);
+  const scoped = require('../saas/tenantContext').currentWorkspace();
+  const hasBinding = !scoped || Boolean(user.googleConnectionId && user.googleCalendarSource);
+  const reconnectRequired = Boolean(user.googleAccessToken && (!user.googleRefreshToken || !hasBinding));
+  const isSynced = configured && hasBinding && Boolean(user.googleAccessToken && user.googleRefreshToken);
   return {
     configured,
     isSynced,
@@ -13,7 +15,9 @@ function calendarConnection(user = {}, env = process.env) {
     lastSyncAt: user.googleLastSyncAt || null,
     syncError: user.googleSyncError || null,
     setupMessage: !configured
-      ? "Google Calendar setup is incomplete. Your studio administrator needs to finish the Google connection settings."
+      ? (scoped
+        ? "Studio X OS support needs to finish the secure Google Calendar setup. You can keep scheduling studio events here."
+        : "Google Calendar setup is incomplete. Your studio administrator needs to finish the Google connection settings.")
       : reconnectRequired ? "Reconnect Google Calendar to restore permission for ongoing synchronization." : "",
   };
 }
@@ -21,7 +25,7 @@ function calendarConnection(user = {}, env = process.env) {
 function createCalendarSyncHandler({ User, pollGoogleCalendar, env = process.env }) {
   return async (req, res) => {
     try {
-      const user = await User.findById(req.user.id);
+      const user = await User.findById(req.user.id, '+googleAccessToken +googleRefreshToken');
       if (!user) return res.status(404).json({ message: "Studio account not found." });
       const status = calendarConnection(user, env);
       if (!status.configured) return res.status(503).json({ message: status.setupMessage });

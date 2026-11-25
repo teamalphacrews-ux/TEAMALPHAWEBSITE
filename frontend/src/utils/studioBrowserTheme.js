@@ -1,4 +1,4 @@
-const colors = { dark: '#131416', light: '#ffffff', auth: '#ffffff' };
+const colors = { dark: '#131416', light: '#ffffff', auth: '#ffffff', 'product-auth': '#000000' };
 
 /** Match browser chrome and safe-area canvas to the workspace; restore public-page branding on exit. */
 export function installStudioBrowserTheme(document, theme) {
@@ -11,12 +11,19 @@ export function installStudioBrowserTheme(document, theme) {
     meta.setAttribute('name', 'theme-color');
     document.head.appendChild(meta);
   }
+  const viewport = theme === 'product-auth' ? document.querySelector('meta[name="viewport"]') : null;
+  const viewportContent = viewport?.getAttribute('content');
+  if (viewport && viewportContent != null) {
+    const options = viewportContent.split(',').map(option => option.trim()).filter(option => option && !/^viewport-fit\s*=/i.test(option));
+    viewport.setAttribute('content', [...options, 'viewport-fit=cover'].join(', '));
+  }
   const previous = { color: meta.getAttribute('content'), canvas: root.style.getPropertyValue('--studio-browser-canvas'), scheme: root.style.colorScheme };
   meta.setAttribute('content', color);
   root.style.setProperty('--studio-browser-canvas', color);
-  root.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
+  root.style.colorScheme = (theme === 'dark' || theme === 'product-auth') ? 'dark' : 'light';
   root.setAttribute('data-studio-browser-theme', Object.hasOwn(colors, theme) ? theme : 'light');
   return () => {
+    if (viewport && viewportContent != null) viewport.setAttribute('content', viewportContent);
     if (created) meta.remove();
     else if (previous.color === null) meta.removeAttribute('content');
     else meta.setAttribute('content', previous.color);

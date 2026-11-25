@@ -811,7 +811,7 @@ export const DOC_GUIDES = [
         "id": "calendar",
         "title": "Create and review an event",
         "paragraphs": [
-          "Studio calendar holds shoots, consultations and other scheduled events. Google Calendar is a separate connection that can be unavailable or require authorization. Local scheduling should be reviewed in the studio’s displayed timezone.",
+          "Studio calendar holds shoots, consultations and other scheduled events. To sync with Google, open Calendar as the studio owner, choose Connect Google and approve calendar access for a Google account dedicated to that studio. A primary calendar can connect to one studio at a time. Events in its primary calendar become visible to your team. Use Disconnect to stop future sync. Check the studio timezone when scheduling.",
           "For several shoot dates, keep the overall Project date and End date on the project, then create a calendar event for each distinct session. A contact is a person, and the enquiry form captures one initial event request; Additional clients means other people, not extra events. Enter and verify venue text manually."
         ],
         "steps": [

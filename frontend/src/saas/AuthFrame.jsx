@@ -15,10 +15,10 @@ import { PRODUCT_BRAND } from './productBrandAssets';
 export function SignupFrame({ title, description, children, invitation = false, signIn = false, plan }) {
   useEffect(() => { const previous = document.title; document.title = title + ' · Studio X OS'; return () => { document.title = previous; }; }, [title]);
   return <main className={`studio-app saas-auth saas-product-auth${signIn ? ' saas-login-reference' : ''}`}>
-    {signIn && <AuthFluidBackdrop />}
     <header className="saas-auth-header">
       <a className="saas-product-brand" href="/studio-os" aria-label="Studio X OS home">{signIn ? <img className="saas-login-lockup" src={PRODUCT_BRAND.lockup} alt="" width="640" height="213" decoding="async" /> : <StudioProductBrand tone="inverse" />}</a>
-      <Link to={signIn ? signupHref(plan) : '/studio-os/login' + (signupPlanId(plan) ? '?plan=' + plan : '')} className="saas-auth-signin">{signIn ? "New to Studio X OS?" : "Already a member?"} <strong>{signIn ? "Create a studio" : "Sign in"} <ArrowRight size={13} /></strong></Link>
+      <Link to={signIn ? signupHref(plan) : '/studio-os/login' + (signupPlanId(plan) ? '?plan=' + plan : '')} className="saas-auth-signin"><span className="saas-auth-prompt">{signIn ? "New to Studio X OS?" : "Already a member?"}</span> <strong>{signIn ? "Create a studio" : "Sign in"} <ArrowRight size={13} /></strong></Link>
+      {signIn && <AuthFluidBackdrop />}
     </header>
     <div className="saas-auth-layout">
       <section className="saas-auth-card"><h1>{title}</h1><p className="saas-auth-description">{description}</p>{children}</section>

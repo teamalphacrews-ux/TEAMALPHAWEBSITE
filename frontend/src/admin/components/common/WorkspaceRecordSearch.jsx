@@ -1,40 +1,103 @@
-import {useEffect,useRef,useState} from 'react';
-import {Link,useLocation} from 'react-router-dom';
-import {Search,X,Loader2} from 'lucide-react';
-import {OperationsModal} from '../operations/OperationsUI';
-import {useAuth} from '../../../context/AuthContext';
-import {hasFullModuleAccess} from '../../../utils/moduleAccess';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Search, X, Loader2 } from 'lucide-react';
+import { OperationsModal } from '../operations/OperationsUI';
+import { useAuth } from '../../../context/AuthContext';
+import { canAccessStudioPath, hasFullModuleAccess } from '../../../utils/moduleAccess';
+import { studioText } from '../../../utils/studioTranslations';
 import API from '../../../utils/apiConfig';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
-const labels={contacts:'Contacts',projects:'Projects',enquiries:'Enquiries',quotations:'Quotations',invoices:'Invoices'};
-export default function WorkspaceRecordSearch(){
- const {user}=useAuth(),location=useLocation();
- if(!hasFullModuleAccess(user))return null;
- return <RecordSearch key={String(user?._id||user?.id||'')+':'+String(user?.workspace?.id||user?.workspace?._id||'legacy')+location.pathname+location.search}/>;
+import { commercialNavSections } from './workspaceNavigation';
+import { useStudioPreferences } from './StudioPreferences';
+import './workspaceRecordSearch.css';
+
+const labels = { contacts: 'Contacts', projects: 'Projects', enquiries: 'Enquiries', quotations: 'Quotations', invoices: 'Invoices' };
+
+export default function WorkspaceRecordSearch() {
+  const { user } = useAuth();
+  const location = useLocation();
+  if (!user || (!IS_COMMERCIAL_DEPLOYMENT && !hasFullModuleAccess(user))) return null;
+  const sessionKey = [user._id || user.id, user.workspace?.id || user.workspace?._id, location.pathname, location.search].join(':');
+  return <RecordSearch key={sessionKey} />;
 }
-function RecordSearch(){
- const {token,user}=useAuth();
- const shortcutLabel = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K';
- const [open,setOpen]=useState(false),[query,setQuery]=useState(''),[groups,setGroups]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const session=String(user?.workspace?.id||user?.workspace?._id||'legacy')+':'+String(user?._id||user?.id||'');
- const active=useRef(0), inputRef=useRef(null);
- useEffect(()=>{
-   const shortcut=e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'&&!document.querySelector('[aria-modal=true]')){e.preventDefault();setOpen(true);}};
-   window.addEventListener('keydown',shortcut);return()=>window.removeEventListener('keydown',shortcut);
- },[]);
- useEffect(()=>{
-  const request=++active.current,controller=new AbortController();
-  if(!open||query.trim().length<2)return()=>controller.abort();
-  const timer=setTimeout(async()=>{
-    setBusy(true);setError('');setGroups([]);
-    try{const response=await fetch(API+'/api/studio/search?q='+encodeURIComponent(query.trim()),{headers:{Authorization:'Bearer '+token},signal:controller.signal});const data=await response.json();if(!response.ok)throw new Error(data.error||'Search is unavailable.');if(active.current===request)setGroups(Array.isArray(data.groups)?data.groups:[]);}
-    catch(failure){if(!controller.signal.aborted&&active.current===request)setError(failure.message);}
-    finally{if(active.current===request)setBusy(false);}
-  },250);
-  return()=>{clearTimeout(timer);controller.abort();};
- },[query,open,token,session]);
- return <><button className="studio-icon-button studio-record-search-trigger" type="button" aria-label="Search clients, projects and documents" onClick={()=>setOpen(true)}><Search size={18}/>{IS_COMMERCIAL_DEPLOYMENT&&<><span className="sx-record-search-label">Search clients, projects, documents</span><span className="sx-record-search-short">Search</span><kbd className="sx-record-search-key" aria-hidden="true">{shortcutLabel}</kbd></>}</button>{open&&<OperationsModal title="Search your studio" description="Find clients, projects, enquiries and documents." onClose={()=>setOpen(false)}>
-  <label className="studio-search"><Search size={18}/><input ref={inputRef} type="search" data-autofocus aria-label="Search workspace records" placeholder="Name, phone, quote or invoice…" value={query} maxLength={80} onChange={e=>{setQuery(e.target.value);setGroups([]);setError('');setBusy(e.target.value.trim().length>=2);}}/>{query&&<button type="button" className="studio-icon-button" aria-label="Clear record search" onClick={()=>{setQuery('');setBusy(false);setGroups([]);setError('');inputRef.current?.focus();}}><X size={15}/></button>}</label>
-  <div className="studio-record-results" role="status">{busy?<p><Loader2 size={16}/>Searching your studio…</p>:error?<p className="studio-error">{error}</p>:query.trim().length<2?<p className="studio-muted">Enter at least two characters.</p>:groups.every(group=>!group.results?.length)?<p className="studio-muted">No matching records. Try another name or document number.</p>:groups.filter(group=>group.results?.length).map(group=><section key={group.kind}><h3>{labels[group.kind]||'Records'}</h3>{group.results.map(row=><Link key={row.id} to={row.path} onClick={()=>setOpen(false)}><strong>{row.label}</strong><small>{row.subtitle}</small></Link>)}</section>)}</div>
- </OperationsModal>}</>;
+
+function RecordSearch() {
+  const [open, setOpen] = useState(false);
+  const shortcutLabel = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K';
+  useEffect(() => {
+    const shortcut = event => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k' && !document.querySelector('[aria-modal=true]')) {
+        event.preventDefault();
+        setOpen(true);
+      }
+    };
+    window.addEventListener('keydown', shortcut);
+    return () => window.removeEventListener('keydown', shortcut);
+  }, []);
+  return <>
+    <button className="studio-icon-button studio-record-search-trigger" type="button" aria-label="Search your studio" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+      <Search size={18} />
+      {IS_COMMERCIAL_DEPLOYMENT && <><span className="sx-record-search-label">Search your studio</span><span className="sx-record-search-short">Search</span><kbd className="sx-record-search-key" aria-hidden="true">{shortcutLabel}</kbd></>}
+    </button>
+    {open && <SearchDialog onClose={() => setOpen(false)} />}
+  </>;
+}
+
+function SearchDialog({ onClose }) {
+  const { token, user } = useAuth();
+  const { preferences } = useStudioPreferences();
+  const translate = name => studioText(preferences.language, name);
+  const canSearchRecords = hasFullModuleAccess(user);
+  const [query, setQuery] = useState('');
+  const [result, setResult] = useState(null);
+  const inputRef = useRef(null);
+  const term = query.trim();
+  const pages = IS_COMMERCIAL_DEPLOYMENT ? commercialNavSections(user, translate).flatMap(section => section.items) : [];
+  if (IS_COMMERCIAL_DEPLOYMENT && canAccessStudioPath(user, '/admin/settings')) pages.push({ path: '/admin/settings', name: 'Settings' });
+  if (IS_COMMERCIAL_DEPLOYMENT) pages.push({ path: '/studio-os/docs', name: 'Help' });
+  const matches = term.length >= 2 ? pages.filter(page =>
+    [page.name, translate(page.name)].some(name => name.toLocaleLowerCase().includes(term.toLocaleLowerCase()))
+  ) : [];
+
+  useEffect(() => {
+    if (term.length < 2 || !canSearchRecords) return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(API + '/api/studio/search?q=' + encodeURIComponent(term), {
+          headers: { Authorization: 'Bearer ' + token }, signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Record search is unavailable.');
+        if (!controller.signal.aborted) setResult({ term, groups: (Array.isArray(data.groups) ? data.groups : []).filter(group => group.results?.length) });
+      } catch (failure) {
+        if (!controller.signal.aborted) setResult({ term, error: failure.message });
+      }
+    }, 250);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [term, token, canSearchRecords]);
+
+  const ready = result?.term === term;
+  const busy = canSearchRecords && !ready;
+  const groups = ready ? result.groups || [] : [];
+  const error = ready && result.error;
+  return <OperationsModal title="Search your studio" onClose={onClose}>
+    <div className="studio-page-search">
+      <div className="studio-search"><Search size={18} aria-hidden="true" />
+        <input ref={inputRef} type="search" data-autofocus aria-label="Search your studio" placeholder={canSearchRecords ? IS_COMMERCIAL_DEPLOYMENT ? 'Page, client, project or document…' : 'Client, project or document…' : 'Find a workspace page…'} value={query} maxLength={80} onChange={event => setQuery(event.target.value)} />
+        {query && <button type="button" className="studio-icon-button" aria-label="Clear search" onClick={() => { setQuery(''); inputRef.current?.focus(); }}><X size={16} /></button>}
+      </div>
+      <div className="studio-record-results">
+        {matches.length > 0 && <section><h3>Pages</h3>{matches.map(page =>
+          <Link key={page.path} to={page.path} onClick={onClose}><strong>{translate(page.name)}</strong></Link>
+        )}</section>}
+        <div role="status">
+          {term.length < 2 ? <p>Enter at least two characters.</p> : busy ? <p><Loader2 size={16} /> Searching records…</p> : error ? <p className="studio-error">{error}</p> : !matches.length && !groups.length ? <p>No matches. Try another search.</p> : null}
+        </div>
+        {groups.map(group => <section key={group.kind}><h3>{labels[group.kind] || 'Records'}</h3>{group.results.map(row =>
+          <Link key={row.id} to={row.path} onClick={onClose}><strong>{row.label}</strong><small>{row.subtitle}</small></Link>
+        )}</section>)}
+      </div>
+    </div>
+  </OperationsModal>;
 }

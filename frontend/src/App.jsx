@@ -111,16 +111,19 @@ function App() {
   const StudioRoutes = IS_COMMERCIAL_DEPLOYMENT && inWorkspace && user?.role === 'admin' ? WorkspaceMotionRoutes : Routes;
   const workspaceOwner = user && (user._id || user.id || user.email || '') + '/' + workspaceId(user.workspace);
   const isDocsPage = /^\/(?:studio-os\/)?docs(?:\/|$)/.test(location.pathname);
+  const isAccountPage = (IS_COMMERCIAL_DEPLOYMENT && /^\/auth\/?$/i.test(location.pathname)) ||
+    (SAAS_RELEASE_ENABLED && /^\/(?:studio-os\/(?:login|auth\/callback)|signup|(?:join|invite)\/[^/]+)\/?$/i.test(location.pathname));
+  const darkLoading = isDocsPage || isAccountPage;
   const isStudioPage = IS_COMMERCIAL_DEPLOYMENT || location.pathname.startsWith("/studio-os") || location.pathname === "/auth" || location.pathname === '/signup' || /^\/(?:join|invite)\//.test(location.pathname) || location.pathname === "/admin" || location.pathname.startsWith("/admin/");
 
   return (
-    <div className={`font-sans text-[#1C1C1C] ${isStudioPage ? "bg-white" : "bg-[#F7F5F2]"} min-h-screen selection:bg-black selection:text-white`}>
+    <div className={`font-sans text-[#1C1C1C] ${isAccountPage ? "bg-black" : isStudioPage ? "bg-white" : "bg-[#F7F5F2]"} min-h-screen selection:bg-black selection:text-white`}>
       {import.meta.env.DEV && <StudioPreviewNavigation />}
-      {isStudioPage && <StudioProductMetadata />}
+      {isStudioPage && <StudioProductMetadata accountPage={isAccountPage} />}
       <Toaster position="top-right" containerStyle={isStudioPage ? { top: 'calc(80px + env(safe-area-inset-top, 0px))' } : undefined} toastOptions={{ className: isStudioPage ? "studio-toast" : undefined }} />
       <Suspense
         fallback={
-          isStudioPage ? <div className="studio-product-loading" role="status" style={isDocsPage ? { background: '#000', color: '#c8c8cf' } : undefined}><StudioProductBrand tone={isDocsPage ? 'inverse' : 'auto'} /><p>{isDocsPage ? 'Opening guides…' : 'Opening your workspace…'}</p></div> : <div className="flex h-screen w-full items-center justify-center text-xl">Loading...</div>
+          isStudioPage ? <div className="studio-product-loading" role="status" style={darkLoading ? { background: '#000', color: '#c8c8cf' } : undefined}><StudioProductBrand tone={darkLoading ? 'inverse' : 'auto'} /><p>{isDocsPage ? 'Opening guides…' : isAccountPage ? 'Opening your account…' : 'Opening your workspace…'}</p></div> : <div className="flex h-screen w-full items-center justify-center text-xl">Loading...</div>
         }
       >
         <RoutePresence>

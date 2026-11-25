@@ -286,7 +286,7 @@ function FullDashboard() {
   return (
     <div className={'studio-overview studio-overview-modern overview-organized studio-overview-reference overview-phone-refined' + (IS_COMMERCIAL_DEPLOYMENT ? ' sx-studio-desk' : '')}>
       {IS_COMMERCIAL_DEPLOYMENT ? <WorkdeskHeader greeting={greeting} name={user?.firstName || identity?.name || 'your studio'} today={studioDayKey(today, timezone)} date={dateFormat} todayMode={todayMode}
-        context={overview && todayMode ? `${formatWorkspaceNumber(summary.pendingTasks, preferences)} ${summary.pendingTasks === 1 ? 'task' : 'tasks'} on your list, ${work.todayEvents} ${work.todayEvents === 1 ? 'session' : 'sessions'} remaining today.` : overviewContext}
+        context={overview && todayMode ? `${formatWorkspaceNumber(summary.pendingTasks, preferences)} ${summary.pendingTasks === 1 ? 'task' : 'tasks'} on your list, ${work.todayEvents} ${work.todayEvents === 1 ? 'session' : 'sessions'} remaining today.` : null}
         chooseView={chooseView} onCustomize={() => setCustomizing(true)} canCreateTask={canWriteWorkspaceModule(user, 'production')} />
         : <div className="ov-page-toolbar"><div><span className="ov-page-eyebrow">YOUR CREATIVE WORKSPACE</span><WorkspaceMotionTitle>Studio overview</WorkspaceMotionTitle><p className="ov-page-context">{overviewContext}</p></div></div>}
       {error && <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={() => setRefreshKey(value => value + 1)}><RefreshCw size={14} />Retry</button></div>}

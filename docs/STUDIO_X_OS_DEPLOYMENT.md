@@ -51,3 +51,9 @@ Record the deployed frontend/backend commit and environment variable names. Depl
 the previous commercial commit to roll back application code; do not restore or
 alter databases merely to roll back UI. Keep signup closed during rollback and
 verify API readiness. Never use personal service deployment controls for this app.
+
+## Studio Google Calendar
+
+Enable Google Calendar API in the Google Cloud project used by the commercial Google sign-in client. In Google Auth Platform, add the `calendar.events.owned` scope under Data Access and allow the studio owner's account under Audience when the app is in testing. The app also requests `userinfo.email` to identify the chosen calendar account. The existing registered `SAAS_GOOGLE_REDIRECT_URI` handles both Google sign-in and the separate Calendar consent flow. Keep the commercial backend's `VAULT_SECRET` stable and at least 32 bytes.
+
+In the studio owner's Calendar screen, choose **Connect Google** and select a Google account dedicated to this studio. A primary calendar can be connected to one studio at a time. Google asks for event access separately from sign-in. The team can see events imported from that account's primary calendar. New studio calendar events sync to it. **Disconnect** stops sync, releases the connection, and retains the events already in Studio X OS. Reconnecting the same account reuses its event mappings. The commercial database must support multi-document transactions for connection changes.

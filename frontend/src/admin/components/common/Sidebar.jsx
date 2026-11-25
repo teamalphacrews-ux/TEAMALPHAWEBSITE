@@ -12,7 +12,7 @@ import WorkspaceSwitcher from '../../../saas/WorkspaceSwitcher';
 import StudioProductBrand from '../../../components/StudioProductBrand';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
 import { X, LogOut, Settings2, ArrowUpRight, ChevronDown, PanelLeftClose, PanelLeftOpen, Search, CircleHelp, Layers3 } from "lucide-react";
-import { workspaceNavTarget, workspaceIconTones as iconTones, workspacePrimaryItems as primaryItems, workspaceNavigationGroups as groups } from "./workspaceNavigation";
+import { commercialNavSections, workspaceNavTarget, workspaceIconTones as iconTones, workspacePrimaryItems as primaryItems, workspaceNavigationGroups as groups } from "./workspaceNavigation";
 
 import { useWorkspaceRailMotion } from './useWorkspaceRailMotion';
 import WorkspaceNavIndicator from './WorkspaceNavIndicator';
@@ -29,14 +29,8 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
   const searchTerm = compact ? '' : query.trim().toLowerCase();
   const aliases = { Quotations: 'quotes proposal', Contacts: 'clients address book', Finance: 'invoices payments expenses', Email: 'gmail mail inbox', 'Client support': 'chat messages', 'Crew & scheduling': 'team photographers', Tasks: 'post production editing delivery' };
   const matches = item => (item.name + ' ' + t(item.name) + ' ' + (aliases[item.name] || '')).toLowerCase().includes(searchTerm);
-  // Commercial tasks belong alongside projects, rather than behind a second
-  // navigation layer. The destination and its permission gate stay the same.
-  const taskItem = groups.find(group => group.id === 'operations')?.items.find(item => item.path === '/admin/post-production');
-  const navigationPrimary = IS_COMMERCIAL_DEPLOYMENT && taskItem
-    ? [primaryItems[0], { ...taskItem, name: 'Tasks' }, ...primaryItems.slice(1)]
-    : primaryItems;
-  const matchingPrimary = navigationPrimary.filter(item => canAccessStudioPath(user, item.path) && matches(item));
-  const matchingGroups = groups.map(group => ({ ...group, items: group.items.filter(item => !(IS_COMMERCIAL_DEPLOYMENT && item.path === '/admin/post-production') && canAccessStudioPath(user, item.path) && (matches(item) || matches({ name: group.label }))) })).filter(group => group.items.length);
+  const matchingPrimary = primaryItems.filter(item => canAccessStudioPath(user, item.path) && matches(item));
+  const matchingGroups = groups.map(group => ({ ...group, items: group.items.filter(item => canAccessStudioPath(user, item.path) && (matches(item) || matches({ name: group.label }))) })).filter(group => group.items.length);
   const closeNavigation = () => { setQuery(''); onClose?.(); };
   const [unreadCount, setUnreadCount] = useState(0);
   const navRef = useRef(null);
@@ -98,18 +92,8 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
     </NavLink>
   );
   if (IS_COMMERCIAL_DEPLOYMENT) {
-    const pages = [...navigationPrimary, ...groups.flatMap(group => group.items)]
-      .filter((item, index, all) => all.findIndex(other => other.path === item.path) === index)
-      .filter(item => canAccessStudioPath(user, item.path));
-    const workspacePaths = ['/admin', '/admin/post-production', '/admin/studio-projects', '/admin/calendar'];
-    const studioPaths = ['/admin/crew', '/admin/activity-log', '/admin/finance', '/admin/chats'];
-    const groupLinks = paths => paths.flatMap(path => pages.filter(item => item.path === path));
-    const extraPages = pages.filter(item => !workspacePaths.includes(item.path) && !studioPaths.includes(item.path));
-    const sections = [
-      { id: 'workspace', label: t('Workspace'), items: groupLinks(workspacePaths) },
-      { id: 'studio', label: t('Studio'), items: groupLinks(studioPaths) },
-      { id: 'more', label: 'More pages', items: extraPages },
-    ].filter(section => section.items.length);
+    const sections = commercialNavSections(user, t);
+    const extraPages = sections.find(section => section.id === 'more')?.items || [];
     const sorted = items => sortSidebarItems(items, preferences.sidebarSort, preferences.sidebarOrder, preferences.language);
     const activeExtra = extraPages.some(item => pathname === item.path || pathname.startsWith(item.path + '/'));
     const moreOpen = expanded.more?.pathname === pathname ? expanded.more.open : activeExtra;
@@ -127,7 +111,7 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
           </button> : <button type="button" className="sx-desk-rail-toggle" onClick={onClose} aria-label="Close navigation"><X size={16} /></button>}
         </header>
         <nav ref={navRef} className="studio-nav sx-desk-nav" aria-label="Workspace pages">
-          <WorkspaceNavIndicator navRef={navRef} selection={[pathname, compact, moreOpen, query, pages.length, preferences.language, preferences.sidebarSort, preferences.sidebarOrder].join('|')} />
+          <WorkspaceNavIndicator navRef={navRef} selection={[pathname, compact, moreOpen, query, sections.map(section => section.items.length), preferences.language, preferences.sidebarSort, preferences.sidebarOrder].join('|')} />
           {sections.filter(section => section.id !== 'more').map(section =>
             <section className="sx-desk-nav-group" key={section.id} aria-label={section.label}>
               <h2>{section.label}</h2>{sorted(section.items).map(renderLink)}

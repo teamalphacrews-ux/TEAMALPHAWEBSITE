@@ -20,9 +20,12 @@ export default function ProductDocsTeaser() {
           const screen = PRODUCT_SCREENSHOTS[path.screenshot];
           return <a key={path.slug} href={'/studio-os/docs/' + path.slug} className="sos-docs-path">
             <div className="sos-docs-path-image">
-              <img src={screen.light.desktop} srcSet={screen.light.desktop + ' 1440w, ' + screen.light.desktop2x + ' 2880w'}
-                sizes="(max-width: 760px) 92vw, (max-width: 1440px) 31vw, 420px" width={screen.width} height={screen.height}
-                alt={screen.description} loading="lazy" decoding="async" />
+              <picture>
+                <source media="(max-width: 600px)" srcSet={screen.light.mobile2x} width={screen.mobileWidth} height={screen.mobileHeight} />
+                <img src={screen.light.desktop} srcSet={screen.light.desktop + ' 1440w, ' + screen.light.desktop2x + ' 2880w'}
+                  sizes="(max-width: 760px) 92vw, (max-width: 1440px) 31vw, 420px" width={screen.width} height={screen.height}
+                  alt={screen.description} loading="lazy" decoding="async" />
+              </picture>
             </div>
             <span className="sos-docs-path-audience">{path.label}</span>
             <h3>{path.title}<ArrowRight size={20} aria-hidden="true" /></h3>

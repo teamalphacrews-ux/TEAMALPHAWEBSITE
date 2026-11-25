@@ -306,3 +306,91 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
 @keyframes record-view-enter { from { opacity: .6; transform: translateX(26px); } to { opacity: 1; transform: none; } }
 html[data-studio-motion=reduced] .studio-commercial-glass [data-record-key] { translate: none !important; }
 @media (prefers-reduced-motion:reduce) { .studio-commercial-glass [data-record-key] { translate: none !important; } }
+
+.record-contact-type-picker { display: none; }
+
+@media screen and (max-width: 600px) {
+  #sx-workspace-shell .record-contact-directory {
+    .project-contact-heading {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px 12px; margin-bottom: 12px;
+    }
+    .project-contact-heading-copy { flex: 1 1 auto; }
+    .project-contact-heading-actions { width: auto; flex: 0 0 auto; }
+    .record-contact-views {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 4px 8px; margin-bottom: 10px;
+    }
+    .record-contact-views .record-views { width: auto; margin: 0; }
+    .record-views > button { padding-inline: 8px; }
+    .record-contact-type-picker { display: block; min-width: 0; max-width: 100%; }
+    .record-contact-type-picker .studio-select-trigger { min-height: 44px; font-size: 14px; }
+    .project-contact-filters { display: none; }
+    .project-contact-register-tools { gap: 4px; margin-bottom: 12px; }
+    .reference-search { grid-column: 1 / -1; grid-row: 1; width: 100%; max-width: none; margin: 0; }
+    .project-contact-register-tools:has(> button) .reference-search { grid-column: 1; }
+    .project-contact-result-count { grid-column: 1 / -1; grid-row: 2; margin: 0; }
+    .project-contact-result-count[data-filtered="false"] { display: none; }
+    .record-person {
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 8px; align-items: start; padding: 14px; border-radius: 16px;
+    }
+    .record-person > header { display: contents; }
+    .record-avatar { grid-column: 1; grid-row: 1; }
+    .record-person header .reference-status { grid-column: 3; grid-row: 1; max-width: 100%; }
+    .record-person-identity { grid-column: 2; grid-row: 1; min-width: 0; }
+    .record-person-identity h2 { font-size: 16px; overflow-wrap: anywhere; }
+    .record-person-identity p { margin: 0; overflow-wrap: anywhere; }
+    .record-person-methods, .record-person footer { grid-column: 1 / -1; margin: 0; }
+    .record-person-methods { gap: 0; }
+    .record-person-methods:empty { display: none; }
+    .record-person footer { padding-top: 6px; }
+  }
+
+  #sx-workspace-shell .sx-project-detail {
+    .record-detail-back { margin: 0; }
+    > .reference-heading { gap: 10px; margin-bottom: 12px; }
+    .project-hub-header-actions {
+      display: flex; flex-wrap: wrap; align-items: stretch; justify-content: flex-start;
+      width: 100%; gap: 6px; margin: 0;
+    }
+    .project-hub-header-actions > :is(.studio-select,.reference-more,.reference-create-menu) {
+      flex: 1 1 max-content; max-width: none; min-width: 0; width: auto;
+    }
+    .project-hub-header-actions > .reference-heading-spacer { display: none; }
+    .project-hub-header-actions > :is(.studio-select,.reference-more,.reference-create-menu) > button {
+      width: 100%; min-height: 44px; padding-inline: 8px; justify-content: center;
+    }
+    .project-contact-detail-tabs { margin: 0 0 12px; }
+    .record-project-summary {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 72px), 1fr));
+      gap: 8px; margin: 0 0 12px; padding: 12px; border-radius: 16px;
+    }
+    .record-project-summary > div { min-width: 0; padding: 0; }
+    .record-project-summary > div:last-child { display: none; } /* Status is already editable above the tabs. */
+    .record-project-summary:has(> :only-child) { display: none; }
+    .record-project-summary dt { font-size: 13px; line-height: 1.35; }
+    .record-project-summary dd { margin: 0; font-size: 17px; line-height: 1.25; }
+    .record-project-summary dd button { gap: 3px; max-width: 100%; text-align: start; }
+    .record-project-summary dd svg { flex-shrink: 0; }
+    :is(.project-hub-section,.project-hub-overview,.reference-section) { padding: 14px; border-radius: 16px; }
+    .reference-payment-summary { margin-bottom: 8px; }
+    .reference-payment-summary span { font-size: 13px; }
+    .reference-section:has(.reference-payment-summary) .reference-table-scroll {
+      border: 0; box-shadow: none; padding: 0; border-radius: 0;
+    }
+    .reference-section:has(.reference-payment-summary) .studio-phone-detail-table tbody > tr {
+      min-width: 0; padding: 12px 0; gap: 8px 12px; border: 0;
+      border-top: 1px solid var(--studio-border); border-radius: 0; box-shadow: none; background: transparent;
+    }
+    .reference-section:has(.reference-payment-summary) .studio-phone-detail-table td {
+      min-width: 0; padding: 0; font-size: 14px; overflow-wrap: anywhere;
+    }
+    .reference-section:has(.reference-payment-summary) .studio-phone-detail-table td::before {
+      font-size: 13px; line-height: 1.35;
+    }
+    .reference-section:has(.reference-payment-summary) .studio-phone-detail-table td:first-child > a {
+      display: inline-flex; align-items: center; min-height: 44px; max-width: 100%;
+    }
+  }
+}

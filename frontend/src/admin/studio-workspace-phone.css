@@ -1,0 +1,108 @@
+/* On phones the tabs own their own row. Safari can resize the viewport without
+   covering the last action on a long page or requiring a guessed bottom spacer. */
+@media (max-width: 760px) {
+  #sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  #sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) > .studio-workspace {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior-y: contain;
+    padding-bottom: 0;
+    scroll-padding-block: 12px;
+  }
+  #sx-workspace-shell.studio-native-phone .studio-topbar { flex-shrink: 0; }
+  #sx-workspace-shell.studio-native-phone .studio-main { padding-bottom: 24px; }
+  #sx-workspace-shell .studio-iphone-navigation {
+    flex: none;
+    padding: 6px max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    background: var(--studio-canvas);
+  }
+  #sx-workspace-shell .studio-iphone-navigation > .studio-mobile-navigation {
+    position: static;
+    inset: auto;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  html[data-studio-keyboard] #sx-workspace-shell .studio-iphone-navigation { display: none; }
+  html[data-studio-keyboard] #sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) { height: var(--studio-visible-height, 100dvh); }
+}
+
+/* Keep every action reachable in one row on ordinary phones. A second row
+   on the narrowest devices preserves the full page guide and touch targets. */
+@media (min-width: 360px) and (max-width: 760px) {
+  #sx-workspace-shell .studio-topbar {
+    flex-wrap: nowrap;
+    gap: 4px;
+    min-height: 64px;
+    padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
+  }
+  #sx-workspace-shell .studio-topbar .studio-topbar-context { flex: 1 1 0%; gap: 0; }
+  #sx-workspace-shell .studio-topbar-context .sx-page-guide-trigger { max-width: calc(100% - 44px); gap: 4px; }
+  #sx-workspace-shell .studio-topbar .studio-record-search-trigger,
+  #sx-workspace-shell .studio-topbar .studio-quick-create > button,
+  #sx-workspace-shell.studio-native-phone .studio-topbar button.sx-desk-appearance {
+    flex: 0 0 44px; width: 44px; min-width: 44px; max-width: 44px;
+    justify-content: center; padding: 0;
+  }
+  #sx-workspace-shell .studio-topbar :is(.sx-record-search-short, .studio-quick-create-label),
+  #sx-workspace-shell .sx-desk-appearance[data-theme-choice=dark] span:last-child,
+  #sx-workspace-shell .sx-desk-appearance[data-theme-choice=light] span:first-child { display: none; }
+  #sx-workspace-shell .studio-topbar .sx-desk-appearance::before { content: none; }
+  #sx-workspace-shell .sx-desk-appearance span { width: 100%; color: var(--desk-ink); }
+}
+
+.studio-commercial-glass #studio-iphone-more .studio-more-panel {
+  background: var(--desk-panel); color: var(--desk-ink); border-color: var(--desk-line);
+}
+.studio-commercial-glass #studio-iphone-more .studio-more-header {
+  padding: 8px 14px 12px; gap: 10px; border-bottom: 1px solid var(--desk-line);
+}
+.studio-commercial-glass #studio-iphone-more .studio-more-header > .is-mark {
+  flex: none; width: 36px; height: 36px; padding: 4px; border-radius: 12px; background: #19181c;
+}
+.studio-commercial-glass #studio-iphone-more .studio-more-header > div { flex: 1; min-width: 0; }
+.studio-commercial-glass #studio-iphone-more .studio-more-header p {
+  color: var(--desk-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.studio-commercial-glass #studio-iphone-more .studio-more-content { padding: 4px 14px 12px; }
+.studio-commercial-glass #studio-iphone-more .sx-more-section {
+  padding: 8px 0; border-bottom: 1px solid var(--desk-line);
+}
+.studio-commercial-glass #studio-iphone-more .sx-more-section h3 {
+  margin: 0 0 2px; padding: 2px 8px;
+  color: var(--desk-muted); font: 650 12px/1.4 var(--studio-font);
+}
+.studio-commercial-glass #studio-iphone-more .sx-more-links {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: 2px 4px;
+}
+.studio-commercial-glass #studio-iphone-more .studio-more-shortcut,
+.studio-commercial-glass #studio-iphone-more .sx-more-disclosure {
+  display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 9px;
+  min-height: 44px; padding: 8px 10px; border: 0; border-radius: 12px;
+  color: var(--desk-ink); background: transparent; box-shadow: none;
+  font: 550 14px/1.4 var(--studio-font); text-align: start;
+}
+.studio-commercial-glass #studio-iphone-more .sx-more-disclosure { width: 100%; justify-content: space-between; }
+.studio-commercial-glass #studio-iphone-more .sx-more-disclosure[aria-expanded=true] svg { transform: rotate(180deg); }
+.studio-commercial-glass #studio-iphone-more .studio-more-shortcut > svg { flex: none; color: inherit; }
+.studio-commercial-glass #studio-iphone-more .studio-more-shortcut.is-active { color: var(--desk-selected-ink); background: var(--desk-selected); }
+.studio-commercial-glass #studio-iphone-more .studio-more-settings {
+  justify-content: flex-start; gap: 9px; min-height: 46px; width: 100%; margin: 0;
+  padding: 8px 10px; border: 0; border-radius: 12px; color: var(--desk-ink); background: transparent;
+}
+.studio-commercial-glass #studio-iphone-more .studio-more-settings > svg:first-child { margin: 0; color: inherit; }
+.studio-commercial-glass #studio-iphone-more .studio-more-account { border-top: 1px solid var(--desk-line); }
+.studio-commercial-glass #studio-iphone-more .saas-switcher { margin-bottom: 8px; }
+.studio-commercial-glass #studio-iphone-more .saas-switcher-panel {
+  position: static; inset: auto; width: 100%; margin-top: 4px; max-height: none;
+  overflow: visible; box-shadow: none; border-color: var(--desk-line); background: var(--desk-control);
+}
+.studio-commercial-glass #studio-iphone-more .saas-switcher-list { max-height: none; overflow: visible; }
+.studio-commercial-glass #studio-iphone-more .saas-switcher-panel header button { min-height: 44px; min-width: 44px; }

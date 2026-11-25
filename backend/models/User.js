@@ -35,9 +35,14 @@ const UserSchema = new mongoose.Schema({
         contactId: String, // userId or 'admin'
         clearedAt: { type: Date, default: Date.now }
     }],
-    googleAccessToken: String,
-    googleRefreshToken: String,
+    googleAccessToken: { type: String, select: false },
+    googleRefreshToken: { type: String, select: false },
     googleTokenExpiry: Date,
+    googleCalendarSource: String,
+    googleConnectionId: String,
+    googleSyncRevision: { type: Number, default: 0 },
+    googleSyncLease: { type: String, select: false },
+    googleSyncLeaseUntil: Date,
     googleCalendarId: { type: String, default: 'primary' },
     googleEmail: String,
     googleWebhookId: String,

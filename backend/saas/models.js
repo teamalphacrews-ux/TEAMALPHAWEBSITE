@@ -44,6 +44,9 @@ const invitation = new Schema({
   expiresAt: { type: Date, required: true }, invitedBy: Schema.Types.ObjectId, acceptingUntil: Date,
 }, { timestamps: true });
 invitation.index({ workspaceId: 1, email: 1 }, { unique: true, partialFilterExpression: { state: 'pending' } });
+// Google's stable subject identifies one primary calendar. The built-in _id
+// index makes cross-workspace claims exclusive, including first-time races.
+const calendarBinding = new Schema({ _id: String, workspaceId: { type: Schema.Types.ObjectId, required: true } });
 const billingEvent = new Schema({ _id: String, subscriptionId: String, createdAt: { type: Date, default: Date.now } });
 const oauthFlow = new Schema({
   provider: { type: String, enum: ['google', 'apple'], required: true },
@@ -61,5 +64,6 @@ module.exports = {
   Account: globalModel('SaaSAccount', account), Workspace: globalModel('SaaSWorkspace', workspace),
   Membership: globalModel('SaaSMembership', membership), Invitation: globalModel('SaaSInvitation', invitation),
   BillingEvent: globalModel('SaaSBillingEvent', billingEvent),
+  CalendarBinding: globalModel('SaaSCalendarBinding', calendarBinding),
   OAuthFlow: globalModel('SaaSOAuthFlow', oauthFlow),
 };

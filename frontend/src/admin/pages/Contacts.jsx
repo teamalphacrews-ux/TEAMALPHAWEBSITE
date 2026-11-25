@@ -18,8 +18,16 @@ import {
 import "./referenceContacts.css";
 import "./projectContactRefinement.css";
 import ContactDirectory from './ContactDirectory';
+import StudioSelect from "../components/common/StudioSelect";
 import RecordViewSwitch from './RecordViewSwitch';
 import './studioRecordDesk.css';
+
+const contactFilters = [
+  { id: "All Contacts", label: "All contacts" },
+  { id: "Clients", label: "Clients", type: "Client" },
+  { id: "Leads", label: "Leads", type: "Lead" },
+  { id: "Other", label: "Other", type: "Other" },
+];
 
 export default function Contacts() {
   const { user } = useAuth();
@@ -40,11 +48,15 @@ export default function Contacts() {
     next.delete('new');
     setParams(next, { replace: true });
   };
+  const selectedType = contactFilters.find(filter => filter.id === tab)?.type;
+  const filters = contactFilters.map(filter => ({
+    ...filter,
+    count: filter.type ? contacts.filter(contact => contact.contactType === filter.type).length : contacts.length,
+  }));
+  const clientCount = filters.find(filter => filter.type === "Client").count;
   const visible = contacts.filter(
     (contact) =>
-      (tab === "All Contacts" ||
-        contact.contactType ===
-          { Clients: "Client", Leads: "Lead", Other: "Other" }[tab]) &&
+      (!selectedType || contact.contactType === selectedType) &&
       [
         contact.firstName,
         contact.lastName,
@@ -57,14 +69,21 @@ export default function Contacts() {
         .includes(query.toLowerCase()),
   );
   return (
-    <div className={'reference-workspace project-contact-workspace project-contact-register' + (IS_COMMERCIAL_DEPLOYMENT ? ' record-desk' : '')}>
+    <div className={'reference-workspace project-contact-workspace project-contact-register' + (IS_COMMERCIAL_DEPLOYMENT ? ' record-desk record-contact-directory' : '')}>
       <div className="reference-heading project-contact-heading">
-        <div className="project-contact-heading-copy"><WorkspaceMotionTitle>Contacts</WorkspaceMotionTitle><p>{IS_COMMERCIAL_DEPLOYMENT && !loading && !error ? `${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'} · ${contacts.filter(contact => contact.contactType === 'Client').length} clients` : 'Find a client, open their projects or update their details.'}</p></div>
+        <div className="project-contact-heading-copy"><WorkspaceMotionTitle>Contacts</WorkspaceMotionTitle><p>{IS_COMMERCIAL_DEPLOYMENT && !loading && !error ? `${contacts.length} ${contacts.length === 1 ? 'contact' : 'contacts'} · ${clientCount} ${clientCount === 1 ? 'client' : 'clients'}` : 'Find a client, open their projects or update their details.'}</p></div>
         {canEdit && <div className="project-contact-heading-actions"><button className="reference-button" onClick={() => setEditing(null)}><Plus size={17} aria-hidden="true" />New contact</button></div>}
       </div>
-      {IS_COMMERCIAL_DEPLOYMENT && <RecordViewSwitch value={view} onChange={setView} label="Contact view"
+      {IS_COMMERCIAL_DEPLOYMENT && <div className="record-contact-views">
+        <RecordViewSwitch value={view} onChange={setView} label="Contact view"
         views={[{ id: 'people', label: 'People', icon: LayoutGrid }, { id: 'list', label: 'List', icon: List }]}
-        surfaceSelector=".record-people,.reference-mobile-records,.reference-desktop-records" />}
+        surfaceSelector=".record-people,.reference-mobile-records,.reference-desktop-records" />
+        <div className="record-contact-type-picker">
+          <StudioSelect aria-label="Filter contacts by type" value={tab} onChange={event => setTab(event.target.value)}>
+            {filters.map(filter => <option key={filter.id} value={filter.id}>{filter.label} ({filter.count})</option>)}
+          </StudioSelect>
+        </div>
+      </div>}
       <div className="project-contact-register-tools">
         <label className="reference-search">
           <Search size={17} aria-hidden="true" />
@@ -76,17 +95,12 @@ export default function Contacts() {
           />
         </label>
         {query && <button type="button" className="reference-icon-button" aria-label="Clear contact search" onClick={() => setQuery("")}><X size={17} aria-hidden="true" /></button>}
-        <p className="project-contact-result-count" role="status">{loading ? "Loading contacts…" : `${visible.length} of ${contacts.length} contacts`}</p>
+        <p className="project-contact-result-count" data-filtered={Boolean(query || selectedType)} role="status">{loading ? "Loading contacts…" : `${visible.length} of ${contacts.length} ${contacts.length === 1 ? "contact" : "contacts"}`}</p>
       </div>
       <div className="reference-tabs project-contact-filters" aria-label="Filter contacts by type">
-        {["All Contacts", "Clients", "Leads", "Other"].map((label) => (
-          <button
-            key={label}
-            className={tab === label ? "active" : ""}
-            aria-pressed={tab === label}
-            onClick={() => setTab(label)}
-          >
-            <span>{label === "All Contacts" ? "All contacts" : label}</span><span className="project-contact-filter-count">{label === "All Contacts" ? contacts.length : contacts.filter(contact => contact.contactType === { Clients: "Client", Leads: "Lead", Other: "Other" }[label]).length}</span>
+        {filters.map(filter => (
+          <button key={filter.id} className={tab === filter.id ? "active" : ""} aria-pressed={tab === filter.id} onClick={() => setTab(filter.id)}>
+            <span>{filter.label}</span><span className="project-contact-filter-count">{filter.count}</span>
           </button>
         ))}
       </div>

@@ -179,6 +179,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
     chatLauncherRef = useRef(null),
     chatCloseRef = useRef(null),
     stickToLatest = useRef(true);
+  const visibility = project?.visibility || {}, chatEnabled = !!project && visibility.allowChat !== false;
   const endpoint = `${API_BASE_URL}/api/quotes/${token}`;
   useEffect(() => {
     if (!accepted) return;
@@ -274,18 +275,20 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
     return () => window.removeEventListener("hashchange", hashChanged);
   }, []);
   useEffect(() => {
-    if (!chatOpen) return;
+    if (!chatOpen || !chatEnabled) return;
+    const inline = IS_COMMERCIAL_DEPLOYMENT && window.matchMedia('(max-width: 680px)').matches;
+    if (inline) chatRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
     chatCloseRef.current?.focus({ preventScroll: true });
     const closeOnEscape = (event) => {
       if (event.key === "Escape" && chatRef.current?.contains(event.target)) {
         event.preventDefault();
         setChatOpen(false);
-        chatLauncherRef.current?.focus({ preventScroll: true });
+        chatLauncherRef.current?.focus();
       }
     };
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [chatOpen]);
+  }, [chatOpen, chatEnabled]);
   useEffect(() => {
     if (chatOpen && stickToLatest.current && threadRef.current)
       threadRef.current.scrollTop = threadRef.current.scrollHeight;
@@ -303,7 +306,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
   };
   const closeChat = () => {
     setChatOpen(false);
-    chatLauncherRef.current?.focus({ preventScroll: true });
+    chatLauncherRef.current?.focus();
   };
   const selectPrintDocument = (document) => {
     if (workspaceRef.current)
@@ -361,7 +364,6 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
   const invoice = summary.invoice.available ? project.invoice.document : null,
     production = project?.production,
     deliveries = production?.deliveries || [];
-  const visibility = project?.visibility || {}, chatEnabled = !!project && visibility.allowChat !== false;
   const approved = summary.invoice.available,
     invoiceIssued = approved,
     started = ['in_progress', 'delivered'].includes(production?.state) || (production?.state === 'deliveries_only' && deliveries.length > 0);
@@ -816,7 +818,30 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
         </ProjectSection>}
       </main>
       {paymentRequest && invoice && <ClientPaymentDialog invoice={invoice} theme={appearance} amountPaise={paymentRequest.amountPaise} onClose={closePayment} />}
-      {chatEnabled && <><aside
+      {chatEnabled && <>
+      <button
+        type="button"
+        className="cp-chat-launcher"
+        ref={chatLauncherRef}
+        aria-label={chatOpen ? "Close support chat" : "Open support chat"}
+        aria-expanded={chatOpen}
+        aria-controls="project-support"
+        onClick={() => {
+          if (chatOpen) closeChat();
+          else {
+            stickToLatest.current = true;
+            setChatOpen(true);
+          }
+        }}
+      >
+        {chatOpen ? (
+          <X size={22} aria-hidden="true" />
+        ) : (
+          <MessageSquare size={24} aria-hidden="true" />
+        )}
+        <span className="cp-chat-launcher-label">{chatOpen ? "Close support" : "Message studio"}</span>
+      </button>
+      <aside
         id="project-support"
         className="cp-chat-popup"
         ref={chatRef}
@@ -921,28 +946,7 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
           </div>
         </form>
       </aside>
-      <button
-        type="button"
-        className="cp-chat-launcher"
-        ref={chatLauncherRef}
-        aria-label={chatOpen ? "Close support chat" : "Open support chat"}
-        aria-expanded={chatOpen}
-        aria-controls="project-support"
-        onClick={() => {
-          if (chatOpen) closeChat();
-          else {
-            stickToLatest.current = true;
-            setChatOpen(true);
-          }
-        }}
-      >
-        {chatOpen ? (
-          <X size={22} aria-hidden="true" />
-        ) : (
-          <MessageSquare size={24} aria-hidden="true" />
-        )}
-        <span className="cp-chat-launcher-label">{chatOpen ? "Close support" : "Message studio"}</span>
-      </button></>}
+      </>}
       <footer className="cp-footer">
         <span>{quote.studio.name}</span>
         {quote.studio.email && <>

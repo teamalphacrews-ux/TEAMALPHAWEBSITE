@@ -40,6 +40,7 @@ import '../../studio-commercial-documents.css';
 import '../../studio-commercial-controls.css';
 import '../../studio-commercial-legacy-controls.css';
 import '../../studio-workspace-shell.css';
+import '../../studio-workspace-phone.css';
 import '../../workspace-route-motion.css';
 import { enterWorkspacePage, followPrimaryAction, routeDirection } from './workspaceRouteMotion';
 
@@ -91,14 +92,49 @@ function StudioLayout() {
   const navigationType = useNavigationType();
   const mainRef = useRef(null);
   const lastArrival = useRef(null);
+  const [smallScreen, setSmallScreen] = useState(() => window.matchMedia('(max-width:760px)').matches);
   const previousPath = useRef(location.pathname);
+  const phonePositions = useRef(new Map());
   // New pages start below the header; tabs and browser Back retain their scroll position.
   useLayoutEffect(() => {
-    if (previousPath.current !== location.pathname && navigationType !== 'POP') {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    }
+    const changedPage = previousPath.current !== location.pathname;
     previousPath.current = location.pathname;
-  }, [location.pathname, navigationType]);
+    if (changedPage && navigationType !== 'POP') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
+    const viewport = mainRef.current?.closest('.studio-workspace');
+    if (!viewport || !IS_COMMERCIAL_DEPLOYMENT || !smallScreen) return;
+    const positions = phonePositions.current;
+    const target = navigationType === 'POP' ? positions.get(location.key) : changedPage ? 0 : undefined;
+    let observer;
+    const restore = () => {
+      viewport.scrollTop = target;
+      if (Math.abs(viewport.scrollTop - target) < 1) observer?.disconnect();
+    };
+    const stop = () => observer?.disconnect();
+    if (target !== undefined) {
+      restore();
+      // Lazy routes can initially be shorter than their saved scroll position.
+      if (target > viewport.scrollTop + 1) {
+        observer = new ResizeObserver(restore);
+        observer.observe(mainRef.current);
+        viewport.addEventListener('pointerdown', stop, { passive: true });
+        viewport.addEventListener('wheel', stop, { passive: true });
+        viewport.addEventListener('keydown', stop);
+      }
+    }
+    const remember = () => {
+      positions.set(location.key, viewport.scrollTop);
+      if (positions.size > 60) positions.delete(positions.keys().next().value);
+    };
+    viewport.addEventListener('scroll', remember, { passive: true });
+    return () => {
+      stop();
+      viewport.removeEventListener('scroll', remember);
+      viewport.removeEventListener('pointerdown', stop);
+      viewport.removeEventListener('wheel', stop);
+      viewport.removeEventListener('keydown', stop);
+    };
+  }, [location.key, location.pathname, navigationType, smallScreen]);
   useLayoutEffect(() => {
     if (!IS_COMMERCIAL_DEPLOYMENT || !mainRef.current) return;
     const direction = lastArrival.current && lastArrival.current !== location.pathname
@@ -111,7 +147,6 @@ function StudioLayout() {
   }, []);
   const { user, sessionError } = useAuth();
   const nativePhoneNavigation = useIPhoneAppNavigation(user);
-  const [smallScreen, setSmallScreen] = useState(() => window.matchMedia('(max-width:760px)').matches);
   const iPhoneNavigation = nativePhoneNavigation || (IS_COMMERCIAL_DEPLOYMENT && smallScreen);
   useEffect(() => {
     const media = window.matchMedia('(max-width:760px)');

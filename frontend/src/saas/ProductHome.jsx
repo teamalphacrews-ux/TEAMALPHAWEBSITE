@@ -24,6 +24,7 @@ import './productMotion.css';
 import './productBold.css';
 import './productReactor.css';
 import './commercialPublicSurface.css';
+import './productHandset.css';
 
 const faqs = [
   ['Is Studio X OS ready for new studios?','The commercial version is currently in preview. Private workspaces, team roles, invitations and subscription screens are being developed and tested. Registration, provider connections and paid plans will open after launch checks are complete.'],

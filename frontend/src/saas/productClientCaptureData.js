@@ -1,5 +1,6 @@
 // Shared by the React app and the small controller enhancing the static homepage.
 export const PRODUCT_SCREEN_ROOT = '/assets/studio-x-os/screens/20261123/';
+export const PRODUCT_PHONE_SCREEN_ROOT = '/assets/studio-x-os/screens/20261126/';
 const imageFiles = (id, theme) => ({
   desktop: `${PRODUCT_SCREEN_ROOT}${id}-${theme}-desktop.webp`,
   desktop2x: `${PRODUCT_SCREEN_ROOT}${id}-${theme}-desktop@2x.webp`,

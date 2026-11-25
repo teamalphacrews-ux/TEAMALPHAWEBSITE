@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowUpRight, BatteryFull, Signal, Wifi } from 'lucide-react';
-import { PRODUCT_SCREEN_ROOT } from './productClientCaptureData.js';
+import { PRODUCT_PHONE_SCREEN_ROOT } from './productClientCaptureData.js';
 import './productPhonePreview.css';
 
 const descriptions = {
@@ -13,7 +13,7 @@ const descriptions = {
 function PhoneDisplay({ stage, children }) {
   const [screenFailed, setScreenFailed] = useState(false);
   const [frameFailed, setFrameFailed] = useState(false);
-  const base = PRODUCT_SCREEN_ROOT + 'mobile-workflow-' + stage;
+  const base = PRODUCT_PHONE_SCREEN_ROOT + 'mobile-workflow-' + stage;
   const description = descriptions[stage];
 
   return <div className="sos-phone-preview" data-stage={stage}>

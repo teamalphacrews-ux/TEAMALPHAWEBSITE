@@ -1,5 +1,8 @@
 const crypto = require("crypto");
 const mongoose = require("mongoose");
+const { calendarCredential, storageKey } = require("./calendarCredentials");
+const { currentWorkspace } = require("../saas/tenantContext");
+const { calendarToken, activeCalendarOwner, attachCalendar } = require("../saas/calendarConnection");
 
 const HANDOFF_MS = 2 * 60 * 1000;
 const STATE_MS = 10 * 60 * 1000;
@@ -38,6 +41,7 @@ function nonceModel() {
 function createOAuthStateService({
   store = nonceModel(),
   User = require("../models/User"),
+  authorize = () => true,
   now = Date.now,
   randomBytes = crypto.randomBytes,
 } = {}) {
@@ -46,7 +50,7 @@ function createOAuthStateService({
     if (typeof userId !== "string" || !/^[a-f\d]{24}$/i.test(userId))
       throw fail(403);
     const user = await User.findOne({ _id: userId, role: "admin" });
-    if (!user || user.role !== "admin" || !require("./moduleAccess").hasModule(user, "calendar")) throw fail(403);
+    if (!user || user.accountDisabled || user.role !== "admin" || !(await authorize(userId)) || !require("./moduleAccess").hasModule(user, "calendar")) throw fail(403);
     return user;
   }
   async function issue(identity) {
@@ -127,10 +131,17 @@ function configuredUrl(value, env) {
   return url;
 }
 function configuration(env) {
-  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) throw fail(503);
-  const redirect = configuredUrl(env.GOOGLE_REDIRECT_URI, env);
+  const commercial = Boolean(currentWorkspace());
+  if (env.SAAS_ENABLED === 'true' && !commercial) throw fail(403);
+  if (commercial) storageKey(env);
+  const provider = commercial ? require("../saas/socialAuth").providerConfig("google", env) : null;
+  if (commercial && (env.SAAS_ENABLED !== "true" || !provider)) throw fail(503);
+  const clientId = commercial ? provider.clientId : env.GOOGLE_CLIENT_ID;
+  const clientSecret = commercial ? provider.clientSecret : env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) throw fail(503);
+  const redirect = configuredUrl(commercial ? provider.redirectUri : env.GOOGLE_REDIRECT_URI, env);
   if (
-    redirect.pathname !== "/api/auth/google/callback" ||
+    redirect.pathname !== (commercial ? "/api/saas/oauth/google/callback" : "/api/auth/google/callback") ||
     redirect.search ||
     redirect.hash
   )
@@ -138,7 +149,7 @@ function configuration(env) {
   const frontend = configuredUrl(env.FRONTEND_URL, env);
   const secure = redirect.protocol === "https:";
   return {
-    redirectUri: redirect.href,
+    clientId, clientSecret, redirectUri: redirect.href,
     beginUrl: new URL("/api/auth/google/begin", redirect).href,
     frontendOrigin: frontend.origin,
     cookieName: secure ? "__Host-ta_google_oauth" : "ta_google_oauth",
@@ -169,12 +180,16 @@ function createGoogleOAuthHandlers({
   env = process.env,
   now,
   randomBytes,
+  authorizeOwner = activeCalendarOwner,
   makeClient,
   getGoogleEmail,
+  getGoogleProfile,
+  attach = attachCalendar,
   onConnected = async () => {},
 } = {}) {
   const state = createOAuthStateService({
     User,
+    authorize: id => currentWorkspace() ? authorizeOwner(currentWorkspace(), id) : true,
     ...(store ? { store } : {}),
     ...(now ? { now } : {}),
     ...(randomBytes ? { randomBytes } : {}),
@@ -183,19 +198,19 @@ function createGoogleOAuthHandlers({
     makeClient
       ? makeClient(config)
       : new (require("googleapis").google.auth.OAuth2)(
-          env.GOOGLE_CLIENT_ID,
-          env.GOOGLE_CLIENT_SECRET,
+          config.clientId,
+          config.clientSecret,
           config.redirectUri,
         );
   const prepare = (res) => {
     res.set("Cache-Control", "no-store");
     res.set("Referrer-Policy", "no-referrer");
   };
-  const failedRedirect = (res) => {
+  const failedRedirect = (res, reason = 'error') => {
     try {
       res.redirect(
         configuredUrl(env.FRONTEND_URL, env).origin +
-          "/admin/calendar?sync=error",
+          "/admin/calendar?sync=" + reason,
       );
     } catch {
       res
@@ -211,7 +226,7 @@ function createGoogleOAuthHandlers({
       try {
         const config = configuration(env);
         const ticket = await state.issue(req.user);
-        res.json({ url: config.beginUrl + "?ticket=" + ticket });
+        res.json({ url: config.beginUrl + "?ticket=" + calendarToken(ticket) });
       } catch (error) {
         res
           .status(error.status || 503)
@@ -223,19 +238,19 @@ function createGoogleOAuthHandlers({
           });
       }
     },
-    begin: async (req, res) => {
+    begin: async (req, res, ticket = req.query?.ticket) => {
       prepare(res);
       try {
         const config = configuration(env);
-        const flow = await state.begin(req.query?.ticket);
+        const flow = await state.begin(ticket);
         const url = client(config).generateAuthUrl({
           access_type: "offline",
           prompt: "consent",
           scope: [
-            "https://www.googleapis.com/auth/calendar.events",
+            currentWorkspace() ? "https://www.googleapis.com/auth/calendar.events.owned" : "https://www.googleapis.com/auth/calendar.events",
             "https://www.googleapis.com/auth/userinfo.email",
           ],
-          state: flow.state,
+          state: calendarToken(flow.state),
           code_challenge_method: "S256",
           code_challenge: flow.codeChallenge,
         });
@@ -247,12 +262,12 @@ function createGoogleOAuthHandlers({
         failedRedirect(res);
       }
     },
-    callback: async (req, res) => {
+    callback: async (req, res, nonce = req.query?.state) => {
       prepare(res);
       try {
         const config = configuration(env);
         const browser = browserCookie(req, config.cookieName);
-        const flow = await state.consume(req.query?.state, browser);
+        const flow = await state.consume(nonce, browser);
         const clearOptions = { ...config.cookie };
         delete clearOptions.maxAge;
         res.clearCookie(config.cookieName, clearOptions);
@@ -282,24 +297,21 @@ function createGoogleOAuthHandlers({
         const scopes = typeof tokens.scope === "string"
           ? tokens.scope.split(/\s+/)
           : (await oauth.getTokenInfo(tokens.access_token)).scopes;
-        if (!Array.isArray(scopes) || !scopes.some(scope => [
-          "https://www.googleapis.com/auth/calendar.events",
-          "https://www.googleapis.com/auth/calendar",
-        ].includes(scope))) throw fail();
-        const email = getGoogleEmail
-          ? await getGoogleEmail(oauth)
-          : (
-              await require("googleapis")
-                .google.oauth2({ version: "v2", auth: oauth })
-                .userinfo.get()
-            ).data.email;
+        const accepted = ["https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/calendar"];
+        if (currentWorkspace()) accepted.push("https://www.googleapis.com/auth/calendar.events.owned");
+        if (!Array.isArray(scopes) || !scopes.some(scope => accepted.includes(scope))) throw fail();
+        const profile = getGoogleProfile ? await getGoogleProfile(oauth)
+          : getGoogleEmail ? { email: await getGoogleEmail(oauth) }
+          : (await require("googleapis").google.oauth2({ version: "v2", auth: oauth }).userinfo.get()).data;
+        const email = profile.email?.trim().toLowerCase();
+        if (currentWorkspace() && (typeof profile.id !== 'string' || !profile.id || profile.id.length > 255)) throw fail();
         if (
           typeof email !== "string" ||
           !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
         )
           throw fail();
         const update = {
-          googleAccessToken: tokens.access_token,
+          googleAccessToken: calendarCredential(tokens.access_token, flow.userId, "access", "seal", env),
           googleTokenExpiry: Number.isFinite(tokens.expiry_date)
             ? new Date(tokens.expiry_date)
             : null,
@@ -307,24 +319,29 @@ function createGoogleOAuthHandlers({
         };
         const hasRefreshToken = typeof tokens.refresh_token === "string" && Boolean(tokens.refresh_token);
         if (hasRefreshToken)
-          update.googleRefreshToken = tokens.refresh_token;
+          update.googleRefreshToken = calendarCredential(tokens.refresh_token, flow.userId, "refresh", "seal", env);
         // Recheck authority atomically after the provider round trip as well.
         // A refresh token from another Google account must never be reused.
-        const accountFilter = { _id: flow.userId, role: "admin" };
+        const accountFilter = { _id: flow.userId, role: "admin", accountDisabled: { $ne: true } };
+        if (currentWorkspace()) {
+          if (!(await authorizeOwner(currentWorkspace(), flow.userId))) throw fail(403);
+          accountFilter.studioOwner = true;
+          // attach() verifies the immutable provider subject, including on reconnect.
+        }
         if (!hasRefreshToken) {
           accountFilter.googleEmail = email;
           accountFilter.googleRefreshToken = { $type: "string", $ne: "" };
         }
-        const user = await User.findOneAndUpdate(
+        const user = currentWorkspace() ? await attach(User, accountFilter, update, profile.id) : await User.findOneAndUpdate(
           accountFilter,
           { $set: update },
-          { new: true },
+          { new: true, projection: "+googleAccessToken +googleRefreshToken" },
         );
         if (!user) throw fail(403);
         await onConnected(user, req);
         res.redirect(config.frontendOrigin + "/admin/calendar?sync=success");
-      } catch {
-        failedRedirect(res);
+      } catch (error) {
+        failedRedirect(res, ['calendar_in_use', 'calendar_changed'].includes(error.code) ? error.code : 'error');
       }
     },
   };

@@ -108,6 +108,27 @@ app.get('/api/health', readiness.health);
 app.use('/api', readiness.requireReady);
 app.use('/api', require('./saas/access').createWorkspaceMiddleware({ onWorkspace: workspaceRealtime.ensureWorkspace }));
 app.use('/api', require('./saas/publicTokens').createPublicWorkspaceMiddleware({ Workspace: require('./saas/models').Workspace }));
+// Calendar shares the commercial OAuth client's registered return address.
+// Sign-in and Calendar each verify their own state, browser proof and scopes.
+const { createGoogleOAuthHandlers } = require('./utils/oauthState');
+const { scopedCalendarReturn, workspaceToken } = require('./saas/calendarConnection');
+const googleOAuth = createGoogleOAuthHandlers({ User, onConnected: async (user, req) => {
+    const { setupGoogleWebhook, pollGoogleCalendar } = require('./services/googleCalendarService');
+    if (!require('./saas/tenantContext').currentWorkspace()) await setupGoogleWebhook(user);
+    pollGoogleCalendar(user, scopedIO, true).catch(() => console.error('Initial Google Calendar synchronization failed.'));
+} });
+const commercialCalendar = process.env.SAAS_ENABLED === 'true';
+if (commercialCalendar) {
+    app.get('/api/auth/google/begin', scopedCalendarReturn(googleOAuth.begin, 'ticket'));
+    const calendarCallback = scopedCalendarReturn(googleOAuth.callback, 'state');
+    app.get('/api/saas/oauth/google/callback', (req, res, next) =>
+        typeof req.query.state === 'string' && workspaceToken.test(req.query.state)
+            ? calendarCallback(req, res) : next());
+    app.post('/api/calendar/connect', auth, requireAdmin, (req, res) => {
+        if (req.saas?.membership.role !== 'owner') return res.status(403).json({ message: 'Only the studio owner can connect its Google calendar.' });
+        return googleOAuth.start(req, res);
+    });
+}
 app.use('/api', archiveGate.middleware());
 // The personal website retains shared support modules without publishing SaaS APIs.
 if (process.env.SAAS_ENABLED === 'true') app.use('/api/saas', require('./saas/routes'));
@@ -154,18 +175,26 @@ readiness.initialize(() => {
     const { pollGoogleCalendar } = require('./services/googleCalendarService');
     const User = require('./models/User');
 
-    setInterval(() => archiveGate.withShared(async () => {
+    let polling = false;
+    setInterval(async () => {
+        if (polling) return;
+        polling = true;
         try {
-            const connectedUsers = await User.find({
-                googleAccessToken: { $exists: true, $ne: null }
+            await forEachWorkspace(async workspace => {
+                if (commercialCalendar !== Boolean(workspace)) return;
+                if (workspace && !['active', 'trialing'].includes(require('./saas/plans').accessStatus(workspace))) return;
+                await archiveGate.withShared(async () => {
+                    const filter = { googleRefreshToken: { $type: 'string', $ne: '' }, accountDisabled: { $ne: true } };
+                    if (workspace) filter.studioOwner = true;
+                    const users = await User.find(filter, '+googleAccessToken +googleRefreshToken');
+                    for (const user of users) {
+                        if (workspace && !await require('./saas/calendarConnection').activeCalendarOwner(workspace, user._id)) continue;
+                        await pollGoogleCalendar(user, scopedIO);
+                    }
+                }, { integrations: true });
             });
-            for (const user of connectedUsers) {
-                await pollGoogleCalendar(user, io);
-            }
-        } catch (err) {
-            console.error('Error in Google Calendar polling loop:', err.message);
-        }
-    }, { integrations: true }).catch(() => console.error('Calendar work is paused or unavailable.')), 60000); // Every 60 seconds
+        } finally { polling = false; }
+    }, 60000);
 
 });
 
@@ -222,19 +251,14 @@ authRouter.put('/profile', auth, async (req, res) => {
     }
 });
 
-// Google OAuth Routes
-const { createGoogleOAuthHandlers } = require('./utils/oauthState');
-const googleOAuth = createGoogleOAuthHandlers({ User, onConnected: async (user, req) => {
-    const { setupGoogleWebhook, pollGoogleCalendar } = require('./services/googleCalendarService');
-    await setupGoogleWebhook(user);
-    pollGoogleCalendar(user, req.app.get('io'), true).catch(() => {
-        console.error('Initial Google calendar synchronization failed.');
-    });
-} });
-authRouter.get('/google', auth, requireAdmin, googleOAuth.start);
-authRouter.get('/google/begin', googleOAuth.begin);
+if (!commercialCalendar) {
+    authRouter.get('/google', auth, requireAdmin, googleOAuth.start);
+    authRouter.get('/google/begin', (req, res) => googleOAuth.begin(req, res));
+    authRouter.get('/google/callback', (req, res) => googleOAuth.callback(req, res));
+}
 
 authRouter.post('/google/webhook', async (req, res) => {
+    if (commercialCalendar) return res.sendStatus(404);
     const resourceId = req.headers['x-goog-resource-id'];
     const channelId = req.headers['x-goog-channel-id'];
     const syncState = req.headers['x-goog-resource-state'];
@@ -247,7 +271,7 @@ authRouter.post('/google/webhook', async (req, res) => {
 
     try {
         const { pollGoogleCalendar } = require('./services/googleCalendarService');
-        const user = await User.findOne({ googleResourceId: resourceId, googleWebhookId: channelId });
+        const user = await User.findOne({ googleResourceId: resourceId, googleWebhookId: channelId }, '+googleAccessToken +googleRefreshToken');
         if (user) {
             console.log(`🔄 Triggering Instant Sync for ${user.email} (via Webhook)`);
             await pollGoogleCalendar(user, req.app.get('io'));
@@ -259,7 +283,7 @@ authRouter.post('/google/webhook', async (req, res) => {
     }
 });
 
-authRouter.get('/google/callback', googleOAuth.callback);
+
 
 app.use('/api/auth', authRouter);
 app.use('/api/integrations/assistants', require('./routes/studioAssistantRoutes'));

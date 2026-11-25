@@ -30,3 +30,9 @@ test('Google connection displays backend msg and message errors instead of gener
   assert.equal(googleConnectionError({response:{data:{message:'Google rejected the request.'}}}), 'Google rejected the request.');
   assert.equal(googleConnectionError(new Error('Invalid connection response.')), 'Invalid connection response.');
 });
+
+test('commercial Calendar accepts the studio-bound handoff from its own API', () => {
+  const scoped = valid.replace(ticket, 'cal.' + 'b'.repeat(24) + '.' + ticket);
+  assert.equal(googleCalendarHandoff({ url: scoped }, api, 'https://studio.example.test'), scoped);
+  assert.throws(() => googleCalendarHandoff({ url: scoped.replace('cal.', 'other.') }, api, 'https://studio.example.test'));
+});

@@ -16,7 +16,7 @@ export function googleCalendarHandoff(result, apiBase, pageOrigin) {
       target.username || target.password || target.hash ||
       (target.protocol !== "https:" && !(target.protocol === "http:" && local)) ||
       [...target.searchParams.keys()].length !== 1 ||
-      !/^[a-f0-9]{64}$/.test(target.searchParams.get("ticket") || "")) throw invalid();
+      !/^(?:cal\.[a-f0-9]{24}\.)?[a-f0-9]{64}$/.test(target.searchParams.get("ticket") || "")) throw invalid();
   return target.href;
 }
 

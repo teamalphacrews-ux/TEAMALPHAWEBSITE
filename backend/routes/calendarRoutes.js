@@ -11,42 +11,49 @@ const { linkedEventFields,crewOverlap } = require('../utils/studioCalendar');
 const router = express.Router();
 
 router.use(auth, requireAdmin);
+const ownerFilter = { studioOwner: true, accountDisabled: { $ne: true } };
+const commercialWithoutWorkspace = req => process.env.SAAS_ENABLED === 'true' && (!req.saas || !require('../saas/tenantContext').currentWorkspace());
+const mayManageCalendar = req => !commercialWithoutWorkspace(req) && (!req.saas || req.saas.membership.role === 'owner');
+function manageConnection(req, res, next) {
+    if (!mayManageCalendar(req)) return res.status(403).json({ message: 'Only the studio owner can manage the Google Calendar connection.' });
+    if (req.saas && !['active','trialing'].includes(require('../saas/plans').accessStatus(req.saas.workspace)))
+        return res.status(402).json({ message: 'Calendar sync requires an active studio subscription or trial.' });
+    return next();
+}
 
 // Get Google Calendar sync status
 router.get('/sync-status', async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
+        if (commercialWithoutWorkspace(req)) return res.json({ configured: false, isSynced: false, canManage: false, setupMessage: 'Open a studio workspace to connect Google Calendar.' });
+        const user = req.saas
+            ? await User.findOne(ownerFilter, '+googleAccessToken +googleRefreshToken')
+            : await User.findById(req.user.id, '+googleAccessToken +googleRefreshToken');
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        res.json(calendarConnection(user));
+        res.json({ ...calendarConnection(user), canManage: mayManageCalendar(req) });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
 // Manually trigger Google Calendar sync
-router.get('/sync-now', createCalendarSyncHandler({ User, pollGoogleCalendar }));
+router.get('/sync-now', manageConnection, createCalendarSyncHandler({ User, pollGoogleCalendar }));
 
 // Disconnect Google Calendar and delete synced events
-router.post('/disconnect-google', async (req, res) => {
+router.post('/disconnect-google', manageConnection, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Wipe tokens and Google sync data completely
-        await User.findByIdAndUpdate(user._id, {
-            $unset: {
-                googleAccessToken: 1,
-                googleRefreshToken: 1,
-                googleTokenExpiry: 1,
-                googleEmail: 1,
-                googleWebhookId: 1,
-                googleResourceId: 1
-            }
-        });
+        const unset = {
+            googleAccessToken: 1, googleRefreshToken: 1, googleTokenExpiry: 1, googleEmail: 1,
+            googleWebhookId: 1, googleResourceId: 1, googleSyncError: 1, googleLastSyncAt: 1,
+        };
+        if (req.saas) await require('../saas/calendarConnection').detachCalendar(User, user._id, unset);
+        else await User.findByIdAndUpdate(user._id, { $unset: unset });
 
         // Mark all synced events as local-only instead of deleting them to prevent data loss
-        await Event.updateMany(
+        if (!req.saas) await Event.updateMany(
             { userId: user._id, googleEventId: { $ne: null } },
             { 
                 $unset: { googleEventId: 1 }, 
@@ -61,7 +68,8 @@ router.post('/disconnect-google', async (req, res) => {
 
         res.json({ success: true, message: "Disconnected successfully" });
     } catch (error) {
-        console.error("Disconnect error:", error);
+        if (error.code === "calendar_busy") return res.status(409).json({ message: "Calendar sync is finishing. Try Disconnect again in a moment." });
+        console.error("Calendar disconnect failed.");
         res.status(500).json({ message: "Failed to disconnect Google Calendar" });
     }
 });

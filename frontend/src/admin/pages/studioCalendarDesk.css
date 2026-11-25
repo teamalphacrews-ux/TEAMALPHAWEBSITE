@@ -132,3 +132,18 @@ html[data-studio-appearance="dark"] .studio-commercial-glass .workspace-calendar
     line-height: 1.35;
   }
 }
+
+@media (max-width: 768px) {
+  #sx-workspace-shell .studio-calendar-page .scheduling-connection {
+    display: grid;
+    gap: 12px;
+    margin-block: 16px;
+    padding: 16px;
+  }
+  #sx-workspace-shell .scheduling-connection-copy strong { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+  #sx-workspace-shell .scheduling-connection-copy .scheduling-status { font-size: 0.82em; font-weight: 500; color: var(--studio-muted); }
+  #sx-workspace-shell .scheduling-connection-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  #sx-workspace-shell .scheduling-connection-actions > button { flex: 1 1 auto; min-height: 44px; }
+  #sx-workspace-shell .studio-calendar-page .calendar-summary { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin-block: 0 16px; }
+  #sx-workspace-shell [data-calendar-view="month"] .studio-calendar-insight { display: none; }
+}

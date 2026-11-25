@@ -149,7 +149,32 @@
 }
 
 @media screen and (max-width: 680px) {
-  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-chat-launcher { width: calc(100% - 32px); }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] {
+    & .cp-chat-launcher {
+      position: static;
+      width: calc(100% - 32px);
+      margin: 0 16px 20px;
+    }
+    & .cp-chat-launcher[aria-expanded="true"] { margin-bottom: 10px; }
+    & #project-support {
+      position: relative;
+      inset: auto;
+      width: calc(100% - 32px);
+      max-width: none;
+      height: auto;
+      max-height: none;
+      margin: 0 16px 20px;
+      overflow: hidden;
+      scroll-margin-top: max(12px, env(safe-area-inset-top));
+      box-shadow: none;
+    }
+    & #project-support .cp-messages {
+      flex: auto;
+      max-height: min(22rem, 42svh);
+    }
+    & #project-support .cp-chat-close { width: 44px; height: 44px; }
+    & #project-support .cp-compose textarea { font-size: 16px; }
+  }
 }
 
 @media screen and (prefers-reduced-motion: reduce) {

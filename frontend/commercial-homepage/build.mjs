@@ -17,11 +17,14 @@ export function commercialHomepage() {
       order: 'post',
       async handler(_options, bundle) {
         if (!commercial) return;
-        const [snapshot, typography, surfaces, entry] = await Promise.all([
+        const [snapshot, typography, surfaces, handset, phoneCapabilities, entry] = await Promise.all([
           load('./homepage.html'), load('../src/styles/urbanist.css'),
-          load('../src/saas/commercialPublicSurface.css'), load('./entry.js'),
+          load('../src/saas/commercialPublicSurface.css'), load('../src/saas/productHandset.css'),
+          load('./phoneCapabilities.js'), load('./entry.js'),
         ]);
-        const page = snapshot.replace('</head>', () => `<style>${typography}\n${surfaces}</style></head>`);
+        const page = snapshot
+          .replace('</head>', () => `<style>${typography}\n${surfaces}\n${handset}</style></head>`)
+          .replace('</body>', () => `<script>${phoneCapabilities}</script></body>`);
         const homePath = `assets/commercial-home-${fingerprint(page)}.html`;
         const entryPath = `assets/commercial-entry-${fingerprint(entry)}.js`;
         this.emitFile({ type: 'asset', fileName: homePath, source: page });

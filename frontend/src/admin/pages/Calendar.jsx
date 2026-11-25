@@ -99,6 +99,7 @@ export default function Calendar() {
     hasModuleAccess(user, 'crew') ? '/api/photographers' : null,
     hasModuleAccess(user, 'enquiries') ? '/api/leads' : null,
   ]);
+  const [disconnecting, setDisconnecting] = useState(false);
   const [events = emptyCalendarRecords, crew = emptyCalendarRecords, leads = emptyCalendarRecords] = data;
   const eventId = sessionParams.get('event');
   const linkedEvent = events.find(event => String(event._id) === eventId);
@@ -133,16 +134,16 @@ export default function Calendar() {
   const editing = editDraft && !editDraft.start ? { ...editDraft, start: studioDateTimeToISO(`${selected}T10:00`, timezone), end: studioDateTimeToISO(`${selected}T11:00`, timezone) } : editDraft;
   const detail = linkedEvent || detailState;
   const setupMessage = isPreview ? GOOGLE_PREVIEW_MESSAGE : sync.setupMessage || "";
-  const googleStatus = isPreview ? 'Sample preview' : connection.loading ? 'Checking connection…' : connection.error ? 'Connection unavailable' : sync.configured === false ? 'Setup required' : sync.isSynced ? sync.syncError ? 'Reconnect required' : 'Connected' : 'Not connected';
+  const googleStatus = isPreview ? 'Sample preview' : connection.loading ? 'Checking connection…' : connection.error ? 'Connection unavailable' : sync.configured === false ? 'Setup required' : sync.isSynced ? sync.syncError ? 'Sync needs attention' : 'Connected' : 'Not connected';
   useEffect(() => {
-    if (!hasFullModuleAccess(user)) return;
+    if (isPreview || !hasFullModuleAccess(user)) return;
     let socket, cancelled = false;
-    const connect = () => { if (cancelled) return; socket = io(operationAPI + (user?.workspace?.id ? '/studio-' + user.workspace.id : ''), { auth: { token: localStorage.getItem('token') } }); socket.on('calendar_update', reload); };
+    const connect = () => { if (cancelled) return; socket = io(operationAPI + (user?.workspace?.id ? '/studio-' + user.workspace.id : ''), { auth: { token: localStorage.getItem('token') } }); socket.on('calendar_update', () => { reload(); connection.reload(); }); };
     // The access check initializes the namespace before an authenticated studio connects.
-    if (user?.workspace?.id) workspaceRequest('/api/saas/workspace').then(connect).catch(() => {});
+    if (user?.workspace?.id) workspaceRequest('get', '/api/saas/workspace').then(connect).catch(() => {});
     else connect();
     return () => { cancelled = true; socket?.disconnect(); };
-  }, [reload, user, user?.workspace?.id]);
+  }, [reload, connection.reload, isPreview, user, user?.workspace?.id]);
   const { visible, days, eventsByDay, dayLabels, selectedEvents, monthLoad, agendaEvents } = useCalendarSchedule(
     events, { query, crewFilter, month, selected, timezone, dateLabel, agendaScope },
   );
@@ -276,7 +277,9 @@ export default function Calendar() {
     setSyncBusy(true);
     setConnectionError("");
     try {
-      const result = await workspaceRequest("get", "/api/auth/google");
+      const result = IS_COMMERCIAL_DEPLOYMENT
+        ? await workspaceRequest("post", "/api/calendar/connect")
+        : await workspaceRequest("get", "/api/auth/google");
       window.location.assign(googleCalendarHandoff(result, operationAPI, window.location.origin));
     } catch (err) {
       setConnectionError(googleConnectionError(err));
@@ -284,31 +287,55 @@ export default function Calendar() {
       setSyncBusy(false);
     }
   };
+  const disconnect = async () => {
+    setSyncBusy(true);
+    setConnectionError("");
+    try {
+      await workspaceRequest("post", "/api/calendar/disconnect-google");
+      connection.reload();
+      reload();
+      toast.success("Google Calendar disconnected");
+    } catch (error) {
+      setConnectionError(googleConnectionError(error));
+    } finally {
+      setSyncBusy(false);
+      setDisconnecting(false);
+    }
+  };
+  const ownerAccess = !IS_COMMERCIAL_DEPLOYMENT || (canSchedule && (user?.workspaceRole || user?.workspace?.role) === 'owner' && sync.canManage !== false);
+  const needsReconnect = sync.reconnectRequired || /reconnect/i.test(sync.syncError || '');
   const googleConnection = <>
       <section className="scheduling-connection" aria-label="Google Calendar connection">
         <div className="scheduling-connection-copy">
           <CalendarDays size={19} aria-hidden="true" />
-          <div><strong>Google Calendar <span className={'scheduling-status' + (sync.isSynced && !sync.syncError && !isPreview ? ' is-connected' : '')}>{googleStatus}</span></strong><p id="google-calendar-setup">{setupMessage || (sync.isSynced ? `${sync.email || 'Your Google account'} · Studio times use ${timezone}.` : 'Connect your Google account to keep studio events in sync.')}</p></div>
+          <div><strong>Google Calendar <span className={'scheduling-status' + (sync.isSynced && !sync.syncError && !isPreview ? ' is-connected' : '')}>{googleStatus}</span></strong><p id="google-calendar-setup">{setupMessage || (sync.isSynced ? `${sync.email || 'Your Google account'} · Studio times use ${timezone}.` : !ownerAccess ? 'The studio owner manages this calendar connection.' : IS_COMMERCIAL_DEPLOYMENT ? 'Choose a Google account dedicated to this studio. Its primary calendar events will be visible to your team. New studio events sync back to Google.' : 'Connect your Google account to keep studio events in sync.' )}</p></div>
         </div>
+        <div className="scheduling-connection-actions">
         <button
           className="studio-button"
-          onClick={sync.isSynced && !sync.syncError ? syncNow : connect}
-          disabled={isPreview || syncBusy || connection.loading || sync.configured === false}
+          onClick={sync.isSynced && !needsReconnect ? syncNow : connect}
+          disabled={!ownerAccess || isPreview || syncBusy || connection.loading || sync.configured === false}
           aria-describedby={setupMessage ? "google-calendar-setup" : undefined}
         >
           <RefreshCw size={14} />
           {syncBusy
             ? sync.isSynced ? "Syncing…" : "Connecting…"
             : sync.isSynced
-              ? sync.syncError ? "Reconnect Google" : "Sync Google"
+              ? needsReconnect ? "Reconnect Google" : "Sync Google"
               : "Connect Google"}
         </button>
+        {IS_COMMERCIAL_DEPLOYMENT && ownerAccess && sync.isSynced && <button type="button" className="studio-button ghost" disabled={isPreview || syncBusy} onClick={() => setDisconnecting(true)}>Disconnect</button>}
+        </div>
       </section>
-      <WorkspaceError error={connectionError || (callbackResult === "error" ? "Google authorization was not completed. Please connect again and approve the calendar permissions." : "")} />
+      {disconnecting && <WorkspaceDialog title="Disconnect Google Calendar?" submitLabel="Disconnect" busy={syncBusy}
+        onClose={() => setDisconnecting(false)} onSubmit={event => { event.preventDefault(); disconnect(); }}>
+        <p>Events already in your studio stay here. Future changes will stop syncing with Google.</p>
+      </WorkspaceDialog>}
+      <WorkspaceError error={connectionError || (callbackResult === "calendar_in_use" ? "This Google calendar is connected to another studio. Use a dedicated account or disconnect it from that studio first." : callbackResult === "calendar_changed" ? "The connection changed or a sync is running. Disconnect the current calendar before choosing another account." : callbackResult === "error" ? "Google authorization was not completed. Please connect again and approve the calendar permissions." : "")} />
       {callbackResult === "success" && sync.isSynced && !sync.syncError && <p className="workspace-info" role="status">Google Calendar is connected. Your events will synchronize with the studio calendar.</p>}
   </>;
   return (
-    <div className="studio-calendar-page scheduling-workspace scheduling-calendar">
+    <div className="studio-calendar-page scheduling-workspace scheduling-calendar" data-calendar-view={view}>
       <WorkspaceHeader
         title={IS_COMMERCIAL_DEPLOYMENT ? "Calendar" : "Studio calendar"}
         description="Plan your shoots, consultations and crew assignments."

@@ -15,7 +15,7 @@ const chapters = [
 const journeyScreens = ['enquiries', 'client-smart-link-quote', 'project-detail', 'client-smart-link-payments', 'project-delivery'];
 
 export function JourneyCapture({ active }) {
-  return <ProductWorkspaceCapture view={journeyScreens[active]} className="sos-capture-journey" phoneSource={false} />;
+  return <ProductWorkspaceCapture view={journeyScreens[active]} className="sos-capture-journey" />;
 }
 
 const compactQuery = '(max-width: 850px), (max-height: 760px), (prefers-reduced-motion: reduce)';

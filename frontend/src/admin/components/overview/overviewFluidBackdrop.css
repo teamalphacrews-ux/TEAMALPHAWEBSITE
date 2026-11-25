@@ -88,7 +88,30 @@ html[data-studio-motion=reduced] .ov-fluid-light { animation: none; }
   #sx-workspace-shell .ov-welcome-note::before { inset: -10px; }
 }
 @media (max-width: 600px) {
+  #sx-workspace-shell .ov-welcome {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 16px;
+    min-height: 0;
+  }
+  #sx-workspace-shell .ov-welcome-copy { min-width: 0; }
+  #sx-workspace-shell .ov-welcome-copy > span {
+    min-height: 32px;
+    overflow-wrap: anywhere;
+  }
   #sx-workspace-shell .ov-fluid-motion-toggle { top: 12px; right: 12px; }
+  #sx-workspace-shell .ov-welcome-note {
+    display: block;
+    width: auto;
+    padding: 14px 0 0;
+    margin: 0;
+    border-top: 1px solid var(--studio-glass-border);
+    border-radius: 0;
+  }
+  #sx-workspace-shell .ov-welcome-note::before { content: none; }
+  #sx-workspace-shell .ov-welcome-note :is(small, strong) { display: none; }
+  #sx-workspace-shell .ov-welcome-note > span { display: block; line-height: 1.5; }
 }
 @media (prefers-reduced-transparency: reduce) {
   #sx-workspace-shell .ov-welcome-note::before { background: var(--ov-welcome-surface); }

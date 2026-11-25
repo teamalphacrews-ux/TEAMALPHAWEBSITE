@@ -213,7 +213,7 @@ function StudioProjectWorkspace({id}){
           ))}
         </StudioSelect>
         <div className="reference-heading-spacer" />
-        <WorkspaceActionMenu label="Project actions">
+        <WorkspaceActionMenu label={IS_COMMERCIAL_DEPLOYMENT ? "Actions" : "Project actions"} ariaLabel="Project actions">
             <button onClick={() => setEditing(true)}>Edit project</button>
             <button
               onClick={() => {
@@ -235,8 +235,8 @@ function StudioProjectWorkspace({id}){
         /></div>
       </div>
       <WorkspaceError error={error} retry={reload} />
-      {IS_COMMERCIAL_DEPLOYMENT && tab === 'overview' && <ProjectSummary detail={detail} user={user} onTab={setTab} />}
       <div data-section-selector={IS_COMMERCIAL_DEPLOYMENT ? "line" : undefined} className="project-hub-tabs project-contact-detail-tabs" style={{ '--project-contact-tab-count': tabs.length }} role="tablist" aria-label="Project sections" onKeyDown={navigateTabs}>{tabs.map(([value,label])=><button type="button" key={value} role="tab" id={`${tabsId}-tab-${value}`} aria-controls={`${tabsId}-panel-${value}`} aria-selected={tab===value} tabIndex={tab===value?0:-1} onClick={()=>setTab(value)}>{label}</button>)}{IS_COMMERCIAL_DEPLOYMENT && <SectionSelectionIndicator selection={tab} />}</div>
+      {IS_COMMERCIAL_DEPLOYMENT && tab === 'overview' && <ProjectSummary detail={detail} user={user} onTab={setTab} />}
       <div ref={panelRef} className={'reference-detail-grid project'+(tab==='overview'?'':' project-hub-wide')}>
         <div style={{ minWidth: 0 }}>
           {tabs.map(([value])=><div key={value} role="tabpanel" id={`${tabsId}-panel-${value}`} aria-labelledby={`${tabsId}-tab-${value}`} hidden={tab!==value} tabIndex={0}>{tab===value&&<>

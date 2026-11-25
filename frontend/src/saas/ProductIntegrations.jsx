@@ -4,9 +4,14 @@ import './productIntegrations.css';
 
 const connectionDetails = [
   {
-    name: 'Google Calendar & Gmail',
+    name: 'Google Calendar',
+    status: 'Studio owner connects',
+    copy: 'The studio owner can connect a Google account to sync its primary calendar with the team’s schedule.',
+  },
+  {
+    name: 'Gmail',
     status: 'Per-studio setup planned',
-    copy: 'Independent calendar connections and a read-only Gmail inbox are being prepared for studio workspaces.',
+    copy: 'A read-only Gmail inbox is being prepared for studio workspaces.',
   },
   {
     name: 'WhatsApp',

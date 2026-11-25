@@ -1,4 +1,5 @@
 import { LayoutDashboard, UsersRound, Wallet, CalendarDays, MessageSquare, Bell, Folder, Clapperboard, Webhook, FileText, ReceiptText, HardDrive, UserRound, Mail, MessageCircle, Layers3 } from 'lucide-react';
+import { canAccessStudioPath } from '../../../utils/moduleAccess';
 import { IS_COMMERCIAL_DEPLOYMENT, SAAS_RELEASE_ENABLED } from '../../../saas/release';
 
 // Both dashboard URLs are valid entry points. Use the mounted form so NavLink's
@@ -67,3 +68,18 @@ export const workspaceNavigationGroups = [
   },
 ];
 
+
+/** Keep mobile navigation, the desktop sidebar and their sort preferences in sync. */
+export function commercialNavSections(user, translate) {
+  const pages = [...workspacePrimaryItems, ...workspaceNavigationGroups.flatMap(group => group.items)]
+    .filter(item => canAccessStudioPath(user, item.path))
+    .map(item => item.path === '/admin/post-production' ? { ...item, name: 'Tasks' } : item);
+  const workspacePaths = ['/admin', '/admin/post-production', '/admin/studio-projects', '/admin/calendar'];
+  const studioPaths = ['/admin/crew', '/admin/activity-log', '/admin/finance', '/admin/chats'];
+  const groupLinks = paths => paths.flatMap(path => pages.filter(item => item.path === path));
+  return [
+    { id: 'workspace', label: translate('Workspace'), items: groupLinks(workspacePaths) },
+    { id: 'studio', label: translate('Studio'), items: groupLinks(studioPaths) },
+    { id: 'more', label: 'More pages', items: pages.filter(item => !workspacePaths.includes(item.path) && !studioPaths.includes(item.path)) },
+  ].filter(group => group.items.length);
+}

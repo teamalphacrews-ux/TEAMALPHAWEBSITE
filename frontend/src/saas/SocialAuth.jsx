@@ -65,19 +65,19 @@ export function SocialAuthButtons({ config, loading = false, purpose = 'signup',
   };
   return <div className="saas-social-auth">
     <div className="saas-social-buttons">
-      <button className="saas-social-button is-google" type="button" disabled={disabled || !available('google') || Boolean(busy)} onClick={() => start('google')} aria-describedby={statusId} aria-busy={busy === 'google'}>
+      {(purpose !== 'login' || available('google')) && <button className="saas-social-button is-google" type="button" disabled={disabled || !available('google') || Boolean(busy)} onClick={() => start('google')} aria-describedby={statusId} aria-busy={busy === 'google'}>
         <img src="/assets/studio-x-os/google-signin-g.png" alt="" width="20" height="20" onError={event => { event.currentTarget.style.display = 'none'; }} />
         <span>{busy === 'google' ? 'Opening Google…' : 'Continue with Google'}</span>
         {busy === 'google' && <LoaderCircle className="saas-auth-spinner saas-provider-progress" size={16} aria-hidden="true" />}
-      </button>
-      <button className="saas-social-button is-apple" type="button" disabled={disabled || !available('apple') || Boolean(busy)} onClick={() => start('apple')} aria-describedby={statusId} aria-busy={busy === 'apple'}>
+      </button>}
+      {(purpose !== 'login' || available('apple')) && <button className="saas-social-button is-apple" type="button" disabled={disabled || !available('apple') || Boolean(busy)} onClick={() => start('apple')} aria-describedby={statusId} aria-busy={busy === 'apple'}>
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M17.05 12.54c.02 3.24 2.84 4.32 2.87 4.34-.02.08-.45 1.54-1.48 3.05-.89 1.3-1.81 2.59-3.26 2.62-1.42.03-1.88-.84-3.51-.84-1.62 0-2.13.82-3.48.87-1.4.06-2.47-1.4-3.37-2.69-1.83-2.64-3.23-7.47-1.35-10.73.93-1.62 2.6-2.65 4.41-2.68 1.38-.03 2.68.93 3.52.93.85 0 2.44-1.15 4.11-.98.7.03 2.67.28 3.94 2.14-.1.06-2.36 1.37-2.4 3.97ZM14.37 4.69c.75-.91 1.26-2.17 1.12-3.43-1.08.04-2.38.72-3.15 1.63-.69.8-1.3 2.08-1.14 3.31 1.21.09 2.44-.61 3.17-1.51Z" /></svg>
         <span>{busy === 'apple' ? 'Opening Apple…' : 'Continue with Apple'}</span>
         {busy === 'apple' && <LoaderCircle className="saas-auth-spinner saas-provider-progress" size={16} aria-hidden="true" />}
-      </button>
+      </button>}
     </div>
     <div className="saas-social-status" id={statusId} aria-live="polite">
-      {busy ? <p>Continue securely in {busy === 'google' ? 'Google' : 'Apple'}. You’ll return here to finish.</p> : loading ? <p>Account options will appear as soon as the service responds.</p> : !config ? <p>Account options are unavailable until we can check the sign-in service.</p> : purpose === 'signup' && !config.enabled ? <p>New studio registration is currently closed. Existing members can still <Link to="/studio-os/login">sign in</Link>.</p> : !available('google') && !available('apple') ? <p>Google and Apple are not connected yet.{config.authEnabled && config.enabled ? ' You can continue with email below.' : ''}</p> : <><p>We use your name and email to identify your account. Gmail, Calendar and Drive are connected separately.</p>{!available('google') && <p>Google sign-in is not available yet. Use Apple{purpose === 'login' || config.enabled ? ' or email' : ''}.</p>}{!available('apple') && <p>Apple sign-in is not available yet. Use Google{purpose === 'login' || config.enabled ? ' or email' : ''}.</p>}</>}
+      {busy ? <p>Continue securely in {busy === 'google' ? 'Google' : 'Apple'}. You’ll return here to finish.</p> : purpose === 'login' ? <p>Gmail, Calendar and Drive connect separately in your workspace.</p> : loading ? <p>Account options will appear as soon as the service responds.</p> : !config ? <p>Account options are unavailable until we can check the sign-in service.</p> : purpose === 'signup' && !config.enabled ? <p>New studio registration is currently closed. Existing members can still <Link to="/studio-os/login">sign in</Link>.</p> : !available('google') && !available('apple') ? <p>Google and Apple are not connected yet.{config.authEnabled && config.enabled ? ' You can continue with email below.' : ''}</p> : <><p>We use your name and email to identify your account. Gmail, Calendar and Drive are connected separately.</p>{!available('google') && <p>Google sign-in is not available yet. Use Apple{purpose === 'login' || config.enabled ? ' or email' : ''}.</p>}{!available('apple') && <p>Apple sign-in is not available yet. Use Google{purpose === 'login' || config.enabled ? ' or email' : ''}.</p>}</>}
     </div>
     {error && <p className="saas-error" role="alert">{error}</p>}
   </div>;
@@ -87,6 +87,7 @@ export function ProductLoginPage() {
   const { user, token } = useAuth(), availability = usePublicConfig();
   const plan = useSignupPlan();
   const { config, loading } = availability;
+  const hasLoginProvider = ['google', 'apple'].some(provider => socialProviderState(config, provider, 'login', loading) === 'ready');
   const [form, setForm] = useState({ email: '', password: '' }), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [providerBusy, setProviderBusy] = useState(false);
   const submitting = useRef(false);
@@ -103,9 +104,11 @@ export function ProductLoginPage() {
     } catch (failure) { setError(errorMessage(failure)); } finally { submitting.current = false; setBusy(false); }
   };
   return <SignupFrame signIn plan={plan} title="Back to your best work." description="Sign in to your Studio X OS account to open your private workspace.">
-    <PublicConfigStatus {...availability} />
-    <SocialAuthButtons config={config} loading={loading} plan={plan} purpose="login" disabled={busy || providerBusy} onStart={beginProvider} onFinish={finishProvider} />
-    <div className="saas-auth-divider"><span>or sign in with email</span></div>
+    <PublicConfigStatus {...availability} signIn />
+    {hasLoginProvider && <>
+      <SocialAuthButtons config={config} loading={loading} plan={plan} purpose="login" disabled={busy || providerBusy} onStart={beginProvider} onFinish={finishProvider} />
+      <div className="saas-auth-divider"><span>or sign in with email</span></div>
+    </>}
     {error && <p className="saas-error" role="alert">{error}</p>}
     <form className="saas-auth-form" onSubmit={submit}><fieldset disabled={busy || providerBusy || loading || config?.authEnabled !== true}>
       <label className="saas-field"><span>Email address</span><input type="email" value={form.email} onChange={event => setForm(previous => ({ ...previous, email: event.target.value }))} autoComplete="username" required maxLength={254} placeholder="you@yourstudio.com" /></label>

@@ -71,10 +71,9 @@ test('registration and provider handlers fail closed when auth is unavailable', 
   assert.equal(find(signup, node => node.type === 'form'), undefined);
   const login = h.ProductLoginPage();
   await find(login, node => node.type === 'form').props.onSubmit(submitEvent());
-  for (const purpose of ['signup', 'login']) {
-    const buttons = h.SocialAuthButtons({ config: { ...ready, authEnabled: false }, purpose });
-    await find(buttons, node => node.type === 'button').props.onClick();
-  }
+  assert.equal(find(login, node => node.type === h.SocialAuthButtons), undefined);
+  const buttons = h.SocialAuthButtons({ config: { ...ready, authEnabled: false }, purpose: 'signup' });
+  await find(buttons, node => node.type === 'button').props.onClick();
   assert.equal(h.requests.length, 0); h.cleanup();
 });
 
@@ -103,4 +102,16 @@ test('provider start aborts its pending request when the component unmounts', as
   h.cleanup(); await pending;
   assert.equal(h.requests[0].signal.aborted, true);
   assert.equal(h.navigations.length, 0); assert.equal(h.storage.size, 0);
+});
+
+
+test('a Google-only studio shows one available provider on the sign-in form', () => {
+  const config = { ...ready, enabled: false, oauth: { google: { enabled: true }, apple: { enabled: false } } };
+  const h = harness({ config });
+  const login = h.ProductLoginPage();
+  const providers = find(login, node => node.type === h.SocialAuthButtons);
+  const buttons = h.SocialAuthButtons(providers.props);
+  assert.equal(find(buttons, node => node.props?.className?.includes('is-google')).props.disabled, false);
+  assert.equal(find(buttons, node => node.props?.className?.includes('is-apple')), undefined);
+  h.cleanup();
 });
