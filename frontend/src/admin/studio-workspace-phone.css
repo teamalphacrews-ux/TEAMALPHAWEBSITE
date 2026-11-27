@@ -73,14 +73,15 @@
 }
 .studio-commercial-glass #studio-iphone-more .studio-more-content { padding: 4px 14px 12px; }
 .studio-commercial-glass #studio-iphone-more .sx-more-section {
-  padding: 8px 0; border-bottom: 1px solid var(--desk-line);
+  padding: 3px 0; border-bottom: 1px solid var(--desk-line);
 }
 .studio-commercial-glass #studio-iphone-more .sx-more-section h3 {
-  margin: 0 0 2px; padding: 2px 8px;
+  margin: 0 0 2px; padding: 7px 10px 0;
   color: var(--desk-muted); font: 650 12px/1.4 var(--studio-font);
 }
+.studio-commercial-glass #studio-iphone-more .sx-more-section .sx-more-section-heading { margin: 0; padding: 0; }
 .studio-commercial-glass #studio-iphone-more .sx-more-links {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: 2px 4px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: 2px 4px; padding-block-end: 3px;
 }
 .studio-commercial-glass #studio-iphone-more .studio-more-shortcut,
 .studio-commercial-glass #studio-iphone-more .sx-more-disclosure {
@@ -89,15 +90,24 @@
   color: var(--desk-ink); background: transparent; box-shadow: none;
   font: 550 14px/1.4 var(--studio-font); text-align: start;
 }
-.studio-commercial-glass #studio-iphone-more .sx-more-disclosure { width: 100%; justify-content: space-between; }
-.studio-commercial-glass #studio-iphone-more .sx-more-disclosure[aria-expanded=true] svg { transform: rotate(180deg); }
+.studio-commercial-glass #studio-iphone-more .sx-more-disclosure { width: 100%; }
+.studio-commercial-glass #studio-iphone-more .sx-more-disclosure > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.studio-commercial-glass #studio-iphone-more .sx-more-disclosure > svg { flex: none; color: var(--desk-muted); }
+.studio-commercial-glass #studio-iphone-more .sx-more-disclosure[aria-expanded=true] .sx-more-chevron { transform: rotate(180deg); }
+.studio-commercial-glass #studio-iphone-more .sx-more-disclosure.has-current { background: var(--desk-control); }
 .studio-commercial-glass #studio-iphone-more .studio-more-shortcut > svg { flex: none; color: inherit; }
 .studio-commercial-glass #studio-iphone-more .studio-more-shortcut.is-active { color: var(--desk-selected-ink); background: var(--desk-selected); }
+.studio-commercial-glass #studio-iphone-more .sx-more-utilities {
+  padding: 6px 0; border-bottom: 1px solid var(--desk-line);
+}
 .studio-commercial-glass #studio-iphone-more .studio-more-settings {
   justify-content: flex-start; gap: 9px; min-height: 46px; width: 100%; margin: 0;
   padding: 8px 10px; border: 0; border-radius: 12px; color: var(--desk-ink); background: transparent;
 }
+.studio-commercial-glass #studio-iphone-more .studio-more-settings > span { min-width: 0; overflow-wrap: anywhere; }
+.studio-commercial-glass #studio-iphone-more .studio-more-settings > svg { flex: none; }
 .studio-commercial-glass #studio-iphone-more .studio-more-settings > svg:first-child { margin: 0; color: inherit; }
+.studio-commercial-glass #studio-iphone-more .studio-more-settings[aria-current=page] { color: var(--desk-selected-ink); background: var(--desk-selected); }
 .studio-commercial-glass #studio-iphone-more .studio-more-account { border-top: 1px solid var(--desk-line); }
 .studio-commercial-glass #studio-iphone-more .saas-switcher { margin-bottom: 8px; }
 .studio-commercial-glass #studio-iphone-more .saas-switcher-panel {

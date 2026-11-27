@@ -1,4 +1,4 @@
-import { LayoutDashboard, UsersRound, Wallet, CalendarDays, MessageSquare, Bell, Folder, Clapperboard, Webhook, FileText, ReceiptText, HardDrive, UserRound, Mail, MessageCircle, Layers3 } from 'lucide-react';
+import { LayoutDashboard, UsersRound, Wallet, CalendarDays, MessageSquare, Bell, Folder, Clapperboard, Webhook, FileText, ReceiptText, ListTodo, HardDrive, UserRound, Mail, MessageCircle, Layers3 } from 'lucide-react';
 import { canAccessStudioPath } from '../../../utils/moduleAccess';
 import { IS_COMMERCIAL_DEPLOYMENT, SAAS_RELEASE_ENABLED } from '../../../saas/release';
 
@@ -69,17 +69,42 @@ export const workspaceNavigationGroups = [
 ];
 
 
-/** Keep mobile navigation, the desktop sidebar and their sort preferences in sync. */
+const commercialGroups = [
+  { id: 'workspace', label: 'Workspace', icon: LayoutDashboard, paths: ['/admin', '/admin/crm', '/admin/contacts', '/admin/studio-projects', '/admin/post-production', '/admin/calendar'] },
+  { id: 'billing', label: 'Billing & payments', icon: Wallet, paths: ['/admin/quotations', '/admin/invoices', '/admin/finance'] },
+  { id: 'operations', label: 'Operations', icon: Clapperboard, paths: ['/admin/shoot-day', '/admin/crew'] },
+  workspaceNavigationGroups.find(group => group.id === 'communication'),
+  workspaceNavigationGroups.find(group => group.id === 'studio'),
+];
+
+const workspacePages = new Map(
+  [...workspacePrimaryItems, ...workspaceNavigationGroups.flatMap(group => group.items)].map(item => [item.path, item]),
+);
+const commercialTasks = { name: 'Tasks', path: '/admin/post-production', icon: ListTodo };
+
 export function commercialNavSections(user, translate) {
-  const pages = [...workspacePrimaryItems, ...workspaceNavigationGroups.flatMap(group => group.items)]
-    .filter(item => canAccessStudioPath(user, item.path))
-    .map(item => item.path === '/admin/post-production' ? { ...item, name: 'Tasks' } : item);
-  const workspacePaths = ['/admin', '/admin/post-production', '/admin/studio-projects', '/admin/calendar'];
-  const studioPaths = ['/admin/crew', '/admin/activity-log', '/admin/finance', '/admin/chats'];
-  const groupLinks = paths => paths.flatMap(path => pages.filter(item => item.path === path));
-  return [
-    { id: 'workspace', label: translate('Workspace'), items: groupLinks(workspacePaths) },
-    { id: 'studio', label: translate('Studio'), items: groupLinks(studioPaths) },
-    { id: 'more', label: 'More pages', items: pages.filter(item => !workspacePaths.includes(item.path) && !studioPaths.includes(item.path)) },
-  ].filter(group => group.items.length);
+  return commercialGroups.map(({ id, label, icon, paths, items }) => ({
+    id,
+    label: translate(label),
+    name: label,
+    icon,
+    items: (items ?? paths.map(path => path === commercialTasks.path ? commercialTasks : workspacePages.get(path)))
+      .filter(item => canAccessStudioPath(user, item.path)),
+  })).filter(section => section.items.length);
+}
+
+export function workspaceMobileTabs(user, mobileTab) {
+  const tabs = [
+    workspacePages.get('/admin'),
+    IS_COMMERCIAL_DEPLOYMENT ? commercialTasks : workspacePages.get('/admin/crm'),
+    workspacePages.get(mobileTab === 'finance' && canAccessStudioPath(user, '/admin/finance') ? '/admin/finance' : '/admin/studio-projects'),
+    workspacePages.get('/admin/calendar'),
+  ];
+  return tabs.filter(item => canAccessStudioPath(user, item.path)).map(item => ({
+    label: item.name,
+    path: item.path,
+    icon: item.icon,
+    tone: workspaceIconTones[item.path],
+    end: item.exact,
+  }));
 }

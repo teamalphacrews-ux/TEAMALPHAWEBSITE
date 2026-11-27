@@ -11,7 +11,7 @@ import { studioText } from '../../../utils/studioTranslations';
 import WorkspaceSwitcher from '../../../saas/WorkspaceSwitcher';
 import StudioProductBrand from '../../../components/StudioProductBrand';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
-import { X, LogOut, Settings2, ArrowUpRight, ChevronDown, PanelLeftClose, PanelLeftOpen, Search, CircleHelp, Layers3 } from "lucide-react";
+import { X, LogOut, Settings2, ArrowUpRight, ChevronDown, PanelLeftClose, PanelLeftOpen, Search, CircleHelp } from "lucide-react";
 import { commercialNavSections, workspaceNavTarget, workspaceIconTones as iconTones, workspacePrimaryItems as primaryItems, workspaceNavigationGroups as groups } from "./workspaceNavigation";
 
 import { useWorkspaceRailMotion } from './useWorkspaceRailMotion';
@@ -27,12 +27,13 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
   const [expanded, setExpanded] = useState({});
   const [query, setQuery] = useState('');
   const searchTerm = compact ? '' : query.trim().toLowerCase();
-  const aliases = { Quotations: 'quotes proposal', Contacts: 'clients address book', Finance: 'invoices payments expenses', Email: 'gmail mail inbox', 'Client support': 'chat messages', 'Crew & scheduling': 'team photographers', Tasks: 'post production editing delivery' };
+  const aliases = { Quotations: 'quotes proposal', Contacts: 'clients address book', Finance: 'invoices payments expenses', Email: 'gmail mail inbox', 'Client support': 'chat messages', 'Crew & scheduling': 'team photographers', Tasks: 'post production editing delivery', Help: 'documentation docs guides' };
   const matches = item => (item.name + ' ' + t(item.name) + ' ' + (aliases[item.name] || '')).toLowerCase().includes(searchTerm);
   const matchingPrimary = primaryItems.filter(item => canAccessStudioPath(user, item.path) && matches(item));
   const matchingGroups = groups.map(group => ({ ...group, items: group.items.filter(item => canAccessStudioPath(user, item.path) && (matches(item) || matches({ name: group.label }))) })).filter(group => group.items.length);
   const closeNavigation = () => { setQuery(''); onClose?.(); };
   const [unreadCount, setUnreadCount] = useState(0);
+  const hasUnreadMessages = preferences.notificationBadges && preferences.notificationCategories.includes('messages') && unreadCount > 0;
   const navRef = useRef(null);
   const { railRef, toggleRail } = useWorkspaceRailMotion(compact, onToggleCompact);
   useEffect(() => {
@@ -81,7 +82,7 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
     >
       <StudioAppIcon icon={item.icon} tone={iconTones[item.path]} size={28} />
       <span className="studio-nav-text" lang={preferences.language} dir="auto">{t(item.name)}</span>
-      {item.path === "/admin/chats" && preferences.notificationBadges && preferences.notificationCategories.includes('messages') && unreadCount > 0 && (
+      {item.path === "/admin/chats" && hasUnreadMessages && (
         <span
           className="studio-nav-count"
           aria-label={`${unreadCount} unread messages`}
@@ -93,11 +94,23 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
   );
   if (IS_COMMERCIAL_DEPLOYMENT) {
     const sections = commercialNavSections(user, t);
-    const extraPages = sections.find(section => section.id === 'more')?.items || [];
     const sorted = items => sortSidebarItems(items, preferences.sidebarSort, preferences.sidebarOrder, preferences.language);
-    const activeExtra = extraPages.some(item => pathname === item.path || pathname.startsWith(item.path + '/'));
-    const moreOpen = expanded.more?.pathname === pathname ? expanded.more.open : activeExtra;
-    const visibleExtras = sorted(extraPages).filter(matches);
+    const visibleSections = sections.map(section => {
+      const active = section.items.some(item => item.exact
+        ? pathname === workspaceNavTarget(item.path, pathname)
+        : pathname === item.path || pathname.startsWith(item.path + '/'));
+      const override = expanded[section.id];
+      const open = override?.pathname === pathname ? override.open : active || Boolean(override?.open);
+      const items = sorted(section.items).filter(item => matches(item) || matches(section));
+      return { ...section, active, open, items };
+    }).filter(section => section.items.length);
+    const showSettings = canAccessStudioPath(user, '/admin/settings') && matches({ name: 'Settings' });
+    const showHelp = matches({ name: 'Help' });
+    const utilityLinks = <>
+      {showSettings && renderLink({ name: 'Settings', path: '/admin/settings', icon: Settings2 })}
+      {showHelp && <Link to="/studio-os/docs" className="studio-nav-item" title={compact ? t('Help') : undefined} onClick={closeNavigation} aria-label={t('Help')}>
+        <CircleHelp size={17} aria-hidden="true" /><span className="studio-nav-text">{t('Help')}</span></Link>}
+    </>;
     return <aside ref={railRef} className="studio-sidebar sx-desk-sidebar" aria-label="Studio navigation">
       <div className="sx-desk-nav-panel">
         <header className="sx-desk-brand-row">
@@ -110,32 +123,38 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
             {compact ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
           </button> : <button type="button" className="sx-desk-rail-toggle" onClick={onClose} aria-label="Close navigation"><X size={16} /></button>}
         </header>
+        {!compact && <label className="sx-desk-filter"><Search size={16} aria-hidden="true" />
+          <input type="search" aria-label="Find a workspace page" placeholder="Find a page…" value={query} onChange={event => setQuery(event.target.value)} />
+        </label>}
         <nav ref={navRef} className="studio-nav sx-desk-nav" aria-label="Workspace pages">
-          <WorkspaceNavIndicator navRef={navRef} selection={[pathname, compact, moreOpen, query, sections.map(section => section.items.length), preferences.language, preferences.sidebarSort, preferences.sidebarOrder].join('|')} />
-          {sections.filter(section => section.id !== 'more').map(section =>
-            <section className="sx-desk-nav-group" key={section.id} aria-label={section.label}>
-              <h2>{section.label}</h2>{sorted(section.items).map(renderLink)}
-            </section>)}
-          {extraPages.length > 0 && <div className="sx-desk-extra-pages">
-            <button type="button" className={'studio-nav-item sx-desk-more' + (activeExtra && !moreOpen ? ' has-current' : '')}
-              onClick={() => { setExpanded(current => ({ ...current, more: { pathname, open: !moreOpen } })); setQuery(''); }}
-              aria-expanded={moreOpen} aria-controls="sx-other-pages" aria-label="More pages" title={compact ? 'More pages' : undefined}>
-              <Layers3 size={17} aria-hidden="true" /><span className="studio-nav-text">More pages</span><ChevronDown size={14} className="sx-desk-expand-icon" aria-hidden="true" />
-            </button>
-            <div id="sx-other-pages" hidden={!moreOpen}>
-              {!compact && <label className="sx-desk-filter"><Search size={15} aria-hidden="true" />
-                <input type="search" aria-label="Find a workspace page" placeholder="Find a page…" value={query} onChange={event => setQuery(event.target.value)} /></label>}
-              {visibleExtras.map(renderLink)}
-              {!visibleExtras.length && <p role="status" className="studio-menu-empty">No matching pages.</p>}
-            </div>
-          </div>}
-          <div className="sx-desk-nav-foot">
-            <SidebarOrganizer sections={sections} compact={compact} />
-            {canAccessStudioPath(user, '/admin/settings') && renderLink({ name: 'Settings', path: '/admin/settings', icon: Settings2 })}
-            <Link to="/studio-os/docs" className="studio-nav-item" title={compact ? 'Help' : undefined} onClick={closeNavigation} aria-label="Help">
-              <CircleHelp size={17} /><span className="studio-nav-text">{t('Help')}</span></Link>
-          </div>
+          <WorkspaceNavIndicator navRef={navRef} selection={[
+            pathname, compact, searchTerm, preferences.language, visibleSections.map(section => [section.id, section.open, section.items.map(item => item.path)]),
+          ].join('|')} />
+          {visibleSections.map(({ id, label, icon, items, active, open }) => {
+            const GroupIcon = icon;
+            return <section className="sx-desk-nav-group" key={id} aria-label={label}>
+              {(id === 'workspace' || searchTerm) ? <><h2 lang={preferences.language} dir="auto">{label}</h2>{items.map(renderLink)}</> : <>
+                <button type="button" className={'studio-nav-item sx-desk-more' + (active && !open ? ' has-current' : '')}
+                  onClick={() => setExpanded(current => ({ ...current, [id]: { pathname, open: !open } }))}
+                  aria-expanded={open} aria-controls={'sx-sidebar-' + id} aria-label={label} title={compact ? label : undefined}>
+                  <GroupIcon size={17} aria-hidden="true" /><span className="studio-nav-text" lang={preferences.language} dir="auto">{label}</span>
+                  {id === 'communication' && hasUnreadMessages && !open &&
+                    <span className="studio-group-unread" aria-label={`${unreadCount} unread support messages`} />}
+                  <ChevronDown size={14} className="sx-desk-expand-icon" aria-hidden="true" />
+                </button>
+                <div className="sx-desk-group-pages" id={'sx-sidebar-' + id} hidden={!open}>
+                  {items.map(renderLink)}
+                </div>
+              </>}
+            </section>;
+          })}
+          {!visibleSections.length && !showSettings && !showHelp && <p role="status" className="studio-menu-empty">No matching pages.</p>}
+          {searchTerm && utilityLinks}
         </nav>
+        {!searchTerm && <div className="sx-desk-nav-foot">
+          {utilityLinks}
+          <SidebarOrganizer sections={sections} />
+        </div>}
       </div>
       <div className="sx-desk-account-panel">
         {user?.isPreview && <p className="sx-desk-preview-note">Sample workspace</p>}
@@ -218,7 +237,7 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
               >
                 <GroupIcon className="studio-nav-group-icon" size={18} aria-hidden="true" />
                 <span className="studio-nav-text" lang={preferences.language} dir="auto">{t(group.label)}</span>
-                {group.id === "communication" && preferences.notificationBadges && preferences.notificationCategories.includes('messages') && unreadCount > 0 && !isExpanded && <span className="studio-group-unread" aria-label={`${unreadCount} unread support messages`} />}
+                {group.id === "communication" && hasUnreadMessages && !isExpanded && <span className="studio-group-unread" aria-label={`${unreadCount} unread support messages`} />}
                 <ChevronDown className="studio-nav-chevron" size={14} aria-hidden="true" />
               </button>
               <div id={`studio-nav-${group.id}`} hidden={!isExpanded}>

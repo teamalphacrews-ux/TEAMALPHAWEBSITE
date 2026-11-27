@@ -58,13 +58,16 @@ function SidebarOrderDialog({ sections, onClose }) {
   </OperationsModal>;
 }
 
-export default function SidebarOrganizer({ sections, compact = false, mobile = false }) {
+export default function SidebarOrganizer({ sections, mobile = false }) {
   const [open, setOpen] = useState(false);
   if (!sections.length) return null;
   return <>
     <button type="button" className={mobile ? 'studio-more-settings sx-more-organize' : 'studio-nav-item sx-desk-organize'} aria-label="Organize sidebar"
-      aria-haspopup="dialog" title={compact ? 'Organize sidebar' : undefined} onClick={() => setOpen(true)}>
-      <ListOrdered size={18} aria-hidden="true" /><span className={mobile ? undefined : 'studio-nav-text'}>Organize sidebar</span>
+      aria-haspopup="dialog" title={mobile ? undefined : 'Organize sidebar'} onClick={event => {
+        event.currentTarget.focus({ preventScroll: true });
+        setOpen(true);
+      }}>
+      <ListOrdered size={18} aria-hidden="true" /><span className={mobile ? undefined : 'studio-nav-text'}>{mobile ? 'Organize sidebar' : 'Organize'}</span>
     </button>
     {open && <SidebarOrderDialog sections={sections} onClose={() => setOpen(false)} />}
   </>;

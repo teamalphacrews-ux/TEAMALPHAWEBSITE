@@ -53,10 +53,13 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
   display:flex; flex-direction:column; overflow:auto; overscroll-behavior:contain; flex:1; min-height:0; padding:0;
   scrollbar-width:thin; scrollbar-color:var(--desk-line) transparent;
 }
-#sx-workspace-shell .sx-desk-nav-group { flex:none; margin-top:16px; }
-#sx-workspace-shell .sx-desk-extra-pages { flex:none; }
+#sx-workspace-shell .sx-desk-nav-group { flex: none; }
+#sx-workspace-shell .sx-desk-nav-group:has(> h2) { margin-block-start: 12px; }
+#sx-workspace-shell .sx-desk-nav-group:has(> h2) + .sx-desk-nav-group:not(:has(> h2)) {
+  margin-block-start: 8px; padding-block-start: 6px; border-block-start: 1px solid var(--desk-line);
+}
 #sx-workspace-shell .sx-desk-nav-group h2 {
-  color:var(--desk-muted); padding:0 12px; margin:0 0 7px;
+  color:var(--desk-muted); padding:0 12px; margin:0 0 4px;
   font:650 10.5px/1.5 var(--studio-font); letter-spacing:.09em; text-transform:uppercase;
 }
 #sx-workspace-shell .sx-desk-sidebar .studio-nav-item {
@@ -72,6 +75,9 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
   background:var(--desk-selected); color:var(--desk-selected-ink); box-shadow:none;
 }
 #sx-workspace-shell .sx-desk-sidebar .studio-nav-item .studio-nav-text { color:inherit; font:inherit; min-width:0; }
+#sx-workspace-shell:not(.studio-sidebar-compact) .sx-desk-sidebar .studio-nav-text {
+  white-space: normal; overflow-wrap: anywhere;
+}
 #sx-workspace-shell .sx-desk-sidebar .studio-nav-item .studio-symbol-tile {
   width:17px; height:17px; flex:0 0 17px; background:transparent!important;
   box-shadow:none!important; color:inherit!important; border:0;
@@ -79,14 +85,35 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
 #sx-workspace-shell .sx-desk-sidebar .studio-nav-item svg {
   flex:none; width:17px; height:17px; color:inherit!important; stroke-width:1.7;
 }
-#sx-workspace-shell .sx-desk-expand-icon { margin-left:auto; transition:transform .2s var(--desk-ease); }
-#sx-workspace-shell .sx-desk-more[aria-expanded=true] .sx-desk-expand-icon { transform:rotate(180deg); }
+#sx-workspace-shell .sx-desk-expand-icon { margin-inline-start: auto; transition: transform .2s var(--desk-ease); }
+#sx-workspace-shell .sx-desk-more[aria-expanded=true] .sx-desk-expand-icon { transform: rotate(180deg); }
+#sx-workspace-shell:not(.studio-sidebar-compact) .sx-desk-group-pages .studio-nav-item { padding-inline-start: 27px; }
 #sx-workspace-shell .sx-desk-filter {
-  display:flex; align-items:center; gap:7px; margin:6px 4px 7px; padding:0 10px;
-  color:var(--desk-muted); border:1px solid var(--desk-line); background:var(--desk-control); border-radius:12px;
+  display: flex; flex: none; align-items: center; gap: 8px; margin: 10px 3px 0; padding-inline: 10px;
+  color: var(--desk-muted); border: 1px solid var(--desk-line); background: var(--desk-control); border-radius: 12px;
 }
-#sx-workspace-shell .sx-desk-filter input { width:100%; min-width:0; height:39px; font:inherit; color:var(--desk-ink); border:0; background:transparent; }
-#sx-workspace-shell .sx-desk-nav-foot { flex:none; margin-top:auto; padding-top:8px; }
+#sx-workspace-shell .sx-desk-filter svg { flex: none; }
+#sx-workspace-shell .sx-desk-filter:focus-within { outline: 2px solid var(--studio-focus); outline-offset: 1px; }
+#sx-workspace-shell .sx-desk-filter input {
+  width: 100%; min-width: 0; min-height: 44px; padding: 0;
+  font: 500 .875rem/1.4 var(--studio-font); color: var(--desk-ink); border: 0; background: transparent;
+}
+#sx-workspace-shell .sx-desk-filter input::placeholder { color: var(--desk-muted); opacity: 1; }
+#sx-workspace-shell .sx-desk-filter input:focus { outline: none; }
+@media (pointer: coarse) {
+  #sx-workspace-shell .sx-desk-filter input { font-size: 1rem; }
+}
+#sx-workspace-shell .sx-desk-nav-foot {
+  flex: none; display: grid; gap: 2px;
+  margin-block-start: 8px; padding-block-start: 6px; border-block-start: 1px solid var(--desk-line);
+}
+#sx-workspace-shell:not(.studio-sidebar-compact) .sx-desk-nav-foot {
+  grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+}
+#sx-workspace-shell:not(.studio-sidebar-compact) .sx-desk-nav-foot .studio-nav-item {
+  flex-direction: column; justify-content: center; gap: 4px; padding: 6px 2px;
+  margin: 0; min-height: 48px; text-align: center; font-size: .8125rem;
+}
 #sx-workspace-shell .sx-desk-account-panel { position:relative; flex:none; padding:12px; }
 #sx-workspace-shell .sx-desk-account-panel .saas-switcher-trigger {
   display:flex; text-align:left; width:100%; min-height:44px; color:var(--desk-ink);
@@ -265,7 +292,7 @@ html[data-studio-motion=reduced] #sx-workspace-shell .studio-loader { animation:
   }
 }
 @media (prefers-reduced-motion:no-preference) {
-  html:not([data-studio-motion=reduced]) #sx-workspace-shell #sx-other-pages:not([hidden]) { animation:sx-desk-nav-in .2s var(--desk-ease) both; }
+  html:not([data-studio-motion=reduced]) #sx-workspace-shell .sx-desk-group-pages:not([hidden]) { animation:sx-desk-nav-in .2s var(--desk-ease) both; }
   @keyframes sx-desk-nav-in { from { opacity:.25; transform:translateY(-3px); } to { opacity:1; transform:translateY(0); } }
 }
 
