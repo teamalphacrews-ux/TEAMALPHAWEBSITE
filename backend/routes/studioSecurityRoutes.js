@@ -42,14 +42,14 @@ router.post('/backups', requireOwner, wrap(async (req, res) => { const row = awa
 router.get('/backups/:id/download', requireOwner, security.requirePermission('exports'), wrap(async (req, res) => {
   const row = await Backup.findOne({ _id: id(req.params.id), expiresAt: { $gt: new Date() } }).select('+encrypted');
   if (!row) throw security.fail('Backup not found.', 404);
-  res.set('Cache-Control', 'no-store'); res.set('Content-Disposition', `attachment; filename="teamalpha-records-${String(row._id)}.json"`); res.json(recovery.unseal(row.encrypted));
+  res.set('Cache-Control', 'no-store'); res.set('Content-Disposition', `attachment; filename="teamalpha-records-${String(row._id)}.json"`); res.json(recovery.readStoredSnapshot(row.encrypted));
 }));
 router.post('/backups/:id/restore', requireOwner, wrap(async (req, res) => {
   if (req.body?.confirmation !== 'RESTORE MISSING RECORDS') throw security.fail('Type RESTORE MISSING RECORDS to confirm.', 400);
   const result = await recovery.inTransaction(async session => {
     const row = await Backup.findOne({ _id: id(req.params.id), expiresAt: { $gt: new Date() } }).select('+encrypted').session(session);
     if (!row) throw security.fail('Backup not found.', 404);
-    const result = await recovery.mergeSnapshot(recovery.unseal(row.encrypted), session);
+    const result = await recovery.mergeSnapshot(recovery.readStoredSnapshot(row.encrypted), session);
     row.restoredAt = new Date(); await row.save({ session }); return result;
   });
   res.json(result);

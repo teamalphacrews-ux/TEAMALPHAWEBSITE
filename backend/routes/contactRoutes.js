@@ -8,6 +8,7 @@ const Quotation = require("../models/Quotation");
 const Invoice = require("../models/Invoice");
 const Event = require("../models/Event");
 const validate = require("../utils/contactRecords");
+const { manualCreation } = require('../utils/manualCreation');
 const pipeline = require("../services/enquiryPipeline");
 const modules = require('../utils/moduleAccess');
 const router = express.Router();
@@ -31,17 +32,17 @@ const wrap = (fn) => async (req, res) => {
   }
 };
 const id = (req) => validate.identifier(req.params.id, "Record");
-const requireContact = async (contactId, includeArchived = false) => {
+const requireContact = async (contactId, includeArchived = false, session) => {
   const contact = await Contact.findOne({
     _id: contactId,
     ...(!includeArchived ? { archived: { $ne: true } } : {}),
-  });
+  }, null, { session });
   if (!contact) throw error("Contact not found", 404);
   return contact;
 };
-const projectLinks = async (values, existing) => {
+const projectLinks = async (values, existing, session) => {
   const primary = values.contactId || existing?.contactId;
-  if (values.contactId) await requireContact(values.contactId);
+  if (values.contactId) await requireContact(values.contactId, false, session);
   const additional =
     values.additionalClients || existing?.additionalClients || [];
   if (additional.some((other) => String(other) === String(primary)))
@@ -50,7 +51,7 @@ const projectLinks = async (values, existing) => {
     const count = await Contact.countDocuments({
       _id: { $in: values.additionalClients },
       archived: { $ne: true },
-    });
+    }, { session });
     if (count !== values.additionalClients.length)
       throw error("An additional client could not be found");
   }
@@ -67,29 +68,18 @@ const escaped = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 async function documentsFor(contact, studioProjectId, user) {
   const contactId = contact._id;
   const projectFilter = studioProjectId ? { studioProjectId } : { contactId };
-  const name = [contact.firstName, contact.lastName].filter(Boolean).join(" ");
-  const quoteFilter = studioProjectId
-    ? projectFilter
-    : {
-        $or: [
-          { contactId },
-          {
-            contactId: null,
-            email: new RegExp("^" + escaped(contact.email) + "$", "i"),
-          },
-        ],
-      };
-  const invoiceFilter = studioProjectId
-    ? projectFilter
-    : {
-        $or: [
-          { contactId },
-          {
-            contactId: null,
-            clientName: new RegExp("^" + escaped(name) + "$", "i"),
-          },
-        ],
-      };
+  let quoteFilter = projectFilter, invoiceFilter = projectFilter;
+  if (!studioProjectId && contact.email && (modules.hasModule(user, 'quotations') || modules.hasModule(user, 'invoices'))) {
+    const email = new RegExp('^' + escaped(contact.email) + '$', 'i');
+    // Legacy standalone documents lack durable links. A name alone or a shared
+    // address cannot establish which contact owns billing history.
+    if (await Contact.countDocuments({ email }) === 1) {
+      const name = [contact.firstName, contact.lastName].filter(Boolean).join(' ');
+      const standalone = { contactId: null, studioProjectId: null, clientName: new RegExp('^' + escaped(name) + '$', 'i') };
+      quoteFilter = { $or: [projectFilter, { ...standalone, lead: null, email }] };
+      invoiceFilter = { $or: [projectFilter, { ...standalone, leadId: null, sourceQuotation: null, clientEmail: email }] };
+    }
+  }
   const [quotations, invoices, sessions, documents] = await Promise.all([
     modules.hasModule(user, 'quotations') ? Quotation.find(quoteFilter)
       .select(
@@ -125,9 +115,15 @@ router.get(
 );
 router.post(
   "/contacts",
-  wrap(async (req, res) =>
-    res.status(201).json(await Contact.create(validate.contact(req.body))),
-  ),
+  wrap(async (req, res) => {
+    const values = validate.contact(req.body);
+    const { record, replayed } = await manualCreation(req, Contact, async session => {
+      if (!session) return Contact.create(values);
+      const [contact] = await Contact.create([values], { session });
+      return contact;
+    });
+    res.status(replayed ? 200 : 201).json(record);
+  }),
 );
 router.get(
   "/contacts/:id",
@@ -173,12 +169,17 @@ router.post(
   "/studio-projects",
   wrap(async (req, res) => {
     const values = validate.project(req.body);
-    await projectLinks(values);
-    const project = await Project.create(values);
-    const lead = await pipeline.ensureProject(project._id);
-    project.leadId = lead._id;
-    if (project.status === 'Booked') await require('../services/productionTemplates').applyDefaultProduction(lead._id);
-    res.status(201).json(project);
+    const save = async session => {
+      await projectLinks(values, null, session);
+      const [created] = await Project.create([values], { session });
+      const lead = await pipeline.ensureProject(created._id, session);
+      created.leadId = lead._id;
+      if (created.status === 'Booked') await require('../services/productionTemplates').applyDefaultProduction(lead._id, session);
+      return created;
+    };
+    const { record, replayed } = await manualCreation(req, Project, session =>
+      session ? save(session) : Project.db.transaction(save));
+    res.status(replayed ? 200 : 201).json(record);
   }),
 );
 router.get(
@@ -213,19 +214,24 @@ router.patch('/studio-projects/:id/crew',wrap(async(req,res)=>{
 router.patch(
   "/studio-projects/:id",
   wrap(async (req, res) => {
-    const recordId = id(req),
-      existing = await Project.findById(recordId);
-    if (!existing) throw error("Project not found", 404);
+    const recordId = id(req);
     const values = validate.project(req.body, true);
-    await projectLinks(values, existing);
-    const project = await Project.findByIdAndUpdate(
+    const project = await Project.db.transaction(async session => {
+      const existing = await Project.findById(recordId, null, { session });
+      if (!existing) throw error("Project not found", 404);
+      await projectLinks(values, existing, session);
+      const updated = await Project.findByIdAndUpdate(
         recordId,
-        { $set: values },
-        { new: true, runValidators: true },
+        { $set: values }, { new: true, runValidators: true, session },
       );
-    const lead = await pipeline.ensureProject(project._id);
-    project.leadId = lead._id;
-    if (project.status === 'Booked' && existing.status !== 'Booked') await require('../services/productionTemplates').applyDefaultProduction(lead._id);
+      if (!updated) throw error('The project changed. Refresh and try again.', 409);
+      const lead = await pipeline.ensureProject(updated._id, session);
+      updated.leadId = lead._id;
+      if (updated.status === 'Booked' && existing.status !== 'Booked') {
+        await require('../services/productionTemplates').applyDefaultProduction(lead._id, session);
+      }
+      return updated;
+    });
     res.json(project);
   }),
 );
@@ -242,30 +248,32 @@ router.post(
     res.status(201).json(project);
   }),
 );
-function documentFields(body) {
-  const result = {
-    contactId: validate.identifier(body.contactId, "Contact"),
-    studioProjectId: body.studioProjectId
-      ? validate.identifier(body.studioProjectId, "Project")
-      : null,
-    type: body.type,
-  };
-  if (!["Contract", "Questionnaire", "Message"].includes(result.type))
-    throw error("Choose a supported document type");
-  if (
-    typeof body.title !== "string" ||
-    !body.title.trim() ||
-    body.title.length > 200
-  )
-    throw error("Document title is required (up to 200 characters)");
-  if (typeof body.content !== "string" || body.content.length > 50000)
-    throw error("Document content must be text (up to 50,000 characters)");
-  return {
-    ...result,
-    title: body.title.trim(),
-    content: body.content,
-    status: "Draft",
-  };
+function documentFields(body, partial = false) {
+  if (!body || typeof body !== "object" || Array.isArray(body))
+    throw error("A document is required");
+  const values = {};
+  if (!partial || Object.hasOwn(body, "contactId"))
+    values.contactId = validate.identifier(body.contactId, "Contact");
+  if (!partial || Object.hasOwn(body, "type")) {
+    if (!["Contract", "Questionnaire", "Message"].includes(body.type))
+      throw error("Choose a supported document type");
+    values.type = body.type;
+  }
+  if (Object.hasOwn(body, "studioProjectId")) {
+    values.studioProjectId = body.studioProjectId === null || body.studioProjectId === ""
+      ? null : validate.identifier(body.studioProjectId, "Project");
+  }
+  if (!partial || Object.hasOwn(body, "title")) {
+    if (typeof body.title !== "string" || !body.title.trim() || body.title.length > 200)
+      throw error("Document title is required (up to 200 characters)");
+    values.title = body.title.trim();
+  }
+  if (!partial || Object.hasOwn(body, "content")) {
+    if (typeof body.content !== "string" || body.content.length > 50000)
+      throw error("Document content must be text (up to 50,000 characters)");
+    values.content = body.content;
+  }
+  return values;
 }
 const documentLinks = async (values) => {
   await requireContact(values.contactId);
@@ -286,22 +294,26 @@ router.post(
   wrap(async (req, res) => {
     const values = documentFields(req.body);
     await documentLinks(values);
-    res.status(201).json(await Document.create(values));
+    res.status(201).json(await Document.create({ ...values, status: "Draft" }));
   }),
 );
 router.patch(
   "/contact-documents/:id",
   wrap(async (req, res) => {
-    const values = documentFields(req.body);
-    await documentLinks(values);
+    const { contactId, type, ...updates } = documentFields(req.body, true);
+    if (!Object.keys(updates).length) throw error("Supply a draft field to update");
+    const filter = { _id: id(req), status: "Draft" };
+    if (contactId) filter.contactId = contactId;
+    if (type) filter.type = type;
+    const draft = await Document.findOne(filter);
+    if (!draft) throw error("Draft not found", 404);
+    await documentLinks({
+      contactId: draft.contactId,
+      studioProjectId: Object.hasOwn(updates, "studioProjectId") ? updates.studioProjectId : draft.studioProjectId,
+    });
     const record = await Document.findOneAndUpdate(
-      {
-        _id: id(req),
-        contactId: values.contactId,
-        type: values.type,
-        status: "Draft",
-      },
-      { $set: values },
+      { ...filter, contactId: draft.contactId, type: draft.type },
+      { $set: updates },
       { new: true, runValidators: true },
     );
     if (!record) throw error("Draft not found", 404);

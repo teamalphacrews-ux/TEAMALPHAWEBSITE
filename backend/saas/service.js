@@ -36,13 +36,13 @@ function workspaceView(workspace, membership) {
     planId: workspace.planId, subscriptionStatus: workspace.subscriptionStatus, status: workspace.subscriptionStatus,
     trialEndsAt: workspace.trialEndsAt, state: workspace.state, setupRequired: require('./setupAccess').requiresSetup(workspace) };
 }
-async function localMember(workspace, account, role) {
+async function localMember(workspace, account, role, session) {
   return runInWorkspace(workspace, async () => {
     const User = require('../models/User');
-    let user = await User.findOne({ email: account.email });
-    if (!user) user = await User.create({ firstName: account.firstName, lastName: account.lastName, email: account.email,
+    let user = await User.findOne({ email: account.email }).session(session || null);
+    if (!user) user = await new User({ firstName: account.firstName, lastName: account.lastName, email: account.email,
       // Account credentials are kept only in the global identity store, never in the password vault.
-      password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12), role: 'admin', studioOwner: role === 'owner' });
+      password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12), role: 'admin', studioOwner: role === 'owner' }).save({ session });
     return user;
   });
 }
@@ -81,6 +81,17 @@ async function issueSession(account, workspace, membership, req) {
       email: account.email, role: 'admin', ...require('../utils/moduleAccess').accessPayload(user), workspaceRole: membership.role, workspace: workspaceView(workspace, membership) } };
   });
 }
+async function releaseSeat(workspaceId, session) {
+  const result = await models.Workspace.updateOne({ _id: workspaceId, seatsReserved: { $gt: 1 } }, { $inc: { seatsReserved: -1 } }, { session });
+  if (!result.matchedCount) throw failure(409, 'The seat count requires reconciliation before continuing.');
+}
+async function releaseInvitation(filter, state) {
+  return mongoose.connection.transaction(async session => {
+    const changed = await models.Invitation.updateOne(filter, { $set: { state } }, { session });
+    if (changed.modifiedCount) await releaseSeat(filter.workspaceId, session);
+    return changed.modifiedCount;
+  });
+}
 async function expireInvitations(workspaceId) {
   const interrupted = await models.Invitation.find({ workspaceId, state: 'accepting', acceptingUntil: { $lte: new Date() } });
   for (const row of interrupted) {
@@ -90,8 +101,7 @@ async function expireInvitations(workspaceId) {
   }
   const pending = await models.Invitation.find({ workspaceId, state: 'pending', expiresAt: { $lte: new Date() } }).select('_id');
   for (const row of pending) {
-    const changed = await models.Invitation.updateOne({ _id: row._id, state: 'pending' }, { $set: { state: 'expired' } });
-    if (changed.modifiedCount) await models.Workspace.updateOne({ _id: workspaceId, seatsReserved: { $gt: 0 } }, { $inc: { seatsReserved: -1 } });
+    await releaseInvitation({ _id: row._id, workspaceId, state: 'pending', expiresAt: { $lte: new Date() } }, 'expired');
   }
 }
-module.exports = { emailOf, text, credentials, authenticateAccount, workspaceView, localMember, provisionWorkspace, issueSession, expireInvitations };
+module.exports = { emailOf, text, credentials, authenticateAccount, workspaceView, localMember, provisionWorkspace, issueSession, expireInvitations, releaseInvitation, releaseSeat };

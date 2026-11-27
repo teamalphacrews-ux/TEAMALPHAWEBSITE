@@ -36,7 +36,10 @@ const chatRoutes = require('./routes/chatRoutes');
 const app = express();
 if (/^[12]$/.test(process.env.SAAS_TRUST_PROXY_HOPS || '')) app.set('trust proxy', Number(process.env.SAAS_TRUST_PROXY_HOPS));
 const readiness = createRuntimeReadiness({
-    connect: () => mongoose.connect(process.env.MONGO_URI, { family: 4 }),
+    connect: async () => {
+        await mongoose.connect(process.env.MONGO_URI, { family: 4 });
+        await require('./utils/manualCreation').prepareManualCreation();
+    },
     getConnectionState: () => mongoose.connection.readyState,
     models: ['Lead', 'Quotation', 'Invoice', 'StudioContact', 'StudioProject',
         'ContactDocument', 'ProjectMessage', 'QuoteDelivery', 'GmailConnection', 'GmailOAuthNonce',

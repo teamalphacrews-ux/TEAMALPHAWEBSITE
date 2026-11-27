@@ -1,3 +1,4 @@
+import { newRecordCreationKey } from "../../../utils/recordCreationKey.js";
 import { useAuth } from '../../../context/AuthContext';
 import { hasModuleAccess } from '../../../utils/moduleAccess';
 import StudioSelect from "../common/StudioSelect";
@@ -26,6 +27,7 @@ function TaskWorkspace({ lead, onChange, canCreate, canUpdate, canDelete }) {
   const [editTitle, setEditTitle] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
   const inFlight = useRef(false);
+  const creationKey = useRef(null);
   const updateTasks = (next) => onChange({ ...lead, tasks: next });
 
   const add = async (event) => {
@@ -34,10 +36,12 @@ function TaskWorkspace({ lead, onChange, canCreate, canUpdate, canDelete }) {
     inFlight.current = true;
     setBusy("new");
     try {
-      const response = await axios.post(`${studioApi}/api/leads/${lead._id}/tasks`, { title: title.trim(), dueDate: dueDate || null, status: "pending" }, studioAuth());
+      creationKey.current ||= newRecordCreationKey();
+      const response = await axios.post(`${studioApi}/api/leads/${lead._id}/tasks`, { title: title.trim(), dueDate: dueDate || null, status: "pending", creationKey: creationKey.current }, studioAuth());
       updateTasks([...tasks, response.data]);
+      creationKey.current = null;
       setTitle(""); setDueDate(""); toast.success("Task added");
-    } catch { toast.error("Couldn’t add the task"); } finally { setBusy(null); inFlight.current = false; }
+    } catch (err) { toast.error(err.response?.data?.error || "Couldn’t add the task"); } finally { setBusy(null); inFlight.current = false; }
   };
   const update = async (task, payload) => {
     if (!canUpdate || inFlight.current) return;

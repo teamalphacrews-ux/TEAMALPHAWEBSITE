@@ -308,7 +308,7 @@ async function runInvoiceDeliveryJobs() {
             dueDate: invoice.dueDate,
           },
         ];
-    let remainingCredit = invoice.advancePaid * 100;
+    let remainingCredit = Math.round((invoice.advancePaid || 0) * 100);
     for (let index = 0; index < payments.length; index++) {
       const payment = payments[index];
       const owed = Math.max(0, payment.amountPaise - remainingCredit);

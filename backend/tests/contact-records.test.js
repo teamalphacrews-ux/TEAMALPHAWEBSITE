@@ -49,6 +49,7 @@ test("contact creation persists only validated fields and does not create a user
   assert.equal(response.status, 201); assert.equal(captured.password, undefined); assert.equal(captured.role, undefined); assert.equal(captured.email, "maya@example.com");
 });
 test("partial project date edits are checked against the persisted opposite endpoint", async (t) => {
+  t.mock.method(Project.db, "transaction", work => work({}));
   t.mock.method(Project, "findById", async () => ({ contactId, startDate: new Date("2028-03-01"), endDate: new Date("2028-03-02") }));
   t.mock.method(Project, "findByIdAndUpdate", async () => { assert.fail("Invalid range must never reach persistence"); });
   assert.equal((await dispatch("PATCH", "/studio-projects/" + projectId, { endDate: "2028-02-29" })).status, 400);
@@ -83,4 +84,60 @@ test('crew edits are atomic and reject ambiguous or stale project connections',a
  assert.equal((await dispatch('PATCH',url,{action:'remove',photographerId:projectId})).status,200);assert.deepEqual(captured.update,{$pull:{people:'Sara'}});
  count=2;assert.equal((await dispatch('PATCH',url,{action:'assign',photographerId:projectId})).status,409);count=1;person={...person,status:'Inactive'};assert.equal((await dispatch('PATCH',url,{action:'assign',photographerId:projectId})).status,400);person={...person,status:'Active'};matched=0;assert.equal((await dispatch('PATCH',url,{action:'assign',photographerId:projectId})).status,409);
  assert.equal((await dispatch('PATCH',url,{action:'assign',photographerId:projectId},'client')).status,403);assert.equal((await dispatch('PATCH',url,{action:'assign',photographerId:projectId},null)).status,401);
+});
+
+test('partial draft edits preserve project links, content and protected state', async t => {
+  const draft = { _id: projectId, contactId, studioProjectId: projectId, type: 'Contract', title: 'Initial title', content: 'Keep this text', status: 'Draft' };
+  t.mock.method(Document, 'findOne', async filter =>
+    Object.entries(filter).every(([key, value]) => String(draft[key]) === String(value)) ? { ...draft } : null);
+  t.mock.method(Contact, 'findOne', async () => ({ _id: contactId }));
+  t.mock.method(Project, 'exists', async () => true);
+  let writes = 0;
+  t.mock.method(Document, 'findOneAndUpdate', async (filter, update) => {
+    if (!Object.entries(filter).every(([key, value]) => String(draft[key]) === String(value))) return null;
+    writes++;
+    return Object.assign(draft, update.$set);
+  });
+  const url = '/contact-documents/' + projectId;
+  assert.equal((await dispatch('PATCH', url, { title: 'New title', status: 'Archived' })).status, 200);
+  assert.equal(draft.title, 'New title');
+  assert.equal(draft.studioProjectId, projectId);
+  assert.equal(draft.content, 'Keep this text');
+  assert.equal(draft.status, 'Draft');
+  assert.equal((await dispatch('PATCH', url, { title: 'Wrong owner', contactId: projectId })).status, 404);
+  assert.equal((await dispatch('PATCH', url, { studioProjectId: null, content: '' })).status, 200);
+  assert.equal(draft.studioProjectId, null);
+  assert.equal(draft.content, '');
+  assert.equal(writes, 2);
+});
+
+test('contact detail requires explicit links or a unique matching identity for standalone documents', async t => {
+  const address = 'sam@example.test';
+  t.mock.method(Contact, 'findOne', async () => ({ _id: contactId, firstName: 'Sam', lastName: 'Example', email: address }));
+  let addressOwners = 1;
+  t.mock.method(Contact, 'countDocuments', async ({ email }) => {
+    assert.ok(email.test(address)); return addressOwners;
+  });
+  const calls = {};
+  for (const name of ['StudioProject', 'Quotation', 'Invoice', 'Event', 'ContactDocument']) {
+    t.mock.method(require('../models/' + name), 'find', filter => {
+      calls[name] = filter;
+      return { select() { return this; }, sort() { return this; }, lean: async () => [] };
+    });
+  }
+  assert.equal((await dispatch('GET', '/contacts/' + contactId)).status, 200);
+  for (const [model, emailField] of [['Quotation', 'email'], ['Invoice', 'clientEmail']]) {
+    const [direct, legacy] = calls[model].$or;
+    assert.deepEqual(direct, { contactId });
+    assert.ok(legacy[emailField].test(address));
+    assert.equal(legacy[emailField].test('sam@another.example'), false);
+    assert.ok(legacy.clientName.test('Sam Example'));
+    assert.equal(legacy.contactId, null);
+    assert.equal(legacy.studioProjectId, null);
+  }
+  assert.equal(calls.Invoice.$or[1].sourceQuotation, null);
+  addressOwners = 2;
+  assert.equal((await dispatch('GET', '/contacts/' + contactId)).status, 200);
+  assert.deepEqual(calls.Invoice, { contactId });
+  assert.deepEqual(calls.Quotation, { contactId });
 });

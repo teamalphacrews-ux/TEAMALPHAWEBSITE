@@ -68,3 +68,12 @@ test('calendar rejects contradictory explicit enquiry and contact choices rather
     links.lead = eventIds.second;
   }), { status: 400 });
 });
+
+test('timed event inputs reject empty starts without converting them to January 1970', () => {
+  const valid = { title: 'Sample', start: '2028-02-29T23:00:00Z', end: '2028-03-01T01:00:00Z' };
+  for (const start of [null, false, true, []]) {
+    assert.throws(() => eventFields({ ...valid, start }), { status: 400 });
+  }
+  assert.throws(() => googleDateRange({ start: { dateTime: null }, end: { dateTime: valid.end } }), RangeError);
+  assert.equal(eventFields(valid).start.toISOString(), '2028-02-29T23:00:00.000Z');
+});

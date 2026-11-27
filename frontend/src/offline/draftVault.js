@@ -2,7 +2,7 @@ export const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const MAX_LOCAL_DRAFTS = 50;
 export const MAX_DRAFT_BYTES = 128 * 1024;
 const fields = {
-  enquiry: ['name','email','phone','status','eventType','eventDate','eventTime','eventLocation','followUpDate','remarks','notes','totalAmount'],
+  enquiry: ['creationKey','name','email','phone','status','eventType','eventDate','eventTime','eventLocation','followUpDate','remarks','notes','totalAmount'],
   quotation: ['clientName','email','lead','contactId','studioProjectId','title','documentNumber','issueDate','validUntil','items','discountType','discountValue','discountPaise','taxRateBps','terms','notes','autoCreateInvoice','expiryEnabled','remindersEnabled','reminderDays','design'],
   'project-note': ['body'],
 };

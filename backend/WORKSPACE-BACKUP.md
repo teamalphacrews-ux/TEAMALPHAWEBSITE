@@ -60,7 +60,10 @@ owner. Encrypted archive creation, download and inspection remain available.
 
 The owner must enter the current password, acknowledge the warning and type
 `DELETE WORKSPACE DATA` or `RESTORE WORKSPACE`. The backend independently checks
-the saved owner and active session. Before any deletion it creates an encrypted
+the saved owner and active session. Reset submissions include `expectedDataVersion`
+from the workspace-data review. Restore submissions use the version returned by
+archive inspection. A missing or stale version returns HTTP 409 and the owner
+must review the current workspace before submitting again. Before any deletion it creates an encrypted
 safety archive in the same transaction as all replacement writes. Any failure
 rolls back the complete operation. No partial reset is supported.
 

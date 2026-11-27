@@ -130,36 +130,39 @@ router.get('/recent-activity', async (req, res) => {
                 }
             });
 
+        const counts = await Event.aggregate([
+            { $match: { lead: { $in: leads.map(lead => lead._id) }, 'photos.0': { $exists: true } } },
+            { $unwind: '$photos' },
+            { $group: { _id: { lead: '$lead', photo: '$photos' } } },
+            { $lookup: { from: Gallery.collection.name, localField: '_id.photo', foreignField: '_id', as: 'media' } },
+            { $unwind: '$media' },
+            { $match: { 'media.type': { $in: ['image', null] } } },
+            { $group: { _id: '$_id.lead', count: { $sum: 1 } } },
+        ]);
+        const photosByLead = new Map(counts.map(row => [String(row._id), row.count]));
         const activity = [];
 
         // Add lead updates to activity
         for (const lead of leads) {
-            const photoCount = await Gallery.countDocuments({ albumName: lead.name });
+            const photoCount = photosByLead.get(String(lead._id)) || 0;
             activity.push({
                 _id: lead._id,
                 name: `${lead.eventType || 'Event'} of ${lead.name}`,
                 date: new Date(lead.updatedAt).toLocaleDateString(),
-                count: `${photoCount} photos`,
+                count: `${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}`,
                 status: lead.status === 'Converted' ? 'Delivered' : (lead.status === 'New' ? 'Reviewing' : lead.status),
                 timestamp: lead.updatedAt,
                 rawName: lead.name,
                 rawDate: lead.eventDate,
-                rawType: lead.eventType
+                rawType: lead.eventType,
+                isLead: true
             });
         }
 
         // Add gallery event folders to activity
         for (const event of recentEvents) {
-            let lead = event.clientId?.clientId?.leadId;
+            const lead = event.clientId?.clientId?.leadId;
             const clientName = event.clientId?.name || event.clientId?.clientId?.firstName || "Unknown Client";
-
-            // FALLBACK: If direct ID linkage is missing, search for the Lead by name matching the DriveGallery/Client name
-            if (!lead && event.clientId?.name) {
-                const searchName = event.clientId.name.trim();
-                lead = await Lead.findOne({
-                    name: { $regex: new RegExp('^' + searchName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }
-                });
-            }
 
             // If we found a Lead, use its ID for consistency with Edit/Delete features
             // If NO Lead exists, we still show the event for the User/Client
@@ -170,9 +173,7 @@ router.get('/recent-activity', async (req, res) => {
             
             if (leadIndex !== -1) {
                 const leadEntry = activity[leadIndex];
-                const timeDiff = Math.abs(new Date(event.createdAt) - new Date(leadEntry.timestamp));
-                
-                if (new Date(event.createdAt) >= new Date(leadEntry.timestamp) || timeDiff < 10000) {
+                if (new Date(event.createdAt) >= new Date(leadEntry.timestamp)) {
                     activity[leadIndex] = {
                         _id: activityId,
                         name: `${event.name} for ${displayName}`,

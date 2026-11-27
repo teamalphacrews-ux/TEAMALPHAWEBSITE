@@ -10,6 +10,7 @@ const {
   publicQuote,
 } = require("../utils/quoteLifecycle");
 const { acceptedQuoteDestination } = require('../utils/acceptedQuoteDestination');
+const productionTemplates = require('../services/productionTemplates');
 const router = express.Router();
 router.use((req, res, next) => {
   res.set("Cache-Control", "no-store");
@@ -103,6 +104,9 @@ router.post(
           error:
             "The quotation changed. Reload and review it before accepting.",
         });
+      const template = q.lead || q.studioProjectId
+        ? productionTemplates.savedTemplate(await StudioConfig.findOne({ key: 'studio' }))
+        : undefined;
       const now = new Date();
       const claimed = await Quotation.findOneAndUpdate(
         {
@@ -121,6 +125,7 @@ router.post(
             status: "Accepted",
             acceptedAt: now,
             acceptedBy: body.acceptedBy.trim(),
+            ...(template ? { pendingProductionTemplate: template } : {}),
             ...(q.autoCreateInvoice === false
               ? {}
               : { invoiceId: new mongoose.Types.ObjectId() }),
@@ -147,7 +152,10 @@ router.post(
         error: "Please contact the studio about this accepted quotation.",
       });
     const linkedEnquiry = await require("../services/enquiryPipeline").syncQuote(q);
-    if (linkedEnquiry?._id) await require('../services/productionTemplates').applyDefaultProduction(linkedEnquiry._id);
+    if (q.pendingProductionTemplate) {
+      if (!linkedEnquiry?._id) throw new Error('Production setup is missing its linked enquiry.');
+      await productionTemplates.finishAcceptedProduction(q._id, linkedEnquiry._id);
+    }
     if (q.autoCreateInvoice !== false && !q.invoiceGeneratedAt) {
       await ensureInvoice(q);
       q = await Quotation.findOneAndUpdate(
@@ -159,24 +167,32 @@ router.post(
     }
     if (req.app) {
       const Notification = require("../models/Notification");
-      const claimedNotification = await Quotation.findOneAndUpdate(
-        {
-          _id: q._id,
-          status: "Accepted",
-          acceptedNotifiedAt: { $exists: false },
-        },
-        { $set: { acceptedNotifiedAt: new Date() } },
-        { new: true },
-      );
-      const studioSettings = await StudioConfig.findOne({ key: 'studio' });
-      if (claimedNotification && studioSettings?.automation?.notifyQuoteAccepted !== false)
-        await Notification.create({
-          eventKey: 'quote-accepted:' + q._id,
-          title: "Quotation accepted",
-          description: `${q.clientName} accepted quotation ${q.documentNumber || String(q._id).slice(-6).toUpperCase()}.`,
-          type: "System",
-          link: acceptedQuoteDestination(q, "/admin/quotations"),
-        }).catch(() => {});
+      if (!q.acceptedNotifiedAt) {
+        const studioSettings = await StudioConfig.findOne({ key: 'studio' });
+        const eventKey = 'quote-accepted:' + q._id;
+        let recorded = studioSettings?.automation?.notifyQuoteAccepted === false;
+        if (!recorded) {
+          try {
+            await Notification.create({
+              eventKey,
+              title: 'Quotation accepted',
+              description: `${q.clientName} accepted quotation ${q.documentNumber || String(q._id).slice(-6).toUpperCase()}.`,
+              type: 'System',
+              link: acceptedQuoteDestination(q, '/admin/quotations'),
+            });
+            recorded = true;
+          } catch (error) {
+            // A concurrent acceptance or the automation worker may have inserted this event.
+            recorded = error.code === 11000 && error.keyValue?.eventKey === eventKey;
+          }
+        }
+        if (recorded) {
+          await Quotation.findOneAndUpdate(
+            { _id: q._id, status: 'Accepted', acceptedNotifiedAt: { $exists: false } },
+            { $set: { acceptedNotifiedAt: new Date() } },
+          );
+        }
+      }
       if (
         !q.emailConfirmationStatus ||
         ["none", "unavailable", "failed"].includes(q.emailConfirmationStatus)
@@ -184,10 +200,11 @@ router.post(
         const status =
           await require("../services/quoteWorkflow").queueConfirmation(q);
         q = await Quotation.findOneAndUpdate(
-          { _id: q._id, status: "Accepted" },
+          { _id: q._id, status: "Accepted", emailConfirmationStatus: { $in: [null, "none", "unavailable", "failed"] } },
           { $set: { emailConfirmationStatus: status } },
           { new: true },
-        );
+        ) || await find(req.params.token);
+        if (!q) return res.status(404).json({ error: "This quotation link is unavailable." });
       }
     }
     res.json(publicQuote(q, await StudioConfig.findOne({ key: "studio" })));

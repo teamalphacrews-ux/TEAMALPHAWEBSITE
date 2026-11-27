@@ -1,6 +1,8 @@
 const express = require('express');
 const Lead = require('../models/Lead');
 const Task = require('../models/Task');
+const { manualCreation } = require('../utils/manualCreation');
+const { createProductionTask } = require('../utils/productionTask');
 const Photographer = require('../models/Photographer');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
@@ -42,12 +44,8 @@ router.post('/:id/project', async (req, res) => {
 // Task specific management
 router.post('/:id/tasks', async (req, res) => {
     try {
-        const { taskValues, validateTaskLinks } = require('../utils/productionTask');
-        const values = taskValues({ ...req.body, lead: req.params.id });
-        await validateTaskLinks(values);
-        const task = await Task.create(values);
-        await Lead.updateOne({ _id: req.params.id }, { $addToSet: { tasks: task._id } });
-        res.json(task);
+        const { record } = await manualCreation(req, Task, session => createProductionTask({ ...req.body, lead: req.params.id }, session));
+        res.json(record);
     } catch (error) { res.status(error.status || 503).json({ error: error.status ? error.message : 'The production task could not be saved.' }); }
 });
 
@@ -58,10 +56,18 @@ router.patch('/:id', async (req, res) => {
         const oldLead = await Lead.findById(req.params.id);
         if (!oldLead) return res.status(404).json({ error: "Lead not found" });
 
-        const updatedLead = await Lead.findByIdAndUpdate(req.params.id, allowedLeadFields(req.body), { new: true, runValidators: true });
+        const converting = status === 'Converted' && oldLead.status !== 'Converted';
+        const save = async session => {
+            const lead = await Lead.findOneAndUpdate(
+                { _id: req.params.id, ...(status ? { status: oldLead.status } : {}) },
+                { $set: allowedLeadFields(req.body) }, { new: true, runValidators: true, session },
+            );
+            if (!lead) throw Object.assign(new Error('Enquiry changed.'), { status: 409 });
+            if (converting) await require('../services/productionTemplates').applyDefaultProduction(lead._id, session);
+            return lead;
+        };
+        const updatedLead = converting ? await Lead.db.transaction(save) : await save();
         await pipeline.syncFromEnquiry(updatedLead, req.body);
-        if (status === 'Converted' && oldLead.status !== 'Converted')
-            await require('../services/productionTemplates').applyDefaultProduction(updatedLead._id);
 
         // Update corresponding User if linked or email matches
         if (updatedLead) {

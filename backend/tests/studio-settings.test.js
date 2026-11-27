@@ -39,8 +39,8 @@ test('production task target dates use the Indian event date and preserve privat
 test('reapplying a template keeps existing task progress and repairs enquiry references without duplicates', async () => {
   const store = new Map(), ids = new Set(); let serial = 0;
   const lead = { _id: '607f1f77bcf86cd799439011', eventDate: '2026-10-01' };
-  const Task = { findOneAndUpdate: async (filter, update) => { if (!store.has(filter.templateKey)) store.set(filter.templateKey, { _id: String(++serial), ...update.$setOnInsert }); return store.get(filter.templateKey); } };
-  const Lead = { findById: async () => lead, updateOne: async (_, update) => update.$addToSet.tasks.$each.forEach(id => ids.add(id)) };
+  const Task = { db: { transaction: work => work({}) }, findOneAndUpdate: async (filter, update) => { if (!store.has(filter.templateKey)) store.set(filter.templateKey, { _id: String(++serial), ...update.$setOnInsert }); return store.get(filter.templateKey); } };
+  const Lead = { findOneAndUpdate: async () => lead, updateOne: async (_, update) => update.$addToSet.tasks.$each.forEach(id => ids.add(id)) };
   const Config = { findOne: async () => ({ productionDefaults: { defaultTemplateId: 'wedding', templates: [{ id: 'wedding', name: 'Wedding', stages: [{ title: 'Photos', category: 'Photos', dueDays: 30, clientVisible: true }] }] } }) };
   await applyProductionTemplate(lead._id, '', { Task, Lead, Config });
   store.get('wedding:0').status = 'completed'; ids.clear();

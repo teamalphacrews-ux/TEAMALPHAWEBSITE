@@ -56,7 +56,7 @@ test('polling returns provider failures honestly and releases its per-user lock'
   let entered;
   const started=new Promise(resolve=>{entered=resolve;});
   t.mock.method(google,'calendar',()=>({events:{list:async()=>{
-    if(fail)throw new Error('Provider unavailable');
+    if(fail)throw new Error('Provider unavailable: private diagnostic marker');
     entered();
     await new Promise(resolve=>{release=resolve;});
     return {data:{items:[]}};
@@ -66,7 +66,8 @@ test('polling returns provider failures honestly and releases its per-user lock'
   const account={...user,_id:'507f1f77bcf86cd799439011'};
   assert.deepEqual(await pollGoogleCalendar(null),{success:false});
   assert.deepEqual(await pollGoogleCalendar(account),{success:false});
-  assert.equal(updates[0].googleSyncError,'Provider unavailable');
+  assert.match(updates[0].googleSyncError,/sync could not finish/i);
+  assert.doesNotMatch(updates[0].googleSyncError,/private diagnostic marker/);
   fail=false;
   const running=pollGoogleCalendar(account);
   await started;
@@ -74,4 +75,62 @@ test('polling returns provider failures honestly and releases its per-user lock'
   release();
   assert.deepEqual(await running,{success:true});
   assert.equal(updates.at(-1).googleSyncError,null);
+});
+
+test('reconciliation uses the same exclusive overlap bounds as the Google listing', async t => {
+  const { google } = require('googleapis');
+  const User = require('../models/User');
+  const Event = require('../models/Event');
+  const { pollGoogleCalendar } = require('../services/googleCalendarService');
+  let listed, scanned;
+  t.mock.method(Date, 'now', () => Date.parse('2028-02-29T11:35:20.537Z'));
+  t.mock.method(google, 'calendar', () => ({ events: { list: async options => {
+    listed = options;
+    return { data: { items: [] } };
+  } } }));
+  t.mock.method(Event, 'find', async filter => { scanned = filter; return []; });
+  t.mock.method(User, 'findByIdAndUpdate', async () => ({}));
+  const account = { ...user, _id: '507f1f77bcf86cd799439011' };
+  assert.deepEqual(await pollGoogleCalendar(account), { success: true });
+  assert.equal(new Date(listed.timeMin).getUTCMilliseconds(), 0);
+  assert.equal(new Date(listed.timeMax).getUTCMilliseconds(), 0);
+  assert.deepEqual(scanned.start, { $lt: new Date(listed.timeMax) });
+  assert.deepEqual(scanned.end, { $gt: new Date(listed.timeMin) });
+});
+
+test('a truncated Google event page cannot purge records or advance the last successful sync', async t => {
+  const { google } = require('googleapis');
+  const User = require('../models/User');
+  const Event = require('../models/Event');
+  const { pollGoogleCalendar } = require('../services/googleCalendarService');
+  const statusUpdates = [];
+  let cleanups = 0;
+  t.mock.method(google, 'calendar', () => ({ events: { list: async () => ({ data: {} }) } }));
+  t.mock.method(Event, 'find', async () => { cleanups++; return []; });
+  t.mock.method(User, 'findByIdAndUpdate', async (_id, data) => statusUpdates.push(data));
+  const result = await pollGoogleCalendar({ ...user, _id: '507f1f77bcf86cd799439011' });
+  assert.equal(result.success, false);
+  assert.equal(cleanups, 0);
+  assert.equal(statusUpdates.length, 1);
+  assert.ok(statusUpdates[0].googleSyncError);
+  assert.equal(statusUpdates[0].googleLastSyncAt, undefined);
+});
+
+test('a repeated Google pagination token terminates before applying any changes', async t => {
+  const { google } = require('googleapis');
+  const User = require('../models/User');
+  const Event = require('../models/Event');
+  const { pollGoogleCalendar } = require('../services/googleCalendarService');
+  let pages = 0, localScans = 0;
+  t.mock.method(google, 'calendar', () => ({ events: { list: async () => {
+    pages++;
+    if (pages > 2) throw new Error('test provider call budget exhausted');
+    return { data: { items: [], nextPageToken: 'again' } };
+  } } }));
+  t.mock.method(Event, 'find', async () => { localScans++; return []; });
+  t.mock.method(User, 'findByIdAndUpdate', async () => ({}));
+  const result = await pollGoogleCalendar({ ...user, _id: '507f1f77bcf86cd799439011' });
+  assert.equal(result.success, false);
+  assert.equal(pages, 2);
+  assert.equal(localScans, 0);
 });

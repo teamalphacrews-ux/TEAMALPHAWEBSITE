@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { basisPointAmount } = require("./paise");
 const { invoiceIssuer } = require('./invoiceBranding');
 const { invoiceDefaults, billingDefaults, paymentSchedule, clientLinkOptions } = require('./documentDefaults');
 function expiryAt(value) {
@@ -17,6 +18,15 @@ function tokenHash(token) {
 }
 function invoiceFromQuote(quote, studio = {}) {
   const defaults = invoiceDefaults(studio, quote.acceptedAt);
+  // Some historical quotations rounded a half-paise discount differently.
+  // Preserve the accepted discount amount when the stored percentage cannot reproduce it.
+  const discountBps = Math.round(quote.discountValue * 100);
+  const subtotal = quote.subtotalPaise ?? quote.items.reduce((sum, item) => sum + item.quantity * item.unitPricePaise, 0);
+  const exactPercent = quote.discountType === 'percent' && discountBps / 100 === quote.discountValue
+    && basisPointAmount(subtotal, discountBps) === quote.discountPaise;
+  const schedule = defaults.paymentScheduleEnabled
+    ? paymentSchedule(quote.totalPaise, defaults.invoiceDate, defaults.dueDate, billingDefaults(studio).paymentMilestones)
+    : [];
   return {
     ...defaults,
     issuer: invoiceIssuer(studio, quote.issuer?.toObject?.() || quote.issuer || {}),
@@ -31,15 +41,16 @@ function invoiceFromQuote(quote, studio = {}) {
     documentStatus: "Draft",
     documentNumber: `INV-${String(quote.invoiceId || quote._id).slice(-8).toUpperCase()}`,
     dueDate: new Date(defaults.dueDate),
-    paymentSchedule: defaults.paymentScheduleEnabled ? paymentSchedule(quote.totalPaise, defaults.invoiceDate, defaults.dueDate, billingDefaults(studio).paymentMilestones) : [],
+    paymentScheduleEnabled: schedule.length > 0,
+    paymentSchedule: schedule,
     items: quote.items.map((i) => ({
       title: i.title || "",
       description: i.description || "",
       quantity: i.quantity,
       unitPricePaise: i.unitPricePaise,
     })),
-    discountType: quote.discountType === "percent" ? "percent" : "fixed",
-    discountValue: quote.discountValue ?? quote.discountPaise / 100,
+    discountType: exactPercent ? "percent" : "fixed",
+    discountValue: exactPercent ? quote.discountValue : quote.discountPaise / 100,
     notes: quote.notes || "",
     design: {
       coverUrl: quote.design?.coverImage || "",

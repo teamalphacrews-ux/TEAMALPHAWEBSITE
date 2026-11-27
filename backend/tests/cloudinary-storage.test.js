@@ -75,3 +75,21 @@ test('aborted multipart input stops the cloud stream and cleans up any late prov
   finishProvider(null, { public_id: 'late/photo', secure_url: 'https://res.cloudinary.com/test/image.jpg', resource_type: 'image' });
   assert.deepEqual(log.removed, [{ id: 'late/photo', options: { invalidate: true, resource_type: 'image' } }]);
 });
+
+test('a committed media upload returns its URL when recording studio activity fails', { timeout: 2000 }, async t => {
+  const uploader = require('cloudinary').v2.uploader;
+  const { client } = mockClient();
+  t.mock.method(uploader, 'upload_stream', client.uploader.upload_stream);
+  t.mock.method(require('../models/Notification'), 'create', async () => { throw new Error('Fixture outage'); });
+  t.mock.method(console, 'warn', () => {});
+  const route = require('../routes/galleryRoutes').stack.find(layer => layer.route?.path === '/upload').route;
+  const body = Buffer.concat([head, photo, tail]);
+  const req = Readable.from([body]);
+  req.headers = {'content-type':'multipart/form-data; boundary=' + boundary, 'content-length':String(body.length)};
+  const result = await new Promise(resolve => route.stack[0].handle(req, {
+    status(code) { assert.fail('Unexpected upload response ' + code); },
+    json: resolve,
+  }));
+  assert.equal(result.url, 'https://res.cloudinary.com/test/video/upload/photo.jpg');
+  assert.equal(result.size, photo.length);
+});

@@ -5,7 +5,7 @@ const requireOwner=async(req,res,next)=>{try{if(req.saas||require('../saas/tenan
 // This router shares a mount with security/session routes; only guard archive endpoints.
 router.use(['/workspace-data','/workspace-backups','/workspace-restore','/workspace-reset','/workspace-resume'],auth,requireAdmin,requireOwner,(_req,res,next)=>{res.set('Cache-Control','no-store');res.set('Referrer-Policy','no-referrer');next();});
 const wrap=fn=>async(req,res)=>{try{await fn(req,res);}catch(error){res.status(error.status||(error.code===11000?409:503)).json({error:error.status?error.message:'The workspace operation failed. No partial change was committed.'});}};
-const args=req=>({actorId:req.user.id,password:req.body?.password,confirmation:req.body?.confirmation,currentSessionId:req.sessionId});
+const args=req=>({actorId:req.user.id,password:req.body?.password,confirmation:req.body?.confirmation,currentSessionId:req.sessionId,expectedDataVersion:req.body?.expectedDataVersion});
 function uploaded(req,res,next){upload(req,res,error=>{if(error)return res.status(error.code==='LIMIT_FILE_SIZE'?413:400).json({error:'Upload one encrypted workspace archive no larger than 48 MB.'});if(!req.file)return res.status(400).json({error:'Choose an encrypted workspace archive.'});try{req.archive=codec.parseUpload(req.file.buffer);next();}catch(error){res.status(error.status||400).json({error:error.message});}});}
 function invalidate(req,result){const io=req.app.get('io');io?.to('admin').emit('workspace_data_changed',{dataVersion:result.dataVersion});for(const socket of io?.sockets?.sockets?.values?.()||[])socket.disconnect(true);}
 router.get('/workspace-data',wrap(async(req,res)=>res.json(await service.getStatus(args(req)))));

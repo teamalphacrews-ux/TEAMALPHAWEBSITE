@@ -1,6 +1,7 @@
 const router=require('express').Router(),multer=require('multer');
 const Finance=require('../models/Finance'),Receipt=require('../models/FinanceReceipt');
 const {validateCover}=require('./documentCoverRoutes');
+const {fail}=require('../services/studioSecurity');
 const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:4*1024*1024,files:1,fields:0,parts:2}}).single('receipt');
 const valid=id=>/^[a-f\d]{24}$/i.test(id);
 router.use(require('../middleware/auth'),require('../middleware/requireAdmin'));
@@ -17,11 +18,14 @@ router.post('/ledger/:id/receipt',(req,res)=>{
   try{
    if(!await Finance.exists({_id:req.params.id,type:'expense'}))return res.status(404).json({error:'Expense not found.'});
    validateCover(req.file);
-   await Receipt.findOneAndUpdate({financeId:req.params.id},{$set:{mimeType:req.file.mimetype,bytes:req.file.size,data:req.file.buffer,uploadedBy:req.user.id}},{upsert:true,runValidators:true});
    const receipt={mimeType:req.file.mimetype,bytes:req.file.size,updatedAt:new Date()};
-   await Finance.updateOne({_id:req.params.id,type:'expense'},{$set:{receipt}});
+   await Finance.db.transaction(async session=>{
+    const parent=await Finance.updateOne({_id:req.params.id,type:'expense'},{$set:{receipt}},{session});
+    if(!parent.matchedCount)throw fail('Expense not found.',404);
+    await Receipt.findOneAndUpdate({financeId:req.params.id},{$set:{mimeType:req.file.mimetype,bytes:req.file.size,data:req.file.buffer,uploadedBy:req.user.id}},{session,upsert:true,runValidators:true});
+   });
    res.status(201).json({receipt});
-  }catch(failure){res.status(failure.status||503).json({error:failure.status?failure.message:'The expense exists, but the receipt was not attached. Retry attaching it.'});}
+  }catch(failure){res.status(failure.status||503).json({error:failure.status?failure.message:'The receipt could not be attached. Retry attaching it.'});}
  });
 });
 module.exports=router;

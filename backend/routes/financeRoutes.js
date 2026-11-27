@@ -1,3 +1,4 @@
+const { deletableInvoiceFilter } = require('../utils/invoiceDeletion');
 const express = require('express');
 const Finance = require('../models/Finance');
 const Invoice = require('../models/Invoice');
@@ -10,41 +11,41 @@ const router = express.Router();
 
 router.use(auth, requireAdmin);
 
+const reportableInvoice = {
+    documentStatus: { $nin: ['Draft', 'Cancelled', 'Archived'] },
+    status: { $ne: 'Cancelled' },
+};
+const toPaise = amount => Math.round((amount || 0) * 100);
+function invoiceBalance(invoice) {
+    const total = toPaise(invoice.total);
+    const paid = invoice.status === 'Paid' ? total : Math.min(total, Math.max(0, toPaise(invoice.advancePaid)));
+    return { total, paid, pending: total - paid };
+}
+
 const calculateFinanceStats = async () => {
-    const paidInvoices = await Invoice.find({ status: 'Paid' });
-    const invoiceSales = paidInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
-
-    const activeLeads = await Lead.find({ paymentStatus: { $in: ['Deposit Paid', 'Paid'] } });
-    const leadSales = activeLeads.reduce((sum, lead) => {
-        if (lead.paymentStatus === 'Paid') return sum + (lead.totalAmount || 0);
-        if (lead.paymentStatus === 'Deposit Paid') return sum + (lead.depositAmount || 0);
-        return sum;
-    }, 0);
-
-    const annualSales = invoiceSales + leadSales;
-
-    const pendingInvoices = await Invoice.find({ status: { $ne: 'Paid' } });
-    const pendingInvoiceAmt = pendingInvoices.reduce((sum, i) => sum + (i.total || 0), 0);
-
-    const pendingLeads = await Lead.find({ paymentStatus: { $in: ['Unpaid', 'Deposit Paid'] } });
-    const pendingLeadAmt = pendingLeads.reduce((sum, lead) => {
-        if (lead.paymentStatus === 'Deposit Paid') return sum + ((lead.totalAmount || 0) - (lead.depositAmount || 0));
-        if (lead.paymentStatus === 'Unpaid') return sum + (lead.totalAmount || 0);
-        return sum;
-    }, 0);
-
-    const pendingRevenue = pendingInvoiceAmt + pendingLeadAmt;
-
-    const expensesData = await Finance.find({ type: 'expense' });
-    const totalExpenses = expensesData.reduce((sum, item) => sum + (item.amount || 0), 0);
-
-    const annualProfit = annualSales - totalExpenses;
-
+    const [invoices, leads, expensesData] = await Promise.all([
+        Invoice.find(reportableInvoice).select('total advancePaid status').lean(),
+        Lead.find({ paymentStatus: { $in: ['Unpaid', 'Deposit Paid', 'Paid'] } }).select('paymentStatus totalAmount depositAmount').lean(),
+        Finance.find({ type: 'expense' }).select('amount').lean(),
+    ]);
+    let received = 0, pending = 0;
+    for (const invoice of invoices) {
+        const balance = invoiceBalance(invoice);
+        received += balance.paid;
+        pending += balance.pending;
+    }
+    for (const lead of leads) {
+        const total = toPaise(lead.totalAmount);
+        const paid = lead.paymentStatus === 'Paid' ? total : lead.paymentStatus === 'Deposit Paid' ? toPaise(lead.depositAmount) : 0;
+        received += paid;
+        pending += total - paid;
+    }
+    const expensePaise = expensesData.reduce((sum, item) => sum + toPaise(item.amount), 0);
     return {
-        annualSales,
-        annualProfit,
-        expenses: totalExpenses,
-        pendingRevenue
+        annualSales: received / 100,
+        annualProfit: (received - expensePaise) / 100,
+        expenses: expensePaise / 100,
+        pendingRevenue: pending / 100,
     };
 };
 
@@ -68,14 +69,17 @@ router.get('/allocation', async (req, res) => {
         ]);
 
         const allCategories = ['Operational', 'Equipment', 'Travel', 'Marketing', 'Salary', 'Invoice Payment'];
-        const totalExpenses = aggregation.reduce((sum, item) => sum + item.total, 0);
+        const totals = new Map(allCategories.map(category => [category, 0]));
+        for (const item of aggregation) {
+            const category = item._id || 'General';
+            totals.set(category, (totals.get(category) || 0) + toPaise(item.total));
+        }
+        const totalExpenses = [...totals.values()].reduce((sum, amount) => sum + amount, 0);
 
-        const formatted = allCategories.map(cat => {
-            const found = aggregation.find(item => item._id === cat);
-            const value = found ? found.total : 0;
+        const formatted = [...totals].map(([cat, value]) => {
             return {
                 label: cat,
-                value: value,
+                value: value / 100,
                 progress: totalExpenses > 0 ? Math.round((value / totalExpenses) * 100) : 0,
                 color: getColorForCategory(cat)
             };
@@ -99,13 +103,17 @@ function getColorForCategory(category) {
         'Salary': 'bg-rose-500',
         'Invoice Payment': 'bg-purple-600'
     };
-    return map[category] || 'bg-gray-400';
+    return Object.hasOwn(map, category) ? map[category] : 'bg-gray-400';
 }
 
 // Add Generic Finance Entry
 router.post('/', async (req, res) => {
     try {
-        const entry = new Finance(req.body);
+        const { type, amount, category, description, date, status, studioProjectId } = req.body;
+        if (studioProjectId && !await require('../models/StudioProject').exists({ _id: studioProjectId })) {
+            return res.status(400).json({ error: 'Select an existing studio project.' });
+        }
+        const entry = new Finance({ type, amount, category, description, date, status, studioProjectId });
         await entry.save();
         res.status(201).json(entry);
     } catch (err) {
@@ -117,7 +125,7 @@ router.post('/', async (req, res) => {
 router.get('/transactions', async (req, res) => {
     try {
         // Fetch last 10 invoices (Paid or Pending)
-        const recentInvoices = await Invoice.find()
+        const recentInvoices = await Invoice.find(reportableInvoice)
             .sort({ invoiceDate: -1 })
             .limit(10)
             .lean();
@@ -140,8 +148,8 @@ router.get('/transactions', async (req, res) => {
                 id: inv._id,
                 name: inv.clientName,
                 category: 'Invoice Payment',
-                amount: inv.status === 'Paid' ? (inv.total || 0) : 0,
-                pendingAmount: inv.status === 'Paid' ? 0 : (inv.total || 0),
+                amount: invoiceBalance(inv).paid / 100,
+                pendingAmount: invoiceBalance(inv).pending / 100,
                 date: inv.invoiceDate,
                 type: 'income',
                 incomeType: 'Invoice',
@@ -175,6 +183,21 @@ router.get('/transactions', async (req, res) => {
     }
 });
 
+async function notifyExpense(notification) {
+    try {
+        await Notification.create(notification);
+    } catch {
+        console.warn('An expense was saved, but its activity notification could not be recorded.');
+    }
+}
+
+function expenseError(err, res) {
+    if (err.name === 'ValidationError' || err.name === 'CastError') {
+        return res.status(400).json({ error: err.message });
+    }
+    return res.status(500).json({ error: 'The expense could not be saved.' });
+}
+
 // Add New Expense
 router.post('/expense', async (req, res) => {
     try {
@@ -198,7 +221,7 @@ router.post('/expense', async (req, res) => {
         });
         await entry.save();
 
-        await Notification.create({
+        await notifyExpense({
             title: "Expense Logged",
             description: `New ${category || 'General'} expense of ₹${amount} for "${title}".`,
             type: "Finance"
@@ -206,7 +229,7 @@ router.post('/expense', async (req, res) => {
 
         res.json(entry);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        expenseError(err, res);
     }
 });
 
@@ -217,36 +240,35 @@ router.put('/expense/:id', async (req, res) => {
         // PRESERVE EXISTING VALUES: Only overwrite changed fields
         const updateFields = {};
         if (category) updateFields.category = category;
-        if (amount) updateFields.amount = amount;
+        if (Object.hasOwn(req.body, 'amount')) updateFields.amount = amount;
         if (title) updateFields.description = title;
         if (date) updateFields.date = date;
         if (status) updateFields.status = status;
 
-        const updated = await Finance.findByIdAndUpdate(
-            req.params.id,
+        const updated = await Finance.findOneAndUpdate(
+            { _id: req.params.id, type: 'expense' },
             { $set: updateFields },
-            { new: true }
+            { new: true, runValidators: true }
         );
 
-        if (updated) {
-            // FIX: UPDATE LOG INSTEAD OF CREATE - We notify of modification, but don't duplicate the entry
-            await Notification.create({
-                title: "Finance Record Modified",
-                description: `Updated ${updated.category} entry: "${updated.description}" (₹${updated.amount}).`,
-                type: "Finance"
-            });
-        }
+        if (!updated) return res.status(404).json({ error: 'Expense not found' });
+        await notifyExpense({
+            title: "Finance Record Modified",
+            description: `Updated ${updated.category} entry: "${updated.description}" (₹${updated.amount}).`,
+            type: "Finance"
+        });
 
         res.json(updated);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        expenseError(err, res);
     }
 });
 
 // Delete Expense
 router.delete('/expense/:id', async (req, res) => {
     try {
-        await require('../services/studioRecovery').recoverableDelete({ Model: Finance, filter: { _id: req.params.id, type: 'expense' }, actorId: req.user.id });
+        const deleted = await require('../services/studioRecovery').recoverableDelete({ Model: Finance, filter: { _id: req.params.id, type: 'expense' }, actorId: req.user.id });
+        if (!deleted) return res.status(404).json({ error: 'Expense not found' });
         res.json({ message: "Expense deleted" });
     } catch (err) {
         res.status(err.status || 503).json({ error: err.status ? err.message : 'The expense could not be removed.' });
@@ -271,9 +293,9 @@ router.delete('/income/:incomeType/:id', async (req, res) => {
 
         if (incomeType === 'Invoice') {
             const current = await Invoice.findById(id);
-            if (current?.sourceQuotation) return res.status(409).json({ error: 'Use invoice cancellation for an invoice linked to an accepted quotation.' });
-            const deletedInvoice = await require('../services/studioRecovery').recoverableDelete({ Model: Invoice, filter: { _id: id }, actorId: req.user.id });
-            if (!deletedInvoice) return res.status(404).json({ error: 'Invoice not found' });
+            if (!current) return res.status(404).json({ error: 'Invoice not found' });
+            const deletedInvoice = await require('../services/studioRecovery').recoverableDelete({ Model: Invoice, filter: deletableInvoiceFilter(id), actorId: req.user.id });
+            if (!deletedInvoice) return res.status(409).json({ error: 'Only an unissued, unshared draft without payments or a source quotation can be deleted.' });
             return res.json({ message: 'Invoice deleted successfully' });
         }
 
@@ -286,18 +308,18 @@ router.delete('/income/:incomeType/:id', async (req, res) => {
 // Get Payment Plans (Pending Invoices)
 router.get('/pending-payments', async (req, res) => {
     try {
-        const pendingInvoices = await Invoice.find({ status: { $ne: 'Paid' } }).sort({ invoiceDate: -1 }).lean();
+        const pendingInvoices = await Invoice.find({ ...reportableInvoice, status: { $nin: ['Paid', 'Cancelled'] } }).sort({ invoiceDate: -1 }).lean();
         const pendingLeads = await Lead.find({ paymentStatus: { $in: ['Unpaid', 'Deposit Paid'] } }).sort({ createdAt: -1 }).lean();
 
         const formatted = [
-            ...pendingInvoices.map(inv => ({
+            ...pendingInvoices.filter(inv => invoiceBalance(inv).pending > 0).map(inv => ({
                 id: inv._id,
                 name: inv.clientName,
                 type: 'Invoice',
                 total: inv.total || 0,
-                paid: 0,
-                pending: inv.total || 0,
-                status: 'Unpaid',
+                paid: invoiceBalance(inv).paid / 100,
+                pending: invoiceBalance(inv).pending / 100,
+                status: invoiceBalance(inv).paid ? 'Part paid' : 'Unpaid',
                 date: inv.invoiceDate
             })),
             ...pendingLeads.map(lead => ({
@@ -330,10 +352,13 @@ router.get('/monthly-performance', async (req, res) => {
 
         // Aggregation for Invoices
         const invoiceAgg = await Invoice.aggregate([
-            { $match: { status: 'Paid', invoiceDate: { $gte: sixMonthsAgo } } },
+            { $match: { ...reportableInvoice, invoiceDate: { $gte: sixMonthsAgo } } },
             { $group: {
                 _id: { month: { $month: "$invoiceDate" }, year: { $year: "$invoiceDate" } },
-                total: { $sum: "$total" }
+                total: { $sum: { $cond: [
+                    { $eq: ["$status", "Paid"] }, "$total",
+                    { $min: ["$total", { $max: [0, { $ifNull: ["$advancePaid", 0] }] }] },
+                ] } }
             }}
         ]);
 
@@ -365,13 +390,13 @@ router.get('/monthly-performance', async (req, res) => {
             const leadTotal = leadAgg.find(a => a._id.month === m && a._id.year === y)?.total || 0;
             const expenseTotal = expenseAgg.find(a => a._id.month === m && a._id.year === y)?.total || 0;
 
-            const revenueTotal = invoiceTotal + leadTotal;
+            const revenuePaise = toPaise(invoiceTotal) + toPaise(leadTotal);
 
             performanceData.push({
                 name: months[d.getMonth()],
-                revenue: revenueTotal,
-                expenses: expenseTotal,
-                cashFlow: revenueTotal - expenseTotal
+                revenue: revenuePaise / 100,
+                expenses: toPaise(expenseTotal) / 100,
+                cashFlow: (revenuePaise - toPaise(expenseTotal)) / 100
             });
         }
 

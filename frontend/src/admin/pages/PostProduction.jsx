@@ -4,6 +4,7 @@ import StudioSelect from '../components/common/StudioSelect';
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
 import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
+import { newRecordCreationKey } from "../../utils/recordCreationKey.js";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
 import { useSearchParams } from "react-router-dom";
@@ -188,6 +189,7 @@ export default function PostProduction() {
   const [linkNotice, setLinkNotice] = useState("");
   const [busyId, setBusyId] = useState("");
   const workspace = useRef(null);
+  const submittingTask = useRef(false);
   const previousTaskLayout = useRef(null);
   useLayoutEffect(() => {
     const previous = previousTaskLayout.current;
@@ -322,6 +324,7 @@ export default function PostProduction() {
     setEditing(task);
     setLinkNotice("");
     setForm({
+      ...(task ? {} : { creationKey: newRecordCreationKey() }),
       title: task?.title || "",
       dueDate: dateInputValue(task?.dueDate),
       lead: getLeadId(task || {}) || (newLeadId ?? (!["all", "unassigned"].includes(projectFilter) ? projectFilter : "")),
@@ -380,11 +383,12 @@ export default function PostProduction() {
   }, [canWrite, loading, search, leads, setSearch]);
   const saveTask = async (event) => {
     event.preventDefault();
-    if (saving || !canWrite) return;
+    if (submittingTask.current || saving || !canWrite) return;
     if (!form.title.trim()) {
       setFormError("Give this task a title.");
       return;
     }
+    submittingTask.current = true;
     setSaving(true);
     setFormError("");
     try {
@@ -435,6 +439,7 @@ export default function PostProduction() {
         operationError(error, "We couldn't save this task. Please try again."),
       );
     } finally {
+      submittingTask.current = false;
       setSaving(false);
     }
   };

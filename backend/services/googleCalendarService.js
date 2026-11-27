@@ -82,9 +82,9 @@ async function setupGoogleWebhook(user) {
         user.googleResourceId = response.data.resourceId;
         await user.save();
 
-        console.log(`📡 Google Webhook Registered for ${user.googleEmail || user.email} [Channel: ${channelId}]`);
+        console.log("Google Calendar webhook registered.");
     } catch (error) {
-        console.error(`❌ Webhook Registration Failed for ${user.googleEmail || user.email}:`, error.message);
+        console.error("Google Calendar webhook registration failed.");
     }
 }
 
@@ -175,7 +175,7 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
     if (process.env.SAAS_ENABLED === 'true' && !workspace) return { success: false };
     const lockId = (workspace?._id || 'personal') + ':' + user._id;
     if (syncingUsers.has(lockId)) {
-        console.log(`⏳ Sync already in progress for ${user.googleEmail || user.email}. Skipping redundant request.`);
+        console.log("Calendar sync already in progress.");
         return { success: false, inProgress: true };
     }
 
@@ -187,17 +187,19 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
         // 1. Define sync window
         // For full sync: 1 year back to 2 years ahead
         // For polling: 2 days back to 1 year ahead
-        const timeMin = isFullSync 
-            ? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
-            : new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-        const timeMax = new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString();
+        // Google ignores fractional seconds in both bounds. Use the identical
+        // window when deciding which local records were absent from its list.
+        const now = Math.floor(Date.now() / 1000) * 1000;
+        const timeMin = new Date(now - (isFullSync ? 365 : 2) * 86400000).toISOString();
+        const timeMax = new Date(now + 2 * 365 * 86400000).toISOString();
 
         let googleEvents = [];
         let calendarTimezone = 'Asia/Kolkata';
         let pageToken = null;
+        const seenPageTokens = new Set();
         let hasChanges = false;
 
-        console.log(`📡 Starting ${isFullSync ? 'FULL' : 'DELTA'} Sync for ${user.googleEmail || user.email}...`);
+        console.log(isFullSync ? "Starting full calendar sync." : "Starting calendar poll.");
 
         if (workspace && (!user.googleConnectionId || !user.googleCalendarSource || !await User.exists(snapshotFilter(user)))) return { success: false };
 
@@ -214,15 +216,22 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
                 maxResults: 250
             }, { timeout: 15000 });
 
-            if (response.data.timeZone) calendarTimezone = response.data.timeZone;
-            if (response.data.items) {
-                const visible = workspace ? response.data.items.filter(item => {
-                    const owner = item.extendedProperties?.private?.studioXWorkspace;
-                    return !owner || owner === workspace._id;
-                }) : response.data.items;
-                googleEvents = googleEvents.concat(visible);
+            if (!Array.isArray(response.data?.items) || response.data.items.some(item => !item || typeof item.id !== 'string' || !item.id)) {
+                throw new Error('Google returned an incomplete calendar page.');
             }
+            if (response.data.timeZone) calendarTimezone = response.data.timeZone;
+            const visible = workspace ? response.data.items.filter(item => {
+                const owner = item.extendedProperties?.private?.studioXWorkspace;
+                return !owner || owner === workspace._id;
+            }) : response.data.items;
+            googleEvents = googleEvents.concat(visible);
             pageToken = response.data.nextPageToken;
+            if (pageToken) {
+                if (typeof pageToken !== 'string' || seenPageTokens.has(pageToken)) {
+                    throw new Error('Google returned an invalid calendar page token.');
+                }
+                seenPageTokens.add(pageToken);
+            }
         } while (pageToken);
 
         return await withCalendarLease(user, async renew => {
@@ -308,7 +317,9 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
             const localSyncedEvents = await Event.find({
                 ...(workspace ? {} : { userId: user._id }),
                 googleEventId: workspace ? { $regex: '^' + prefix } : { $ne: null },
-                start: { $gte: windowStart, $lte: windowEnd }
+                // Google lists events that end after timeMin and start before timeMax.
+                start: { $lt: windowEnd },
+                end: { $gt: windowStart }
             });
 
             for (const lEvent of localSyncedEvents) {
@@ -336,25 +347,24 @@ async function pollGoogleCalendar(user, io, isFullSync = false) {
                     lastSyncAt: new Date()
                 });
             }
-            console.log(`✅ Sync Completed for ${user.googleEmail || user.email}.`);
+            console.log("Calendar sync completed.");
             return { success: true };
         }, true);
     } catch (error) {
         if (['calendar_busy', 'calendar_changed'].includes(error.code))
             return { success: false, inProgress: error.code === 'calendar_busy' };
-        let errorMessage = error.message;
+        let errorMessage = 'Google Calendar sync could not finish. Try again or reconnect your account.';
         if (workspace) {
             const reason = error.response?.data?.error?.errors?.[0]?.reason;
             if (reason === 'accessNotConfigured' || error.response?.data?.error?.details?.some?.(detail => detail.reason === 'SERVICE_DISABLED'))
                 errorMessage = 'The Google Calendar API is disabled in the Studio X OS Google Cloud project. Ask Studio X OS support to enable it, then sync again.';
             else if (error.response?.data?.error === 'invalid_grant') errorMessage = 'Calendar permission has expired. Reconnect your Google account.';
-            else errorMessage = 'Google Calendar sync could not finish. Try again or reconnect your account.';
         }
-        if (error.response?.data?.error === 'insufficient_scope' || error.message.includes('insufficient authentication scopes')) {
+        if (error.response?.data?.error === 'insufficient_scope' || error.message?.includes('insufficient authentication scopes')) {
             errorMessage = "INSUFFICIENT_SCOPES: Please disconnect and reconnect your Google Calendar to grant required permissions.";
-            console.error(`❌ Scope Error for ${user.googleEmail || user.email}: ${errorMessage}`);
+            console.error("Google Calendar permissions are insufficient.");
         } else {
-            console.error(`❌ Error polling Google Calendar for ${user.googleEmail || user.email}:`, error.message);
+            console.error("Google Calendar polling failed.");
         }
 
         // Persist error to user model for UI to show

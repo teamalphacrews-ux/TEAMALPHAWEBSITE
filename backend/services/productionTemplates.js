@@ -14,24 +14,54 @@ function buildTemplateTasks(template, lead, now = new Date()) {
     templateKey: `${template.id}:${index}`,
   }));
 }
-async function applyProductionTemplate(leadId, templateId, options = {}) {
-  const Task = options.Task || require('../models/Task'), Lead = options.Lead || require('../models/Lead'), Config = options.Config || require('../models/StudioConfig');
-  const [lead, config] = await Promise.all([Lead.findById(leadId), Config.findOne({ key: 'studio' })]);
-  if (!lead) throw fail('Project enquiry not found.', 404);
+function savedTemplate(config, templateId) {
   const id = templateId || config?.productionDefaults?.defaultTemplateId;
-  if (!id) return { applied: false, count: 0 };
+  if (!id) return undefined;
   const template = config?.productionDefaults?.templates?.find(item => item.id === id);
   if (!template) throw fail('Production template not found.', 404);
-  const rows = buildTemplateTasks(template, lead, options.now);
-  const tasks = [];
-  for (const values of rows) {
-    let task;
-    try { task = await Task.findOneAndUpdate({ lead: lead._id, templateKey: values.templateKey }, { $setOnInsert: values }, { new: true, upsert: true, runValidators: true }); }
-    catch (error) { if (error.code !== 11000) throw error; task = await Task.findOne({ lead: lead._id, templateKey: values.templateKey }); if (!task) throw error; }
-    tasks.push(task);
-  }
-  await Lead.updateOne({ _id: lead._id }, { $addToSet: { tasks: { $each: tasks.map(task => task._id) } } });
-  return { applied: true, count: tasks.length, template: template.name };
+  return template;
 }
-const applyDefaultProduction = leadId => applyProductionTemplate(leadId);
-module.exports = { buildTemplateTasks, applyProductionTemplate, applyDefaultProduction };
+
+async function writeTemplateTasks(leadId, template, session, options = {}) {
+  const Task = options.Task || require('../models/Task'), Lead = options.Lead || require('../models/Lead');
+  // Serialize template writers on their shared enquiry before upserting stages.
+  const lead = await Lead.findOneAndUpdate({ _id: leadId }, { $currentDate: { updatedAt: true } }, { new: true, session, timestamps: false });
+  if (!lead) throw fail('Project enquiry not found.', 404);
+  const ids = [];
+  for (const values of buildTemplateTasks(template, lead, options.now)) {
+    const task = await Task.findOneAndUpdate(
+      { lead: lead._id, templateKey: values.templateKey },
+      { $setOnInsert: values }, { new: true, upsert: true, runValidators: true, session },
+    );
+    ids.push(task._id);
+  }
+  await Lead.updateOne({ _id: lead._id }, { $addToSet: { tasks: { $each: ids } } }, { session });
+  return { applied: true, count: ids.length, template: template.name };
+}
+
+async function applyProductionTemplate(leadId, templateId, options = {}) {
+  const Task = options.Task || require('../models/Task'), Lead = options.Lead || require('../models/Lead'), Config = options.Config || require('../models/StudioConfig');
+  const config = await Config.findOne({ key: 'studio' }, null, { session: options.session });
+  const template = savedTemplate(config, templateId);
+  if (!template) {
+    if (!await Lead.exists({ _id: leadId }).session(options.session || null)) throw fail('Project enquiry not found.', 404);
+    return { applied: false, count: 0 };
+  }
+  const apply = session => writeTemplateTasks(leadId, template, session, options);
+  return options.session ? apply(options.session) : Task.db.transaction(apply);
+}
+
+async function finishAcceptedProduction(quoteId, leadId) {
+  const Quote = require('../models/Quotation');
+  await Quote.db.transaction(async session => {
+    const quote = await Quote.findOneAndUpdate(
+      { _id: quoteId, status: 'Accepted', pendingProductionTemplate: { $exists: true } },
+      { $unset: { pendingProductionTemplate: 1 } }, { new: false, session },
+    );
+    // The snapshot is consumed in the same commit as the production tasks.
+    if (quote) await writeTemplateTasks(leadId, quote.pendingProductionTemplate, session, { now: quote.acceptedAt });
+  });
+}
+
+const applyDefaultProduction = (leadId, session) => applyProductionTemplate(leadId, undefined, { session });
+module.exports = { buildTemplateTasks, savedTemplate, applyProductionTemplate, applyDefaultProduction, finishAcceptedProduction };

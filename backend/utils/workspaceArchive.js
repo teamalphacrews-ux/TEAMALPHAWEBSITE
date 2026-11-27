@@ -1,6 +1,7 @@
 'use strict';
 const crypto=require('node:crypto'),mongoose=require('mongoose');
 const {fail}=require('../services/studioSecurity');
+const {sanitizeArchiveText}=require('./archiveText');
 const MODEL_NAMES=Object.freeze(['StudioConfig','StudioContact','StudioProject','Lead','Quotation','Invoice','QuoteTemplate','ContactDocument','Finance','Event','Photographer','Task','AssetRecord','Gallery','Media','ProjectMessage','User','FinanceReceipt','StudioProfileImage','DriveGallery','GalleryEvent','SheetConfig','DocumentCounter','Message','ChatRoom','Notification','QuoteDelivery','WhatsAppConversation','WhatsAppMessage']);
 const RESET_CREDENTIAL_MODELS=Object.freeze(['AdminSettings','StudioOperationLease','GmailConnection','GmailOAuthNonce','WhatsAppConnection','WhatsAppReceipt','WabbMessageAttempt','DriveBackupConnection','DriveBackupOAuthNonce','OAuthStateNonce']);
 const USER_FIELDS=Object.freeze(['_id','firstName','lastName','email','role','moduleAccess','studioPreferences','galleryTag','cloudLink','leadId','createdAt','updatedAt']);
@@ -15,6 +16,7 @@ const EXCLUSIONS=Object.freeze([
  'Environment secrets, SMTP/provider configuration, remote Google Drive/iCloud/provider content and the separate SaaS account/billing registry are not changed.',
  'Historical queues, delivery attempts and connection credentials are cleared or restored in inactive state; outgoing reminders and public document links must be deliberately reissued.',
  'Existing recovery snapshots and archive history remain outside the reset so recovery is possible.',
+ 'Form submission receipts stay on the originating installation. Reset or replacement retires previously used keys.',
  'Archives require the original server BACKUP_SECRET or VAULT_SECRET; that key is not contained in the archive and must stay stable across reset.',
  'Missing historical account IDs are preserved as disabled, credential-free former-account placeholders. Missing business links are preserved with an authenticated unresolved-reference manifest rather than silently dropped.',
 ]);
@@ -35,11 +37,6 @@ function checkTree(value,depth=0,tracker={nodes:0}){
  if(typeof value==='number'&&!Number.isFinite(value))throw fail('Archive contains an invalid number.',400);
  if(!['string','number','boolean'].includes(typeof value))throw fail('Archive contains an unsupported value.',400);
 }
-function safeString(value){
- let text=value.replace(/(\/(?:quote|invoice)\/)[a-f\d.]{24,100}/gi,'$1[link removed]');
- if(/^https?:\/\//i.test(text))try{const url=new URL(text);let changed=!!(url.username||url.password);url.username='';url.password='';for(const key of [...url.searchParams.keys()])if(/token|secret|password|credential|authorization|api[_-]?key|signature/i.test(key)){url.searchParams.delete(key);changed=true;}if(changed)text=url.href;}catch{}
- return text;
-}
 function portable(value,depth=0){
  if(depth>30)throw fail('Record nesting exceeds the archive limit.',413);
  if(value===undefined)return undefined;
@@ -50,7 +47,7 @@ function portable(value,depth=0){
  if(Array.isArray(value))return value.map(row=>portable(row,depth+1));
  if(typeof value==='object'){const result={};for(const [key,row]of Object.entries(value)){if(SECRET.test(key))continue;if(key.startsWith('$')||key.includes('.')||['__proto__','constructor','prototype'].includes(key))throw fail('Record contains an unsafe field.',400);const cleaned=portable(row,depth+1);if(cleaned!==undefined)result[key]=cleaned;}return result;}
  if(typeof value==='number'&&!Number.isFinite(value))throw fail('Record contains an invalid number.',400);
- if(typeof value==='string')return safeString(value);
+ if(typeof value==='string')return sanitizeArchiveText(value);
  if(!['number','boolean'].includes(typeof value))throw fail('Unsupported archive record value.',400);
  return value;
 }

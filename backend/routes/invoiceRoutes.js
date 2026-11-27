@@ -1,3 +1,4 @@
+const { deletableInvoiceFilter } = require('../utils/invoiceDeletion');
 const express = require("express");
 const mongoose = require("mongoose");
 const { createHash } = require("node:crypto");
@@ -378,15 +379,18 @@ router.delete(
     const i = await load(req.params.id);
     if (
       i.sourceQuotation ||
-      i.documentStatus === "Sent" ||
+      i.documentStatus !== "Draft" ||
+      i.approvedAt ||
+      i.status === "Cancelled" ||
+      i.advancePaid > 0 ||
       i.sharedAt ||
       i.status === "Paid"
     )
       return res.status(409).json({
         error:
-          "Sent, paid or quotation-linked invoices can be cancelled, but not deleted.",
+          "Only an unissued, unshared draft without payments or a source quotation can be deleted.",
       });
-    const deleted = await require('../services/studioRecovery').recoverableDelete({ Model: Invoice, filter: { _id: i._id, documentStatus: { $ne: 'Sent' }, status: { $ne: 'Paid' }, sourceQuotation: null, sharedAt: null }, actorId: req.user.id, label: `Invoice ${i.documentNumber || i._id}` });
+    const deleted = await require('../services/studioRecovery').recoverableDelete({ Model: Invoice, filter: deletableInvoiceFilter(i._id), actorId: req.user.id, label: `Invoice ${i.documentNumber || i._id}` });
     if (!deleted) return res.status(409).json({ error: 'Invoice changed before deletion. Reload and try again.' });
     res.json({ message: "Invoice deleted" });
   }),

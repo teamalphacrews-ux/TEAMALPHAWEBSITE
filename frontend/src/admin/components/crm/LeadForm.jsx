@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { newRecordCreationKey } from "../../../utils/recordCreationKey.js";
+import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X, User, Mail, Phone, Calendar, Tag, Save, MapPin, Clock, Loader2 } from "lucide-react";
 import axios from "axios";
@@ -7,7 +8,8 @@ import toast from "react-hot-toast";
 export default function LeadForm({ onClose, onLeadAdded, initialData = null }) {
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
-    const [formData, setFormData] = useState(initialData || {
+    const writing = useRef(false);
+    const [formData, setFormData] = useState(() => initialData?._id ? initialData : {
         name: "",
         email: "",
         phone: "",
@@ -18,13 +20,17 @@ export default function LeadForm({ onClose, onLeadAdded, initialData = null }) {
         status: "New",
         remarks: "",
         totalAmount: "",
-        depositAmount: ""
+        depositAmount: "",
+        ...initialData,
+        creationKey: newRecordCreationKey(),
     });
 
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (writing.current) return;
+        writing.current = true;
         setLoading(true);
         try {
             // FIX: UPDATE LOG INSTEAD OF CREATE IF ID EXISTS
@@ -40,8 +46,9 @@ export default function LeadForm({ onClose, onLeadAdded, initialData = null }) {
             onClose();
         } catch (err) {
             console.error("Failed to save lead", err);
-            toast.error("Failed to save inquiry. Please try again.");
+            toast.error(err.response?.data?.error || "Failed to save inquiry. Please try again.");
         } finally {
+            writing.current = false;
             setLoading(false);
         }
     };

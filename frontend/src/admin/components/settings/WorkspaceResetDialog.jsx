@@ -11,7 +11,7 @@ export default function WorkspaceResetDialog({ summary, preview, busy, error, on
   const [step, setStep] = useState(0), [password, setPassword] = useState('');
   const [backupId, setBackupId] = useState(null), [downloaded, setDownloaded] = useState(false), [savedCopy, setSavedCopy] = useState(false);
   const [phrase, setPhrase] = useState(''), [acknowledged, setAcknowledged] = useState(false);
-  const heading = useRef(null), body = useRef(null);
+  const heading = useRef(null), body = useRef(null), reviewedVersion = useRef(null);
   const dialogRef = useStudioDialog(onClose, { canClose: !busy });
   const readiness = resetReadiness(summary, { preview });
   const allowed = canConfirmReset({ summary, preview, backupId, savedCopy, acknowledged, phrase, password, busy });
@@ -54,7 +54,7 @@ export default function WorkspaceResetDialog({ summary, preview, busy, error, on
         {error && <div className="studio-error" role="alert">{error}</div>}
       </div>
       <footer><button type="button" className="studio-button" disabled={busy} onClick={() => step ? setStep(step - 1) : onClose()}>{step ? 'Back' : 'Cancel'}</button>
-        {step === 0 ? <button type="button" className="studio-button primary" disabled={busy} onClick={() => setStep(1)}>Continue to backup</button> : step === 1 ? <button type="button" className="studio-button primary" disabled={busy || !backupId || !savedCopy} onClick={() => setStep(2)}>Continue to confirmation</button> : <button type="button" className="studio-button danger" disabled={!allowed} onClick={() => onReset({ password, confirmation: phrase })}>{busy ? 'Please wait…' : 'Permanently reset studio data'}</button>}
+        {step === 0 ? <button type="button" className="studio-button primary" disabled={busy} onClick={() => { reviewedVersion.current = summary.dataVersion; setStep(1); }}>Continue to backup</button> : step === 1 ? <button type="button" className="studio-button primary" disabled={busy || !backupId || !savedCopy} onClick={() => setStep(2)}>Continue to confirmation</button> : <button type="button" className="studio-button danger" disabled={!allowed} onClick={() => onReset({ password, confirmation: phrase, expectedDataVersion: reviewedVersion.current })}>{busy ? 'Please wait…' : 'Permanently reset studio data'}</button>}
       </footer>
     </div>
   </div>, document.body);

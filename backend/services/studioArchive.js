@@ -103,7 +103,8 @@ function createArchiveService(options={}){
  }
  async function inspectPortableArchive({actorId,archive}){
   await owner(actorId);const deps=get(),snapshot=codec.validateSnapshot(codec.unseal(archive,deps.env),deps.registry);
-  return{counts:Object.fromEntries(Object.entries(snapshot.collections).map(([name,rows])=>[name,rows.length])),coverage:codec.COVERAGE,sourceCreatedAt:snapshot.createdAt,restoredMembersDisabled:Math.max(0,snapshot.collections.User.length-1),historicalAccounts:(snapshot.historicalUserIds||[]).length,unresolvedReferences:snapshot.unresolvedReferences||[],warnings:(snapshot.unresolvedReferences||[]).length?['This archive preserves historical links to deleted records. Their exact unresolved references are listed for review.']:[]};
+  const state=await deps.gate.getState();
+  return{dataVersion:state?.dataVersion||0,counts:Object.fromEntries(Object.entries(snapshot.collections).map(([name,rows])=>[name,rows.length])),coverage:codec.COVERAGE,sourceCreatedAt:snapshot.createdAt,restoredMembersDisabled:Math.max(0,snapshot.collections.User.length-1),historicalAccounts:(snapshot.historicalUserIds||[]).length,unresolvedReferences:snapshot.unresolvedReferences||[],warnings:(snapshot.unresolvedReferences||[]).length?['This archive preserves historical links to deleted records. Their exact unresolved references are listed for review.']:[]};
  }
  async function confirmOwner(verified,session,deps){
   const current=await deps.User.findById(verified._id).select('+sessionVersion').session(session);
@@ -157,7 +158,7 @@ function createArchiveService(options={}){
   }
   return collections;
  }
- async function replace({actorId,password,confirmation,archive,currentSessionId,reset}){
+ async function replace({actorId,password,confirmation,archive,currentSessionId,expectedDataVersion,reset}){
   assertRecoveryEnabled(get().env);
   if(confirmation!==(reset?RESET_CONFIRMATION:RESTORE_CONFIRMATION))throw fail('Type '+(reset?RESET_CONFIRMATION:RESTORE_CONFIRMATION)+' exactly to confirm.',400);
   const verified=await owner(actorId,password,{reauth:true}),deps=get();codec.archiveKey(deps.env);
@@ -169,7 +170,11 @@ function createArchiveService(options={}){
     const actingOwner=await confirmOwner(verified,session,deps);
     const currentSession=await deps.Session.findOne({_id:currentSessionId,user:actorId,revokedAt:null}).session(session);
     if(!currentSession)throw fail('Your owner session ended. No data was changed.',409);
-    const state=await deps.State.findById('legacy').session(session),dataVersion=(state?.dataVersion||0)+1;
+    const state=await deps.State.findById('legacy').session(session),currentVersion=state?.dataVersion||0;
+    // JSON reset sends a number, while multipart restore sends a string.
+    if(expectedDataVersion!==currentVersion&&expectedDataVersion!==String(currentVersion))
+     throw fail('Workspace data changed or this review has expired. Reopen the reset or restore review before continuing.',409);
+    const dataVersion=currentVersion+1;
     const incomingRows=incoming?restoredCollections(incoming,actingOwner,dataVersion,deps):null;
     // This durable safety archive and every destructive write share one transaction.
     // A failed snapshot, import, session update or commit rolls everything back.

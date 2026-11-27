@@ -1,3 +1,4 @@
+const { basisPointAmount } = require('./paise');
 function bad(message) {
   throw Object.assign(new Error(message), { status: 400 });
 }
@@ -116,7 +117,7 @@ function quotation(body) {
       bad("Discount must have at most two decimal places");
     discountPaise =
       discountType === "percent"
-        ? Math.round((subtotalPaise * discountValue) / 100)
+        ? basisPointAmount(subtotalPaise, Math.round(discountValue * 100))
         : Math.round(discountValue * 100);
   } else {
     discountPaise = number(
@@ -133,9 +134,7 @@ function quotation(body) {
         : discountPaise / 100;
   }
   const taxRateBps = number(body.taxRateBps ?? 0, "tax rate", 10000, true);
-  const taxPaise = Math.round(
-    ((subtotalPaise - discountPaise) * taxRateBps) / 10000,
-  );
+  const taxPaise = basisPointAmount(subtotalPaise - discountPaise, taxRateBps);
   return {
     ...quoteMetadata(body),
     ...(body.issuer !== undefined ? { issuer: require('./invoiceBranding').issuerValues(body.issuer) } : {}),

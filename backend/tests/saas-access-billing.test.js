@@ -69,3 +69,11 @@ test('billing refresh serializes provider reconciliation and refuses overlapping
   await assert.rejects(refreshSubscription({ _id: wid }, 'sub_example', { models: model }), error => error.status === 409);
   assert.equal(updates.length, 0);
 });
+
+test('monthly plan configuration agrees with the displayed positive whole-rupee price', () => {
+  for (const price of ['0.50', '2.25', '9007199254740991']) {
+    const plan = plans({ ...env, SAAS_STARTER_MONTHLY_INR: price, RAZORPAY_STARTER_PLAN_ID: 'plan_TEST', RAZORPAY_KEY_ID: 'test', RAZORPAY_KEY_SECRET: 'test' })[0];
+    assert.equal(plan.configured, false, price);
+    assert.equal(plan.monthlyAmount, null, price);
+  }
+});

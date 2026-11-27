@@ -1,7 +1,7 @@
 const router = require("express").Router();
+const { manualCreation } = require('../utils/manualCreation');
 const Task = require("../models/Task");
-const Lead = require("../models/Lead");
-const { taskValues, validateTaskLinks } = require("../utils/productionTask");
+const { taskValues, validateTaskLinks, createProductionTask } = require("../utils/productionTask");
 router.use(
   require("../middleware/auth"),
   require("../middleware/requireAdmin"),
@@ -41,15 +41,8 @@ router.post(
 router.post(
   "/",
   wrap(async (req, res) => {
-    const values = taskValues(req.body);
-    await validateTaskLinks(values);
-    const task = await Task.create(values);
-    if (task.lead)
-      await Lead.updateOne(
-        { _id: task.lead },
-        { $addToSet: { tasks: task._id } },
-      );
-    res.status(201).json(task);
+    const { record, replayed } = await manualCreation(req, Task, session => createProductionTask(req.body, session));
+    res.status(replayed ? 200 : 201).json(record);
   }),
 );
 router.patch(
@@ -70,9 +63,7 @@ router.patch(
 router.delete(
   "/:id",
   wrap(async (req, res) => {
-    const task = await require('../services/studioRecovery').recoverableDelete({ Model: Task, filter: { _id: req.params.id }, actorId: req.user.id });
-    if (task?.lead)
-      await Lead.updateOne({ _id: task.lead }, { $pull: { tasks: task._id } });
+    await require('../services/studioRecovery').recoverableDelete({ Model: Task, filter: { _id: req.params.id }, actorId: req.user.id });
     res.json({ message: "Task deleted." });
   }),
 );

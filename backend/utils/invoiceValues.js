@@ -1,3 +1,4 @@
+const { basisPointAmount } = require('./paise');
 const { issuerValues } = require("./invoiceBranding");
 const objectId = /^[a-f\d]{24}$/i;
 function fail(message) {
@@ -7,13 +8,14 @@ function text(v, limit = 4000) {
   if (typeof v !== "string") return "";
   return v.trim().slice(0, limit);
 }
-function money(v, label) {
+const maxNewSubtotalPaise = 1e12;
+function money(v, label, maxPaise = maxNewSubtotalPaise) {
   const n = Number(v ?? 0);
   if (
     !Number.isFinite(n) ||
     n < 0 ||
-    n > 1e10 ||
-    Math.abs(n * 100 - Math.round(n * 100)) > 0.0001
+    n > maxPaise / 100 ||
+    Math.round(n * 100) / 100 !== n
   )
     fail(label + " must be a non-negative amount with up to two decimals");
   return Math.round(n * 100);
@@ -91,7 +93,12 @@ function invoiceValues(body, existing = {}) {
     subtotal =
       events.reduce((s, e) => s + Math.round(e.price * 100), 0) +
       deliverablesPrice;
-  if (!Number.isSafeInteger(subtotal) || subtotal > 1e12)
+  // A quotation can contain several lines at the standalone invoice limit.
+  // Only a saved quote-linked invoice may retain its higher approved subtotal.
+  const approvedSubtotal = existing.sourceQuotation && Array.isArray(existing.items)
+    ? existing.items.reduce((sum, item) => sum + item.quantity * item.unitPricePaise, 0) : 0;
+  const subtotalLimit = Math.max(maxNewSubtotalPaise, Number.isSafeInteger(approvedSubtotal) ? approvedSubtotal : 0);
+  if (!Number.isSafeInteger(subtotal) || subtotal > subtotalLimit)
     fail("Invoice subtotal is too large");
   const discountType = input.discountType || "fixed";
   if (!["fixed", "percent"].includes(discountType))
@@ -105,9 +112,9 @@ function invoiceValues(body, existing = {}) {
     (Number(discountValue) > 100 || Number(discountValue) < 0)
   )
     fail("Discount percent must be between 0 and 100");
-  const fixed = money(discountValue, "Discount");
+  const fixed = money(discountValue, "Discount", subtotalLimit);
   const discount =
-    discountType === "percent" ? Math.round((subtotal * fixed) / 10000) : fixed;
+    discountType === "percent" ? basisPointAmount(subtotal, fixed) : fixed;
   if (discount > subtotal) fail("Discount cannot exceed the subtotal");
   const taxRateBps = Number(input.taxRateBps || 0);
   if (!Number.isInteger(taxRateBps) || taxRateBps < 0 || taxRateBps > 10000)
@@ -122,17 +129,17 @@ function invoiceValues(body, existing = {}) {
     migratingQuoteInvoice
       ? Math.max(
           0,
-          Number(input.extraCharges || 0) - Number(existing.taxAmount || 0),
-        )
+          money(input.extraCharges, "Extra charges") - money(existing.taxAmount, "Tax"),
+        ) / 100
       : input.extraCharges,
     "Extra charges",
   );
   // Legacy quotation invoices stored their tax in extraCharges; canonical items calculate tax separately.
   const taxAmount = canonical
-    ? Math.round(((subtotal - discount) * taxRateBps) / 10000)
+    ? basisPointAmount(subtotal - discount, taxRateBps)
     : 0;
   const total = subtotal - discount + extraCharges + taxAmount;
-  const advancePaid = money(input.advancePaid, "Advance");
+  const advancePaid = money(input.advancePaid, "Advance", Math.max(maxNewSubtotalPaise, total));
   if (advancePaid > total) fail("Payments cannot exceed the total");
   const status = input.status || "Pending";
   if (!["Pending", "Paid", "Cancelled"].includes(status))

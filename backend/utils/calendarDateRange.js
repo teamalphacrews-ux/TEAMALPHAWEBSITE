@@ -20,7 +20,8 @@ function googleDateRange(event, timezone = 'Asia/Kolkata') {
         const dateTimezone = validTimezone(timezone) ? timezone : 'Asia/Kolkata';
         return { allDay: true, startDate, endDateExclusive, dateTimezone, start: dateStart(startDate, dateTimezone), end: dateStart(endDateExclusive, dateTimezone) };
     }
-    const start = new Date(event.start?.dateTime), end = new Date(event.end?.dateTime);
+    if (typeof event.start?.dateTime !== 'string' || typeof event.end?.dateTime !== 'string') throw new RangeError('Google returned invalid event times.');
+    const start = new Date(event.start.dateTime), end = new Date(event.end.dateTime);
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) throw new RangeError('Google returned invalid event times.');
     return { allDay: false, startDate: '', endDateExclusive: '', dateTimezone: '', start, end };
 }

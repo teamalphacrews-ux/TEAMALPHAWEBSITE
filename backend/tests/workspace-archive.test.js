@@ -60,7 +60,7 @@ function fixture({source=snapshot(),failInsert,blockers=[],differentOwner=false,
   readRows:async function*(Model,session){state.rowsRead.push(Model.modelName);for(const row of selected(session)[Model.modelName])yield row;},
   transaction:async work=>{const staged={db:clone(state.db)};try{const result=await work(staged);state.db=staged.db;state.commits++;return result;}catch(error){state.rollbacks++;throw error;}},
  });
- return{state,service,actingId,args:{actorId:actingId,password:'correct-owner-password',currentSessionId:sessionId}};
+ return{state,service,actingId,args:{actorId:actingId,password:'correct-owner-password',currentSessionId:sessionId,expectedDataVersion:3}};
 }
 test('portable snapshot covers company, team, finance images, galleries and string counters without credentials',()=>{
  const value=snapshot();assert.equal(codec.validateSnapshot(value),value);
@@ -146,6 +146,23 @@ test('reset transaction preserves actual owner credentials and current session, 
  for(const name of codec.RESET_CREDENTIAL_MODELS)assert.equal(f.state.db[name].length,0,name);
  assert.equal(f.state.db.StudioArchive.length,1);assert.equal(f.state.db.StudioArchiveState[0].integrationsPaused,true);
  assert.equal(f.state.db.User[0].workspaceDataVersion,4);assert.ok(f.state.gate.includes('fenced'));
+});
+test('retrying a previously reviewed reset or replacement preserves records created since the first commit',async()=>{
+ for(const reset of [true,false]){
+  const f=fixture(),archive=codec.seal(snapshot(),env);
+  const review=await f.service.inspectPortableArchive({actorId:f.actingId,archive});
+  const operation=expectedDataVersion=>reset
+   ?f.service.resetWorkspace({...f.args,confirmation:RESET_CONFIRMATION,expectedDataVersion})
+   :f.service.restorePortableArchive({...f.args,archive,confirmation:RESTORE_CONFIRMATION,expectedDataVersion});
+  assert.equal(review.dataVersion,3);
+  await assert.rejects(operation(undefined),e=>e.status===409);
+  const version=reset?review.dataVersion:String(review.dataVersion);
+  await operation(version);
+  f.state.db.StudioContact.push({_id:id(88),name:'Created after the operation'});
+  const after=clone(f.state.db);
+  await assert.rejects(operation(version),e=>e.status===409);
+  assert.deepEqual(f.state.db,after);
+ }
 });
 test('restore maps source owner references, restores binary bytes and leaves all other accounts disabled',async()=>{
  const f=fixture({differentOwner:true}),archive=codec.seal(snapshot(),env),result=await f.service.restorePortableArchive({...f.args,archive,confirmation:RESTORE_CONFIRMATION});

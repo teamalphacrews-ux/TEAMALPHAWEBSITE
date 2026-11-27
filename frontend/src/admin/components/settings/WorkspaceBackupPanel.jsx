@@ -64,7 +64,7 @@ export default function WorkspaceBackupPanel() {
       await json(security + '/workspace-resume', { password, confirmation: phrase }); assertWorkspaceContext(context);
       setPassword(''); setPhrase(''); setDialog(null); await load(); setNotice('Integrations resumed. Reconnect your providers where required.');
     } else if (dialog === 'restore') {
-      const form = new FormData(); form.append('archive', pendingFile.current); form.append('password', password); form.append('confirmation', phrase);
+      const form = new FormData(); form.append('archive', pendingFile.current); form.append('password', password); form.append('confirmation', phrase); form.append('expectedDataVersion', inspection.dataVersion);
       await call(security + '/workspace-restore', { method: 'POST', body: form }); assertWorkspaceContext(context);
       await finish('Workspace backup restored. Restored team accounts need new passwords and integrations must be reconnected.');
     }

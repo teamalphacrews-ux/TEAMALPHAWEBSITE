@@ -1,8 +1,9 @@
+import { newRecordCreationKey } from "../../../utils/recordCreationKey.js";
 import { useAuth } from '../../../context/AuthContext';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
 import { canWriteWorkspaceModule } from '../../../utils/workspaceActions';
 import { hasModuleAccess } from '../../../utils/moduleAccess';
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
@@ -27,7 +28,8 @@ import { contactCountries } from "./countries";
 import { WorkspaceActionMenu } from "../operations/WorkspaceActionMenu";
 
 export function ContactForm({ record, onClose, onSaved, title, submitLabel }) {
-  const [form, setForm] = useState({
+  const writing = useRef(false);
+  const [form, setForm] = useState(() => ({
     contactType: "Client",
     firstName: "",
     lastName: "",
@@ -42,7 +44,8 @@ export function ContactForm({ record, onClose, onSaved, title, submitLabel }) {
     country: "",
     note: "",
     ...record,
-  });
+    ...(record ? {} : { creationKey: newRecordCreationKey() }),
+  }));
   const [additional, setAdditional] = useState(!!record?.addressLine1),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -50,7 +53,8 @@ export function ContactForm({ record, onClose, onSaved, title, submitLabel }) {
     setForm((current) => ({ ...current, [name]: value }));
   const save = async (event) => {
     event.preventDefault();
-    if (busy) return;
+    if (writing.current) return;
+    writing.current = true;
     setBusy(true);
     setError("");
     try {
@@ -64,6 +68,7 @@ export function ContactForm({ record, onClose, onSaved, title, submitLabel }) {
     } catch (err) {
       setError(recordError(err));
     } finally {
+      writing.current = false;
       setBusy(false);
     }
   };
@@ -193,7 +198,8 @@ export function ProjectForm({
   onClose,
   onSaved,
 }) {
-  const [form, setForm] = useState({
+  const writing = useRef(false);
+  const [form, setForm] = useState(() => ({
     contactId: contact?._id || "",
     name: contact ? `${contact.firstName}'s Project` : "",
     type: "Wedding",
@@ -213,8 +219,8 @@ export function ProjectForm({
             (item) => item._id || item,
           ),
         }
-      : {}),
-  });
+      : { creationKey: newRecordCreationKey() }),
+  }));
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const change = (name, value) =>
@@ -231,7 +237,8 @@ export function ProjectForm({
     }));
   const save = async (event) => {
     event.preventDefault();
-    if (busy) return;
+    if (writing.current) return;
+    writing.current = true;
     setBusy(true);
     setError("");
     try {
@@ -245,6 +252,7 @@ export function ProjectForm({
     } catch (err) {
       setError(recordError(err));
     } finally {
+      writing.current = false;
       setBusy(false);
     }
   };

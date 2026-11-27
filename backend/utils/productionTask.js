@@ -86,19 +86,37 @@ function taskValues(body, existing = {}) {
   }
   return result;
 }
-async function validateTaskLinks(values) {
+async function validateTaskLinks(values, session) {
   for (const [key, model] of [
     ["lead", "Lead"],
     ["assignee", "Photographer"],
   ])
     if (
       values[key] &&
-      !(await require("../models/" + model).exists({ _id: values[key] }))
+      !(await require("../models/" + model).exists({ _id: values[key] }, { session }))
     )
       fail("The selected project or crew member no longer exists");
 }
+async function createProductionTask(body, session) {
+  const values = taskValues(body);
+  await validateTaskLinks(values, session);
+  const Task = require('../models/Task');
+  if (!values.lead && !session) return Task.create(values);
+  const Lead = require('../models/Lead');
+  const save = async session => {
+    const [task] = await Task.create([values], { session });
+    if (!values.lead) return task;
+    const result = await Lead.updateOne(
+      { _id: values.lead }, { $addToSet: { tasks: task._id } }, { session },
+    );
+    if (!result.matchedCount) fail('The selected project no longer exists');
+    return task;
+  };
+  return session ? save(session) : Task.db.transaction(save);
+}
 module.exports = {
   taskValues,
+  createProductionTask,
   validateTaskLinks,
   deliveryUrl,
   deliveryTypes,

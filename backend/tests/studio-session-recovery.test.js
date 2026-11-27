@@ -1,7 +1,7 @@
 const test = require('node:test'), assert = require('node:assert/strict');
 const mongoose = require('mongoose');
 const { createSessionVerifier, sessionExpired, tokenHash } = require('../services/studioSecurity');
-const { safeValue, seal, unseal, validateSnapshot, mergeSnapshot, MODEL_NAMES } = require('../services/studioRecovery');
+const { safeValue, seal, unseal, readStoredSnapshot, validateSnapshot, mergeSnapshot, MODEL_NAMES } = require('../services/studioRecovery');
 const now = Date.UTC(2026, 9, 23, 12), userId = '507f1f77bcf86cd799439011', sid = '507f1f77bcf86cd799439012';
 const config = { idleTimeoutMinutes: 60, absoluteSessionHours: 24 };
 const row = patch => ({ _id: sid, user: userId, version: 0, createdAt: new Date(now - 3600000), lastSeenAt: new Date(now - 1000), expiresAt: new Date(now + 23 * 3600000), ...patch });
@@ -40,6 +40,20 @@ const isolated = new mongoose.Mongoose();
 const Contact = isolated.model('RecoveryFixture', new isolated.Schema({ name: { type: String, required: true } }));
 const registry = { StudioContact: Contact };
 const snapshot = rows => ({ format: 'teamalpha-business-records', version: 1, collections: { StudioContact: rows } });
+test('old and new recovery records strip embedded client links while preserving business text', () => {
+  const key = { BACKUP_SECRET: 'synthetic-only-recovery-test-key' };
+  const name = 'Record for review';
+  const token = 'a'.repeat(64);
+  const text = name + ' /quote/' + token + ' and /invoice/' + sid + '.' + token + ' are for this project.';
+  const cleanText = name + ' /quote/[link removed] and /invoice/[link removed] are for this project.';
+  const current = safeValue({ _id: userId, name: text });
+  assert.equal(current.name, cleanText);
+  const legacy = snapshot([{ _id: userId, name: text }]);
+  const restored = readStoredSnapshot(seal(legacy, key), key);
+  assert.deepEqual(validateSnapshot(restored, registry).collections.StudioContact, [current]);
+  assert.throws(() => validateSnapshot(legacy, registry), /excluded private fields/);
+});
+
 test('restore validates collection, identities, fields, schema, duplicates and operator injection before writes', () => {
   assert.equal(validateSnapshot(snapshot([{ _id: userId, name: 'Valid' }]), registry).collections.StudioContact.length, 1);
   for (const value of [snapshot([{ _id: 'bad-id', name: 'Invalid' }]), snapshot([{ _id: userId }]), snapshot([{ _id: userId, name: 'A', unknown: true }]), snapshot([{ _id: userId, name: 'A', password: 'private' }]), snapshot([{ _id: userId, name: 'A', $where: 'unsafe' }]), snapshot([{ _id: userId, name: 'A' }, { _id: userId, name: 'B' }]), { ...snapshot([]), collections: { User: [] } }]) assert.throws(() => validateSnapshot(value, registry));

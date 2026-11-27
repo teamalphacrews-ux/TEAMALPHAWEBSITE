@@ -10,12 +10,17 @@ function eventFields(body, current = {}) {
   if (!title || title.length > 200)
     eventError("An event title is required (maximum 200 characters)");
   if (value.allDay !== undefined && typeof value.allDay !== 'boolean') eventError('Choose a valid all-day setting');
-  let start = new Date(value.start), end = new Date(value.end);
+  let start, end;
   if (value.allDay === true) {
     if (!validDay(value.startDate) || !validDay(value.endDateExclusive) || value.endDateExclusive <= value.startDate) eventError('Choose a valid all-day date range');
     if (!validTimezone(value.dateTimezone)) eventError('Choose a valid calendar timezone');
     try { start = dateStart(value.startDate, value.dateTimezone); end = dateStart(value.endDateExclusive, value.dateTimezone); }
     catch { eventError('Choose calendar dates that exist in the selected timezone'); }
+  } else {
+    const isTimestamp = stamp => stamp instanceof Date || typeof stamp === 'string' || Number.isFinite(stamp);
+    if (!isTimestamp(value.start) || !isTimestamp(value.end)) eventError('Choose valid event start and end times');
+    start = new Date(value.start);
+    end = new Date(value.end);
   }
   if (
     Number.isNaN(start.getTime()) ||
@@ -101,4 +106,41 @@ async function linkedEventFields(body, current = {}, resolve = require('../route
   }
   return values;
 }
-module.exports = { eventFields, linkedEventFields, crewOverlap };
+
+// Independent event documents can reserve the same crew and time. Taking a
+// write on one workspace-local row before reading the schedule makes a
+// concurrent transaction retry against the committed reservation.
+async function withAvailableCrew(values, eventId, persist) {
+  if (!values.teamMembers.length) return persist(null);
+  const Event = require('../models/Event');
+  const Lease = require('../models/StudioOperationLease');
+  try {
+    return await Event.db.transaction(async session => {
+      const now = new Date();
+      try {
+        await Lease.updateOne({ _id: 'calendar:crew' }, {
+          $inc: { revision: 1 },
+          $set: { until: now, expiresAt: new Date(now.getTime() + 86400000) },
+        }, { upsert: true, session });
+      } catch (error) {
+        if (error.code !== 11000) throw error;
+        // A simultaneous first reservation may have created this row.
+        throw Object.assign(new Error('The crew schedule changed. Try booking again.'), { status: 409 });
+      }
+      const candidates = await Event.find({
+        ...(eventId ? { _id: { $ne: eventId } } : {}),
+        start: { $lt: values.end }, end: { $gt: values.start },
+      }).session(session).select('title start end teamMembers').lean();
+      const conflict = crewOverlap(values, candidates);
+      if (conflict) throw Object.assign(new Error('Assigned crew overlap with ' + conflict.title), { status: 409 });
+      return persist(session);
+    });
+  } catch (error) {
+    if (error.code === 20 && /transaction numbers/i.test(error.message)) {
+      throw Object.assign(new Error('Crew reservations require a MongoDB replica set. The booking was not saved.'), { status: 503 });
+    }
+    throw error;
+  }
+}
+
+module.exports = { eventFields, linkedEventFields, crewOverlap, withAvailableCrew };

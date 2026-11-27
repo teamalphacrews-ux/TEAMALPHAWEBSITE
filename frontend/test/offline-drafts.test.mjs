@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
+import {enquiryDraftWithKey} from '../src/utils/recordCreationKey.js';
 import {createDraftVault,DRAFT_TTL_MS,MAX_LOCAL_DRAFTS,MAX_DRAFT_BYTES,cleanDraft,draftScope,draftRoute} from '../src/offline/draftVault.js';
 function fixture(crypto=webcrypto){const rows=new Map();let time=100000;const adapter={get:async id=>rows.get(id),set:async(id,value)=>rows.set(id,value),delete:async id=>rows.delete(id),list:async()=>[...rows.values()],ensureKey:async(id,record)=>{if(!rows.has(id))rows.set(id,record);return rows.get(id);}};return{rows,adapter,vault:createDraftVault({adapter,crypto,now:()=>time}),advance:ms=>{time+=ms;}};}
 test('encrypted drafts isolate studios and exclude secrets and payment changes',async()=>{const{rows,vault}=fixture();await vault.save('u:one','enquiry','new',{name:'Private client',cloudPassword:'never-store',depositAmount:5000});const row=await vault.read('u:one','enquiry');assert.equal(row.value.name,'Private client');assert.equal(row.value.cloudPassword,undefined);assert.equal(row.value.depositAmount,undefined);assert.equal(JSON.stringify([...rows.values()]).includes('Private client'),false);assert.equal([...rows.values()].find(v=>v.type==='key').key.extractable,false);assert.equal(await vault.read('u:two','enquiry'),null);});
@@ -8,3 +9,15 @@ test('expiry, tampering and purge remove only matching drafts',async()=>{const{r
 test('bounds preserve existing drafts and recovery routes are internal',async()=>{const{vault}=fixture();for(let i=0;i<MAX_LOCAL_DRAFTS;i++)await vault.save('u:one','project-note','p'+i,{body:'note'});await assert.rejects(vault.save('u:one','project-note','overflow',{body:'no'}),/50 local drafts/);await vault.save('u:one','project-note','p0',{body:'updated'});assert.equal((await vault.read('u:one','project-note','p0')).value.body,'updated');assert.throws(()=>cleanDraft('project-note',{body:'x'.repeat(MAX_DRAFT_BYTES+1)}),/too large/);assert.throws(()=>cleanDraft('quotation',{items:[null]}),/Invalid/);assert.equal(draftScope({_id:'u',workspace:'one'}),'u:one');assert.equal(draftScope({_id:'../bad'}),'');assert.equal(draftRoute('quotation','new'),'/admin/quotations?new=1');assert.equal(draftRoute('enquiry','//evil.test'),'');});
 test('removing or purging during encryption never resurrects a draft',async()=>{for(const operation of ['remove','purge']){let start,release;const began=new Promise(r=>{start=r;}),gate=new Promise(r=>{release=r;});const crypto={getRandomValues:v=>webcrypto.getRandomValues(v),subtle:{generateKey:(...a)=>webcrypto.subtle.generateKey(...a),decrypt:(...a)=>webcrypto.subtle.decrypt(...a),encrypt:async(...a)=>{start();await gate;return webcrypto.subtle.encrypt(...a);}}};const{vault}=fixture(crypto),pending=vault.save('u:one','enquiry','new',{name:'stale'});await began;if(operation==='remove')await vault.remove('u:one','enquiry');else await vault.purge('u:one');release();await assert.rejects(pending,/studio changed/);assert.equal(await vault.read('u:one','enquiry'),null);}});
 test('concurrent vault instances use the same atomic encryption key',async()=>{const{vault,adapter}=fixture(),other=createDraftVault({adapter,crypto:webcrypto,now:()=>100000});await Promise.all([vault.save('u:one','project-note','one',{body:'one'}),other.save('u:one','project-note','two',{body:'two'})]);assert.equal((await vault.read('u:one','project-note','one')).value.body,'one');assert.equal((await other.read('u:one','project-note','two')).value.body,'two');});
+
+test('an uncertain encrypted enquiry draft restores its original submission identity', async () => {
+  const {vault} = fixture();
+  const first = enquiryDraftWithKey({name:'Same client'});
+  assert.match(first.creationKey, /^[a-f0-9]{32}$/);
+  await vault.save('u:one', 'enquiry', 'new', first, true);
+  const restored = await vault.read('u:one', 'enquiry');
+  assert.equal(restored.uncertain, true);
+  assert.equal(enquiryDraftWithKey(restored.value).creationKey, first.creationKey);
+  assert.notEqual(enquiryDraftWithKey({name:first.name}).creationKey, first.creationKey);
+  assert.match(enquiryDraftWithKey({creationKey:'older-invalid-value'}).creationKey, /^[a-f0-9]{32}$/);
+});

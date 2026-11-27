@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const mongoose = require('mongoose');
 const { fail } = require('./studioSecurity');
+const { sanitizeArchiveText } = require('../utils/archiveText');
 
 // Explicit business-model allowlist: never export users, OAuth connections,
 // sessions, mail credentials, vaults, webhook configuration or admin secrets.
@@ -25,14 +26,7 @@ function safeValue(value, depth = 0) {
   }
   if (typeof value === 'number' && !Number.isFinite(value)) throw fail('Invalid record number.', 400);
   if (!['string', 'number', 'boolean'].includes(typeof value)) throw fail('Unsupported record value.', 400);
-  if (typeof value === 'string' && /^https?:\/\//i.test(value)) {
-    try {
-      const url = new URL(value); let changed = !!(url.username || url.password);
-      url.username = ''; url.password = '';
-      for (const key of [...url.searchParams.keys()]) if (/token|secret|password|credential|authorization|api[_-]?key|signature/i.test(key)) { url.searchParams.delete(key); changed = true; }
-      if (changed) return url.href;
-    } catch { /* Ordinary business text is kept as plain text. */ }
-  }
+  if (typeof value === 'string') return sanitizeArchiveText(value);
   return value;
 }
 function encryptionKey(env = process.env) {
@@ -82,6 +76,14 @@ function validateSnapshot(snapshot, registry = models()) {
   }
   return { ...snapshot, collections: clean };
 }
+// Apply current string redaction to authenticated snapshots created by older versions.
+function readStoredSnapshot(encrypted, env) {
+  const snapshot = unseal(encrypted, env);
+  for (const [name, rows] of Object.entries(snapshot.collections)) {
+    snapshot.collections[name] = rows.map(row => safeValue(row));
+  }
+  return snapshot;
+}
 async function inTransaction(work) {
   const session = await mongoose.startSession();
   try { let result; await session.withTransaction(async () => { result = await work(session); }); return result; }
@@ -104,6 +106,9 @@ async function recoverableDelete({ Model, filter, actorId, label }) {
     await Recovery.create([{ model: Model.modelName, recordId: String(row._id), label: String(label || row.name || row.title || row.clientName || Model.modelName).slice(0, 200), deletedBy: actorId, encrypted: seal(snapshot), expiresAt }], { session });
     const result = await Model.deleteOne({ ...filter, _id: row._id }, { session });
     if (result.deletedCount !== 1) throw fail('The record changed before deletion. Try again.', 409);
+    if (Model.modelName === 'Task' && row.lead) {
+      await require('../models/Lead').updateOne({ _id: row.lead }, { $pull: { tasks: row._id } }, { session });
+    }
     return row;
   });
 }
@@ -133,7 +138,7 @@ async function restoreRecovery({ id, actorId }) {
   return inTransaction(async session => {
     const row = await Recovery.findOne({ _id: id, restoredAt: null, expiresAt: { $gt: new Date() } }).select('+encrypted').session(session);
     if (!row) throw fail('Recoverable record not found or already restored.', 404);
-    const result = await mergeSnapshot(unseal(row.encrypted), session);
+    const result = await mergeSnapshot(readStoredSnapshot(row.encrypted), session);
     if (!result.inserted) throw fail('A record with this identity already exists; it was not overwritten.', 409);
     row.restoredAt = new Date(); await row.save({ session });
     return result;
@@ -167,4 +172,4 @@ async function runBackupJobs() {
   if (await require('../models/StudioBackup').exists({ slot })) return;
   try { await createBackup({ kind: 'scheduled', slot }); } catch (e) { if (e.code !== 11000) throw e; }
 }
-module.exports = { MODEL_NAMES, MAX_BYTES, MAX_RECORDS, safeValue, seal, unseal, validateSnapshot, recoverableDelete, restoreRecovery, createBackup, runBackupJobs, mergeSnapshot, inTransaction };
+module.exports = { MODEL_NAMES, MAX_BYTES, MAX_RECORDS, safeValue, seal, unseal, readStoredSnapshot, validateSnapshot, recoverableDelete, restoreRecovery, createBackup, runBackupJobs, mergeSnapshot, inTransaction };

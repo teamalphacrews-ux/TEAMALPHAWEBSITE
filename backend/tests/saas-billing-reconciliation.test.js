@@ -61,7 +61,7 @@ test('verified active monthly subscription activates the exact workspace and cle
   assert.deepEqual(state.fetches.map(call => call.url), ['https://api.razorpay.com/v1/subscriptions/' + subscriptionId, 'https://api.razorpay.com/v1/plans/' + providerPlanId]);
   assert.equal(state.updates.length, 2);
   const activation = state.updates[0];
-  assert.deepEqual(activation.filter, { _id: workspaceId, billingSyncToken: state.leaseToken, seatsReserved: { $lte: 15 }, $or: [{ pendingSubscriptionId: subscriptionId }, { razorpaySubscriptionId: subscriptionId }] });
+  assert.deepEqual(activation.filter, { _id: workspaceId, billingSyncToken: state.leaseToken, seatsReserved: { $lte: 15 }, pendingSubscriptionId: subscriptionId });
   assert.deepEqual(activation.update, {
     $set: { planId: 'studio', seatLimit: 15, razorpaySubscriptionId: subscriptionId, razorpayPlanId: providerPlanId, subscriptionStatus: 'active' },
     $unset: { pendingSubscriptionId: 1, pendingPlanId: 1, checkoutState: 1, checkoutRequestedAt: 1 },
@@ -153,4 +153,41 @@ test('billing event deduplication remains global and is never copied into a stud
     assert.equal(mongoose.models.SaaSBillingEvent, BillingEvent);
     assert.equal(mongoose.models.SaaSBillingEvent.find().model.db.name, 'control_plane');
   });
+});
+
+for (const status of ['paused', 'halted']) {
+  test('a ' + status + ' pending checkout preserves the current paid plan', async t => {
+    const { refresh, state } = fixture(t, {
+      workspace: { subscriptionStatus: 'active', razorpaySubscriptionId: 'sub_current' },
+      subscription: { ...providerSubscription(), status },
+    });
+    assert.deepEqual(await refresh(), { status: 'verified', subscriptionStatus: 'active' });
+    assert.equal(state.updates.length, 1);
+    assertReleased(state);
+  });
+}
+
+for (const status of ['expired', 'completed', 'cancelled']) {
+  test('a ' + status + ' pending checkout frees the studio to retry checkout', async t => {
+    const { refresh, state } = fixture(t, {
+      workspace: { seatsReserved: 16 },
+      subscription: { ...providerSubscription(), status },
+    });
+    assert.deepEqual(await refresh(), { status: 'verified', subscriptionStatus: 'trialing' });
+    assert.equal(state.updates[0].filter.pendingSubscriptionId, subscriptionId);
+    assert.deepEqual(state.updates[0].update, { $unset: {
+      pendingSubscriptionId: 1, pendingPlanId: 1, checkoutState: 1, checkoutRequestedAt: 1,
+    } });
+    assertReleased(state);
+  });
+}
+
+test('a current subscription cancellation is recorded even above its seat limit', async t => {
+  const { refresh, state } = fixture(t, {
+    workspace: { pendingSubscriptionId: undefined, planId: 'studio', razorpaySubscriptionId: subscriptionId, seatsReserved: 16 },
+    subscription: { ...providerSubscription(), status: 'cancelled' },
+  });
+  assert.equal((await refresh()).subscriptionStatus, 'cancelled');
+  assert.deepEqual(state.updates[0].update, { $set: { subscriptionStatus: 'cancelled' } });
+  assertReleased(state);
 });

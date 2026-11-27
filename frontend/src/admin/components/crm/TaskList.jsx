@@ -1,65 +1,63 @@
-import { useState, useEffect } from "react";
+import { newRecordCreationKey } from "../../../utils/recordCreationKey.js";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { CheckCircle2, Circle, Clock, Plus, Trash2, Loader2, Edit3, Check, X } from "lucide-react";
 import toast from "react-hot-toast";
 
-export default function TaskList({ leadId, tasks: initialTasks = [] }) {
+const EMPTY_TASKS = [];
+
+export default function TaskList({ leadId, tasks: initialTasks = EMPTY_TASKS }) {
     const token = localStorage.getItem('token');
     const authHeader = token ? { headers: { 'x-auth-token': token } } : {};
     const API = import.meta.env.VITE_API_URL || '';
   const [tasks, setTasks] = useState(initialTasks);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const creationKey = useRef(null), submitting = useRef(false);
   const [loading, setLoading] = useState(!leadId && initialTasks.length === 0);
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
 
   useEffect(() => {
-    if (!leadId && initialTasks.length === 0) {
-      fetchGlobalTasks();
-    } else {
-      setTasks(initialTasks);
-      setLoading(false);
-    }
-  }, [leadId, initialTasks]);
-
-  const fetchGlobalTasks = async () => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/tasks`, authHeader);
-      setTasks(response.data);
-    } catch (err) {
-      console.error("Failed to fetch tasks", err);
-      toast.error("Failed to load global tasks.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    let active = true;
+    const request = !leadId && initialTasks.length === 0
+      ? axios.get(API + "/api/tasks", { headers: token ? { 'x-auth-token': token } : {} }).then(result => result.data)
+      : Promise.resolve(initialTasks);
+    request.then(rows => {
+      if (active) setTasks(rows);
+    }).catch(() => {
+      if (active) toast.error("Failed to load global tasks.");
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, [API, initialTasks, leadId, token]);
 
   const addTask = async (e) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
+    if (!newTaskTitle.trim() || submitting.current) return;
+    submitting.current = true;
 
     try {
+      creationKey.current ||= newRecordCreationKey();
+      const payload = { title: newTaskTitle, status: "pending", creationKey: creationKey.current };
       let response;
       if (leadId) {
-        response = await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/leads/${leadId}/tasks`, {
-          title: newTaskTitle,
-          status: "pending"
-        }, authHeader);
+        response = await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/leads/${leadId}/tasks`, payload, authHeader);
       } else {
         // Global task
-        response = await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/tasks`, {
-          title: newTaskTitle,
-          status: "pending"
-        }, authHeader);
+        response = await axios.post(`${import.meta.env.VITE_API_URL || ""}/api/tasks`, payload, authHeader);
       }
       setTasks([response.data, ...tasks]);
+      creationKey.current = null;
       setNewTaskTitle("");
       setIsAdding(false);
       toast.success("Task added to workflow.");
     } catch (err) {
       console.error("Failed to add task", err);
-      toast.error("Failed to add task.");
+      toast.error(err.response?.data?.error || "Failed to add task.");
+    } finally {
+      submitting.current = false;
     }
   };
 
@@ -81,7 +79,7 @@ export default function TaskList({ leadId, tasks: initialTasks = [] }) {
   const saveEdit = async (taskId) => {
     if (!editValue.trim()) return;
     try {
-      const response = await axios.patch(`${import.meta.env.VITE_API_URL || ""}/api/tasks/${taskId}`, {
+      await axios.patch(`${import.meta.env.VITE_API_URL || ""}/api/tasks/${taskId}`, {
         title: editValue
       }, authHeader);
       setTasks(tasks.map(t => t._id === taskId ? { ...t, title: editValue } : t));
@@ -127,7 +125,7 @@ export default function TaskList({ leadId, tasks: initialTasks = [] }) {
           </p>
         </div>
         <button
-          aria-label={isAdding ? "Close new task" : "Add task"} aria-expanded={isAdding} onClick={() => setIsAdding(!isAdding)}
+          aria-label={isAdding ? "Close new task" : "Add task"} aria-expanded={isAdding} onClick={() => { if (submitting.current) return; if (!isAdding) creationKey.current = null; setIsAdding(!isAdding); }}
           className={`p-2 rounded-xl transition-all shadow-sm ${isAdding ? 'bg-charcoal text-white' : 'bg-ivory text-warmgray hover:bg-charcoal hover:text-white'}`}
         >
           {isAdding ? <X size={18} /> : <Plus size={18} />}

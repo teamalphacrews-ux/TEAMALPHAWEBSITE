@@ -1,3 +1,4 @@
+import { enquiryDraftWithKey } from "../../../utils/recordCreationKey.js";
 import { useAuth } from '../../../context/AuthContext';
 import { hasModuleAccess } from '../../../utils/moduleAccess';
 import StudioSelect from "../common/StudioSelect";
@@ -17,7 +18,10 @@ const emptyLead = { name: "", email: "", phone: "", status: "New", eventType: "W
 export default function StudioLeadForm({ initialData, onClose, onSaved }) {
   const { user } = useAuth();
   const finance = hasModuleAccess(user, 'finance'), galleries = hasModuleAccess(user, 'galleries');
-  const [data, setData] = useState({ ...emptyLead, ...initialData, eventDate: dateInput(initialData?.eventDate), followUpDate: dateInput(initialData?.followUpDate) });
+  const [data, setData] = useState(() => {
+    const initial = { ...emptyLead, ...initialData, eventDate: dateInput(initialData?.eventDate), followUpDate: dateInput(initialData?.followUpDate) };
+    return initialData?._id ? initial : enquiryDraftWithKey(initial);
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const inFlight = useRef(false);
@@ -26,7 +30,7 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
   const editing = !!initialData?._id;
   const [changed,setChanged]=useState(false);
   const [passwordChanged,setPasswordChanged]=useState(false);
-  const draft=useOfflineDraft({kind:'enquiry',value:data,dirty:changed,enabled:!editing,onRestore:value=>{setData({...emptyLead,...value});setChanged(true);}});
+  const draft=useOfflineDraft({kind:'enquiry',value:data,dirty:changed,enabled:!editing,onRestore:value=>{setData(enquiryDraftWithKey({...emptyLead,...value}));setChanged(true);}});
   const set = (field) => (event) => {setChanged(true);if(field==='cloudPassword')setPasswordChanged(true);setData((previous) => ({ ...previous, [field]: event.target.value }));};
 
   const submit = async (event) => {
@@ -53,7 +57,7 @@ export default function StudioLeadForm({ initialData, onClose, onSaved }) {
       const requestOptions = { ...studioAuth(), timeout: 30000 };
       const response = editing
         ? await axios.patch(`${studioApi}/api/leads/${initialData._id}`, payload, requestOptions)
-        : await axios.post(`${studioApi}/api/leads`, payload, requestOptions);
+        : await axios.post(`${studioApi}/api/leads`, { ...payload, creationKey: data.creationKey }, requestOptions);
       if(!editing)await draft.clear().catch(()=>toast('Enquiry saved. Review local drafts before resubmitting.'));
       toast.success(editing ? "Enquiry updated" : "Enquiry created");
       onClose();

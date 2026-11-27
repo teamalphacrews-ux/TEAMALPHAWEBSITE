@@ -21,26 +21,27 @@ function stageFor(project, quote, current = "New") {
   return quote?.status === "Sent" ? "Negotiation" : current;
 }
 function createPipeline({ Lead, Project, Contact, Quotation, Event }) {
-  async function ensureProject(value) {
-    const project = await Project.findById(id(value));
+  async function ensureProject(value, session) {
+    const options = { session };
+    const project = await Project.findById(id(value), null, options);
     if (!project) throw fail("The linked project could not be found.");
-    const contact = await Contact.findById(id(project.contactId));
+    const contact = await Contact.findById(id(project.contactId), null, options);
     if (!contact) throw fail("The project's primary contact could not be found.");
-    let lead = await Lead.findOne({ studioProjectId: project._id });
-    const linkedQuotes = await Quotation.find({ studioProjectId: project._id });
+    let lead = await Lead.findOne({ studioProjectId: project._id }, null, options);
+    const linkedQuotes = await Quotation.find({ studioProjectId: project._id }, null, options);
     const explicitLinks = [...new Set([project.leadId, ...linkedQuotes.map(q => q.lead)].filter(Boolean).map(value => String(id(value))))];
     if (explicitLinks.some(value => lead && !same(value, lead._id)) || (!lead && explicitLinks.length > 1))
       throw fail("This project has conflicting enquiry links. Review them before continuing.");
     if (!lead) {
       const candidateId = project.leadId || linkedQuotes.find(q => q.lead)?.lead;
       if (candidateId) {
-        const candidate = await Lead.findById(id(candidateId));
+        const candidate = await Lead.findById(id(candidateId), null, options);
         if (candidate) {
           if ((candidate.studioProjectId && !same(candidate.studioProjectId, project._id)) || candidate.email?.toLowerCase() !== contact.email?.toLowerCase())
             throw fail("This project refers to a different enquiry. Review its client and enquiry links.");
           try {
-            lead = await Lead.findOneAndUpdate({ _id: candidate._id, $or: [{ studioProjectId: null }, { studioProjectId: project._id }] }, { $set: { studioProjectId: project._id } }, { new: true });
-          } catch (err) { if (err.code !== 11000) throw err; }
+            lead = await Lead.findOneAndUpdate({ _id: candidate._id, $or: [{ studioProjectId: null }, { studioProjectId: project._id }] }, { $set: { studioProjectId: project._id } }, { new: true, session });
+          } catch (err) { if (session || err.code !== 11000) throw err; }
         }
       }
       if (!lead) {
@@ -48,10 +49,10 @@ function createPipeline({ Lead, Project, Contact, Quotation, Event }) {
           lead = await Lead.findOneAndUpdate({ studioProjectId: project._id }, { $setOnInsert: {
             name: [contact.firstName, contact.lastName].filter(Boolean).join(" "), email: contact.email,
             phone: contact.phone || "", status: "New", contactId: contact._id, studioProjectId: project._id,
-          } }, { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true });
+          } }, { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true, session });
         } catch (err) {
-          if (err.code !== 11000) throw err;
-          lead = await Lead.findOne({ studioProjectId: project._id });
+          if (session || err.code !== 11000) throw err;
+          lead = await Lead.findOne({ studioProjectId: project._id }, null, options);
         }
       }
     }
@@ -59,7 +60,7 @@ function createPipeline({ Lead, Project, Contact, Quotation, Event }) {
     // Re-read document authority and guard the previous stage so a simultaneous
     // share can never downgrade a booking recorded by client acceptance.
     for (let attempt = 0; attempt < 4; attempt++) {
-      const quote = authoritativeQuote(await Quotation.find({ studioProjectId: project._id }));
+      const quote = authoritativeQuote(await Quotation.find({ studioProjectId: project._id }, null, options));
       const values = {
         contactId: contact._id, projectName: project.name,
         name: [contact.firstName, contact.lastName].filter(Boolean).join(" "),
@@ -74,17 +75,17 @@ function createPipeline({ Lead, Project, Contact, Quotation, Event }) {
         Object.assign(values, { quotationId: null, quotationStatus: "", quotationNumber: "" });
       }
       if (Object.entries(values).every(([key, value]) => sameValue(lead[key], value))) break;
-      const updated = await Lead.findOneAndUpdate({ _id: lead._id, status: lead.status }, { $set: values }, { new: true, runValidators: true });
+      const updated = await Lead.findOneAndUpdate({ _id: lead._id, status: lead.status }, { $set: values }, { new: true, runValidators: true, session });
       if (updated) { lead = updated; break; }
-      lead = await Lead.findById(lead._id);
+      lead = await Lead.findById(lead._id, null, options);
       if (!lead) throw fail("The enquiry was removed while linking. Please retry.");
       if (attempt === 3) throw fail("The enquiry changed. Please retry.");
     }
     if (!same(project.leadId, lead._id))
-      await Project.updateOne({ _id: project._id, leadId: { $ne: lead._id } }, { $set: { leadId: lead._id } });
-    await Quotation.updateMany({ studioProjectId: project._id, lead: { $ne: lead._id } }, { $set: { lead: lead._id } });
-    if (Event) await Event.updateMany({ studioProjectId: project._id, lead: { $ne: lead._id } }, { $set: { lead: lead._id } });
-    if (lead.status === "Converted") await Project.updateOne({ _id: project._id, status: "Inquiry" }, { $set: { status: "Booked" } });
+      await Project.updateOne({ _id: project._id, leadId: { $ne: lead._id } }, { $set: { leadId: lead._id } }, options);
+    await Quotation.updateMany({ studioProjectId: project._id, lead: { $ne: lead._id } }, { $set: { lead: lead._id } }, options);
+    if (Event) await Event.updateMany({ studioProjectId: project._id, lead: { $ne: lead._id } }, { $set: { lead: lead._id } }, options);
+    if (lead.status === "Converted") await Project.updateOne({ _id: project._id, status: "Inquiry" }, { $set: { status: "Booked" } }, options);
     return lead;
   }
   async function syncQuote(quote) {

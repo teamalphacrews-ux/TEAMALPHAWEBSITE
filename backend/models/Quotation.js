@@ -12,6 +12,7 @@ const schema = new mongoose.Schema(
     invoiceGeneratedAt: Date,
     acceptedBy: String,
     acceptedNotifiedAt: Date,
+    pendingProductionTemplate: { type: require('./productionTemplateSchema'), default: undefined },
     emailConfirmationStatus: {
       type: String,
       enum: ["none", "queued", "sent", "failed", "unknown", "unavailable"],

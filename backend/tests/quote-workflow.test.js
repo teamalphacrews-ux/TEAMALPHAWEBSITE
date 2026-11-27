@@ -218,3 +218,49 @@ test("reminder recovery schedules only the newest missed reminder", async t => {
   await workflow.runQuoteDeliveryJobs();
   assert.deepEqual(keys,[`reminder:${id}:2:14`]);
 });
+
+test('a transient notification failure leaves the accepted quote available for an idempotent retry', async t => {
+  let stored = { ...quote, status: 'Accepted', autoCreateInvoice: false, emailConfirmationStatus: 'sent' };
+  let attempts = 0;
+  t.mock.method(Quotation, 'findOne', async () => stored);
+  t.mock.method(Quotation, 'findOneAndUpdate', async (_filter, update) => {
+    stored = { ...stored, ...update.$set };
+    return stored;
+  });
+  t.mock.method(StudioConfig, 'findOne', async () => ({}));
+  t.mock.method(Notification, 'create', async ({ eventKey }) => {
+    assert.equal(eventKey, 'quote-accepted:' + id);
+    if (++attempts === 1) throw new Error('Injected write failure');
+    // The automation worker recorded this notification between HTTP attempts.
+    throw Object.assign(new Error('Already present'), { code: 11000, keyValue: { eventKey } });
+  });
+  const accept = () => dispatch(publicRoutes, 'POST', '/' + token + '/accept', {
+    acceptedBy: 'Sample', consent: true, revision: 2,
+  }, 'admin', {});
+  assert.equal((await accept()).status, 200);
+  assert.equal(stored.acceptedNotifiedAt, undefined);
+  assert.equal((await accept()).status, 200);
+  assert.ok(stored.acceptedNotifiedAt instanceof Date);
+  assert.equal((await accept()).status, 200);
+  assert.equal(attempts, 2);
+});
+
+test('a completed confirmation email cannot be downgraded when acceptance retries race the worker', async t => {
+  let stored = { ...quote, status: 'Accepted', acceptedNotifiedAt: new Date(), autoCreateInvoice: false, emailConfirmationStatus: 'none' };
+  t.mock.method(Quotation, 'findOne', async () => ({ ...stored }));
+  t.mock.method(StudioConfig, 'findOne', async () => ({}));
+  t.mock.method(workflow, 'queueConfirmation', async () => {
+    stored.emailConfirmationStatus = 'sent';
+    return 'queued';
+  });
+  t.mock.method(Quotation, 'findOneAndUpdate', async (filter, update) => {
+    if (filter.emailConfirmationStatus && !filter.emailConfirmationStatus.$in.includes(stored.emailConfirmationStatus)) return null;
+    stored = { ...stored, ...update.$set };
+    return stored;
+  });
+  const response = await dispatch(publicRoutes, 'POST', '/' + token + '/accept', {
+    acceptedBy: 'Sample', consent: true, revision: 2,
+  }, 'admin', {});
+  assert.equal(response.status, 200);
+  assert.equal(response.body.emailConfirmationStatus, 'sent');
+});

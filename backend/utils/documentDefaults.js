@@ -1,3 +1,4 @@
+const { basisPointAmount } = require('./paise');
 const DAY = 86400000;
 const { DEFAULTS } = require('./studioSettings');
 const plain = value => value?.toObject?.() || value || {};
@@ -94,15 +95,16 @@ function paymentSchedule(totalPaise, invoiceDate, dueDate, milestones = []) {
   const sum = milestones.reduce((total, milestone) => total + Math.round(Number(milestone.percent) * 100), 0);
   if (sum !== 10000 || milestones.some(m => !Number.isFinite(m.percent) || m.percent <= 0 || !Number.isInteger(m.offsetDays) || m.offsetDays < 0)) return [];
   let allocated = 0, previous = start;
-  return milestones.map((milestone, index) => {
+  const rows = milestones.map((milestone, index) => {
     const final = index === milestones.length - 1;
-    const amountPaise = final ? totalPaise - allocated : Math.floor(totalPaise * Math.round(milestone.percent * 100) / 10000);
+    const amountPaise = final ? totalPaise - allocated : basisPointAmount(totalPaise, Math.round(milestone.percent * 100), Math.floor);
     allocated += amountPaise;
     const due = final ? end : addDays(start, Math.min(milestone.offsetDays, duration - 1));
     const date = due < previous ? previous : due;
     previous = date;
     return { label: String(milestone.label || `Payment ${index + 1}`).slice(0, 120), amountPaise, dueDate: date };
   });
+  return rows.every(row => row.amountPaise > 0) ? rows : [];
 }
 function invoiceWithDefaults(body, studio, validate) {
   const input = { ...invoiceDefaults(studio, body.invoiceDate || new Date()), ...body };
@@ -110,7 +112,7 @@ function invoiceWithDefaults(body, studio, validate) {
   if (enabled && !input.paymentSchedule?.length) {
     const calculated = validate({ ...input, paymentScheduleEnabled: false });
     input.paymentSchedule = paymentSchedule(Math.round(calculated.total * 100), calculated.invoiceDate, calculated.dueDate, billingDefaults(studio).paymentMilestones);
-    if (!input.paymentSchedule.length) throw Object.assign(new Error('Configure at least two payment milestones totalling 100%, or turn off the default payment schedule.'), { status: 400 });
+    if (!input.paymentSchedule.length) throw Object.assign(new Error('The invoice total and due dates must allow at least two positive installments. Adjust the milestones or turn off the payment schedule.'), { status: 400 });
   }
   return validate(input);
 }

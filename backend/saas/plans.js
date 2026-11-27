@@ -7,8 +7,9 @@ function plans(env = process.env) {
   ].map(plan => {
     const amount = Number(env[`SAAS_${plan.id.toUpperCase()}_MONTHLY_INR`]);
     const planId = env[`RAZORPAY_${plan.id.toUpperCase()}_PLAN_ID`];
-    return { ...plan, currency: 'INR', monthlyAmount: Number.isSafeInteger(amount) && amount > 0 ? amount : null,
-      configured: !!(Number.isSafeInteger(amount * 100) && amount > 0 && /^plan_[A-Za-z0-9]+$/.test(planId || '') && env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET),
+    const validPrice = amount > 0 && Number.isSafeInteger(amount) && Number.isSafeInteger(amount * 100);
+    return { ...plan, currency: 'INR', monthlyAmount: validPrice ? amount : null,
+      configured: !!(validPrice && /^plan_[A-Za-z0-9]+$/.test(planId || '') && env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET),
     };
   });
 }

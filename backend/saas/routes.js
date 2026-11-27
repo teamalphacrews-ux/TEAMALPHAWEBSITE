@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const crypto = require('node:crypto');
 const router = express.Router();
 const models = require('./models');
@@ -73,16 +74,18 @@ router.post('/invitations/:token/accept', enabled, authLimit, guarded(async (req
   if (!['active', 'trialing'].includes(accessStatus(workspace))) throw failure(402, 'Ask the studio owner to renew the subscription before joining.');
   // The invitation supplies the email. A caller cannot change the recipient.
   const account = await service.authenticateAccount({ ...req.body, email: invite.email }, { create: true });
-  const existing = await models.Membership.findOne({ workspaceId: workspace._id, accountId: account._id, state: 'active' });
-  if (existing) throw failure(409, 'You already belong to this studio. Sign in to continue.');
-  const claimed = await models.Invitation.findOneAndUpdate({ _id: invite._id, state: 'pending', expiresAt: { $gt: new Date() } }, { $set: { state: 'accepting', acceptingUntil: new Date(Date.now() + 120000) } }, { new: true });
-  if (!claimed) throw failure(409, 'This invitation has already been used.');
-  try {
-    const user = await service.localMember(workspace, account, invite.role);
-    const membership = await models.Membership.findOneAndUpdate({ workspaceId: workspace._id, accountId: account._id }, { $set: { localUserId: user._id, role: invite.role, state: 'active' } }, { upsert: true, new: true, runValidators: true });
-    await models.Invitation.updateOne({ _id: invite._id, state: 'accepting' }, { $set: { state: 'accepted' } });
-    res.json(await service.issueSession(account, workspace, membership, req));
-  } catch (error) { await models.Invitation.updateOne({ _id: invite._id, state: 'accepting' }, { $set: { state: 'pending' } }); throw error; }
+  const membership = await mongoose.connection.transaction(async session => {
+    const existing = await models.Membership.exists({ workspaceId: workspace._id, accountId: account._id, state: 'active' }).session(session);
+    if (existing) throw failure(409, 'You already belong to this studio. Sign in to continue.');
+    const claimed = await models.Invitation.findOneAndUpdate(
+      { _id: invite._id, state: 'pending', expiresAt: { $gt: new Date() } },
+      { $set: { state: 'accepted' } }, { session });
+    if (!claimed) throw failure(409, 'This invitation has already been used.');
+    const user = await service.localMember(workspace, account, invite.role, session);
+    return models.Membership.findOneAndUpdate({ workspaceId: workspace._id, accountId: account._id },
+      { $set: { localUserId: user._id, role: invite.role, state: 'active' } }, { upsert: true, new: true, runValidators: true, session });
+  });
+  res.json(await service.issueSession(account, workspace, membership, req));
 }));
 
 router.post('/billing/webhook', enabled, guarded(async (req, res) => {
@@ -93,8 +96,21 @@ router.post('/billing/webhook', enabled, guarded(async (req, res) => {
   const eventId = req.headers['x-razorpay-event-id'], subscription = req.body.payload?.subscription?.entity;
   if (typeof eventId !== 'string' || !/^[A-Za-z0-9_-]{1,160}$/.test(eventId) || !/^sub_[A-Za-z0-9]+$/.test(subscription?.id || '')) return res.sendStatus(200);
   if (await models.BillingEvent.exists({ _id: eventId })) return res.sendStatus(200);
-  const workspace = await models.Workspace.findOne({ $or: [{ pendingSubscriptionId: subscription.id }, { razorpaySubscriptionId: subscription.id }] });
-  if (workspace) await billing.refreshSubscription(workspace, subscription.id);
+  let workspace = await models.Workspace.findOne({ $or: [{ pendingSubscriptionId: subscription.id }, { razorpaySubscriptionId: subscription.id }] });
+  if (!workspace) {
+    const workspaceId = subscription.notes?.workspaceId;
+    if (typeof workspaceId !== 'string' || !/^[a-f0-9]{24}$/i.test(workspaceId)) return res.sendStatus(200);
+    workspace = await models.Workspace.findById(workspaceId);
+    if (!workspace) return res.sendStatus(200);
+    if (![workspace.pendingSubscriptionId, workspace.razorpaySubscriptionId].includes(subscription.id)) {
+      // The provider can deliver an event before checkout has persisted its subscription ID.
+      if (['creating', 'reconcile'].includes(workspace.checkoutState)) {
+        throw failure(503, 'Checkout reconciliation is pending. Retry this event.');
+      }
+      return res.sendStatus(200);
+    }
+  }
+  await billing.refreshSubscription(workspace, subscription.id);
   try { await models.BillingEvent.create({ _id: eventId, subscriptionId: subscription.id }); } catch (error) { if (error.code !== 11000) throw error; }
   res.sendStatus(200);
 }));
@@ -142,33 +158,41 @@ router.post('/invitations', owner, guarded(async (req, res) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !['admin', 'staff'].includes(role)) throw failure(400, 'Enter a valid email and team role.');
   if (!['active', 'trialing'].includes(accessStatus(workspace))) throw failure(402, 'Renew your subscription before inviting team members.');
   await service.expireInvitations(workspace._id);
-  const memberAccount = await models.Account.findOne({ email });
-  if (memberAccount && await models.Membership.exists({ workspaceId: workspace._id, accountId: memberAccount._id, state: 'active' })) throw failure(409, 'This person is already a member.');
-  const reserved = await models.Workspace.findOneAndUpdate({ _id: workspace._id, $expr: { $lt: ['$seatsReserved', '$seatLimit'] } }, { $inc: { seatsReserved: 1 } });
-  if (!reserved) throw failure(409, 'Your plan has no available team seats. Cancel an invitation or upgrade your plan.');
   const token = crypto.randomBytes(32).toString('hex');
-  let invite;
-  try { invite = await models.Invitation.create({ workspaceId: workspace._id, email, role, tokenHash: digest(token), expiresAt: new Date(Date.now() + 7 * 86400000), invitedBy: account._id }); }
-  catch (error) { await models.Workspace.updateOne({ _id: workspace._id, seatsReserved: { $gt: 0 } }, { $inc: { seatsReserved: -1 } }); throw error; }
+  const invite = await mongoose.connection.transaction(async session => {
+    const memberAccount = await models.Account.findOne({ email }).session(session);
+    if (memberAccount && await models.Membership.exists({ workspaceId: workspace._id, accountId: memberAccount._id, state: 'active' }).session(session))
+      throw failure(409, 'This person is already a member.');
+    const reserved = await models.Workspace.findOneAndUpdate(
+      { _id: workspace._id, state: 'active', $or: [{ subscriptionStatus: 'active' }, { subscriptionStatus: 'trialing', trialEndsAt: { $gt: new Date() } }], $expr: { $lt: ['$seatsReserved', '$seatLimit'] } },
+      { $inc: { seatsReserved: 1 } }, { session });
+    if (!reserved) throw failure(409, 'Your plan has no available team seats. Cancel an invitation or check your subscription.');
+    const [created] = await models.Invitation.create([{ workspaceId: workspace._id, email, role, tokenHash: digest(token),
+      expiresAt: new Date(Date.now() + 7 * 86400000), invitedBy: account._id }], { session });
+    return created;
+  });
   res.status(201).json({ invitation: { id: String(invite._id), email, role, expiresAt: invite.expiresAt }, acceptUrl: new URL('/join/' + token, origin.origin).href });
 }));
 router.delete('/invitations/:id', owner, guarded(async (req, res) => {
   if (!validId(req.params.id)) throw failure(404, 'Invitation unavailable.');
-  const invite = await models.Invitation.findOneAndUpdate({ _id: req.params.id, workspaceId: req.saas.workspace._id, state: 'pending' }, { $set: { state: 'cancelled' } });
-  if (!invite) throw failure(404, 'Invitation unavailable.');
-  await models.Workspace.updateOne({ _id: req.saas.workspace._id, seatsReserved: { $gt: 0 } }, { $inc: { seatsReserved: -1 } });
+  const cancelled = await service.releaseInvitation({ _id: req.params.id, workspaceId: req.saas.workspace._id, state: 'pending' }, 'cancelled');
+  if (!cancelled) throw failure(404, 'Invitation unavailable.');
   res.json({ success: true });
 }));
 router.patch('/members/:id', owner, guarded(async (req, res) => {
   if (!validId(req.params.id) || !['admin', 'staff', 'removed'].includes(req.body.role)) throw failure(400, 'Choose a valid member and role.');
-  const member = await models.Membership.findOne({ _id: req.params.id, workspaceId: req.saas.workspace._id, state: 'active', role: { $ne: 'owner' } });
-  if (!member) throw failure(404, 'This team member cannot be changed.');
   const removed = req.body.role === 'removed';
-  const changed = await models.Membership.updateOne({ _id: member._id, state: 'active', role: { $ne: 'owner' } }, { $set: removed ? { state: 'removed' } : { role: req.body.role } });
-  if (changed.modifiedCount) {
-    await runInWorkspace(req.saas.workspace, () => require('../models/AdminSession').updateMany({ user: member.localUserId, revokedAt: null }, { $set: { revokedAt: new Date() } }));
-    if (removed) await models.Workspace.updateOne({ _id: req.saas.workspace._id, seatsReserved: { $gt: 0 } }, { $inc: { seatsReserved: -1 } });
-  }
+  await mongoose.connection.transaction(async session => {
+    const filter = { _id: req.params.id, workspaceId: req.saas.workspace._id, state: 'active', role: { $ne: 'owner' } };
+    const member = await models.Membership.findOne(filter).session(session);
+    if (!member) throw failure(404, 'This team member cannot be changed.');
+    const changed = await models.Membership.updateOne(filter, { $set: removed ? { state: 'removed' } : { role: req.body.role } }, { session });
+    if (changed.modifiedCount) {
+      await runInWorkspace(req.saas.workspace, () => require('../models/AdminSession').updateMany(
+        { user: member.localUserId, revokedAt: null }, { $set: { revokedAt: new Date() } }, { session }));
+      if (removed) await service.releaseSeat(req.saas.workspace._id, session);
+    }
+  });
   res.json({ success: true });
 }));
 router.post('/billing/checkout', owner, guarded(async (req, res) => {

@@ -1,3 +1,5 @@
+const { manualCreation } = require('./manualCreation');
+
 function inputError(message, status = 400) {
     return Object.assign(new Error(message), { status });
 }
@@ -31,51 +33,51 @@ function createLeadHandler({ Lead, User, Notification, bcrypt, allowedLeadFields
                 throw inputError('A JSON enquiry object is required');
             }
             const account = accountDetails(req.body);
-            if (account) {
-                // Existing emails may predate normalization. Check case-insensitively
-                // before persisting either document; the unique index handles races.
-                const emailPattern = account.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                if (await User.findOne({ email: new RegExp(`^${emailPattern}$`, 'i') })) {
-                    throw inputError('A client account already exists with this email', 409);
-                }
-            }
-            const lead = new Lead(allowedLeadFields(req.body));
-            await lead.validate();
-            let newUser;
-            if (account) {
-                const password = await bcrypt.hash(account.password, await bcrypt.genSalt(10));
-                newUser = new User({
-                    firstName: account.firstName, lastName: account.lastName, email: account.email,
-                    password, role: 'client', leadId: lead._id,
-                    galleryTag: lead.galleryTag, cloudLink: lead.cloudLink, cloudPassword: lead.cloudPassword
-                });
-                await newUser.validate();
-            }
-
-            await lead.save();
-            if (newUser) {
-                try {
-                    await newUser.save();
-                } catch (error) {
-                    // These predicates only target records from this attempt. Also
-                    // remove the new account if its insert succeeded but acknowledgement
-                    // failed, preserving the pair without requiring replica transactions.
-                    const cleanup = await Promise.allSettled([
-                        User.deleteOne({ _id: newUser._id, leadId: lead._id }),
-                        Lead.findByIdAndDelete(lead._id)
-                    ]);
-                    if (cleanup.some(result => result.status === 'rejected')) {
-                        logger.error('Lead/account creation cleanup could not be confirmed');
-                        return res.status(503).json({
-                            error: 'Portal account creation failed and cleanup could not be confirmed. Check this enquiry before retrying.',
-                            leadId: String(lead._id)
-                        });
+            const { record: lead, replayed } = await manualCreation(req, Lead, async session => {
+                if (account) {
+                    // Existing emails may predate normalization. Check case-insensitively
+                    // before persisting either document; the unique index handles races.
+                    const emailPattern = account.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    if (await User.findOne({ email: new RegExp(`^${emailPattern}$`, 'i') }, null, { session })) {
+                        throw inputError('A client account already exists with this email', 409);
                     }
-                    return res.status(error.code === 11000 ? 409 : 500).json({
-                        error: error.code === 11000 ? 'A client account already exists with this email' : 'Unable to create the client portal account; no enquiry was saved'
-                    });
                 }
-            }
+                const lead = new Lead(allowedLeadFields(req.body));
+                await lead.validate();
+                let newUser;
+                if (account) {
+                    const password = await bcrypt.hash(account.password, await bcrypt.genSalt(10));
+                    newUser = new User({
+                        firstName: account.firstName, lastName: account.lastName, email: account.email,
+                        password, role: 'client', leadId: lead._id,
+                        galleryTag: lead.galleryTag, cloudLink: lead.cloudLink, cloudPassword: lead.cloudPassword
+                    });
+                    await newUser.validate();
+                }
+
+                await lead.save({ session });
+                if (newUser) {
+                    try {
+                        await newUser.save({ session });
+                    } catch (error) {
+                        if (session) throw error;
+                        // These predicates only target records from this attempt. Also
+                        // remove the new account if its insert succeeded but acknowledgement
+                        // failed, preserving the pair without requiring replica transactions.
+                        const cleanup = await Promise.allSettled([
+                            User.deleteOne({ _id: newUser._id, leadId: lead._id }),
+                            Lead.findByIdAndDelete(lead._id)
+                        ]);
+                        if (cleanup.some(result => result.status === 'rejected')) {
+                            logger.error('Lead/account creation cleanup could not be confirmed');
+                            throw Object.assign(inputError('Portal account creation failed and cleanup could not be confirmed. Check this enquiry before retrying.', 503), { leadId: String(lead._id) });
+                        }
+                        throw inputError(error.code === 11000 ? 'A client account already exists with this email' : 'Unable to create the client portal account; no enquiry was saved', error.code === 11000 ? 409 : 500);
+                    }
+                }
+                return lead;
+            });
+            if (replayed) return res.json(lead);
 
             // The enquiry and optional account are committed. An activity-feed
             // failure must not report failed creation and invite a duplicate retry.
@@ -90,9 +92,12 @@ function createLeadHandler({ Lead, User, Notification, bcrypt, allowedLeadFields
             }
             return res.json(lead);
         } catch (error) {
-            const status = error.status || (error.name === 'ValidationError' ? 400 : 500);
+            const status = error.status || (error.name === 'ValidationError' ? 400 : error.code === 11000 ? 409 : 500);
             if (status >= 500) logger.error('Lead creation failed:', error.name);
-            return res.status(status).json({ error: status < 500 ? error.message : 'Unable to create the enquiry' });
+            return res.status(status).json({
+                error: error.status || status === 400 ? error.message : status === 409 ? 'A client account already exists with this email' : 'Unable to create the enquiry',
+                ...(error.leadId ? { leadId: error.leadId } : {}),
+            });
         }
     };
 }

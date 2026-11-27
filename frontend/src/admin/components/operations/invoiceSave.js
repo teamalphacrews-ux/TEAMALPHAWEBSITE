@@ -1,3 +1,5 @@
+import { newRecordCreationKey } from "../../../utils/recordCreationKey.js";
+
 const editableFields = [
   "clientName", "clientEmail", "clientPhone", "clientAddress", "title",
   "leadId", "contactId", "studioProjectId", "documentNumber", "invoiceDate",
@@ -23,10 +25,7 @@ export function rebaseInvoiceEdits(draft, base, latest) {
   return { local, conflicts };
 }
 
-export function newInvoiceCreationKey(crypto = globalThis.crypto) {
-  return Array.from(crypto.getRandomValues(new Uint8Array(16)),
-    byte => byte.toString(16).padStart(2, "0")).join("");
-}
+export const newInvoiceCreationKey = newRecordCreationKey;
 
 // A browser history entry identifies one new draft across refreshes. A
 // deliberate new invoice gets a new entry and therefore a different key.

@@ -7,7 +7,7 @@ const { sendEventNotification } = require('../services/ReminderService');
 const { syncToGoogle, pollGoogleCalendar } = require('../services/googleCalendarService');
 const { calendarConnection, createCalendarSyncHandler } = require('../utils/calendarConnection');
 
-const { linkedEventFields,crewOverlap } = require('../utils/studioCalendar');
+const { linkedEventFields, withAvailableCrew } = require('../utils/studioCalendar');
 const router = express.Router();
 
 router.use(auth, requireAdmin);
@@ -86,42 +86,36 @@ router.get('/', async (req, res) => {
     }
 });
 
+async function publishEventChange(event, action, req, newCrew) {
+    event.$session(null);
+    let syncWarning;
+    try {
+        await syncToGoogle(event, action, req.user.id);
+    } catch {
+        syncWarning = action === 'CREATE'
+            ? 'Local event saved, but Google synchronization failed.'
+            : 'Local event updated, but Google synchronization failed.';
+        console.warn('Calendar export failed after the local event was saved.');
+    }
+    if (newCrew.length) {
+        void sendEventNotification(event, newCrew).catch(() => console.error('Calendar assignment notification failed.'));
+    }
+    req.io.to('admin').emit('calendar_update', { action, eventId: event._id });
+    return syncWarning ? { ...event.toObject(), syncWarning } : event;
+}
+
 // Create new event
 router.post('/', async (req, res) => {
     try {
         const values=await linkedEventFields(req.body);
-        const candidates=values.teamMembers.length?await Event.find({start:{$lt:values.end},end:{$gt:values.start}}).select('title start end teamMembers').lean():[];
-        const conflict=crewOverlap(values,candidates);
-        if(conflict)return res.status(409).json({message:'Assigned crew overlap with '+conflict.title});
-        const event = new Event({ ...values, ...( /^[a-f\d]{24}$/i.test(req.user.id)?{userId:req.user.id}:{} ), origin:'local' });
-        await event.save();
+        const event = await withAvailableCrew(values, null, async session => {
+            const document = new Event({ ...values, ...( /^[a-f\d]{24}$/i.test(req.user.id)?{userId:req.user.id}:{} ), origin:'local' });
+            return document.save({ session });
+        });
 
-        // Trigger Google Calendar Sync (Awaited for real status)
-        try {
-            await syncToGoogle(event, 'CREATE', req.user.id);
-        } catch (syncError) {
-            console.error("Failed to sync new event to Google:", syncError.message);
-            // We still return 201 because it's saved locally, but maybe with a warning?
-            // For now, let's just log it. The user wants "not fake success".
-            // If sync fails, we could potentially delete the local event or return an error.
-            // Requirement says "Only show success if: Google API response is successful AND event is saved in DB"
-            return res.status(201).json({ 
-                ...event.toObject(), 
-                syncWarning: "Local event saved, but Google synchronization failed." 
-            });
-        }
-
-        // Trigger real time email notification to assigned photographers
-        if (event.teamMembers && event.teamMembers.length > 0) {
-            sendEventNotification(event, event.teamMembers);
-        }
-
-        // Trigger Socket.IO broadcast for instant UI update across all clients
-        req.io.to('admin').emit('calendar_update', { action: 'CREATE', eventId: event._id });
-
-        res.status(201).json(event);
+        res.status(201).json(await publishEventChange(event, 'CREATE', req, event.teamMembers));
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(error.status || 400).json({ message: error.message });
     }
 });
 
@@ -132,35 +126,17 @@ router.patch('/:id', async (req, res) => {
         if(!current)return res.status(404).json({message:'Event not found'});
         if(current.isReadOnly)return res.status(403).json({message:'This Google-managed event is read only'});
         const values=await linkedEventFields(req.body,current.toObject());
-        const candidates=values.teamMembers.length?await Event.find({_id:{$ne:req.params.id},start:{$lt:values.end},end:{$gt:values.start}}).select('title start end teamMembers').lean():[];
-        const conflict=crewOverlap(values,candidates);
-        if(conflict)return res.status(409).json({message:'Assigned crew overlap with '+conflict.title});
-        const event=await Event.findByIdAndUpdate(req.params.id,{$set:values},{new:true,runValidators:true});
-
-        // Trigger Google Calendar Sync (Awaited for real status)
-        if (event) {
-            try {
-                await syncToGoogle(event, 'UPDATE', req.user.id);
-            } catch (syncError) {
-                console.error("Failed to sync updated event to Google:", syncError.message);
-                return res.json({ 
-                    ...event.toObject(), 
-                    syncWarning: "Local event updated, but Google synchronization failed." 
-                });
-            }
-        }
-
-        // Trigger real time email notification to newly assigned photographers
-        if (event && req.body.teamMembers) {
-            sendEventNotification(event, req.body.teamMembers);
-        }
-
-        // Trigger Socket.IO broadcast for instant UI update across all clients
-        req.io.to('admin').emit('calendar_update', { action: 'UPDATE', eventId: event._id });
-
-        res.json(event);
+        const event = await withAvailableCrew(values, current._id, session => Event.findOneAndUpdate(
+            { _id: current._id, __v: current.__v ?? null, updatedAt: current.updatedAt ?? null },
+            { $set: { ...values, __v: (current.__v ?? 0) + 1 } },
+            { new: true, runValidators: true, session }
+        ));
+        if (!event) return res.status(409).json({ message: 'This event changed while you were editing. Reload and try again.' });
+        const previousCrew = new Set(current.teamMembers);
+        const newCrew = event.teamMembers.filter(name => !previousCrew.has(name));
+        res.json(await publishEventChange(event, 'UPDATE', req, newCrew));
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(error.status || 400).json({ message: error.message });
     }
 });
 
@@ -178,7 +154,7 @@ router.delete('/:id', async (req, res) => {
             try {
                 await syncToGoogle(event, 'DELETE', req.user.id);
             } catch (syncError) {
-                console.error("Failed to delete event from Google:", syncError.message);
+                console.error("The remote calendar event could not be deleted.");
                 syncWarning = 'The studio event was removed, but Google Calendar could not be updated. Reconnect and check the Google event.';
             }
         }

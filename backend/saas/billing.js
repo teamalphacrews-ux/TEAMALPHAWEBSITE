@@ -32,19 +32,31 @@ async function reconcileSubscription(workspace, subscriptionId, { models, env, l
   const planId = subscriptionId === workspace.pendingSubscriptionId ? workspace.pendingPlanId : workspace.planId;
   const plan = await approvedPlan(planId, env);
   if (subscription.id !== subscriptionId || subscription.plan_id !== plan.providerId || subscription.notes?.workspaceId !== String(workspace._id)) throw failure(403, 'The subscription could not be matched to this studio.');
-  if (plan.seatLimit < workspace.seatsReserved) throw failure(409, 'Remove extra team seats before changing to this plan.');
-  const patch = subscription.status === 'active'
-    ? { planId, seatLimit: plan.seatLimit, razorpaySubscriptionId: subscriptionId, razorpayPlanId: plan.providerId, subscriptionStatus: 'active' }
-    : ['halted', 'paused'].includes(subscription.status) ? { subscriptionStatus: 'past_due' }
-    : ['cancelled', 'completed', 'expired'].includes(subscription.status) && subscriptionId === workspace.razorpaySubscriptionId ? { subscriptionStatus: 'cancelled' } : {};
-  if (Object.keys(patch).length) {
-    const update = { $set: patch };
-    if (subscriptionId === workspace.pendingSubscriptionId && (subscription.status === 'active' || ['cancelled', 'completed', 'expired'].includes(subscription.status))) update.$unset = { pendingSubscriptionId: 1, pendingPlanId: 1, checkoutState: 1, checkoutRequestedAt: 1 };
-    const result = await models.Workspace.updateOne({ _id: workspace._id, billingSyncToken: leaseToken, ...(patch.seatLimit ? { seatsReserved: { $lte: patch.seatLimit } } : {}),
-      $or: [{ pendingSubscriptionId: subscriptionId }, { razorpaySubscriptionId: subscriptionId }] }, update);
+  const isPending = subscriptionId === workspace.pendingSubscriptionId;
+  const isCurrent = subscriptionId === workspace.razorpaySubscriptionId;
+  const active = subscription.status === 'active';
+  const ended = ['cancelled', 'completed', 'expired'].includes(subscription.status);
+  const update = {};
+  const filter = { _id: workspace._id, billingSyncToken: leaseToken,
+    [isPending ? 'pendingSubscriptionId' : 'razorpaySubscriptionId']: subscriptionId };
+  if (active) {
+    if (plan.seatLimit < workspace.seatsReserved) throw failure(409, 'Remove extra team seats before changing to this plan.');
+    filter.seatsReserved = { $lte: plan.seatLimit };
+    update.$set = { planId, seatLimit: plan.seatLimit, razorpaySubscriptionId: subscriptionId,
+      razorpayPlanId: plan.providerId, subscriptionStatus: 'active' };
+  } else if (isCurrent && ended) {
+    update.$set = { subscriptionStatus: 'cancelled' };
+  } else if (isCurrent && ['halted', 'paused'].includes(subscription.status)) {
+    update.$set = { subscriptionStatus: 'past_due' };
+  }
+  if (isPending && (active || ended)) {
+    update.$unset = { pendingSubscriptionId: 1, pendingPlanId: 1, checkoutState: 1, checkoutRequestedAt: 1 };
+  }
+  if (update.$set || update.$unset) {
+    const result = await models.Workspace.updateOne(filter, update);
     if (!result.matchedCount) throw failure(409, 'The studio plan or seat usage changed. Refresh before continuing.');
   }
-  return { status: 'verified', subscriptionStatus: patch.subscriptionStatus || workspace.subscriptionStatus };
+  return { status: 'verified', subscriptionStatus: update.$set?.subscriptionStatus || workspace.subscriptionStatus };
 }
 async function refreshSubscription(workspace, subscriptionId, { models = require('./models'), env = process.env } = {}) {
   const leaseToken = crypto.randomBytes(24).toString('hex');
