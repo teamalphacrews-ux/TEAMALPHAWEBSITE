@@ -5,7 +5,7 @@ import {disconnectNativeDevice} from '../native/deviceFeatures';
 import API from '../utils/apiConfig';
 import { notifyNativeWorkspaceChanged } from '../native/nativeCapabilities';
 import { reconcileWorkspaceDataEpoch } from '../utils/workspaceDataEpoch';
-import { cleanSessionToken as cleanToken, draftScopeToPurge, isCurrentSession, shouldRedirectExpiredSession, verifyStoredSession } from '../utils/authSession';
+import { cleanSessionToken as cleanToken, draftScopeToPurge, isCurrentSession, sessionIdentity, shouldRedirectExpiredSession, verifyStoredSession } from '../utils/authSession';
 
 const AuthContext = createContext();
 const readStoredSession = () => {
@@ -25,7 +25,8 @@ const readStoredSession = () => {
 
 export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(readStoredSession);
-  const [verification, setVerification] = useState({ token: null, status: '' });
+  const identity = sessionIdentity(session);
+  const [verification, setVerification] = useState({ identity: '', status: '' });
   const navigate = useNavigate();
   const location = useLocation();
   const currentLocation = useRef(location);
@@ -33,8 +34,8 @@ export const AuthProvider = ({ children }) => {
   const currentSession=useRef(session);
   const lastDraftScope = useRef(draftScope(session.user));
   const replaceSession = useCallback(next => { currentSession.current = next; setSession(next); }, []);
-  const expireSession = useCallback(expectedToken => {
-    if (!isCurrentSession(expectedToken, currentSession.current, localStorage.getItem('token'))) return;
+  const expireSession = useCallback(expectedIdentity => {
+    if (!isCurrentSession(expectedIdentity, currentSession.current, readStoredSession())) return;
     localStorage.removeItem('token'); localStorage.removeItem('user');
     notifyNativeWorkspaceChanged();
     // An expired session is recoverable. Keep encrypted drafts for re-sign-in.
@@ -72,54 +73,66 @@ export const AuthProvider = ({ children }) => {
     await disconnectNativeDevice(token);
   }, [navigate, replaceSession]);
   useEffect(()=>{
-    const changed=event=>{if(event.key!=='user'&&event.key!=='token')return;const next=readStoredSession(),old=currentSession.current;
-      if(old.token!==next.token||draftScope(old.user)!==draftScope(next.user)){notifyNativeWorkspaceChanged();currentSession.current=next;setSession(next);}
-    };window.addEventListener('storage',changed);return()=>window.removeEventListener('storage',changed);
-  },[]);
+    const changed = event => {
+      if (event.key !== 'user' && event.key !== 'token') return;
+      const next = readStoredSession(), old = currentSession.current;
+      if (sessionIdentity(old) !== sessionIdentity(next)) {
+        notifyNativeWorkspaceChanged();
+        replaceSession(next);
+      } else if (old.user?.workspace?.setupRequired !== next.user?.workspace?.setupRequired) {
+        replaceSession(next);
+      }
+    };
+    window.addEventListener('storage', changed);
+    return () => window.removeEventListener('storage', changed);
+  }, [replaceSession]);
   useEffect(() => {
     if (!session.token || session.user?.isPreview === true) return;
     const controller = new AbortController(), token = session.token;
+    const stillCurrent = () => !controller.signal.aborted && isCurrentSession(identity, currentSession.current, readStoredSession());
     verifyStoredSession(session, { fetcher: fetch, api: API, signal: controller.signal }).then(async result => {
-      if (controller.signal.aborted || !isCurrentSession(token, currentSession.current, localStorage.getItem('token'))) return;
-      if (result.status === 'expired') { expireSession(token); return; }
+      if (!stillCurrent()) return;
+      if (result.status === 'expired') { expireSession(identity); return; }
       if (result.status === 'valid') {
         await reconcileWorkspaceDataEpoch(result.user, { storage: localStorage, purgeDrafts: clearLocalDrafts, scope: draftScope(result.user) });
+        if (!stillCurrent()) return;
         const nextScope = draftScope(result.user), purgeScope = draftScopeToPurge(lastDraftScope.current, nextScope, { verified: true });
         if (purgeScope) await clearLocalDrafts(purgeScope);
-        if (controller.signal.aborted || !isCurrentSession(token, currentSession.current, localStorage.getItem('token'))) return;
+        if (!stillCurrent()) return;
         lastDraftScope.current = nextScope;
         localStorage.setItem('user', JSON.stringify(result.user));
         replaceSession({ token, user: result.user });
       }
-      setVerification({ token, status: result.status });
+      setVerification({ identity, status: result.status });
     });
     return () => controller.abort();
     // A profile update must not restart verification of the same sign-in.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.token, session.user?.isPreview, expireSession, replaceSession]);
+  }, [identity, expireSession, replaceSession]);
   useEffect(() => {
-    if (!session.token || session.user?.role !== 'admin' || session.user?.isPreview === true || verification.token !== session.token) return;
+    if (!session.token || session.user?.role !== 'admin' || session.user?.isPreview === true || verification.identity !== identity) return;
     let lastActivity = 0;
     const controller = new AbortController();
     const activity = event => {
       if ((event && !event.isTrusted) || document.visibilityState === 'hidden' || Date.now() - lastActivity < 60000) return;
       lastActivity = Date.now();
-      fetch(API + '/api/studio/security/activity', { method: 'POST', headers: { Authorization: 'Bearer ' + session.token }, signal: controller.signal }).then(result => { if (!controller.signal.aborted && result.status === 401) expireSession(session.token); }).catch(() => {});
+      fetch(API + '/api/studio/security/activity', { method: 'POST', headers: { Authorization: 'Bearer ' + session.token }, signal: controller.signal }).then(result => { if (!controller.signal.aborted && result.status === 401) expireSession(identity); }).catch(() => {});
     };
     activity();
     const events = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
     events.forEach(event => window.addEventListener(event, activity, { passive: true, capture: true }));
     return () => { controller.abort(); events.forEach(event => window.removeEventListener(event, activity, { capture: true })); };
-  }, [session.token, session.user?.role, session.user?.isPreview, verification.token, expireSession]);
-  const updateUser = useCallback(userData => {
-    setSession(current => {
-      const user = { ...current.user, ...userData };
-      localStorage.setItem('user', JSON.stringify(user));
-      const next = { ...current, user }; currentSession.current = next; return next;
-    });
-  }, []);
-  const loading = Boolean(session.token && session.user?.isPreview !== true && verification.token !== session.token);
-  const sessionError = verification.token === session.token && verification.status === 'unavailable' ? 'Your studio connection is temporarily unavailable. Your sign-in and local drafts have been kept.' : '';
+  }, [identity, session.token, session.user?.role, session.user?.isPreview, verification.identity, expireSession]);
+  const updateUser = useCallback((userData, expectedToken) => {
+    const current = currentSession.current;
+    if ((expectedToken && expectedToken !== current.token) || !isCurrentSession(identity, current, readStoredSession())) return;
+    const next = { ...current, user: { ...current.user, ...userData } };
+    if (sessionIdentity(next) !== identity) return;
+    localStorage.setItem('user', JSON.stringify(next.user));
+    replaceSession(next);
+  }, [identity, replaceSession]);
+  const loading = Boolean(session.token && session.user?.isPreview !== true && verification.identity !== identity);
+  const sessionError = verification.identity === identity && verification.status === 'unavailable' ? 'Your studio connection is temporarily unavailable. Your sign-in and local drafts have been kept.' : '';
   const value = useMemo(() => ({ ...session, loading, sessionError, login, logout, updateUser }), [session, loading, sessionError, login, logout, updateUser]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

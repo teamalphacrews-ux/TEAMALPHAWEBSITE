@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../utils/branding";
 import axios from "axios";
 import {
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { API_BASE_URL } from "../utils/apiConfig";
 import { resolveStudioImage } from '../utils/settingsDefaults';
+import { installStudioBrowserTheme } from '../utils/studioBrowserTheme';
 import {
   clientDate as date,
   messageRequestId,
@@ -142,6 +143,9 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
   const closePayment = useCallback(() => setPaymentRequest(null), []);
   const [appearance, setAppearance] = useState(() => { try { return localStorage.getItem('teamalpha-client-appearance') === 'dark' ? 'dark' : 'daylight'; } catch { return 'daylight'; } });
   useEffect(() => { try { localStorage.setItem('teamalpha-client-appearance', appearance); } catch { /* Appearance still works for this visit. */ } }, [appearance]);
+  useLayoutEffect(() => {
+    if (IS_COMMERCIAL_DEPLOYMENT) return installStudioBrowserTheme(document, appearance === 'dark' ? 'dark' : 'light');
+  }, [appearance]);
   const [effectsPaused, setEffectsPaused] = useState(() => IS_COMMERCIAL_DEPLOYMENT && readEffectsPause());
   const [effectsReduced, setEffectsReduced] = useState(() => IS_COMMERCIAL_DEPLOYMENT && (typeof window === 'undefined' || Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)));
   const [effectsVisible, setEffectsVisible] = useState(() => typeof document !== 'undefined' && !document.hidden);
@@ -181,6 +185,13 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
     stickToLatest = useRef(true);
   const visibility = project?.visibility || {}, chatEnabled = !!project && visibility.allowChat !== false;
   const endpoint = `${API_BASE_URL}/api/quotes/${token}`;
+  const closeChat = useCallback(() => {
+    setChatOpen(false);
+    if (window.location.hash === '#project-support') {
+      window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+    }
+    chatLauncherRef.current?.focus();
+  }, []);
   useEffect(() => {
     if (!accepted) return;
     let active = true,
@@ -282,13 +293,12 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
     const closeOnEscape = (event) => {
       if (event.key === "Escape" && chatRef.current?.contains(event.target)) {
         event.preventDefault();
-        setChatOpen(false);
-        chatLauncherRef.current?.focus();
+        closeChat();
       }
     };
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [chatOpen, chatEnabled]);
+  }, [chatOpen, chatEnabled, closeChat]);
   useEffect(() => {
     if (chatOpen && stickToLatest.current && threadRef.current)
       threadRef.current.scrollTop = threadRef.current.scrollHeight;
@@ -303,10 +313,6 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       section?.querySelector('.cp-accordion-heading > button')?.focus({ preventScroll: true });
       section?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     });
-  };
-  const closeChat = () => {
-    setChatOpen(false);
-    chatLauncherRef.current?.focus();
   };
   const selectPrintDocument = (document) => {
     if (workspaceRef.current)
@@ -869,13 +875,14 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
         <div
           className="cp-messages"
           ref={threadRef}
+          role="log"
+          tabIndex={0}
           onScroll={(event) => {
             const list = event.currentTarget;
             stickToLatest.current =
               list.scrollHeight - list.scrollTop - list.clientHeight < 48;
           }}
           aria-label="Project support messages"
-          aria-live="polite"
         >
           {cursor && (
             <button

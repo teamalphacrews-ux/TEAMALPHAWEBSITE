@@ -10,6 +10,7 @@ const billing = require('./billing');
 const auth = require('../middleware/auth');
 const digest = token => crypto.createHash('sha256').update(token).digest('hex');
 const guarded = fn => async (req, res, next) => { try { await fn(req, res, next); } catch (error) {
+  if (error.status === 400 && error.fieldErrors) return res.status(400).json({ msg: error.message, fieldErrors: error.fieldErrors });
   if (!res.headersSent) res.status(error.status || (error.code === 11000 ? 409 : 503)).json({ msg: error.status ? error.message : error.code === 11000 ? 'This invitation or account already exists.' : 'Studio setup is temporarily unavailable. Please retry.' });
 } };
 const enabled = (req, res, next) => process.env.SAAS_ENABLED === 'true' ? next() : res.status(503).json({ msg: 'New studio accounts are not open yet.' });
@@ -99,6 +100,11 @@ router.post('/billing/webhook', enabled, guarded(async (req, res) => {
 }));
 
 router.use(enabled, auth, (req, res, next) => req.saas ? next() : res.status(409).json({ msg: 'This is the existing Team Alpha account. Create a separate SaaS studio to use workspace management; existing records remain in the original studio.' }));
+router.use('/setup', (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+router.get('/setup', guarded(async (req, res) => res.json(await require('./workspaceSetup').getSetup(req.saas))));
+router.post('/setup/restart', guarded(async (req, res) => res.json(await require('./workspaceSetup').restartSetup(req.saas, req.body))));
+router.patch('/setup', guarded(async (req, res) => res.json(await require('./workspaceSetup').saveSetup(req.saas, req.body))));
+router.post('/setup/complete', guarded(async (req, res) => res.json(await require('./workspaceSetup').saveSetup(req.saas, req.body || {}, true))));
 router.get('/workspaces', guarded(async (req, res) => {
   const memberships = await models.Membership.find({ accountId: req.saas.account._id, state: 'active' });
   const workspaces = await models.Workspace.find({ _id: { $in: memberships.map(item => item.workspaceId) }, state: 'active' });

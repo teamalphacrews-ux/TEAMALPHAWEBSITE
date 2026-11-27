@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { recordDate } from '../components/operations/workspaceData';
 
 export default function ContactDirectory({ contacts, onEdit }) {
-  return <div className="record-people" aria-label="Contact cards">{contacts.map((contact, index) => {
+  return <div className="record-people" role="group" aria-label="Contact cards">{contacts.map((contact, index) => {
     const name = [contact.firstName, contact.lastName].filter(Boolean).join(' ') || 'Unnamed contact';
     const initials = (name.match(/[\p{L}\p{N}]+/gu) || []).slice(0, 2).map(part => part[0]).join('').toUpperCase();
     const type = contact.contactType || 'Other';

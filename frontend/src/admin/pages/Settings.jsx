@@ -16,6 +16,8 @@ import { useAuth } from '../../context/AuthContext';
 import StudioAppIcon from '../components/common/StudioAppIcon';
 import SettingsEditor from '../components/settings/SettingsEditor';
 import DocumentAutomationSummary from '../components/settings/DocumentAutomationSummary';
+import { saasRequest, workspaceId } from '../../saas/api';
+import { canReviewStudioSetup, STUDIO_SETUP_REVIEW_PATH } from '../../saas/studioSetupAccess';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import { SettingsDisclosures } from '../components/settings/SettingsDisclosures';
 import WorkspacePreferences from '../components/settings/WorkspacePreferences';
@@ -53,7 +55,7 @@ const sections = [
 
 export default function Settings() {
   const { data, loading, error, reload } = useWorkspaceData(['/api/studio/settings']);
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const fullAccess = hasFullModuleAccess(user);
   const availableSections = fullAccess ? sections : sections.filter(section => ['workspace','language','notifications','device','profile','branding','connections','security'].includes(section.id));
   const { preferences, resolvedTheme, update } = useStudioPreferences();
@@ -62,9 +64,12 @@ export default function Settings() {
   const [form, setForm] = useState(null), [baseline, setBaseline] = useState(null);
   const [busy, setBusy] = useState(false), [saveError, setSaveError] = useState('');
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [restarting, setRestarting] = useState(false);
   const [query, setQuery] = useState(''), [confirmation, setConfirmation] = useState(null), [savedAt, setSavedAt] = useState(null);
   const saveLock = useRef(false), heading = useRef(null), pageTop = useRef(null);
   const actionGate = useRef(createSettingsActionGate());
+  const reviewRequest = useRef(null);
+  useEffect(() => () => reviewRequest.current?.abort(), []);
   const beginProfilePhotoUpload = useCallback(() => {
     const release = actionGate.current.begin('photo');
     if (!release) return null;
@@ -82,7 +87,9 @@ export default function Settings() {
   const tab = availableSections.some(section => section.id === requestedSection) ? requestedSection : null;
   const current = availableSections.find(section => section.id === tab);
   const personalSection = current?.group === 'Personal';
-  const matching = availableSections.filter(section => query.trim().toLowerCase().split(/\s+/).every(word => (section.title + ' ' + t(section.title) + ' ' + section.description + ' ' + section.keywords).toLowerCase().includes(word)));
+  const showSetupAction = IS_COMMERCIAL_DEPLOYMENT && canReviewStudioSetup(user) &&
+    query.trim().toLowerCase().split(/\s+/).every(word => 'restart studio setup'.includes(word));
+  const matching = availableSections.filter(section => (showSetupAction && section.id === 'profile') || query.trim().toLowerCase().split(/\s+/).every(word => (section.title + ' ' + t(section.title) + ' ' + section.description + ' ' + section.keywords).toLowerCase().includes(word)));
   const change = (key, value) => { if (!saveLock.current) setForm(previous => ({ ...(previous || original), [key]: value })); };
   const changeNested = (group, key, value) => { if (!saveLock.current) setForm(previous => { const base = previous || original; return { ...base, [group]: { ...base[group], [key]: value } }; }); };
   const selectSection = id => {
@@ -131,8 +138,26 @@ export default function Settings() {
     } catch (failure) { setSaveError(['ECONNABORTED', 'ETIMEDOUT'].includes(failure.code) ? 'The studio did not confirm your save in time. Reload settings to check whether it was saved before retrying.' : recordError(failure)); throw failure; }
     finally { release(); saveLock.current = false; setBusy(false); }
   };
+  const restartSetup = async () => {
+    const release = actionGate.current.begin('restart');
+    if (!release) return;
+    const controller = new AbortController();
+    reviewRequest.current = controller;
+    setRestarting(true);
+    setConfirmation(null);
+    try {
+      const result = await saasRequest('/setup/restart', { method: 'POST', body: {}, expectedToken: token, signal: controller.signal });
+      if (controller.signal.aborted || localStorage.getItem('token') !== token) return;
+      if (!result.reviewActive || workspaceId(result.workspace) !== workspaceId(user.workspace)) {
+        throw new Error('Your studio could not open setup. Try again.');
+      }
+      navigate(STUDIO_SETUP_REVIEW_PATH);
+    } catch (failure) { if (!controller.signal.aborted) toast.error(failure.message || 'Studio setup could not be opened. Try again.'); }
+    finally { release(); reviewRequest.current = null; if (!controller.signal.aborted) setRestarting(false); }
+  };
   const discard = () => {
     if (actionGate.current.pending()) return;
+    if (confirmation.kind === 'setup') { void restartSetup(); return; }
     if (confirmation.kind === 'section') setForm(restoreSettingsSection(values, original, confirmation.section));
     else { setForm(original); if (confirmation.kind === 'leave') navigate(confirmation.destination); }
     setSaveError(''); setConfirmation(null);
@@ -171,6 +196,12 @@ export default function Settings() {
       <button type="button" aria-current={!current || query.trim() ? 'page' : undefined} onClick={() => selectSection(null)}>{t('All settings')}</button>
       <SectionSelectionIndicator selection={selectedNav} />
     </nav>}
+    {showSetupAction && (tab === 'profile' || browsing) &&
+      <div className="settings-setup-review"><div><strong>Studio setup</strong><p>Review your saved profile, contact details and document defaults.</p></div>
+        <button type="button" className="studio-button" disabled={busy || photoUploading || restarting} onClick={() => dirty ? setConfirmation({ kind: 'setup' }) : restartSetup()}>
+          <RotateCcw size={16} aria-hidden="true" />{restarting ? 'Opening setup…' : 'Restart setup'}
+        </button>
+      </div>}
     {values && !current && !query.trim() && <button type="button" className="settings-profile-tile" onClick={() => selectSection('profile')}>
       <img src={studioImageUrl(values.profilePhotoUrl || values.logoUrl)} onError={studioImageFallback} alt="" />
       <span><strong>{values.studioName || 'Your studio'}</strong><small>{accountName || 'Studio account'} · Studio profile</small></span><ChevronRight size={21} aria-hidden="true" />
@@ -216,6 +247,6 @@ export default function Settings() {
       <WorkspaceError error={saveError} />
       {dirty && <footer className="settings-save-bar has-changes"><div role="status"><span className="settings-save-symbol"><span className="settings-unsaved-dot" /></span><span><strong>{busy ? 'Saving changes…' : photoUploading ? 'Wait for your photo to finish uploading…' : changed.length + (changed.length === 1 ? ' section' : ' sections') + ' with unsaved changes'}</strong><small>{changed.map(id => availableSections.find(section => section.id === id)?.title).join(' · ')}</small></span></div><div className="settings-save-actions"><button type="button" className="studio-button" disabled={busy || photoUploading} onClick={() => setConfirmation({ kind: 'all' })}>{t("Discard")}</button><StudioButton type="button" variant="primary" icon={Save} loading={busy} disabled={photoUploading} onClick={saveAll} loadingLabel="Saving all studio settings">Save all changes</StudioButton></div></footer>}
     </>}
-    {confirmation && <OperationsModal title={confirmation.kind === 'leave' ? 'Leave without saving?' : confirmation.kind === 'section' ? 'Revert this section?' : 'Discard unsaved changes?'} onClose={() => setConfirmation(null)} footer={<><button type="button" className="studio-button" onClick={() => setConfirmation(null)}>Keep editing</button><button type="button" className="studio-button primary" onClick={discard}>{confirmation.kind === 'leave' ? 'Discard & leave' : 'Discard changes'}</button></>}><p className="studio-muted">{confirmation.kind === 'section' ? 'Restore ' + (availableSections.find(section => section.id === confirmation.section)?.title || 'this section').toLowerCase() + ' to its last saved values. Changes in other sections will stay.' : 'Only unsaved studio settings will be discarded. Your saved settings, personal preferences and project records will stay.'}</p></OperationsModal>}
+    {confirmation && <OperationsModal title={confirmation.kind === 'setup' ? 'Discard unsaved changes and open setup?' : confirmation.kind === 'leave' ? 'Leave without saving?' : confirmation.kind === 'section' ? 'Revert this section?' : 'Discard unsaved changes?'} onClose={() => setConfirmation(null)} footer={<><button type="button" className="studio-button" onClick={() => setConfirmation(null)}>Keep editing</button><button type="button" className="studio-button primary" onClick={discard}>{confirmation.kind === 'setup' ? 'Discard and open setup' : confirmation.kind === 'leave' ? 'Discard & leave' : 'Discard changes'}</button></>}><p className="studio-muted">{confirmation.kind === 'section' ? 'Restore ' + (availableSections.find(section => section.id === confirmation.section)?.title || 'this section').toLowerCase() + ' to its last saved values. Changes in other sections will stay.' : 'Only unsaved studio settings will be discarded. Your saved settings, personal preferences and project records will stay.'}</p></OperationsModal>}
   </div>;
 }

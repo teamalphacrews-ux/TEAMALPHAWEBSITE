@@ -544,7 +544,9 @@
   font-weight: 500;
 }
 .qw-detail-meta a {
-  color: #19a887;
+  color: var(--appearance-link, #226c5c);
+  text-decoration: underline;
+  text-underline-offset: .16em;
 }
 .qw-read-paper {
   padding: 40px;
@@ -556,6 +558,7 @@
   --studio-muted: #766b58;
   color: #242927;
   color-scheme: light;
+  overflow-wrap: anywhere;
   box-sizing: border-box;
   padding: 35px 40px;
   background: white;
@@ -575,6 +578,7 @@
   object-fit: contain;
   margin: 0 auto 12px;
 }
+.qw-read-cell-label { display: none; }
 .qw-read-document table {
   width: 100%;
   border-collapse: collapse;
@@ -582,9 +586,8 @@
 }
 .qw-read-document th {
   text-align: left;
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: #999;
+  font-size: 12px;
+  color: var(--studio-muted);
   padding: 20px 10px;
   border-bottom: 1px solid #eee;
 }
@@ -648,7 +651,8 @@
 }
 .qw-timeline small {
   display: block;
-  color: #a1a7a2;
+  color: var(--studio-muted, var(--brand-muted));
+  font-size: 12px;
   margin-top: 6px;
 }
 .qw-design {
@@ -982,7 +986,7 @@
     border-radius: 12px;
   }
   .qw-read-document table, .qw-read-document tbody { display: block; }
-  .qw-read-document thead { display: none; }
+  .qw-read-document thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .qw-read-document tbody > tr {
     display: grid;
     grid-template-columns: minmax(0, .55fr) repeat(2, minmax(0, 1fr));
@@ -993,8 +997,8 @@
   .qw-read-document td { padding: 0; border: 0; min-width: 0; overflow-wrap: anywhere; }
   .qw-read-document td:first-child { grid-column: 1 / -1; }
   .qw-read-document td p { margin: 6px 0 0; }
-  .qw-read-document td[data-label] { white-space: normal; text-align: left; font-variant-numeric: tabular-nums; }
-  .qw-read-document td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 4px; color: #766b58; font-size: 10px; }
+  .qw-read-document td:not(:first-child) { white-space: normal; text-align: left; font-variant-numeric: tabular-nums; }
+  .qw-read-document .qw-read-cell-label { display: block; margin-bottom: 4px; color: var(--studio-muted); font-size: 12px; }
   .qw-read-document td:last-child { text-align: right; }
 
   .qw-design {

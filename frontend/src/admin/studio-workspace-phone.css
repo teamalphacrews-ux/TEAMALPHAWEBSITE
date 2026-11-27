@@ -1,6 +1,6 @@
 /* On phones the tabs own their own row. Safari can resize the viewport without
    covering the last action on a long page or requiring a guessed bottom spacer. */
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   #sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) {
     display: flex;
     flex-direction: column;
@@ -36,7 +36,7 @@
 
 /* Keep every action reachable in one row on ordinary phones. A second row
    on the narrowest devices preserves the full page guide and touch targets. */
-@media (min-width: 360px) and (max-width: 760px) {
+@media (min-width: 360px) and (max-width: 768px) {
   #sx-workspace-shell .studio-topbar {
     flex-wrap: nowrap;
     gap: 4px;

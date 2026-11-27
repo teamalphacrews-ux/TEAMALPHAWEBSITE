@@ -109,10 +109,10 @@ export function ProductLoginPage() {
       <SocialAuthButtons config={config} loading={loading} plan={plan} purpose="login" disabled={busy || providerBusy} onStart={beginProvider} onFinish={finishProvider} />
       <div className="saas-auth-divider"><span>or sign in with email</span></div>
     </>}
-    {error && <p className="saas-error" role="alert">{error}</p>}
     <form className="saas-auth-form" onSubmit={submit}><fieldset disabled={busy || providerBusy || loading || config?.authEnabled !== true}>
       <label className="saas-field"><span>Email address</span><input type="email" value={form.email} onChange={event => setForm(previous => ({ ...previous, email: event.target.value }))} autoComplete="username" required maxLength={254} placeholder="you@yourstudio.com" /></label>
       <PasswordField value={form.password} onChange={event => setForm(previous => ({ ...previous, password: event.target.value }))} minLength={1} autoComplete="current-password" />
+      {error && <p className="saas-error" role="alert">{error}</p>}
       <button className="saas-primary" type="submit" disabled={busy || providerBusy || loading || config?.authEnabled !== true} aria-busy={busy}>{busy ? 'Signing in…' : 'Open my studio'}<ArrowRight size={16} /></button>
     </fieldset></form>
     {!loading && config && config.authEnabled !== true && <p className="saas-social-status">Studio account sign-in is not available here yet. Please return when the service opens.</p>}

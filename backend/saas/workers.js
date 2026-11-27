@@ -36,7 +36,7 @@ async function forEachWorkspace(job, {
   for (const workspace of workspaces) {
     const id = String(workspace?._id || '');
     // Provisioning state, rather than trial/billing status, controls readiness.
-    if (workspace?.state !== 'active' || !/^[a-f0-9]{24}$/.test(id) || workspace.databaseName !== `studio_${id}` || visited.has(id)) continue;
+    if (workspace?.state !== 'active' || require('./setupAccess').requiresSetup(workspace) || !/^[a-f0-9]{24}$/.test(id) || workspace.databaseName !== `studio_${id}` || visited.has(id)) continue;
     visited.add(id);
     await run(workspace);
   }

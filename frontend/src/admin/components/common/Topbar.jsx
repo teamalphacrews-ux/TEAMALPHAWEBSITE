@@ -42,7 +42,7 @@ import QuickCreate from './QuickCreate';
 import useWorkspaceMotionPresence from './useWorkspaceMotionPresence';
 import { workspaceMotionAllowed } from './workspaceMotion';
 
-export default function Topbar({ onMenuClick, nativeNavigation }) {
+export default function Topbar({ onMenuClick, nativeNavigation, navOpen }) {
   const { user, token, logout, updateUser } = useAuth();
   const fullAccess = hasFullModuleAccess(user);
   const { resolvedTheme, preferences, toggleTheme } = useStudioPreferences();
@@ -169,8 +169,8 @@ export default function Topbar({ onMenuClick, nativeNavigation }) {
     <header className="studio-topbar" ref={panelRef}>
       <div className="studio-topbar-context">{IS_COMMERCIAL_DEPLOYMENT ? (
         nativeNavigation ? <Link to="/admin" className="sx-desk-mobile-mark" aria-label="Studio X OS overview"><StudioProductBrand compact /></Link>
-          : <button type="button" className="sx-desk-mobile-mark" aria-label="Open navigation" aria-controls="studio-navigation-drawer" onClick={onMenuClick}><Menu size={20} aria-hidden="true" /></button>
-      ) : <StudioButton type="button" variant="icon" className="studio-menu-button studio-icon-button" label="Open navigation" icon={Menu} onClick={onMenuClick} />}<span className="studio-topbar-workspace" lang={preferences.language} dir="auto">{t("Workspace")}</span><span className="studio-breadcrumb-separator" aria-hidden="true">/</span>
+          : <button type="button" className="sx-desk-mobile-mark" aria-label="Open navigation" aria-expanded={navOpen} aria-controls="studio-navigation-drawer" onClick={onMenuClick}><Menu size={20} aria-hidden="true" /></button>
+      ) : <StudioButton type="button" variant="icon" className="studio-menu-button studio-icon-button" label="Open navigation" icon={Menu} aria-expanded={navOpen} aria-controls="studio-navigation-drawer" onClick={onMenuClick} />}<span className="studio-topbar-workspace" lang={preferences.language} dir="auto">{t("Workspace")}</span><span className="studio-breadcrumb-separator" aria-hidden="true">/</span>
         {guide ? <WorkspacePageGuide key={location.pathname + guide} target={guide} pageName={active}>{pageTitle}</WorkspacePageGuide> : pageTitle}
       </div>
       <div className="studio-topbar-actions"><WorkspaceRecordSearch />

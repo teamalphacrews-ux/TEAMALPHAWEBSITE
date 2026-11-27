@@ -117,3 +117,9 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
     bottom: auto;
   }
 }
+
+.settings-setup-review { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px 20px; margin-block:16px; padding:16px 18px; border:1px solid var(--studio-border); border-radius:14px; background:var(--studio-surface); }
+.settings-setup-review > div { flex:1 1 240px; min-width:0; }
+.settings-setup-review strong { color:var(--studio-text); }
+.settings-setup-review p { margin:4px 0 0; color:var(--settings-secondary); font-size:14px; line-height:1.45; }
+.settings-setup-review .studio-button { min-height:44px; }

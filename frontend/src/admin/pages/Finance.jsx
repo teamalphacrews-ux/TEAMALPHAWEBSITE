@@ -314,7 +314,7 @@ export default function Finance() {
               description={query.trim() ? "Try another client, category or status." : viewContent.hint}
             />
           ) : (
-            <div className="studio-table-wrap">
+            <div className="studio-table-wrap finance-register-records" role="region" aria-label={viewContent.title} tabIndex={0}>
               <table role="table" aria-label="Financial records" className="studio-table studio-phone-record-table">
                 <thead role="rowgroup">
                   <tr role="row">
@@ -417,7 +417,7 @@ export default function Finance() {
                             <button type="button" onClick={()=>{setDeleting(row);setSaveError('');}}>Remove expense</button>
                           </WorkspaceActionMenu>
                         ) : (
-                          <span className="studio-muted">Receipt</span>
+                          <span className="studio-muted" aria-label="No actions">—</span>
                         )}
                       </td>
                     </tr>

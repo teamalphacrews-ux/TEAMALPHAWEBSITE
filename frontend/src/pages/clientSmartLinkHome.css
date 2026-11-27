@@ -1,6 +1,11 @@
 /* The commercial Smart Link shares the public homepage's film and type.
    Keep the tenant's document paper and its print layout independent. */
 @media screen {
+  html[data-studio-browser-theme]:has(.client-project.studio-client-radiance),
+  html[data-studio-browser-theme]:has(.client-project.studio-client-radiance) body {
+    background-color: var(--studio-browser-canvas);
+  }
+
   .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] {
     --client-canvas: #f6f5f3;
     --client-glass: #fff;
@@ -11,6 +16,7 @@
     font-family: var(--sx-public-font);
     --smart-action: var(--sx-public-action);
     --smart-action-ink: var(--sx-public-on-action);
+    --smart-cover-text-shade: rgb(5 5 8 / 68%);
 
     &[data-theme="dark"] {
       --client-canvas: #080808;
@@ -87,7 +93,7 @@
     & .cp-cover-shade {
       display: block;
       z-index: 0;
-      background: linear-gradient(90deg, rgb(5 5 8 / 91%), rgb(5 5 8 / 81%) 35%, rgb(5 5 8 / 24%) 77%),
+      background: linear-gradient(90deg, rgb(5 5 8 / 91%), rgb(5 5 8 / 81%) 35%, var(--smart-cover-text-shade) 80%, rgb(5 5 8 / 24%)),
         linear-gradient(0deg, rgb(5 5 8 / 58%), transparent 54%);
     }
 
@@ -119,6 +125,7 @@
     & .cp-cover-footer {
       justify-content: flex-start;
       gap: 8px 20px;
+      max-inline-size: 78%;
       margin-top: 24px;
       padding: 0;
       border: 0;
@@ -231,8 +238,8 @@
     & .cp-welcome-content { padding: 26px 22px; }
     & .cp-welcome h1 { max-width: 100%; font-size: 39px; }
     & .cp-welcome p { max-width: 100%; font-size: 24px; }
-    & .cp-cover-shade { background: linear-gradient(90deg, rgb(5 5 8 / 85%), rgb(5 5 8 / 55%)); }
-    & .cp-cover-footer { flex-direction: column; align-items: flex-start; gap: 4px; }
+    & .cp-cover-shade { background: linear-gradient(90deg, rgb(5 5 8 / 85%), var(--smart-cover-text-shade)); }
+    & .cp-cover-footer { flex-direction: column; align-items: flex-start; gap: 4px; max-inline-size: 100%; }
   }
 }
 

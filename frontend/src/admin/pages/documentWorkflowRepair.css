@@ -159,6 +159,8 @@
   .document-email-preview-wrap { margin: 18px; }
 }
 @media (max-width: 768px) {
+  .studio-app .studio-document-settings-toggle > span { min-width: 0; overflow-wrap: anywhere; }
+  .studio-app .studio-document-settings-toggle > svg { flex-shrink: 0; }
   .studio-app.studio-app.studio-personal-workspace :is(.qw-send > section:first-child, .invoice-send-composer) { padding: 18px 16px 24px; gap: 16px; }
   .studio-app.studio-app.studio-personal-workspace :is(.qw-send, .invoice-send-composer) :is(.qw-field, .invoice-field) > :is(input, textarea) { font-size: 16px; }
   .studio-app.studio-app.studio-personal-workspace .qw-doc-header {
@@ -177,9 +179,8 @@
   .studio-app.studio-app.studio-personal-workspace .qw-header-actions .studio-desktop-toolbar-action { display: none; }
   .studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools, .invoice-item-actions) { justify-self: end; position: static; padding: 0; margin: 0; }
   .studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools, .invoice-item-actions) > button { min-width: 44px; width: 44px; min-height: 44px; height: 44px; }
-  .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 12px; padding: 18px 0; }
+  .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 18px 0; }
   .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-description { grid-column: 1; padding: 0; }
-  .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-open { position: static; grid-column: 2; grid-row: 1; width: 44px; height: 44px; align-self: start; }
   .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-metadata { grid-column: 1 / -1; margin: 0; gap: 12px 20px; }
   .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-list-status-filter { align-items: center; }
   .document-design-content .qw-cover-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

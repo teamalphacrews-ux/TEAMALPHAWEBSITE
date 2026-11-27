@@ -47,6 +47,11 @@ function days(value, name) {
   return [...new Set(value.map(item => number(item, name, 1, 365, true)))].sort((a, b) => a - b);
 }
 function defaultsFor(key, supplied) { return { ...clone(DEFAULTS[key]), ...object(supplied, key) }; }
+function documentPrefix(value, name) {
+  const result = text(value, name, 16).toUpperCase();
+  if (!/^[A-Z0-9][A-Z0-9_-]{0,15}$/.test(result)) fail('Document prefixes may contain letters, numbers, hyphens and underscores');
+  return result;
+}
 function parseAdvancedSettings(body) {
   object(body, 'settings'); const out = {};
   for (const [key, max] of [['legalName', 200], ['whatsappMessage', 1000]]) if (body[key] !== undefined) out[key] = text(body[key], key, max);
@@ -56,7 +61,7 @@ function parseAdvancedSettings(body) {
   for (const [key, domains] of [['instagramUrl', ['instagram.com']], ['facebookUrl', ['facebook.com', 'fb.com']]]) if (body[key] !== undefined) out[key] = https(body[key], key, domains);
   if (body.billingDefaults !== undefined) {
     const b = defaultsFor('billingDefaults', body.billingDefaults);
-    const prefix = key => { const result = text(b[key], key, 16).toUpperCase(); if (!/^[A-Z0-9][A-Z0-9_-]{0,15}$/.test(result)) fail('Document prefixes may contain letters, numbers, hyphens and underscores'); return result; };
+    const prefix = key => documentPrefix(b[key], key);
     if (!Array.isArray(b.paymentMilestones) || !b.paymentMilestones.length || b.paymentMilestones.length > 8) fail('Add 1 to 8 payment milestones');
     const milestones = b.paymentMilestones.map(row => { object(row, 'payment milestone'); const label = text(row.label, 'milestone label', 100); if (!label) fail('Each payment milestone needs a name'); return { label, percent: number(row.percent, 'payment percentage', .01, 100), offsetDays: number(row.offsetDays, 'payment due days', 0, 730, true) }; });
     if (Math.abs(milestones.reduce((sum, row) => sum + row.percent, 0) - 100) > .0001) fail('Payment milestone percentages must total 100%');
@@ -104,4 +109,4 @@ function parseAdvancedSettings(body) {
   if (body.backups !== undefined) { const b = defaultsFor('backups', body.backups); out.backups = { enabled: bool(b.enabled, 'scheduled backups'), frequency: choice(b.frequency, 'backup frequency', ['daily', 'weekly']), retentionDays: number(b.retentionDays, 'backup retention days', 1, 365, true) }; }
   return out;
 }
-module.exports = { DEFAULTS, parseAdvancedSettings, clone };
+module.exports = { DEFAULTS, parseAdvancedSettings, documentPrefix, clone };

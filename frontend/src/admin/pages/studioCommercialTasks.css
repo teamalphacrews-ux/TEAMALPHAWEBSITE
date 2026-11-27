@@ -38,6 +38,7 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
   color: var(--studio-danger-ink);
   font-size: 12px;
 }
+.studio-commercial-glass .sx-task-page .ops-next-task > span:last-child { overflow-wrap: anywhere; }
 .studio-commercial-glass .sx-task-page .ops-due.is-overdue { color: var(--studio-danger-ink); }
 .studio-commercial-glass .sx-task-page .ops-overdue-caption { color: var(--studio-danger-ink) !important; }
 .studio-commercial-workspace .production-task-editor .ops-client-visibility {
@@ -65,6 +66,12 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions { display:flex; align-items:center; gap:2px; margin:auto -6px -6px; padding-top:10px; border-top:1px solid var(--studio-border); }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; border:0; border-radius:8px; background:transparent; color:var(--studio-muted); cursor:pointer; transition:background-color 200ms ease,color 200ms ease; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions .sx-task-complete { flex:1; justify-content:start; min-width:0; padding:7px 6px; font-size:13px; }
+.sx-task-card { container: task-card / inline-size; }
+@container task-card (max-width: 176px) {
+  .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions .sx-task-complete {
+    flex-direction: column; justify-content: center; gap: 3px; padding-inline: 2px; font-size: .75rem;
+  }
+}
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions .sx-task-icon { flex:0 0 44px; min-width:44px; padding:0; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions button:hover { background:var(--studio-hover); color:var(--studio-text); }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions button:last-child:hover { color:var(--studio-danger-ink); }

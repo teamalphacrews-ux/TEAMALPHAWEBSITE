@@ -226,7 +226,7 @@
   .studio-app.saas-product-auth.saas-auth .saas-auth-aside { border-left: 0; border-top: 1px solid var(--sx-public-edge); }
 }
 @media screen and (max-width: 959px) {
-  .studio-docs .docs-sidebar { position: static; max-height: none; }
+  .studio-docs .docs-sidebar { position: static; max-height: min(65dvh,620px); }
   .studio-docs .docs-layout { padding-top: 0; }
 }
 @media screen and (prefers-reduced-motion: no-preference) {

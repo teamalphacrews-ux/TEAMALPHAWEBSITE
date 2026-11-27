@@ -1,11 +1,13 @@
 const jwt = require('jsonwebtoken');
+const { requiresSetup, allowedDuringSetup } = require('./setupAccess');
 const { runInWorkspace } = require('./tenantContext');
 const { accessStatus } = require('./plans');
 const validId = id => typeof id === 'string' && /^[a-f\d]{24}$/i.test(id);
 const failure = (status, message) => Object.assign(new Error(message), { status });
 function readToken(req) {
   const value = req.headers?.authorization;
-  return typeof value === 'string' && value.startsWith('Bearer ') ? value.slice(7).trim() : req.headers?.['x-auth-token'];
+  // Scope the request with the same credential that the session verifier will check.
+  return req.headers?.['x-auth-token'] || (typeof value === 'string' && value.startsWith('Bearer ') ? value.slice(7).trim() : undefined);
 }
 async function resolveSession(token, { models = require('./models'), env = process.env } = {}) {
   let decoded;
@@ -41,6 +43,8 @@ function createWorkspaceMiddleware({ models, env = process.env, onWorkspace = ()
       if (!session) return next();
       const { account, workspace, membership } = session;
       const path = req.originalUrl.split('?')[0];
+      if (requiresSetup(workspace) && !allowedDuringSetup(req.method, path, membership.role))
+        return res.status(409).json({ msg: 'Finish studio setup before opening the workspace.', code: 'STUDIO_SETUP_REQUIRED' });
       // Existing global integration credentials are never inherited by a new studio.
       if (/^\/api\/(?:integrations|google-sheets|media|drive-gallery|gallery|chats|auth\/google)(?:\/|$)/.test(path))
         return res.status(409).json({ msg: 'This integration is being prepared for independent studios. Your workspace data remains available.', code: 'SAAS_INTEGRATION_PENDING' });

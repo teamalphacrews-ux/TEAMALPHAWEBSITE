@@ -81,6 +81,7 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
   .record-project-timeline .record-date-mark { width: 43px; height: 43px; flex-basis: 43px; border-width: 2px; }
   .record-project-timeline .record-date-mark strong { font-size: 16px; }
   .record-person header { align-items: flex-start; margin-bottom: 12px; }
+  .record-person-identity { min-width: 0; overflow-wrap: anywhere; }
   .record-avatar,.record-assignee {
     display: inline-grid; place-items: center; flex: none; border-radius: 50%;
     width: 44px; height: 44px; font: 650 15px/1 var(--studio-font); color: #3a2b16; background: linear-gradient(135deg,#f8d582,#ebb477);
@@ -108,7 +109,7 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
   }
   .record-enquiry-lane article + article { margin-top: 8px; }
   .record-enquiry-lane h3 { margin: 0 0 9px; }
-  .record-enquiry-lane h3 button { min-height: 44px; padding: 0; background: transparent; border: none; color: var(--studio-text); text-align: left; font: inherit; cursor: pointer; }
+  .record-enquiry-lane h3 button { min-height: 44px; max-width: 100%; padding: 0; background: transparent; border: none; color: var(--studio-text); text-align: left; font: inherit; white-space: normal; overflow-wrap: anywhere; cursor: pointer; }
   .record-enquiry-project,.record-enquiry-lane dl { font-size: 13px; color: var(--studio-muted); }
   .record-enquiry-project small { display: block; }
   .record-enquiry-lane dl { display: grid; gap: 4px; margin: 12px 0; }
@@ -151,6 +152,8 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
   .record-detail-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 4px; color: var(--studio-muted); min-height: 44px; font-size: 13px; }
   .sx-project-detail .reference-heading { align-items: center; flex-wrap: wrap; gap: 12px 20px; }
   .sx-project-detail .sx-project-identity { flex: 1 1 350px; min-width: 0; }
+  .sx-project-identity .record-category { max-width: 100%; }
+  .sx-project-identity .record-category a { display: inline-flex; align-items: center; min-width: 0; min-height: 44px; overflow-wrap: anywhere; }
   .sx-project-detail .sx-project-identity h1 { margin-top: 4px; }
   .sx-project-detail .sx-project-identity p { margin: 5px 0 0; }
   .sx-project-detail .project-hub-header-actions { margin: 0; flex: 0 1 auto; }

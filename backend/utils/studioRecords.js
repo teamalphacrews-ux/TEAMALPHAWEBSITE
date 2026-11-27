@@ -376,6 +376,7 @@ function bookingPayment(body) {
   return { totalAmount, depositAmount, paymentStatus };
 }
 module.exports = {
+  text, email, url,
   quotation,
   quoteMetadata,
   asset,

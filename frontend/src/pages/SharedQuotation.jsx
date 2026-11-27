@@ -3,16 +3,18 @@ import { TEAM_ALPHA_LOGO } from "../utils/branding";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { CheckCircle2, Download, Printer } from "lucide-react";
+import { CheckCircle2, Printer } from "lucide-react";
 import { API_BASE_URL } from "../utils/apiConfig";
 import { resolveStudioImage } from '../utils/settingsDefaults';
 import { workspaceRequest } from "../admin/components/operations/workspaceData";
 import StudioProductBrand from "../components/StudioProductBrand";
+import { documentAccentInk } from "../utils/documentAccent";
 import "./sharedQuotation.css";
 import "./studioClientGlass.css";
 import { IS_COMMERCIAL_DEPLOYMENT } from "../saas/release";
 import ClientProjectWorkspace from "./ClientProjectWorkspace";
 import "./clientSmartLinkDocuments.css";
+import "./clientDocumentLayout.css";
 const money = (v) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -37,6 +39,13 @@ export default function SharedQuotation() {
     [now, setNow] = useState(() => Date.now());
   const quote = data?.requestKey === key ? data : null,
     preview = !!id;
+  const pageTitle = preview ? 'Quotation preview' : quote?.status === 'Accepted' ? 'Client Smart Link' : 'Your quotation';
+  useEffect(() => {
+    if (!IS_COMMERCIAL_DEPLOYMENT) return;
+    const previous = document.title;
+    document.title = pageTitle + ' · Studio X OS';
+    return () => { document.title = previous; };
+  }, [pageTitle]);
   useEffect(() => {
     let active = true;
     const request = preview
@@ -100,9 +109,13 @@ export default function SharedQuotation() {
   const remaining = quote?.expiresAt
     ? Math.max(0, Date.parse(quote.expiresAt) - now)
     : 0;
+  const accent = /^#[a-f\d]{6}$/i.test(quote?.design?.colorTheme || "")
+    ? quote.design.colorTheme
+    : "#202622";
   const style = quote
     ? {
-        "--quote-accent": quote.design?.colorTheme || "#202622",
+        "--quote-accent": accent,
+        "--quote-accent-ink": documentAccentInk(accent),
         fontFamily:
           quote.design?.fontTheme === "classic"
             ? "Georgia, serif"
@@ -111,7 +124,7 @@ export default function SharedQuotation() {
               : "Inter, Arial, sans-serif",
       }
     : {};
-  const document = (
+  const quotationDocument = (
     <div className={`shared-quotation${IS_COMMERCIAL_DEPLOYMENT ? " studio-client-glass" : ""}`} style={style}>
       <meta name="robots" content="noindex,nofollow" />
       <meta name="referrer" content="no-referrer" />
@@ -175,16 +188,12 @@ export default function SharedQuotation() {
                 </h2>
                 <div>
                   <button
-                    aria-label="Print quote"
+                    type="button"
+                    aria-label="Print or save quote as PDF"
+                    title="Print or save quote as PDF"
                     onClick={() => window.print()}
                   >
-                    <Printer size={19} />
-                  </button>
-                  <button
-                    aria-label="Download quote PDF"
-                    onClick={() => window.print()}
-                  >
-                    <Download size={19} />
+                    <Printer size={19} aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -214,19 +223,19 @@ export default function SharedQuotation() {
             <section className="sq-paper">
               <h2>Items</h2>
               <div className="sq-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>ITEM</th>
-                      <th>QTY</th>
-                      <th>PRICE</th>
-                      <th>AMOUNT</th>
+                <table aria-label="Quotation items" role="table">
+                  <thead role="rowgroup">
+                    <tr role="row">
+                      <th role="columnheader" scope="col">Item</th>
+                      <th role="columnheader" scope="col">Quantity</th>
+                      <th role="columnheader" scope="col">Unit price</th>
+                      <th role="columnheader" scope="col">Amount</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody role="rowgroup">
                     {quote.items.map((i, n) => (
-                      <tr key={n}>
-                        <td>
+                      <tr key={n} role="row">
+                        <td role="cell">
                           <strong>
                             {i.title || i.description.split("\n")[0]}
                           </strong>
@@ -236,9 +245,9 @@ export default function SharedQuotation() {
                               : i.description.split("\n").slice(1).join("\n")}
                           </p>
                         </td>
-                        <td>{i.quantity}</td>
-                        <td>{money(i.unitPricePaise)}</td>
-                        <td>{money(i.quantity * i.unitPricePaise)}</td>
+                        <td role="cell"><span className="client-document-cell-label" aria-hidden="true">Quantity</span>{i.quantity}</td>
+                        <td role="cell"><span className="client-document-cell-label" aria-hidden="true">Unit price</span>{money(i.unitPricePaise)}</td>
+                        <td role="cell"><span className="client-document-cell-label" aria-hidden="true">Amount</span>{money(i.quantity * i.unitPricePaise)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -320,9 +329,9 @@ export default function SharedQuotation() {
   );
   return quote && !preview ? (
     <ClientProjectWorkspace key={token} token={token} quote={quote}>
-      {document}
+      {quotationDocument}
     </ClientProjectWorkspace>
   ) : (
-    document
+    quotationDocument
   );
 }

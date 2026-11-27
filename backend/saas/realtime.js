@@ -14,7 +14,7 @@ function createWorkspaceRealtime(io) {
         if (!session || String(session.workspace._id) !== String(workspace._id)) throw new Error('Workspace access denied');
         const verify = async () => {
           const current = await resolveSession(token);
-          if (!current || String(current.workspace._id) !== String(workspace._id)) throw new Error('Workspace access ended');
+          if (!current || require('./setupAccess').requiresSetup(current.workspace) || String(current.workspace._id) !== String(workspace._id)) throw new Error('Workspace access ended');
           await runInWorkspace(current.workspace, async () => {
             const user = await require('../models/User').findById(current.membership.localUserId).select('+sessionVersion');
             if (!user || user.accountDisabled || !require('../utils/moduleAccess').hasFullAccess(user)) throw new Error('Workspace account unavailable');

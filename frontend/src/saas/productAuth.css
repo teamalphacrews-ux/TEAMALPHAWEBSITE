@@ -7,6 +7,7 @@
 .saas-auth .saas-auth-layout{background:#111;border-color:#292929;border-radius:18px;box-shadow:none}
 .saas-auth .saas-kicker{font-size:11px;letter-spacing:.05em;color:#999}
 .saas-product-auth.saas-auth h1{color:var(--studio-text);letter-spacing:-.04em!important}
+.saas-auth .saas-auth-card h1 { overflow-wrap: anywhere; }
 .saas-auth .saas-auth-description{color:#a5a5a5;font-size:15px;line-height:1.7}
 .saas-auth .saas-auth-aside{background:radial-gradient(ellipse at 20% 110%,#193ec366,transparent 60%),radial-gradient(ellipse at 100% 60%,#7846c833,transparent 65%),#101117;color:#eee;border-left:1px solid #292929}
 .saas-auth .saas-editorial-label{color:#adb2c1;font-size:13px}
@@ -49,6 +50,8 @@
 .saas-auth :is(.saas-auth-footer a, .saas-auth-signin, .saas-invite-summary a, .saas-auth-existing a, .saas-info a, .saas-restart-auth) { display: inline-flex; align-items: center; min-height: 44px; font-size: 12px; }
 .saas-auth .saas-password button { width: 44px; height: 44px; top: 1px; right: 1px; }
 .saas-auth .saas-password input { padding-right: 49px; }
+.saas-auth .saas-field .saas-form-help { margin: 0; }
+.saas-auth .saas-auth-form .saas-error { margin: 0; }
 .saas-auth .saas-info .saas-primary { margin-top: 16px; }
 .saas-auth .saas-config-status { margin-block: 0 20px; }
 .saas-auth .saas-config-status > div { display: flex; align-items: center; gap: 10px; }

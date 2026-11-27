@@ -74,7 +74,7 @@ export function ProjectSlate({ projects, progress, pinned, togglePin, canReadCli
     togglePin(id);
   };
   const cards = [...projects].sort((a, b) => Number(pinned.includes(b._id)) - Number(pinned.includes(a._id)));
-  return <div ref={slate} className="sx-project-grid record-slate" aria-label="Project cards">{cards.map((project, index) => {
+  return <div ref={slate} className="sx-project-grid record-slate" role="group" aria-label="Project cards">{cards.map((project, index) => {
     const client = project.contactId;
     const name = [client?.firstName, client?.lastName].filter(Boolean).join(' ');
     const title = project.name || 'Untitled project';
@@ -88,7 +88,7 @@ export function ProjectSlate({ projects, progress, pinned, togglePin, canReadCli
         <button className="record-pin" type="button" aria-label={(isPinned ? 'Unpin ' : 'Pin ') + title} aria-pressed={isPinned} onClick={event => pin(event, project._id)}><Pin size={15} /></button>
       </header>
       <div className="record-project-identity">{tasks
-        ? <div className="record-progress-mark" aria-label={percent + '% of tasks completed'}><svg viewBox="0 0 64 64" aria-hidden="true"><circle className="record-ring-track" cx="32" cy="32" r="28" /><circle className="record-ring-fill" cx="32" cy="32" r="28" pathLength="100" style={{ '--remaining': 100 - percent }} /></svg><ProjectPercent value={percent} /></div>
+        ? <div className="record-progress-mark" role="progressbar" aria-label={'Tasks completed for ' + title} aria-valuenow={percent}><svg viewBox="0 0 64 64" aria-hidden="true"><circle className="record-ring-track" cx="32" cy="32" r="28" /><circle className="record-ring-fill" cx="32" cy="32" r="28" pathLength="100" style={{ '--remaining': 100 - percent }} /></svg><ProjectPercent value={percent} /></div>
         : <DateMark project={project} />}<div>
         <h2><Link to={destination}>{title}</Link></h2>
         {name && <p>{canReadClients && client._id ? <Link to={'/admin/contacts/' + client._id}>{name}</Link> : name}</p>}
@@ -150,7 +150,7 @@ export function ProjectTimeline({ projects, progress }) {
     if (!groups.has(label)) groups.set(label, []);
     groups.get(label).push(project);
   });
-  return <div className="record-project-timeline" aria-label="Project timeline"><ScheduleChart ordered={ordered} progress={progress} />{[...groups].map(([label, entries]) =>
+  return <div className="record-project-timeline" role="group" aria-label="Project timeline"><ScheduleChart ordered={ordered} progress={progress} />{[...groups].map(([label, entries]) =>
     <section key={label} className={label === 'Unscheduled' ? 'record-undated' : 'record-mobile-agenda'}><h2>{label}</h2><ul>{entries.map(project =>
       <li key={project._id}><DateMark project={project} /><div>
         <Link to={'/admin/studio-projects/' + project._id}>{project.name || 'Untitled project'}</Link>

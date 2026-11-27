@@ -318,6 +318,10 @@
   gap: 12px 20px;
 }
 .sx-project-detail .sx-project-next-step .project-hub-intro { flex: 1 1 210px; min-width: 0; }
+.sx-project-detail .sx-project-schedule .project-hub-actions > .studio-button {
+  max-width: 100%; min-height: 44px; white-space: normal; text-align: center;
+}
+.sx-project-detail .sx-project-schedule .project-hub-actions > .studio-button svg { flex: none; }
 .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .sx-project-detail .project-hub-section > header { margin-bottom: 18px; }
 .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .sx-project-work > header { flex-wrap: wrap; gap: 10px; }
 .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .sx-project-work > header > button { margin-left: auto; }
@@ -382,6 +386,7 @@
   .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .sx-project-work-stage { grid-column: 2; text-align: left; max-width: none; }
 }
 @media (max-width:400px) {
+  .sx-project-detail .sx-project-schedule .project-hub-actions > .studio-button { flex: 1 1 136px; }
   .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .sx-project-detail .project-hub-header-actions > .studio-select { flex-basis: 100%; max-width: 170px; }
   .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .sx-project-detail .project-hub-header-actions > :is(.reference-more,.reference-create-menu) { flex: 1 1 auto; }
   .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass .sx-project-context-links { grid-template-columns: minmax(0,1fr); }

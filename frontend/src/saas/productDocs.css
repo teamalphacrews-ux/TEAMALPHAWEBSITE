@@ -60,7 +60,7 @@
 .studio-docs .docs-nav-group > a:hover { background: #101014; color: #fff; }
 .studio-docs .docs-nav-group > a[aria-current=page] { background: #19191f; border-color: #44444d; color: #fff; font-weight: 500; }
 .studio-docs .docs-sidebar-home { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; margin: 30px 12px 0; color: #a7a7b1; font-size: 13px; }
-.studio-docs .docs-main { min-width: 0; max-width: 100%; outline: none; }
+.studio-docs .docs-main { min-width: 0; max-width: 100%; scroll-margin-top: 106px; outline: none; }
 .studio-docs .docs-hub-intro { margin-bottom: 52px; }
 .studio-docs .docs-hub-intro h1 { max-width: 23ch; margin-bottom: 22px; font-size: 56px; font-weight: 500; line-height: 1.08; letter-spacing: -.035em; }
 .studio-docs .docs-hub-intro h1 em { font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif; font-weight: 400; }
@@ -73,7 +73,7 @@
 .studio-docs .docs-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
 .studio-docs .docs-search > button { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; margin-right: -10px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #bdbdc7; }
 .studio-docs .docs-search > button:hover { background: #24242b; color: #fff; }
-.studio-docs .docs-result-count { margin-top: 14px; color: #a3a3ad; font-size: 14px; line-height: 1.6; }
+.studio-docs .docs-result-count { margin-top: 14px; color: #a3a3ad; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
 .studio-docs .docs-result-count:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
 .studio-docs .docs-guide-group + .docs-guide-group { margin-top: 52px; }
 .studio-docs .docs-guide-group > h2 { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 8px; font-size: 21px; line-height: 1.4; }

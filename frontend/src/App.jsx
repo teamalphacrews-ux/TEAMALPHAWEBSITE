@@ -65,6 +65,7 @@ const ProductHome = IS_COMMERCIAL_DEPLOYMENT && import.meta.env.PROD
 const ProductDocs = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/ProductDocs')) : null;
 const ProductLoginPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/SocialAuth').then(module => ({ default: module.ProductLoginPage }))) : null;
 const SocialCallbackPage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/SocialAuth').then(module => ({ default: module.SocialCallbackPage }))) : null;
+const StudioSetupRoute = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/StudioSetupRoute')) : null;
 const WorkspacePage = SAAS_RELEASE_ENABLED ? lazy(() => import('./saas/WorkspacePage')) : null;
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -177,6 +178,7 @@ function App() {
 
             {/* Protected Admin Routes */}
             <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+              {SAAS_RELEASE_ENABLED && <Route path="/admin/setup" element={<StudioSetupRoute key={workspaceOwner} />} />}
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="shoot-day" element={<ShootDay/>}/><Route path="offline-drafts" element={<OfflineDraftsHub/>}/>

@@ -11,6 +11,7 @@ import OverviewDaySchedule from './OverviewDaySchedule';
 import WorkloadPlot from './WorkloadPlot';
 import WorkdeskNumber from './WorkdeskNumber';
 import WorkspaceMotionTitle from '../common/WorkspaceMotionTitle';
+import RestartPreviewLink from '../../../saas/RestartPreviewLink';
 import { taskGroups, taskBreakdown, projectBreakdown, enquiryBreakdown, sessionBreakdown, workBuckets } from './workdeskStats';
 import './commercialWorkdesk.css';
 
@@ -21,6 +22,7 @@ export function WorkdeskHeader({ greeting, name, today, date, context, todayMode
     <div><time dateTime={today}>{date(today, { weekday: 'long', day: 'numeric', month: 'long' })}</time>
       <WorkspaceMotionTitle>{title}</WorkspaceMotionTitle>{context && <p>{context}</p>}</div>
     <div className="sx-desk-tools">
+      <RestartPreviewLink className="studio-control-button" />
       <WorkspaceActionMenu label={<><SlidersHorizontal size={15} /> View options</>} ariaLabel="Overview options" hideChevron className="sx-desk-options">
         <button onClick={() => chooseView(todayMode ? 'insights' : 'today')}>{todayMode ? 'View Insights' : 'View Today'}</button>
         <button aria-haspopup="dialog" onClick={onCustomize}>Customize overview</button>

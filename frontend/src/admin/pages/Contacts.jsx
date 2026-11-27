@@ -97,7 +97,7 @@ export default function Contacts() {
         {query && <button type="button" className="reference-icon-button" aria-label="Clear contact search" onClick={() => setQuery("")}><X size={17} aria-hidden="true" /></button>}
         <p className="project-contact-result-count" data-filtered={Boolean(query || selectedType)} role="status">{loading ? "Loading contacts…" : `${visible.length} of ${contacts.length} ${contacts.length === 1 ? "contact" : "contacts"}`}</p>
       </div>
-      <div className="reference-tabs project-contact-filters" aria-label="Filter contacts by type">
+      <div className="reference-tabs project-contact-filters" role="group" aria-label="Filter contacts by type">
         {filters.map(filter => (
           <button key={filter.id} className={tab === filter.id ? "active" : ""} aria-pressed={tab === filter.id} onClick={() => setTab(filter.id)}>
             <span>{filter.label}</span><span className="project-contact-filter-count">{filter.count}</span>

@@ -6,8 +6,10 @@ import { Printer, Download } from "lucide-react";
 import ClientPaymentDialog from "./ClientPaymentDialog";
 import { API_BASE_URL } from "../utils/apiConfig";
 import { resolveStudioImage } from '../utils/settingsDefaults';
+import { documentAccentInk } from "../utils/documentAccent";
 import "../admin/pages/invoiceWorkspace.css";
 import "./studioClientGlass.css";
+import "./clientDocumentLayout.css";
 import { IS_COMMERCIAL_DEPLOYMENT } from "../saas/release";
 const money = (value) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(
@@ -18,16 +20,6 @@ import {
   invoiceRows as rows,
   downloadInvoice,
 } from "../utils/invoiceDocument";
-
-// Choose the higher-contrast label for the studio's own invoice accent.
-function invoiceAccentInk(hex) {
-  const [r, g, b] = hex.slice(1).match(/../g).map(pair => {
-    const value = parseInt(pair, 16) / 255;
-    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-  });
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return (luminance + 0.05) / 0.05 > 1.05 / (luminance + 0.05) ? "#000" : "#fff";
-}
 
 export function InvoiceDocument({ invoice, preview = false }) {
   const [payment, setPayment] = useState(false),
@@ -66,7 +58,7 @@ export function InvoiceDocument({ invoice, preview = false }) {
       className={`invoice-public font-${design.fontFamily || "modern"}${IS_COMMERCIAL_DEPLOYMENT ? " studio-client-glass" : ""}`}
       style={{
         "--invoice-accent": accent,
-        "--invoice-accent-ink": invoiceAccentInk(accent),
+        "--invoice-accent-ink": documentAccentInk(accent),
       }}
     >
       <meta name="robots" content="noindex,nofollow" />
@@ -188,25 +180,25 @@ export function InvoiceDocument({ invoice, preview = false }) {
         <section className="invoice-paper">
           <h2>Items</h2>
           <div className="invoice-table-wrap">
-            <table className="invoice-document-table">
-              <thead>
-                <tr>
-                  <th>ITEM</th>
-                  <th>QTY</th>
-                  <th>PRICE</th>
-                  <th>AMOUNT</th>
+            <table className="invoice-document-table" aria-label="Invoice items" role="table">
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th role="columnheader" scope="col">Item</th>
+                  <th role="columnheader" scope="col">Quantity</th>
+                  <th role="columnheader" scope="col">Unit price</th>
+                  <th role="columnheader" scope="col">Amount</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody role="rowgroup">
                 {items.map((r, index) => (
-                  <tr key={index}>
-                    <td>
+                  <tr key={index} role="row">
+                    <td role="cell">
                       <strong>{r.title || "Service"}</strong>
                       <p>{r.description}</p>
                     </td>
-                    <td>{r.quantity}</td>
-                    <td>{money(r.unitPricePaise / 100)}</td>
-                    <td>{money((r.quantity * r.unitPricePaise) / 100)}</td>
+                    <td role="cell"><span className="client-document-cell-label" aria-hidden="true">Quantity</span>{r.quantity}</td>
+                    <td role="cell"><span className="client-document-cell-label" aria-hidden="true">Unit price</span>{money(r.unitPricePaise / 100)}</td>
+                    <td role="cell"><span className="client-document-cell-label" aria-hidden="true">Amount</span>{money((r.quantity * r.unitPricePaise) / 100)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -264,24 +256,25 @@ export function InvoiceDocument({ invoice, preview = false }) {
           <section className="invoice-paper">
             <h2>Payment Schedule</h2>
             <div className="invoice-table-wrap">
-              <table className="invoice-document-table">
-                <thead>
-                  <tr>
-                    <th>PAYMENT</th>
-                    <th>AMOUNT</th>
-                    <th>DUE</th>
-                    <th>STATUS</th>
+              <table className="invoice-document-table is-schedule" aria-label="Payment schedule" role="table">
+                <thead role="rowgroup">
+                  <tr role="row">
+                    <th role="columnheader" scope="col">Payment</th>
+                    <th role="columnheader" scope="col">Amount</th>
+                    <th role="columnheader" scope="col">Due date</th>
+                    <th role="columnheader" scope="col">Status</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody role="rowgroup">
                   {payments.map((p, index) => (
-                    <tr key={index}>
-                      <td>
+                    <tr key={index} role="row">
+                      <td role="cell">
                         {p.label || `${index + 1} of ${payments.length}`}
                       </td>
-                      <td>{money(p.amountPaise / 100)}</td>
-                      <td>{date(p.dueDate)}</td>
-                      <td>
+                      <td role="cell"><span className="client-document-cell-label" aria-hidden="true">Amount</span>{money(p.amountPaise / 100)}</td>
+                      <td role="cell"><span className="client-document-cell-label" aria-hidden="true">Due date</span>{date(p.dueDate)}</td>
+                      <td role="cell">
+                        <span className="client-document-cell-label" aria-hidden="true">Status</span>
                         <span className="invoice-status">
                           {p.remaining === 0
                             ? "PAID"
@@ -312,6 +305,12 @@ export default function PublicInvoice() {
   const { token } = useParams();
   const [state, setState] = useState({});
   useEffect(() => {
+    if (!IS_COMMERCIAL_DEPLOYMENT) return;
+    const previous = document.title;
+    document.title = 'Your invoice · Studio X OS';
+    return () => { document.title = previous; };
+  }, []);
+  useEffect(() => {
     let active = true;
     axios
       .get(`${API_BASE_URL}/api/public-invoices/${token}`)
@@ -336,9 +335,9 @@ export default function PublicInvoice() {
   ) : (
     <div className={`invoice-public-loading${IS_COMMERCIAL_DEPLOYMENT ? " studio-client-glass" : ""}`}>
       <h1>Your invoice</h1>
-      <p role="status">
-        {(state.token === token && state.error) || "Loading your invoice…"}
-      </p>
+      {state.token === token && state.error
+        ? <p role="alert">{state.error}</p>
+        : <p role="status">Loading your invoice…</p>}
     </div>
   );
 }

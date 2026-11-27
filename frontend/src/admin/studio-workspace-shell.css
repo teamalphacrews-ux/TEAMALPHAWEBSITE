@@ -139,6 +139,27 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
 #sx-workspace-shell .studio-topbar .studio-notification-wrap { display:block; }
 #sx-workspace-shell .studio-topbar .sx-record-search-short { display:none; }
 #sx-workspace-shell .studio-topbar .studio-notification-button { position:relative; display:grid; place-items:center; width:44px; height:44px; padding:0; }
+#sx-workspace-shell .studio-notification-panel {
+  display: flex;
+  flex-direction: column;
+  max-block-size: min(30rem, calc(var(--studio-visible-height, 100dvh) - 6rem - env(safe-area-inset-bottom)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+#sx-workspace-shell :is(.studio-notification-heading, .studio-notification-footer) { flex: none; }
+#sx-workspace-shell .studio-notification-list {
+  min-block-size: min(4rem, 20dvh);
+  max-block-size: none;
+  overscroll-behavior: contain;
+}
+#sx-workspace-shell .studio-notification-list a > div {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+#sx-workspace-shell .studio-notification-list .studio-status-dot { flex: none; }
+#sx-workspace-shell .studio-notification-list strong { font-size: .8125rem; }
+#sx-workspace-shell .studio-notification-list p { font-size: .75rem; }
+#sx-workspace-shell .studio-notification-footer a { min-block-size: 44px; font-size: .8125rem; }
 #sx-workspace-shell .sx-desk-badge { position:absolute; right:0; top:0; padding:0 4px; min-width:16px; border-radius:999px; background:#f29b23; color:#231509; font:700 10px/16px var(--studio-font); }
 #sx-workspace-shell .studio-topbar .studio-profile-button {
   display:inline-flex; flex:none; align-items:center; width:auto; height:46px; min-height:44px;
@@ -151,6 +172,20 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
 #sx-workspace-shell .studio-topbar :is(.sx-desk-appearance,.studio-notification-button,.studio-profile-button,.studio-record-search-trigger):hover { background:var(--desk-control); }
 #sx-workspace-shell .studio-topbar .studio-global-search:not(:focus-within) { margin-right:auto; }
 #sx-workspace-shell .studio-main { max-width:1560px; padding:6px 28px 56px; }
+#sx-workspace-shell .studio-loading {
+  padding-inline: 1rem;
+  color: var(--studio-muted);
+  font-size: .875rem;
+}
+#sx-workspace-shell .studio-loader {
+  flex: none;
+  border-color: var(--studio-border);
+  border-top-color: var(--studio-focus);
+}
+@media (prefers-reduced-motion: reduce) {
+  #sx-workspace-shell .studio-loader { animation: none; }
+}
+html[data-studio-motion=reduced] #sx-workspace-shell .studio-loader { animation: none; }
 #sx-workspace-shell .studio-preview-label { padding:0; margin:0; font-size:11px; }
 #sx-workspace-shell .sx-desk-preview-note { font-size:11px; color:var(--desk-muted); line-height:1.4; padding:2px 4px 4px; margin:0 0 5px; }
 @media (min-width:1101px) {
@@ -181,7 +216,7 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
   #sx-workspace-shell .studio-topbar { gap:8px; padding-inline:20px; }
   #sx-workspace-shell .sx-desk-date { display:none; }
 }
-@media (max-width:760px) {
+@media (max-width:768px) {
   #sx-workspace-shell .studio-topbar { flex-wrap:nowrap; min-height:66px; gap:5px; padding:max(10px,env(safe-area-inset-top)) 14px 8px; }
   #sx-workspace-shell .studio-topbar .studio-record-search-trigger { width:44px; min-width:44px; max-width:44px; height:44px; min-height:44px; margin:0 0 0 auto; padding:0; justify-content:center; flex:none; }
   #sx-workspace-shell .studio-topbar .studio-quick-create > button { width:44px; min-width:44px; padding:0; min-height:44px; height:44px; justify-content:center; }
@@ -218,7 +253,17 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
 }
 .studio-commercial-glass #studio-iphone-more .studio-mobile-navigation { inset:auto; }
 
-@media (min-width:761px) and (max-width:1100px) { #sx-workspace-shell .studio-main { padding-inline:20px; } }
+@media (768px < width <= 1100px) {
+  #sx-workspace-shell :is(.studio-main, .studio-topbar) {
+    padding-inline: max(20px, env(safe-area-inset-left)) max(20px, env(safe-area-inset-right));
+  }
+}
+@media (max-width: 768px) {
+  #sx-workspace-shell .studio-notification-panel {
+    inset-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+    max-block-size: calc(var(--studio-visible-height, 100dvh) - 6rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+}
 @media (prefers-reduced-motion:no-preference) {
   html:not([data-studio-motion=reduced]) #sx-workspace-shell #sx-other-pages:not([hidden]) { animation:sx-desk-nav-in .2s var(--desk-ease) both; }
   @keyframes sx-desk-nav-in { from { opacity:.25; transform:translateY(-3px); } to { opacity:1; transform:translateY(0); } }

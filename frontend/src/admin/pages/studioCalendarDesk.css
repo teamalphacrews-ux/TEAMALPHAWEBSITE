@@ -14,11 +14,13 @@ html[data-studio-appearance="dark"] .studio-commercial-glass .workspace-calendar
 .studio-commercial-glass .workspace-calendar-heading,
 .studio-commercial-glass .scheduling-calendar-filters { flex-wrap: wrap; }
 .studio-commercial-glass .studio-calendar-page .scheduling-filter-field {
-  display: flex; gap: 8px; align-items: center; color: var(--studio-muted);
+  display: flex; gap: 8px; align-items: baseline; color: var(--studio-muted);
 }
 .studio-commercial-glass .scheduling-calendar-filters .studio-search { flex: 1 1 180px; max-width: 420px; }
 .studio-commercial-glass .studio-calendar-page .workspace-calendar .workspace-view-tabs { flex-shrink: 0; }
 .studio-commercial-glass .studio-calendar-page .scheduling-connection { margin: 16px 0; }
+.sx-week-schedule { container: calendar-week / inline-size; min-width: 0; }
+.sx-week-compact { display: none; }
 .sx-week-scroll { width: 100%; max-width: 100%; overflow: auto; border: 1px solid var(--calendar-rim); border-radius: 18px; }
 .sx-week-scroll:focus-visible { outline: 2px solid var(--studio-focus); outline-offset: 2px; }
 .sx-week { min-width: 690px; }
@@ -30,6 +32,7 @@ html[data-studio-appearance="dark"] .studio-commercial-glass .workspace-calendar
   color: var(--studio-text); font: inherit; cursor: pointer;
 }
 .sx-week-date span { color: var(--studio-muted); font-size: 12px; }
+.sx-week-date .sx-week-date-count { color: var(--studio-text); font-size: 11px; font-variant-numeric: tabular-nums; }
 .sx-week-date strong { display: grid; place-items: center; min-width: 26px; min-height: 26px; border-radius: 50%; font-size: 17px; line-height: 1; }
 .sx-week-date.is-today strong { color: #281b09; background: #f4a030; }
 .sx-week-all > * { min-width: 0; padding: 5px 2px; border-top: 1px solid var(--calendar-rim); }
@@ -39,26 +42,53 @@ html[data-studio-appearance="dark"] .studio-commercial-glass .workspace-calendar
   border: 0; border-radius: 8px; background: var(--booking-fill); color: var(--booking-ink);
   text-align: left; padding: 5px 7px; font: inherit; font-size: 12px; overflow-wrap: anywhere; cursor: pointer;
 }
+.sx-week-all button { min-height: 44px; }
 .sx-week-clock { color: var(--studio-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.sx-week-clock time { display: block; height: 48px; padding: 3px 4px; text-align: right; border-top: 1px solid var(--calendar-rim); }
+.sx-week-clock time { display: block; height: var(--week-hour-height); padding: 3px 4px; text-align: right; border-top: 1px solid var(--calendar-rim); }
 .sx-week-day {
   position: relative; min-width: 0; border-left: 1px solid var(--calendar-rim);
-  background: repeating-linear-gradient(to bottom, var(--calendar-rim) 0 1px, transparent 1px 48px);
+  background: repeating-linear-gradient(to bottom, var(--calendar-rim) 0 1px, transparent 1px var(--week-hour-height));
 }
 .sx-week-day.is-today { background-color: color-mix(in srgb,#f29b23 5%,transparent); }
 .sx-week-day .sx-week-booking {
   position: absolute; overflow: hidden; box-sizing: border-box; min-height: 4px;
   margin-left: 2px; box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--booking-ink) 18%,transparent);
 }
+.sx-week-day .sx-week-marker { min-width: 2px; padding: 0; border-radius: 4px; pointer-events: none; }
 .sx-week-booking:is([data-event-type="Meeting"],[data-event-type="Consultation"]) { background: var(--booking-alt); color: var(--studio-text); }
 .sx-week-booking strong, .sx-week-booking small { display: block; line-height: 1.3; color: inherit; }
 .sx-week-booking small { margin-top: 2px; font-size: 11px; }
 .sx-week-booking:hover, .sx-week-all button:hover { filter: brightness(.95); }
 .sx-week-booking:focus-visible, .sx-week-date:focus-visible { outline: 2px solid var(--studio-focus); outline-offset: -2px; z-index: 1; }
+.sx-week-agenda-day { display: grid; align-content: start; min-width: 0; gap: 8px; }
+.sx-week-agenda-day h3 { margin: 0; font-size: 1rem; }
+.sx-week-agenda-event {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--calendar-rim); border-radius: 10px;
+  background: var(--studio-surface); color: var(--studio-text); text-align: start; font: inherit; cursor: pointer;
+}
+.sx-week-agenda-event > span { min-width: 0; overflow-wrap: anywhere; }
+.sx-week-agenda-event strong, .sx-week-agenda-event small { display: block; }
+.sx-week-agenda-event strong { font-size: .875rem; line-height: 1.4; }
+.sx-week-agenda-event small { margin-top: 2px; color: var(--studio-muted); font-size: .75rem; line-height: 1.45; }
+.sx-week-agenda-event:hover { background: var(--studio-hover); }
+.sx-week-agenda-event:focus-visible { outline: 2px solid var(--studio-focus); outline-offset: -2px; }
+.sx-week-dense { display: grid; gap: 12px; margin-top: 20px; }
+.sx-week-dense > p { margin: 0; color: var(--studio-muted); font-size: .875rem; }
+.sx-week-dense > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; }
+
+@container calendar-week (max-width: 691px) {
+  .sx-week-scroll, .sx-week-dense { display: none; }
+  .sx-week-compact { display: grid; min-width: 0; gap: 16px; }
+  .sx-week-compact-dates { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--calendar-rim); border-radius: 12px; }
+  .sx-week-compact-dates .sx-week-date { display: grid; justify-items: center; align-content: start; gap: 3px; min-height: 64px; padding: 6px 1px; border: 0; background: transparent; color: var(--studio-text); font: inherit; cursor: pointer; }
+  .sx-week-compact-dates .sx-week-date + .sx-week-date { border-inline-start: 1px solid var(--calendar-rim); }
+  .sx-week-compact-dates .sx-week-date span { font-size: .75rem; overflow-wrap: anywhere; }
+}
 @media (max-width: 680px) {
   .studio-commercial-glass .studio-calendar-page .workspace-calendar-heading { align-items: stretch; gap: 10px; }
   .studio-commercial-glass .studio-calendar-page .scheduling-calendar-filters { gap: 8px; }
-  .studio-commercial-glass .studio-calendar-page .scheduling-filter-field { flex-wrap: wrap; }
+  .studio-commercial-glass .studio-calendar-page .scheduling-filter-field { display: grid; }
   .sx-week-scroll { border-radius: 12px; }
 }
 

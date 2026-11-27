@@ -129,7 +129,7 @@ export default function StudioProjects() {
         <p className="project-contact-result-count" role="status">{loading ? "Loading projects…" : `${visible.length} of ${projects.length} projects`}</p>
       </div>
       <div className={IS_COMMERCIAL_DEPLOYMENT ? 'sx-project-register-toolbar' : undefined}>
-      <div className="reference-tabs project-contact-filters" aria-label="Filter projects by status">
+      <div className="reference-tabs project-contact-filters" role="group" aria-label="Filter projects by status">
         {["All Projects", "Inquiry", "Booked", "Completed"].map((label) => (
           <button
             key={label}

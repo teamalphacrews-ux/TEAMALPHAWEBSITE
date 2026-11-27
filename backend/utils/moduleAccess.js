@@ -45,6 +45,8 @@ function requestAllowed(user,req) {
   // Cross-module/opaque aggregates fail closed, including future unknown APIs.
   if(['/api/dashboard','/api/notifications','/api/studio/search','/api/google-sheets','/api/studio/devices','/api/chats','/api/finance'].some(prefix=>under(path,prefix)))return false;
   if(/\/(?:export|exports|backup|backups|recovery)(?:\/|$)/.test(path))return false;
+  if(path==='/api/saas/setup'&&method==='GET')return true;
+  if(req.saas?.workspace?.setupStep && ((path==='/api/saas/workspaces' && method==='GET') || (/^\/api\/saas\/workspaces\/[a-f\d]{24}\/switch$/.test(path) && method==='POST')))return true;
   if(under(path,'/api/studio/security')||path==='/api/admin-users/update-master'||under(path,'/api/saas'))return false;
   // Accepted-quote capabilities also authorize invoice, production and support.
   if(/^\/api\/studio\/quotations\/[^/]+\/(?:client-link|share|email|email-history|schedule)(?:\/|$)/.test(path))return false;

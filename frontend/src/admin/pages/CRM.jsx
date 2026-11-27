@@ -2,6 +2,7 @@ import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
+import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
 import StudioSelect from '../components/common/StudioSelect';
 import StudioButton from '../components/common/StudioButton';
 import useReducedStudioMotion from '../components/operations/useReducedStudioMotion';
@@ -37,7 +38,7 @@ function EnquiryRowActions({ lead, onSelect, onDelete }) {
     <button ref={openButton} type="button" className="studio-icon-button" aria-label={`Open ${lead.name}`} onClick={event => { event.stopPropagation(); onSelect(lead); }}>
       <ArrowUpRight size={18} aria-hidden="true" /><span className="studio-phone-action-label">Open<span className="enquiry-action-object"> enquiry</span></span>
     </button>
-    {!(linkedProject && lead.status === 'Archived') && <StudioButton
+    {onDelete && !(linkedProject && lead.status === 'Archived') && <StudioButton
       type="button" variant="outline" size="sm"
       className="studio-crm-remove-enquiry"
       data-action={linkedProject ? 'archive' : 'delete'}
@@ -67,11 +68,10 @@ function EnquiryRow({ lead, onSelect, reducedMotion, children }) {
     layout={reducedMotion ? false : 'position'} initial={false} animate={{ opacity: 1, x: 0 }}
     exit={{ opacity: 0, x: reducedMotion ? 0 : 10 }}
     transition={{ opacity: { duration: reducedMotion ? 0 : .16 }, x: { duration: reducedMotion ? 0 : .16 }, layout: { duration: reducedMotion ? 0 : .24, ease: [.16, 1, .3, 1] } }}
-    inert={!isPresent || undefined} tabIndex={isPresent ? 0 : -1}
+    inert={!isPresent || undefined}
     onFocusCapture={() => { focusWithin.current = true; }}
     onBlurCapture={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) focusWithin.current = false; }}
     onClick={() => { if (isPresent) onSelect(lead); }}
-    onKeyDown={event => { if (isPresent && event.key === 'Enter' && event.target === event.currentTarget) onSelect(lead); }}
     className="studio-crm-clickable-row">{children}</Motion.tr>;
 }
 
@@ -98,7 +98,7 @@ function EnquiryPipeline({ leads, finance, onSelect, onDelete }) {
     if (!lanes.has(stage)) lanes.set(stage, []);
     lanes.get(stage).push(lead);
   });
-  return <div className="record-pipeline" aria-label="Enquiries by stage">{[...lanes].filter(([, rows]) => rows.length).map(([stage, rows]) =>
+  return <div className="record-pipeline" role="group" aria-label="Enquiries by stage">{[...lanes].filter(([, rows]) => rows.length).map(([stage, rows]) =>
     <section className="record-enquiry-lane" key={stage}><h2><i aria-hidden="true" />{leadStatusLabel(stage)} <span>{rows.length}</span></h2>
       {rows.map((lead, index) => <article key={lead._id} style={{ '--record-order': Math.min(index, 10) }}><h3><button type="button" onClick={() => onSelect(lead)}>{lead.name}</button></h3>
         <div className="record-enquiry-project"><ProjectCell lead={lead} /><QuoteState lead={lead} /></div>
@@ -108,7 +108,7 @@ function EnquiryPipeline({ leads, finance, onSelect, onDelete }) {
       </article>)}</section>)}</div>;
 }
 
-export function EnquiriesView({ leads = [], loading = false, error = "", query = "", onQuery = () => {}, status = "All", onStatus = () => {}, sort = "newest", onSort = () => {}, onSelect = () => {}, onCreate = () => {}, onDelete = () => {}, onRefresh = () => {}, navigation = null }) {
+export function EnquiriesView({ leads = [], loading = false, error = "", query = "", onQuery = () => {}, status = "All", onStatus = () => {}, sort = "newest", onSort = () => {}, onSelect = () => {}, onCreate, onDelete, onRefresh = () => {}, navigation = null }) {
   const { user } = useAuth();
   const reducedMotion = useReducedStudioMotion();
   const [view, setView] = useState(IS_COMMERCIAL_DEPLOYMENT ? 'pipeline' : 'list');
@@ -128,7 +128,7 @@ export function EnquiriesView({ leads = [], loading = false, error = "", query =
     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
   });
   return <div className={'studio-enquiries-page' + (IS_COMMERCIAL_DEPLOYMENT ? ' record-enquiries' : '')}>
-    <div className="studio-page-heading"><div><WorkspaceMotionTitle>Enquiries</WorkspaceMotionTitle><p className="studio-muted">{IS_COMMERCIAL_DEPLOYMENT && !loading && !error ? `${open.length} open · ${attention.length} need attention` : 'Follow up, prepare quotations and keep each client moving forward.'}</p></div><div className="studio-heading-actions">{hasModuleAccess(user, 'projects') && <Link className="studio-button" to="/admin/studio-projects">View projects <ArrowUpRight size={15} /></Link>}<button className="studio-button primary" onClick={onCreate}><Plus size={17} />New enquiry</button></div></div>
+    <div className="studio-page-heading"><div><WorkspaceMotionTitle>Enquiries</WorkspaceMotionTitle><p className="studio-muted">{IS_COMMERCIAL_DEPLOYMENT && !loading && !error ? `${open.length} open · ${attention.length} need attention` : 'Follow up, prepare quotations and keep each client moving forward.'}</p></div><div className="studio-heading-actions">{hasModuleAccess(user, 'projects') && <Link className="studio-button" to="/admin/studio-projects">View projects <ArrowUpRight size={15} /></Link>}{onCreate && <button className="studio-button primary" onClick={onCreate}><Plus size={17} />New enquiry</button>}</div></div>
     {navigation}
     {IS_COMMERCIAL_DEPLOYMENT && <RecordViewSwitch value={view} onChange={setView} label="Enquiry view"
       views={[{ id: 'pipeline', label: 'Pipeline', icon: Columns3 }, { id: 'list', label: 'List', icon: List }]}
@@ -144,7 +144,7 @@ export function EnquiriesView({ leads = [], loading = false, error = "", query =
       </div>
       <div className="studio-crm-stage-filters" role="group" aria-label="Filter by enquiry stage">{stages.map(stage => <button type="button" key={stage} aria-pressed={status === stage} onClick={() => onStatus(stage)} className={status === stage ? "active" : ""}>{stage === "All" ? "All enquiries" : leadStatusLabel(stage)}<span>{countForStage(stage)}</span></button>)}</div>
       {error ? <div className="studio-error studio-crm-load-error" role="alert"><p>{error}</p><button className="studio-button small" onClick={onRefresh}>Try again</button></div> : view === 'pipeline' && !loading && filtered.length ? <EnquiryPipeline leads={filtered} finance={finance} onSelect={onSelect} onDelete={onDelete} /> : <div className="studio-crm-table-scroll"><table role="table" aria-label="Enquiries" className="studio-table studio-crm-table studio-phone-record-table"><thead role="rowgroup"><tr role="row"><th role="columnheader">Client</th><th role="columnheader">Project & date</th><th role="columnheader">Stage</th>{finance && <th role="columnheader">Project value</th>}<th role="columnheader">Next follow-up</th><th role="columnheader"><span className="studio-crm-sr-only">Actions</span></th></tr></thead><tbody role="rowgroup">
-        <AnimatePresence initial={false}>{loading ? <tr role="row" key="loading"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><RefreshCw size={25} className="studio-crm-spin" /><h3>Loading your enquiries…</h3><p>Bringing the latest conversations into view.</p></div></td></tr> : filtered.length ? filtered.map((lead) => <EnquiryRow key={lead._id} lead={lead} onSelect={onSelect} reducedMotion={reducedMotion}><td role="cell" data-label="Client"><div className="studio-crm-client"><span className="studio-crm-avatar">{initials(lead.name)}</span><div><strong>{lead.name}</strong><small>{lead.email}</small></div></div></td><td role="cell" data-label="Project & date"><ProjectCell lead={lead} /></td><td role="cell" data-label="Stage"><AnimatePresence initial={false} mode="wait"><Motion.span key={lead.status} className={`studio-badge studio-crm-badge ${statusClass(lead.status)}`} initial={{ opacity: reducedMotion ? 1 : .35 }} animate={{ opacity: 1 }} exit={{ opacity: reducedMotion ? 1 : .35 }} transition={{ duration: reducedMotion ? 0 : .1 }}>{leadStatusLabel(lead.status)}</Motion.span></AnimatePresence><QuoteState lead={lead} /></td>{finance && <td role="cell" data-label="Project value"><strong>{money(lead.totalAmount)}</strong><small>{lead.paymentStatus || "Unpaid"}</small></td>}<td role="cell" data-label="Follow-up"><span className={`studio-crm-followup-cell ${lead.followUpDate && new Date(lead.followUpDate) < new Date() ? "overdue" : ""}`}>{lead.followUpDate && <CalendarDays size={13} />}{displayDate(lead.followUpDate, "Not scheduled")}</span></td><td role="cell" data-label="Actions"><EnquiryRowActions lead={lead} onSelect={onSelect} onDelete={onDelete} /></td></EnquiryRow>) : <tr role="row" key="empty"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><Users size={28} /><h3>{leads.length ? "No matching enquiries" : "No enquiries yet"}</h3><p>{leads.length ? "Try a different search or clear your filters." : "Add your first enquiry and keep every detail in one place."}</p>{leads.length ? <button type="button" className="studio-button" onClick={clearFilters}>Clear filters</button> : <button type="button" className="studio-button primary" onClick={onCreate}><Plus size={16} />Add an enquiry</button>}</div></td></tr>}</AnimatePresence>
+        <AnimatePresence initial={false}>{loading ? <tr role="row" key="loading"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><RefreshCw size={25} className="studio-crm-spin" /><h3>Loading your enquiries…</h3><p>Bringing the latest conversations into view.</p></div></td></tr> : filtered.length ? filtered.map((lead) => <EnquiryRow key={lead._id} lead={lead} onSelect={onSelect} reducedMotion={reducedMotion}><td role="cell" data-label="Client"><div className="studio-crm-client"><span className="studio-crm-avatar">{initials(lead.name)}</span><div><strong>{lead.name}</strong><small>{lead.email}</small></div></div></td><td role="cell" data-label="Project & date"><ProjectCell lead={lead} /></td><td role="cell" data-label="Stage"><AnimatePresence initial={false} mode="wait"><Motion.span key={lead.status} className={`studio-badge studio-crm-badge ${statusClass(lead.status)}`} initial={{ opacity: reducedMotion ? 1 : .35 }} animate={{ opacity: 1 }} exit={{ opacity: reducedMotion ? 1 : .35 }} transition={{ duration: reducedMotion ? 0 : .1 }}>{leadStatusLabel(lead.status)}</Motion.span></AnimatePresence><QuoteState lead={lead} /></td>{finance && <td role="cell" data-label="Project value"><strong>{money(lead.totalAmount)}</strong><small>{lead.paymentStatus || "Unpaid"}</small></td>}<td role="cell" data-label="Follow-up"><span className={`studio-crm-followup-cell ${lead.followUpDate && new Date(lead.followUpDate) < new Date() ? "overdue" : ""}`}>{lead.followUpDate && <CalendarDays size={13} />}{displayDate(lead.followUpDate, "Not scheduled")}</span></td><td role="cell" data-label="Actions"><EnquiryRowActions lead={lead} onSelect={onSelect} onDelete={onDelete} /></td></EnquiryRow>) : <tr role="row" key="empty"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><Users size={28} /><h3>{leads.length ? "No matching enquiries" : "No enquiries yet"}</h3><p>{leads.length ? "Try a different search or clear your filters." : "Add your first enquiry and keep every detail in one place."}</p>{leads.length ? <button type="button" className="studio-button" onClick={clearFilters}>Clear filters</button> : onCreate && <button type="button" className="studio-button primary" onClick={onCreate}><Plus size={16} />Add an enquiry</button>}</div></td></tr>}</AnimatePresence>
       </tbody></table></div>}
       {!loading && !error && <div className="studio-crm-table-footer"><span role="status">{hasFilters ? `${filtered.length} of ${leads.length}` : leads.length} {leads.length === 1 ? "enquiry" : "enquiries"}{status !== "All" && ` · ${leadStatusLabel(status)}`}</span>{hasFilters && <button type="button" className="studio-crm-text-link" onClick={clearFilters}>Clear filters</button>}</div>}
     </section>
@@ -160,6 +160,7 @@ export function EnquiriesView({ leads = [], loading = false, error = "", query =
 
 export default function CRM() {
   const { user } = useAuth();
+  const canUpdate = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'enquiries');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [leads, setLeads] = useState([]);
@@ -256,8 +257,8 @@ export default function CRM() {
   };
   return <div className="studio-crm">
     {requestedLeadId && !loading && !error && !activeLead && <div className="studio-error" role="status"><span>This enquiry is unavailable or has been removed.</span><Link className="studio-button small" to={safeStudioReturn(returnTo)}>Back to overview</Link></div>}
-    <EnquiriesView leads={leads} loading={loading} error={error} query={searchQuery} onQuery={setSearchQuery} status={filterStatus} onStatus={setFilterStatus} sort={sortBy} onSort={setSortBy} onSelect={selectLead} onCreate={() => setShowLeadForm(true)} onDelete={deleteLead} onRefresh={() => { setLoading(true); setError(""); fetchLeads(); }} />
-    {showLeadForm && <StudioLeadForm onClose={closeLeadForm} onSaved={createLead} />}
+    <EnquiriesView leads={leads} loading={loading} error={error} query={searchQuery} onQuery={setSearchQuery} status={filterStatus} onStatus={setFilterStatus} sort={sortBy} onSort={setSortBy} onSelect={selectLead} onCreate={canUpdate ? () => setShowLeadForm(true) : undefined} onDelete={canUpdate ? deleteLead : undefined} onRefresh={() => { setLoading(true); setError(""); fetchLeads(); }} />
+    {canUpdate && showLeadForm && <StudioLeadForm onClose={closeLeadForm} onSaved={createLead} />}
     {activeLead && <StudioLeadDetails key={activeLead._id} lead={activeLead} onClose={closeLead} onUpdate={updateLead} onGenerateInvoice={hasModuleAccess(user, 'invoices') ? openInvoice : null} existingInvoice={invoiceForLead(invoices, activeLead)} onOpenProject={hasModuleAccess(user, 'projects') ? lead => continueEnquiry(lead, 'project') : null} onPrepareQuote={hasModuleAccess(user, 'quotations') && (hasModuleAccess(user, 'projects') || (IS_COMMERCIAL_DEPLOYMENT && enquiryQuoteId(activeLead))) ? lead => continueEnquiry(lead, 'quote') : null} workflowBusy={workflowBusy} workflowError={workflowError} />}
   </div>;
 }

@@ -4,9 +4,19 @@ export function cleanSessionToken(raw) {
   return cleaned && cleaned !== 'null' && cleaned !== 'undefined' ? cleaned : null;
 }
 
-// Responses from a previous sign-in must never invalidate the current account.
-export function isCurrentSession(expectedToken, currentSession, storedToken) {
-  return Boolean(expectedToken && currentSession?.token === expectedToken && cleanSessionToken(storedToken) === expectedToken);
+// A workspace switch writes token and user separately. Both identify the
+// verification request even when another tab has only received the first write.
+export function sessionIdentity(session) {
+  const token = cleanSessionToken(session?.token);
+  if (!token || !session.user) return '';
+  const user = session.user;
+  const workspace = user.workspace;
+  return JSON.stringify([token, String(user._id || user.id || ''),
+    String(typeof workspace === 'string' ? workspace : workspace?._id || workspace?.id || ''), user.isPreview === true]);
+}
+
+export function isCurrentSession(expectedIdentity, currentSession, storedSession) {
+  return Boolean(expectedIdentity && sessionIdentity(currentSession) === expectedIdentity && sessionIdentity(storedSession) === expectedIdentity);
 }
 
 // Public capability links must survive expiration of an unrelated admin sign-in.
@@ -43,6 +53,16 @@ export async function verifyStoredSession(session, { fetcher, api = '', signal, 
     user.studioOwner = profile.studioOwner === true;
     user.canManageTeam = profile.canManageTeam === true;
     user.workspaceDataVersion = Number.isSafeInteger(profile.workspaceDataVersion) && profile.workspaceDataVersion >= 0 ? profile.workspaceDataVersion : 0;
+    if (profile.workspace && typeof profile.workspace.setupRequired === 'boolean') {
+      const workspace = profile.workspace;
+      if (typeof workspace.id !== 'string' || !workspace.id || (user.workspace?.id && user.workspace.id !== workspace.id)) return { status: 'expired' };
+      user.workspace = { ...user.workspace, id: workspace.id, setupRequired: workspace.setupRequired };
+      if (typeof workspace.name === 'string') user.workspace.name = workspace.name;
+      if (['owner', 'admin', 'staff'].includes(profile.workspaceRole)) {
+        user.workspaceRole = profile.workspaceRole;
+        user.workspace.role = profile.workspaceRole;
+      }
+    }
     delete user.owner;
     return { status: 'valid', user };
   } catch {

@@ -19,6 +19,10 @@ const workspace = new Schema({
   ownerAccountId: { type: Schema.Types.ObjectId, required: true, ref: 'SaaSAccount' },
   state: { type: String, enum: ['provisioning', 'active', 'suspended', 'failed'], default: 'provisioning' },
   planId: { type: String, enum: ['starter', 'studio', 'scale'], default: 'starter' },
+  // Set only by new provisioning. Studios created before guided setup keep their existing access.
+  setupStep: { type: Number, enum: [1, 2, 3, 4] }, setupCompletedAt: Date,
+  // Reviewing an established studio never changes its operational access.
+  setupReviewStep: { type: Number, enum: [1, 2, 3, 4] }, setupRevision: { type: Number, min: 0 },
   subscriptionStatus: { type: String, enum: ['trialing', 'pending', 'active', 'past_due', 'cancelled', 'expired'], default: 'trialing' },
   trialEndsAt: { type: Date, required: true }, seatLimit: { type: Number, default: 5 },
   seatsReserved: { type: Number, default: 1, min: 0 },

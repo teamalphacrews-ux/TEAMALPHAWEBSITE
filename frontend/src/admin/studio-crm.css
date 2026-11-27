@@ -111,6 +111,7 @@
 .studio-crm-facts strong, .studio-crm-facts a { display: block; font-size: 12px; font-weight: 400; line-height: 1.7; color: var(--studio-text); overflow-wrap: anywhere; text-decoration: none; }
 .studio-crm-brief { margin-top: 24px; border-top: 1px solid var(--studio-border); padding-top: 20px; }
 .studio-crm-brief p { font-size: 12px; line-height: 1.8; color: var(--brand-muted); margin: 0; white-space: pre-line; }
+.studio-crm-read-only-note { white-space: pre-wrap; overflow-wrap: anywhere; }
 .studio-crm-crew-list { display: flex; flex-direction: column; gap: 12px; }
 .studio-crm-crew-member { display: flex; align-items: center; gap: 10px; }
 .studio-crm-crew-member strong { font-size: 12px; font-weight: 400; flex: 1; color: var(--studio-text); }
@@ -136,6 +137,7 @@
 .studio-crm-task-form input[type=date] { width: 150px; }
 .studio-crm-task-list { display: flex; flex-direction: column; }
 .studio-crm-task { display: flex; gap: 10px; align-items: center; padding: 17px 0; border-top: 1px solid var(--studio-border); }
+.studio-crm-task-marker { display: inline-grid; flex: 0 0 44px; place-items: center; color: var(--studio-muted); }
 .studio-crm-task-title { flex: 1; min-width: 0; }
 .studio-crm-task-title strong { font-size: 13px; color: var(--studio-text); font-weight: 400; overflow-wrap: anywhere; }
 .studio-crm-task-title small { display: block; font-size: 10px; color: var(--brand-muted); margin-top: 6px; }

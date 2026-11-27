@@ -227,7 +227,8 @@ authRouter.post('/login', require('./saas/routes').authLimit, require('./saas/ro
 authRouter.get('/me', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('firstName lastName email role studioOwner moduleAccess workspaceDataVersion galleryTag cloudLink leadId createdAt updatedAt');
-        res.json({ ...user.toObject(), ...require('./utils/moduleAccess').accessPayload(user) });
+        res.json({ ...user.toObject(), ...require('./utils/moduleAccess').accessPayload(user),
+          ...(req.saas && { accountId: String(req.saas.account._id), workspaceRole: req.saas.membership.role, workspace: require('./saas/service').workspaceView(req.saas.workspace, req.saas.membership) }) });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

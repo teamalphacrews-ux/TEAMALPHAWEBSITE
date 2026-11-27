@@ -105,9 +105,9 @@ export default function ProductWorkbench() {
         </div>
         <div className="sos-workbench-viewport" ref={viewport}>
           <div className="sos-workbench-rail" ref={rail}>
-            {capabilities.map((item,index) => <article key={item.name} ref={node=>{panels.current[index]=node;}} className={'sos-workbench-plate plate-'+index} id={'workbench-panel-'+index} role="tabpanel" aria-labelledby={'workbench-tab-'+index} aria-hidden={active!==index ? true : undefined} hidden={compact && active!==index} inert={active!==index} tabIndex={active===index ? 0 : -1}>
+            {capabilities.map((item,index) => <div key={item.name} ref={node=>{panels.current[index]=node;}} className={'sos-workbench-plate plate-'+index} id={'workbench-panel-'+index} role="tabpanel" aria-labelledby={'workbench-tab-'+index} aria-hidden={active!==index ? true : undefined} hidden={compact && active!==index} inert={active!==index} tabIndex={active===index ? 0 : -1}>
               <div className="sos-workbench-copy"><span className="sos-workbench-symbol">{createElement(item.icon,{size:27,strokeWidth:1.4})}</span><h3>{item.title}</h3><p>{item.copy}</p><span className="sos-workbench-label">{item.label}</span></div><CapabilityArt index={index}/>
-            </article>)}
+            </div>)}
           </div>
         </div>
         <div className="sos-workbench-bottom"><span>One connected studio. A view of your own.</span><span>Product screen captures · Sample studio</span></div>

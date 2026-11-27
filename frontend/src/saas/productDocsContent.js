@@ -43,6 +43,32 @@ export const DOC_GUIDES = [
     "category": "start",
     "sections": [
       {
+        "id": "studio-setup",
+        "title": "Set up a new studio",
+        "paragraphs": [
+          "When you first sign in as the owner of a new studio, setup opens on your phone or computer. You only need to complete it once for that studio."
+        ],
+        "steps": [
+          {
+            "title": "Confirm your studio identity",
+            "body": "Check the studio name clients should see on their documents. Add your branding if it is ready."
+          },
+          {
+            "title": "Choose how clients reach you",
+            "body": "Confirm the business email you want clients to use. Add a phone number and address if you want them on your studio profile."
+          },
+          {
+            "title": "Review the document defaults and finish",
+            "body": "Check the settings for your quotes and invoices, then finish setup to open the workspace. You can update these details later in Settings."
+          }
+        ],
+        "tips": [
+          "You can continue from a saved step on another device by signing in to the same studio.",
+          "To revisit the three steps after setup, open Settings and choose Restart setup. The guide opens with your saved details, and your team can keep working.",
+          "If you joined as a teammate and see a setup message, the studio owner needs to finish first. Your assigned pages become available once they do."
+        ]
+      },
+      {
         "id": "orient",
         "title": "Find your working area",
         "paragraphs": [

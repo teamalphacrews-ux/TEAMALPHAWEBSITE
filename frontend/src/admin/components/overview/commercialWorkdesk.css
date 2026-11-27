@@ -199,6 +199,7 @@ html[data-studio-appearance=dark] .studio-app:not([data-studio-theme=light]) .sx
 }
 @media (max-width: 760px) {
   .sx-studio-desk .sx-desk-header { flex-flow: column; align-items: flex-start; gap: 12px; }
+  .sx-studio-desk .sx-desk-tools { max-width: 100%; flex-wrap: wrap; justify-content: flex-start; }
 }
 @media (pointer: coarse) {
   .sx-studio-desk .sx-desk-tools :is(.sx-desk-new, .studio-control-button),

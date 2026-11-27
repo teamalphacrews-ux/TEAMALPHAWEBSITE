@@ -2,14 +2,16 @@ import {clearLocalDrafts,draftScope} from '../offline/draftVault';
 import {disconnectNativeDevice} from '../native/deviceFeatures';
 import API from '../utils/apiConfig';
 import { isWorkspaceSession } from './workspaceValues';
+import { requiresStudioSetup, STUDIO_SETUP_PATH } from './studioSetupAccess';
 import { notifyNativeWorkspaceChanged } from '../native/nativeCapabilities';
 export { workspaceId, isWorkspaceSession, roleLabel, statusLabel, safeDate, trialDaysLeft, planPrice } from './workspaceValues';
 
-export async function saasRequest(path, { method = 'GET', body, signal, publicRequest = false } = {}) {
+export async function saasRequest(path, { method = 'GET', body, signal, publicRequest = false, expectedToken } = {}) {
   const token = publicRequest ? null : localStorage.getItem('token');
+  if (expectedToken !== undefined && expectedToken !== token) throw new Error('Your active studio changed. Reopen setup for this studio.');
   const response = await fetch(API + '/api/saas' + path, { method, signal, headers: { ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: 'Bearer ' + token } : {}) }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
   const data = await response.json().catch(() => null);
-  if (!response.ok) throw Object.assign(new Error(data?.error || data?.msg || (response.status === 503 ? 'This service is not configured yet. Please try again later.' : 'We could not complete your request. Please retry.')), { status: response.status });
+  if (!response.ok) throw Object.assign(new Error(data?.error || data?.msg || (response.status === 503 ? 'This service is not configured yet. Please try again later.' : 'We could not complete your request. Please retry.')), { status: response.status, code: data?.code, fieldErrors: data?.fieldErrors, step: data?.step });
   if (!data || typeof data !== 'object') throw new Error('The server returned an unexpected response. Please retry.');
   return data;
 }
@@ -22,7 +24,7 @@ export async function openWorkspaceSession(value) {
   localStorage.setItem('user', JSON.stringify(value.user));
   notifyNativeWorkspaceChanged();
   // Discard all requests, records and branding from the previous studio.
-  window.location.assign('/admin');
+  window.location.assign(requiresStudioSetup(value.user) ? STUDIO_SETUP_PATH : '/admin');
 }
 
 let razorpayScript;

@@ -34,7 +34,7 @@ async function authenticateAccount(body, { create = false } = {}) {
 function workspaceView(workspace, membership) {
   return { id: String(workspace._id), name: workspace.name, slug: workspace.slug, role: membership?.role,
     planId: workspace.planId, subscriptionStatus: workspace.subscriptionStatus, status: workspace.subscriptionStatus,
-    trialEndsAt: workspace.trialEndsAt, state: workspace.state };
+    trialEndsAt: workspace.trialEndsAt, state: workspace.state, setupRequired: require('./setupAccess').requiresSetup(workspace) };
 }
 async function localMember(workspace, account, role) {
   return runInWorkspace(workspace, async () => {
@@ -50,7 +50,7 @@ async function provisionWorkspace(account, name) {
   const id = new mongoose.Types.ObjectId(), plan = plans()[0];
   const slugBase = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'studio';
   const workspace = await models.Workspace.create({ _id: id, name, slug: `${slugBase}-${String(id).slice(-8)}`,
-    databaseName: workspaceDatabase(id), ownerAccountId: account._id, planId: plan.id, seatLimit: plan.seatLimit,
+    databaseName: workspaceDatabase(id), ownerAccountId: account._id, setupStep: 1, planId: plan.id, seatLimit: plan.seatLimit,
     trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86400000), state: 'provisioning' });
   try {
     await runInWorkspace(workspace, async () => {
@@ -61,6 +61,7 @@ async function provisionWorkspace(account, name) {
       await Promise.all(Object.values(connection.models).map(model => model.init()));
       await require('../models/StudioConfig').create({ key: 'studio', studioName: name, legalName: name,
         email: account.email, logoUrl: '/assets/studio-os-mark.svg', profilePhotoUrl: '', coverImage: '', invoicePrefix: 'INV',
+        billingDefaults: { ...require('../utils/studioSettings').DEFAULTS.billingDefaults, quotationPrefix: 'Q', invoicePrefix: 'INV' },
         communication: { senderName: name, replyTo: account.email } });
     });
     const user = await localMember(workspace, account, 'owner');

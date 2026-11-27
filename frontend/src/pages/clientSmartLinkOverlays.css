@@ -64,6 +64,7 @@
       box-shadow: var(--smart-overlay-shadow);
 
       & .cp-chat-heading {
+        align-items: flex-start;
         padding: 16px;
         color: #fff;
         border-color: #343136;
@@ -72,8 +73,9 @@
       & .cp-chat-heading h2 { color: #fffaf5; font-size: 18px; line-height: 1.25; letter-spacing: -.025em; overflow-wrap: anywhere; }
       & .cp-chat-heading p { margin-top: 4px; color: #e6ded8; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
       & .cp-chat-avatar { border-radius: 50%; background: #fff; border-color: #ffffff70; }
-      & .cp-chat-close { border-radius: 50%; color: #fff; background: #201e21e6; border-color: #a29992; }
+      & .cp-chat-close { width: 44px; height: 44px; border-radius: 50%; color: #fff; background: #201e21e6; border-color: #a29992; }
       & .cp-messages { background: var(--smart-overlay-well); scrollbar-color: var(--smart-overlay-control) transparent; }
+      & .cp-messages:focus-visible { outline: 2px solid var(--smart-overlay-accent); outline-offset: -3px; }
       & .cp-message { background: var(--smart-overlay-field); border-color: var(--smart-overlay-line); }
       & .cp-message.client { background: var(--smart-overlay-tint); }
       & .cp-message strong { color: var(--smart-overlay-ink); font-size: 13px; font-weight: 650; overflow-wrap: anywhere; }
@@ -124,7 +126,6 @@
     }
     & .cmp-payment-header { background: var(--smart-overlay-cover); border-color: #3b3839; }
     & .cmp-payment-header h2 { color: #fffaf5; font-weight: 600; letter-spacing: -.04em; }
-    & .cmp-payment-dialog .cmp-payment-eyebrow { font-size: 11px; font-weight: 650; color: #ffd196; letter-spacing: .1em; }
     & .cmp-payment-dialog .cmp-payment-close { background: #201e21e6; color: #fff; border-color: #a29992; }
     & .cmp-payment-dialog :is(.cmp-payment-summary,.cmp-payment-copy-row,.cmp-payment-manual,.cmp-payment-footer) { background: var(--smart-overlay-well); border-color: var(--smart-overlay-line); }
     & .cmp-payment-dialog .cmp-payment-method { background: var(--smart-overlay-field); border-color: var(--smart-overlay-line); }
@@ -172,7 +173,6 @@
       flex: auto;
       max-height: min(22rem, 42svh);
     }
-    & #project-support .cp-chat-close { width: 44px; height: 44px; }
     & #project-support .cp-compose textarea { font-size: 16px; }
   }
 }

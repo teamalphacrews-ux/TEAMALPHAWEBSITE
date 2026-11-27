@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanSessionToken, draftScopeToPurge, isCurrentSession, shouldRedirectExpiredSession, verifyStoredSession } from '../src/utils/authSession.js';
+import { cleanSessionToken, draftScopeToPurge, isCurrentSession, sessionIdentity, shouldRedirectExpiredSession, verifyStoredSession } from '../src/utils/authSession.js';
 
 const id = '507f1f77bcf86cd799439011';
 const session = { token: 'synthetic-session', user: { id, role: 'admin', firstName: 'Old name', workspace: { id: 'workspace-a' } } };
@@ -48,9 +48,35 @@ test('a delayed failure from a former sign-in cannot invalidate the current sess
   const current = { ...session, token: 'new-session' };
   resolve(response(401));
   assert.equal((await pending).status, 'expired');
-  assert.equal(isCurrentSession(session.token, current, 'new-session'), false);
-  assert.equal(isCurrentSession(session.token, session, 'new-session'), false);
-  assert.equal(isCurrentSession(session.token, session, session.token), true);
+  assert.equal(isCurrentSession(sessionIdentity(session), current, current), false);
+  assert.equal(isCurrentSession(sessionIdentity(session), session, current), false);
+  assert.equal(isCurrentSession(sessionIdentity(session), session, session), true);
+});
+
+test('a verification between the two storage writes cannot expire or overwrite the completed switch', async () => {
+  const mixed = { ...session, token: 'second-token' };
+  const expected = sessionIdentity(mixed);
+  for (const newUser of [
+    { ...session.user, id: 'second-owner' },
+    { ...session.user, workspace: { id: 'workspace-b' } },
+  ]) {
+    const next = { token: mixed.token, user: newUser };
+    const profile = { _id: newUser.id, role: newUser.role, workspace: { ...newUser.workspace, setupRequired: true } };
+    let respond;
+    const pending = verifyStoredSession(mixed, { fetcher: () => new Promise(resolve => { respond = resolve; }) });
+    respond(response(200, profile));
+    assert.equal((await pending).status, 'expired', 'the mixed pair cannot be used to open a workspace');
+    assert.notEqual(expected, sessionIdentity(next), 'the completed pair requires its own verification');
+    assert.equal(isCurrentSession(expected, mixed, next), false, 'the storage listener may not have fired yet');
+    assert.equal(isCurrentSession(expected, next, mixed), false, 'an outdated storage read cannot confirm the pending request');
+    assert.equal(isCurrentSession(expected, next, next), false, 'the previous response has no effect on the new sign-in');
+    assert.equal((await verifyStoredSession(next, { fetcher: async () => response(200, profile) })).status, 'valid');
+    assert.equal(isCurrentSession(sessionIdentity(next), next, next), true);
+    assert.equal(isCurrentSession(sessionIdentity(next), next, { token: null, user: null }), false);
+  }
+  assert.equal(sessionIdentity(session), sessionIdentity({ ...session, user: {
+    ...session.user, firstName: 'Updated name', workspace: { ...session.user.workspace, setupRequired: false },
+  } }), 'saving details in the same studio does not restart authentication');
 });
 
 test('sample previews stay local, and missing sessions make no backend request', async () => {

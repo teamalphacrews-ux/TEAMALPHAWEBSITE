@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, ChevronLeft, ChevronRight, Inbox, Mail, Paperclip, RefreshCw, Search, Send, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -25,6 +25,12 @@ export default function GmailInbox() {
   const [selected, setSelected] = useState(''), [detailResult, setDetailResult] = useState({ key: '', data: null, error: '' });
   const [busy, setBusy] = useState(false), [consent, setConsent] = useState(false), [disconnect, setDisconnect] = useState(false), [refresh, setRefresh] = useState(0);
   const listSequence = useRef(0);
+  const messageTrigger = useRef(null), messageDetail = useRef(null), messageBack = useRef(null);
+  useLayoutEffect(() => {
+    if (!selected) return;
+    if (messageBack.current?.getClientRects().length) messageBack.current.focus();
+    else messageDetail.current?.focus();
+  }, [selected]);
   const loadStatus = useCallback(() => {
     if (preview) return Promise.resolve();
     return gmailRequest('get', '/status').then(result => { if (typeof result?.connected !== 'boolean' || typeof result.configured !== 'boolean') throw new Error(); setStatus(result); setError(''); })
@@ -76,6 +82,14 @@ export default function GmailInbox() {
   const chooseFolder = value => { resetList(); setFolder(value); };
   const submitSearch = event => { event.preventDefault(); resetList(); setQuery(search.trim()); setRefresh(value => value + 1); };
   const next = () => { if (mail?.nextPageToken) { setPages(previous => [...previous.slice(0, page + 1), mail.nextPageToken]); setPage(value => value + 1); setSelected(''); } };
+  const showMessage = (id, trigger) => {
+    messageTrigger.current = trigger;
+    setSelected(id);
+  };
+  const returnToMailbox = () => {
+    setSelected('');
+    requestAnimationFrame(() => messageTrigger.current?.focus());
+  };
   const callbackError = params.get('gmail') === 'error' ? steps[params.get('step')] || 'Gmail authorization was not completed. Connect again when you are ready.' : '';
   return <div className="studio-email-page">
     <WorkspaceHeader eyebrow="YOUR STUDIO, CONNECTED" title="Email" description="Your Gmail account, thoughtfully within reach.">
@@ -94,13 +108,13 @@ export default function GmailInbox() {
         <form className="studio-email-search" onSubmit={submitSearch}><Search size={16} /><input aria-label="Search Gmail" value={search} onChange={event => setSearch(event.target.value)} maxLength={500} placeholder="Search email…" /><button className="studio-button small" type="submit">Search</button></form></div>
       <div className={'studio-email-columns' + (selected ? ' has-selection' : '')}>
         <div className="studio-email-list" aria-label="Email messages" aria-busy={loading}>
-          {loading ? <p className="studio-email-empty" role="status">Loading your email…</p> : mail?.messages?.length ? mail.messages.map(message => <button key={message.id} className={'studio-email-row' + (selected === message.id ? ' selected' : '') + (message.unread ? ' unread' : '')} onClick={() => setSelected(message.id)} aria-pressed={selected === message.id}>
+          {loading ? <p className="studio-email-empty" role="status">Loading your email…</p> : mail?.messages?.length ? mail.messages.map(message => <button key={message.id} className={'studio-email-row' + (selected === message.id ? ' selected' : '') + (message.unread ? ' unread' : '')} onClick={event => showMessage(message.id, event.currentTarget)} aria-pressed={selected === message.id}>
             <span className="studio-email-row-top"><strong>{folder === 'sent' ? message.to || message.from : message.from || 'Unknown sender'}</strong><time>{date(message.receivedAt || message.date)}</time></span><span className="studio-email-subject">{message.subject}</span><span className="studio-email-snippet">{message.snippet}</span></button>)
             : <p className="studio-email-empty">{listError ? 'Email is unavailable. Please retry.' : query ? 'No messages match your search in this folder.' : 'No messages in this folder.'}</p>}
           <div className="studio-email-pagination"><button className="studio-button small" disabled={loading || page === 0} onClick={() => { setPage(value => value - 1); setSelected(''); }}><ChevronLeft size={14} />Previous</button><span>Page {page + 1}</span><button className="studio-button small" disabled={loading || !mail?.nextPageToken} onClick={next}>Next<ChevronRight size={14} /></button></div>
         </div>
-        <article className="studio-email-detail" aria-label="Selected email" aria-busy={detailLoading}>
-          {selected && <button className="studio-email-back studio-button small" onClick={() => setSelected('')}><ChevronLeft size={14} />Back to email</button>}
+        <article ref={messageDetail} className="studio-email-detail" aria-label="Selected email" aria-busy={detailLoading} tabIndex={-1}>
+          {selected && <button ref={messageBack} type="button" className="studio-email-back studio-button small" onClick={returnToMailbox}><ChevronLeft size={14} />Back to email</button>}
           {detailLoading ? <p className="studio-email-empty" role="status">Opening email…</p> : detailError ? <WorkspaceError error={detailError} retry={() => setRefresh(value => value + 1)} /> : detail && selected ? <>
             <div className="studio-email-detail-heading"><h2>{detail.subject}</h2><a className="studio-button small" href={detail.gmailUrl} target="_blank" rel="noopener noreferrer">Open in Gmail<ArrowUpRight size={14} /></a></div>
             <dl><div><dt>From</dt><dd>{detail.from}</dd></div><div><dt>To</dt><dd>{detail.to}</dd></div>{detail.cc && <div><dt>Cc</dt><dd>{detail.cc}</dd></div>}<div><dt>Date</dt><dd>{detail.date || date(detail.receivedAt)}</dd></div></dl>

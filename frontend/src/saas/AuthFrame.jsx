@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Eye, EyeOff, UsersRound } from 'lucide-react';
 import '../admin/studio.css';
@@ -37,7 +37,16 @@ export function SignupFrame({ title, description, children, invitation = false, 
     </footer>
   </main>;
 }
-export function PasswordField({ value, onChange, minLength = 12, label = 'Password', autoComplete = 'new-password' }) {
+export function PasswordField({ value, onChange, minLength = 12, label = 'Password', autoComplete = 'new-password', description }) {
+  const inputId = useId();
+  const helpId = description ? inputId + '-help' : undefined;
   const [visible, setVisible] = useState(false);
-  return <label className="saas-field"><span>{label}</span><div className="saas-password"><input type={visible ? 'text' : 'password'} value={value} onChange={onChange} minLength={minLength} maxLength={256} required autoComplete={autoComplete} /><button type="button" onClick={() => setVisible(previous => !previous)} aria-label={visible ? 'Hide password' : 'Show password'}>{visible ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></label>;
+  return <div className="saas-field">
+    <label htmlFor={inputId}>{label}</label>
+    <div className="saas-password">
+      <input id={inputId} name="password" type={visible ? 'text' : 'password'} value={value} onChange={onChange} minLength={minLength} maxLength={256} required autoComplete={autoComplete} aria-describedby={helpId} />
+      <button type="button" onClick={() => setVisible(previous => !previous)} aria-label={visible ? 'Hide password' : 'Show password'}>{visible ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}</button>
+    </div>
+    {description && <p id={helpId} className="saas-form-help">{description}</p>}
+  </div>;
 }

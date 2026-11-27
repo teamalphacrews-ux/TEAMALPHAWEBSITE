@@ -81,6 +81,18 @@ export default function ProductDocs() {
     if (section) document.getElementById(section.id)?.scrollIntoView({ block: 'start', behavior: 'instant' });
   }, [guide]);
 
+  const focusSearch = () => searchInput.current?.focus({ preventScroll: true });
+  const openSearch = event => {
+    if (!isHub || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (window.location.hash !== '#docs-search') window.history.pushState(window.history.state, '', '#docs-search');
+    document.getElementById('docs-search')?.scrollIntoView({ block: 'start' });
+    focusSearch();
+  };
+  useEffect(() => {
+    if (isHub && window.location.hash === '#docs-search') searchInput.current?.focus();
+  }, [isHub]);
+
   useEffect(() => {
     const previousTitle = document.title;
     document.title = pageTitle;
@@ -125,7 +137,7 @@ export default function ProductDocs() {
     <a className="docs-skip" href="#docs-main">Skip to guide content</a>
     <header className="docs-header"><div className="docs-header-inner">
       <div className="docs-header-identity"><a className="docs-brand" href={homeHref} aria-label="Studio X OS home"><img src={docsLogo} alt="Studio X OS" width="640" height="213" decoding="async" /></a><a className="docs-wordmark" href={base} aria-current={isHub ? 'page' : undefined}>Guides</a></div>
-      <nav className="docs-header-links" aria-label="Guide navigation"><a href={base + '#docs-search'}><Search size={16} aria-hidden="true" />Search guides</a><a href={homeHref}>Back to website<ArrowUpRight size={16} aria-hidden="true" /></a></nav>
+      <nav className="docs-header-links" aria-label="Guide navigation"><a href={base + '#docs-search'} onClick={openSearch}><Search size={16} aria-hidden="true" />Search guides</a><a href={homeHref}>Back to website<ArrowUpRight size={16} aria-hidden="true" /></a></nav>
       <button ref={menuButton} type="button" className="docs-menu-toggle" aria-label={menuOpen ? 'Close guide navigation' : 'Open guide navigation'} aria-controls="docs-navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(open => !open)}>{menuOpen ? <X size={21} aria-hidden="true" /> : <Menu size={21} aria-hidden="true" />}</button>
     </div></header>
     <div className={'docs-layout' + (!isHub && guide ? ' has-article' : '')}>
@@ -139,7 +151,7 @@ export default function ProductDocs() {
       <main id="docs-main" className="docs-main" tabIndex={-1}>
         {isHub ? <>
           <header className="docs-hub-intro"><h1>Learn your workspace.<br /><em>Keep creating.</em></h1><p>Step-by-step guides for studio owners and teams, plus a guide to the client Smart Link.</p>
-            <label className="docs-search" id="docs-search"><Search size={21} aria-hidden="true" /><span className="docs-sr-only">Search all guide content</span><input ref={searchInput} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search quotations, payments, delivery…" aria-controls="docs-guide-results" autoComplete="off" spellCheck="false" />{query && <button type="button" aria-label="Clear guide search" onClick={() => { setQuery(''); searchInput.current?.focus(); }}><X size={18} aria-hidden="true" /></button>}</label>
+            <div className="docs-search" id="docs-search"><Search size={21} aria-hidden="true" /><label className="docs-sr-only" htmlFor="docs-guide-query">Search all guide content</label><input ref={searchInput} id="docs-guide-query" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search quotations, payments, delivery…" aria-controls="docs-guide-results" autoComplete="off" spellCheck="false" />{query && <button type="button" aria-label="Clear guide search" onClick={() => { setQuery(''); focusSearch(); }}><X size={18} aria-hidden="true" /></button>}</div>
             <p ref={resultsStatus} className="docs-result-count" role="status" aria-live="polite" tabIndex={-1}>{filteredGuides.length} {filteredGuides.length === 1 ? 'guide' : 'guides'}{query.trim() ? ` matching “${query.trim()}”` : category !== 'all' ? ` in ${categoryById.get(category)?.title}` : ' to help you find your next step'}</p>
           </header>
           <div id="docs-guide-results" className="docs-guide-results">{filteredGuides.length ? DOC_CATEGORIES.map(item => {

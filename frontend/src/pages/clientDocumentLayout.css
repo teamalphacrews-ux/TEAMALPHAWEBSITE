@@ -1,0 +1,153 @@
+.client-document-cell-label { display: none; }
+
+@media screen {
+  :is(.shared-quotation,.invoice-public).studio-client-glass {
+    overflow-wrap: anywhere;
+  }
+
+  .invoice-public.studio-client-glass .invoice-client-hero {
+    height: auto;
+    min-height: 550px;
+    padding-bottom: 115px;
+  }
+
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-meta,.invoice-document-meta) {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  }
+
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-document-header h2,.invoice-paper-heading h2,.invoice-document-title) {
+    min-width: 0;
+  }
+
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-document-header > div,.invoice-paper-tools) {
+    flex-shrink: 0;
+  }
+
+  .shared-quotation.studio-client-glass :is(.sq-accept > button,.sq-acceptance button) {
+    color: var(--quote-accent-ink);
+  }
+
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-table,.invoice-table-wrap) {
+    container-type: inline-size;
+  }
+
+  .studio-client-glass :is(.sq-table table,.invoice-document-table) {
+    min-width: 0;
+  }
+
+  .studio-client-glass :is(.sq-table td:first-child,.invoice-document-table td:first-child) {
+    min-width: 0;
+    width: 50%;
+  }
+
+  .studio-client-glass :is(.sq-table td,.invoice-document-table td) {
+    white-space: normal;
+  }
+}
+
+@media screen {
+  @container (max-width: 32rem) {
+    .studio-client-glass :is(.sq-table table,.invoice-document-table) {
+      display: block;
+      position: relative;
+    }
+
+    .studio-client-glass :is(.sq-table table,.invoice-document-table) thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .studio-client-glass :is(.sq-table table,.invoice-document-table) tbody {
+      display: block;
+    }
+
+    .studio-client-glass :is(.sq-table table,.invoice-document-table) tbody tr {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      padding-block: 14px;
+      border-bottom: 1px solid #e3e6ec;
+    }
+
+    .studio-client-glass :is(.sq-table table,.invoice-document-table) tbody tr:last-child {
+      border-bottom: 0;
+    }
+
+    :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-table table,.invoice-document-table) tbody td {
+      padding: 0;
+      border: 0;
+      min-width: 0;
+      text-align: left;
+      font-size: .875rem;
+    }
+
+    .studio-client-glass :is(.sq-table table,.invoice-document-table) tbody td:first-child {
+      grid-column: 1 / -1;
+      width: auto;
+    }
+
+    .studio-client-glass :is(.sq-table table,.invoice-document-table:not(.is-schedule)) td:nth-child(2) {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      grid-column: 1 / -1;
+    }
+
+    .studio-client-glass :is(.sq-table table,.invoice-document-table) td:not(:first-child) {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .studio-client-glass :is(.sq-table,.invoice-table-wrap) .client-document-cell-label {
+      display: block;
+      margin-bottom: 2px;
+      font-size: .75rem;
+      color: #5b626f;
+    }
+  }
+
+  @container (max-width: 17.5rem) {
+    .studio-client-glass :is(.sq-table table,.invoice-document-table) tbody tr {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .studio-client-glass :is(.sq-table table,.invoice-document-table) tbody td:not(:first-child) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2.5fr);
+      align-items: baseline;
+      gap: 6px;
+      text-align: right;
+    }
+
+    .studio-client-glass :is(.sq-table,.invoice-table-wrap) .client-document-cell-label {
+      margin: 0;
+      text-align: left;
+    }
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .invoice-public.studio-client-glass .invoice-client-hero {
+    min-height: 350px;
+  }
+
+  .invoice-public.studio-client-glass .invoice-client-hero h1 {
+    margin-top: 36px;
+  }
+
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-paper dl,.invoice-document-totals) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.85fr);
+  }
+}
+
+@media screen and (max-width: 340px) {
+  :is(.shared-quotation,.invoice-public).studio-client-glass :is(.sq-paper dl,.invoice-document-totals) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2.6fr);
+    column-gap: 8px;
+  }
+}

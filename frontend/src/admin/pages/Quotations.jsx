@@ -792,16 +792,15 @@ export default function Quotations() {
             </div>
             {!IS_COMMERCIAL_DEPLOYMENT && statusFilters}
             {error ? <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={reload}>Retry</button></div> : loading ? <div className="qw-list-empty" role="status"><span className="studio-loader" />Loading quotations…</div> : visible.length ? <>
-              <div className="qw-list-columns" aria-hidden="true"><span>Client / quote</span><div className="qw-quote-metadata"><span>Reference</span><span>Amount</span><span>Accept by</span><span>Status</span></div><span /></div>
+              <div className="qw-list-columns" aria-hidden="true"><span>Client / quote</span><div className="qw-quote-metadata"><span>Reference</span><span>Amount</span><span>Accept by</span><span>Status</span></div></div>
               <div className="qw-quote-records">{visible.map(quote => <article className="qw-quote-row" key={quote._id} aria-labelledby={'quote-list-' + quote._id}>
-                <div className="qw-quote-description"><h2 id={'quote-list-' + quote._id}><button className="qw-quote-title" aria-label={`Open quote ${quoteNumber(quote)} for ${quote.clientName || 'client to be confirmed'}`} onClick={() => openListQuote(quote)}>{quote.clientName || 'Client to be confirmed'}</button></h2>{quote.title && <p>{quote.title}</p>}</div>
+                <div className="qw-quote-description"><h2 id={'quote-list-' + quote._id}><button className="qw-quote-title" aria-label={`Open quote ${quoteNumber(quote)} for ${quote.clientName || 'client to be confirmed'}`} onClick={() => openListQuote(quote)}><span>{quote.clientName || 'Client to be confirmed'}</span><ArrowUpRight size={16} aria-hidden="true" /></button></h2>{quote.title && <p>{quote.title}</p>}</div>
                 <dl className="qw-quote-metadata">
                   <div className="qw-quote-reference"><dt>Reference</dt><dd>{quoteNumber(quote)}</dd></div>
                   <div className="qw-quote-amount"><dt>Amount</dt><dd>{rupees(quote.totalPaise / 100)}</dd></div>
                   <div><dt>Accept by</dt><dd>{quote.expiryEnabled === false ? 'No deadline' : recordDate(quote.validUntil)}</dd></div>
                   <div><dt>Status</dt><dd><span className="qw-badge" data-status={status(quote).toLowerCase()}>{status(quote)}</span></dd></div>
                 </dl>
-                <button className="studio-icon-button qw-quote-open" aria-label={`Open quote ${quoteNumber(quote)} for ${quote.clientName || 'client to be confirmed'}`} onClick={() => openListQuote(quote)}><ArrowUpRight size={18} /></button>
               </article>)}</div>
             </> : <div className="qw-list-empty" role="status"><h2>{search.trim() || filter !== 'All' ? 'No matching quotations' : 'Your next quote starts here'}</h2><p>{search.trim() || filter !== 'All' ? 'Try another client name or choose a different status.' : 'Create a quotation to start a new client conversation.'}</p>{search.trim() || filter !== 'All' ? <button className="studio-button" onClick={() => { setSearch(''); setFilter('All'); }}>Reset filters</button> : <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>}</div>}
           </section>
@@ -1949,25 +1948,25 @@ export function QuoteReadDocument({ quote, settings = {} }) {
         {quote.issuer?.taxId && <small>GSTIN: {quote.issuer.taxId}</small>}
       </div>
       <h2>Items</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>ITEM</th>
-            <th>QTY</th>
-            <th>PRICE</th>
-            <th>AMOUNT</th>
+      <table aria-label="Quotation items" role="table">
+        <thead role="rowgroup">
+          <tr role="row">
+            <th role="columnheader" scope="col">Item</th>
+            <th role="columnheader" scope="col">Quantity</th>
+            <th role="columnheader" scope="col">Unit price</th>
+            <th role="columnheader" scope="col">Amount</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody role="rowgroup">
           {quote.items.map((i, n) => (
-            <tr key={n}>
-              <td>
+            <tr key={n} role="row">
+              <td role="cell">
                 <strong>{i.title}</strong>
                 <p>{i.description}</p>
               </td>
-              <td data-label="Quantity">{i.quantity}</td>
-              <td data-label="Unit price">{rupees(i.unitPricePaise / 100)}</td>
-              <td data-label="Amount">{rupees((i.unitPricePaise * i.quantity) / 100)}</td>
+              <td role="cell"><span className="qw-read-cell-label" aria-hidden="true">Quantity</span>{i.quantity}</td>
+              <td role="cell"><span className="qw-read-cell-label" aria-hidden="true">Unit price</span>{rupees(i.unitPricePaise / 100)}</td>
+              <td role="cell"><span className="qw-read-cell-label" aria-hidden="true">Amount</span>{rupees((i.unitPricePaise * i.quantity) / 100)}</td>
             </tr>
           ))}
         </tbody>

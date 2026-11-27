@@ -1,4 +1,6 @@
 .studio-commercial-glass .sx-team-desk .saas-workspace-tabs { margin: 16px 0; }
+.sx-team-desk .studio-page-heading p,
+.saas-workspace-hero > div { min-width: 0; overflow-wrap: anywhere; }
 .sx-team-roster { margin-bottom: 22px; }
 .sx-team-desk .sx-team-roster .saas-section-heading { margin-bottom: 14px; align-items: center; }
 .sx-team-desk .sx-seat-count { font-size: 13px; color: var(--studio-muted); }

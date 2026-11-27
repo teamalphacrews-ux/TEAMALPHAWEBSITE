@@ -30,6 +30,38 @@ export function invoiceRows(i) {
     });
   return r;
 }
+
+async function addInvoiceLogo(pdf, source) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  let objectUrl;
+  try {
+    const response = await fetch(source, { signal: controller.signal });
+    if (!response.ok) return;
+    objectUrl = URL.createObjectURL(await response.blob());
+    // An image element decodes the built-in SVG logo as well as uploaded
+    // raster images. Some browsers reject SVG blobs in createImageBitmap.
+    const image = new Image();
+    image.src = objectUrl;
+    await image.decode();
+    if (!image.naturalWidth || !image.naturalHeight) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.min(image.naturalWidth, 600);
+    canvas.height = Math.max(1, Math.round(canvas.width * image.naturalHeight / image.naturalWidth));
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const width = Math.min(30, (20 * canvas.width) / canvas.height);
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 18, 14, width, width * canvas.height / canvas.width);
+  } catch {
+    // The document is still useful when its optional logo is unavailable.
+  } finally {
+    clearTimeout(timeout);
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+  }
+}
+
 export async function downloadInvoice(i) {
   const workspaceContext = captureWorkspaceContext();
   const { API_BASE_URL } = await import('./apiConfig.js');
@@ -59,25 +91,7 @@ export async function downloadInvoice(i) {
     y += 3;
   };
   if (i.design?.showLogo !== false) {
-    const response = await fetch(resolveStudioImage(studio.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL));
-    if (!response.ok) throw new Error("Logo could not be loaded");
-    const bitmap = await createImageBitmap(await response.blob());
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.min(bitmap.width, 600);
-    canvas.height = Math.round((canvas.width * bitmap.height) / bitmap.width);
-    canvas
-      .getContext("2d")
-      .drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const width = Math.min(30, (20 * canvas.width) / canvas.height);
-    pdf.addImage(
-      canvas.toDataURL("image/png"),
-      "PNG",
-      18,
-      14,
-      width,
-      (width * canvas.height) / canvas.width,
-    );
-    bitmap.close();
+    await addInvoiceLogo(pdf, resolveStudioImage(studio.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL));
   }
   pdf.setFontSize(23);
   pdf.setTextColor(accent);

@@ -272,8 +272,9 @@
       box-shadow: none;
       font: 500 14px/1.55 var(--sx-public-font);
     }
+    & .cp-footer > :is(span,a) { min-width: 0; overflow-wrap: anywhere; }
     & .cp-footer > span:first-child { color: var(--client-ink); font-weight: 650; }
-    & .cp-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+    & .cp-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
     & .cp-footer a:hover { color: var(--client-ink); }
   }
 }

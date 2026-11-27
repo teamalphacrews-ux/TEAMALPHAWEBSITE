@@ -24,6 +24,9 @@
 .studio-app.studio-app.studio-app .finance-workspace-refined .finance-register-toolbar { display:flex; align-items:center; gap:12px; padding:8px 20px 20px; margin:0; }
 .studio-app.studio-app.studio-app .finance-workspace-refined .finance-register-toolbar .studio-search { flex:1; min-width:0; max-width:none; }
 .studio-app.studio-app.studio-app .finance-workspace-refined .studio-table :is(td,th) { padding:16px 20px; vertical-align:middle; font-size:13px; }
+.studio-app .finance-register-records:focus-visible { outline:2px solid var(--studio-control-ring); outline-offset:-3px; }
+.finance-register-records .studio-table td { overflow-wrap:anywhere; }
+.finance-register-records .studio-table td:nth-child(2) { font-variant-numeric:tabular-nums; }
 .studio-app.studio-app.studio-app .finance-workspace-refined .studio-table td > small { margin-top:5px; font-size:12px; line-height:1.5; }
 .studio-app.studio-app.studio-app .finance-workspace-refined .workspace-invoice-status.studio-select { display:block; max-width:180px; margin-top:8px; }
 .studio-app.studio-app.studio-app .finance-workspace-refined .workspace-rail { display:grid; gap:20px; min-width:0; }

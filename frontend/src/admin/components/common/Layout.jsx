@@ -45,6 +45,7 @@ import '../../workspace-route-motion.css';
 import { enterWorkspacePage, followPrimaryAction, routeDirection } from './workspaceRouteMotion';
 
 const StudioControlReview = import.meta.env.DEV ? lazy(() => import('./StudioControlReview')) : null;
+const PHONE_WORKSPACE_QUERY = '(max-width: 768px)';
 
 const pageTitles = {
   '': 'Overview', 'shoot-day': 'Shoot day', 'offline-drafts': 'Offline drafts',
@@ -92,7 +93,7 @@ function StudioLayout() {
   const navigationType = useNavigationType();
   const mainRef = useRef(null);
   const lastArrival = useRef(null);
-  const [smallScreen, setSmallScreen] = useState(() => window.matchMedia('(max-width:760px)').matches);
+  const [smallScreen, setSmallScreen] = useState(() => window.matchMedia(PHONE_WORKSPACE_QUERY).matches);
   const previousPath = useRef(location.pathname);
   const phonePositions = useRef(new Map());
   // New pages start below the header; tabs and browser Back retain their scroll position.
@@ -146,10 +147,10 @@ function StudioLayout() {
     if (IS_COMMERCIAL_DEPLOYMENT && mainRef.current) return followPrimaryAction(mainRef.current);
   }, []);
   const { user, sessionError } = useAuth();
-  const nativePhoneNavigation = useIPhoneAppNavigation(user);
+  const nativePhoneNavigation = useIPhoneAppNavigation(user, { allowMobileWeb: !IS_COMMERCIAL_DEPLOYMENT });
   const iPhoneNavigation = nativePhoneNavigation || (IS_COMMERCIAL_DEPLOYMENT && smallScreen);
   useEffect(() => {
-    const media = window.matchMedia('(max-width:760px)');
+    const media = window.matchMedia(PHONE_WORKSPACE_QUERY);
     const resize = () => setSmallScreen(media.matches);
     media.addEventListener('change', resize);
     return () => media.removeEventListener('change', resize);
@@ -188,6 +189,11 @@ function StudioLayout() {
   const drawerOpen = !iPhoneNavigation && isDrawerLayout && isSidebarOpen;
   const compact = isSidebarCompact && !isDrawerLayout;
   const drawerRef = useStudioDialog(() => setIsSidebarOpen(false), { enabled: drawerOpen });
+  const openSidebar = event => {
+    // Safari does not focus a button when tapped. Set the focus origin for the dialog.
+    event.currentTarget.focus({ preventScroll: true });
+    setIsSidebarOpen(true);
+  };
 
   return <div id={IS_COMMERCIAL_DEPLOYMENT ? 'sx-workspace-shell' : undefined} data-studio-text-size={preferences.textSize} data-studio-theme={preferences.theme} className={'studio-app studio-personal-workspace' + (IS_COMMERCIAL_DEPLOYMENT ? ' studio-commercial-glass studio-marlo-workspace' : '') + (iPhoneNavigation ? ' studio-native-phone' : '') + (location.pathname.replace(/\/$/, '') === '/admin' ? ' studio-overview-shell' : '') + (compact ? ' studio-sidebar-compact' : '') + (isFocusMode ? ' studio-focus-mode' : '')}>
     <NativeDeviceBridge />
@@ -198,7 +204,7 @@ function StudioLayout() {
     </>}
     {/* The dialog hook owns background isolation, including its cleanup. */}
     <div className="studio-workspace">
-      {!isFocusMode && <Topbar nativeNavigation={iPhoneNavigation} onMenuClick={() => setIsSidebarOpen(true)} />}
+      {!isFocusMode && <Topbar nativeNavigation={iPhoneNavigation} navOpen={drawerOpen} onMenuClick={openSidebar} />}
       {sessionError && <div className="studio-session-warning" role="status"><span>{sessionError}</span><button className="studio-button small" type="button" onClick={() => window.location.reload()}>Retry connection</button></div>}
       {!IS_COMMERCIAL_DEPLOYMENT && <div className="studio-preview-label" hidden={!user?.isPreview}>DESIGN PREVIEW · SAMPLE DATA · Changes in this local preview are temporary.</div>}
         <main ref={mainRef} id="studio-main" className={"studio-main" + (["/admin/users", "/admin/activity-log"].includes(location.pathname) ? " studio-legacy-page" : "")} tabIndex={-1}>
@@ -208,7 +214,7 @@ function StudioLayout() {
       </main>
       {!isFocusMode && <footer className="studio-footer"><span className="studio-product-footer-identity"><StudioProductBrand /><span>{user?.workspace?.name || 'Team Alpha'}</span></span>{IS_COMMERCIAL_DEPLOYMENT && user?.isPreview ? <span className="studio-preview-label">Sample workspace · Changes in this preview are temporary.</span> : <span>Made for the stories you create.</span>}</footer>}
     </div>
-    {!isFocusMode && (iPhoneNavigation ? <IPhoneNavigation key={location.key} /> : <MobileNavigation menuOpen={drawerOpen} onMenuClick={() => setIsSidebarOpen(true)} />)}
+    {!isFocusMode && (iPhoneNavigation ? <IPhoneNavigation key={location.key} /> : <MobileNavigation menuOpen={drawerOpen} onMenuClick={openSidebar} />)}
   </div>;
 }
 export default function Layout() { return <StudioPreferencesProvider><OfflineDraftsProvider><StudioLayout /></OfflineDraftsProvider></StudioPreferencesProvider>; }
