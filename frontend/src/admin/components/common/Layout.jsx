@@ -215,6 +215,7 @@ function StudioLayout() {
       {!isFocusMode && <footer className="studio-footer"><span className="studio-product-footer-identity"><StudioProductBrand /><span>{user?.workspace?.name || 'Team Alpha'}</span></span>{IS_COMMERCIAL_DEPLOYMENT && user?.isPreview ? <span className="studio-preview-label">Sample workspace · Changes in this preview are temporary.</span> : <span>Made for the stories you create.</span>}</footer>}
     </div>
     {!isFocusMode && (iPhoneNavigation ? <IPhoneNavigation key={location.key} /> : <MobileNavigation menuOpen={drawerOpen} onMenuClick={openSidebar} />)}
+    {IS_COMMERCIAL_DEPLOYMENT && smallScreen && !isFocusMode && <div className="studio-phone-canvas-edge" aria-hidden="true" />}
   </div>;
 }
 export default function Layout() { return <StudioPreferencesProvider><OfflineDraftsProvider><StudioLayout /></OfflineDraftsProvider></StudioPreferencesProvider>; }
