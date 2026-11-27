@@ -1,26 +1,8 @@
-/* On phones the tabs own their own row. Safari can resize the viewport without
-   covering the last action on a long page or requiring a guessed bottom spacer. */
 @media (max-width: 768px) {
   #sx-workspace-shell.studio-native-phone {
     --workspace-phone-gutter: 12px;
-    --workspace-phone-bottom-padding: 8px;
     --workspace-phone-left: max(var(--workspace-phone-gutter), env(safe-area-inset-left));
     --workspace-phone-right: max(var(--workspace-phone-gutter), env(safe-area-inset-right));
-  }
-  #sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) {
-    display: flex;
-    flex-direction: column;
-    height: 100dvh;
-    min-height: 0;
-    overflow: hidden;
-  }
-  #sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) > .studio-workspace {
-    flex: 1 1 0%;
-    min-height: 0;
-    overflow: auto;
-    overscroll-behavior-y: contain;
-    padding-bottom: 0;
-    scroll-padding-block: 12px;
   }
   #sx-workspace-shell.studio-native-phone .studio-topbar {
     flex-shrink: 0;
@@ -40,35 +22,8 @@
   #sx-workspace-shell .sx-desk-appearance[data-theme-choice=light] span:first-child { display: none; }
   #sx-workspace-shell .studio-topbar .sx-desk-appearance::before { content: none; }
   #sx-workspace-shell .sx-desk-appearance span { width: 100%; color: var(--desk-ink); }
-  #sx-workspace-shell .studio-iphone-navigation {
-    flex: none;
-    padding: 8px var(--workspace-phone-right) calc(var(--workspace-phone-bottom-padding) + env(safe-area-inset-bottom)) var(--workspace-phone-left);
-    background: var(--studio-canvas);
-  }
-  #sx-workspace-shell .studio-iphone-navigation > .studio-mobile-navigation {
-    position: static;
-    inset: auto;
-    width: 100%;
-    margin: 0 auto;
-    box-sizing: border-box;
-  }
-  /* Safari samples solid fixed surfaces when painting its bottom toolbar inset.
-     Keep a 12px surface at the viewport edge, exposing only the dock's existing clearance. */
-  #sx-workspace-shell .studio-phone-canvas-edge {
-    --canvas-edge-height: 12px;
-    position: fixed;
-    inset-inline: 0;
-    inset-block-end: calc(var(--workspace-phone-bottom-padding) - var(--canvas-edge-height));
-    block-size: var(--canvas-edge-height);
-    background-color: var(--studio-canvas);
-    pointer-events: none;
-  }
-  html[data-studio-keyboard] #sx-workspace-shell .studio-iphone-navigation { display: none; }
-  /* iOS can pan the visual viewport as well as shrink it during editing. */
-  html[data-studio-keyboard] #sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) {
-    position: fixed;
-    inset: var(--studio-visible-top, 0px) 0 auto;
-    height: var(--studio-visible-height, 100dvh);
+  #sx-workspace-shell.studio-native-phone .studio-iphone-navigation > .studio-mobile-navigation {
+    inset-inline: var(--workspace-phone-left) var(--workspace-phone-right);
   }
 }
 

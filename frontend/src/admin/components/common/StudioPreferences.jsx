@@ -99,9 +99,7 @@ function AccountPreferences({ children, storageKey, token, preview, user }) {
       if (previousMotion) html.setAttribute('data-studio-motion', previousMotion); else html.removeAttribute('data-studio-motion');
     };
   }, [resolvedTheme, preferences.reduceMotion]);
-  useLayoutEffect(() => installStudioBrowserTheme(document, resolvedTheme, {
-    commercialWorkspace: IS_COMMERCIAL_DEPLOYMENT,
-  }), [resolvedTheme]);
+  useLayoutEffect(() => installStudioBrowserTheme(document, resolvedTheme), [resolvedTheme]);
   useEffect(() => () => cancelStudioThemeTransition(), []);
   useEffect(() => {
     if (ready && location.pathname === '/admin' && location.state?.studioSignIn === true) navigate(canAccessStudioPath(user, preferences.landingPage) ? preferences.landingPage : '/admin', { replace: true, state: null });

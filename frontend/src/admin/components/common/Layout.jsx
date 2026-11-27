@@ -102,13 +102,13 @@ function StudioLayout() {
     previousPath.current = location.pathname;
     if (changedPage && navigationType !== 'POP') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 
-    const viewport = mainRef.current?.closest('.studio-workspace');
+    const viewport = document.scrollingElement;
     if (!viewport || !IS_COMMERCIAL_DEPLOYMENT || !smallScreen) return;
     const positions = phonePositions.current;
-    const target = navigationType === 'POP' ? positions.get(location.key) : changedPage ? 0 : undefined;
+    const target = navigationType === 'POP' ? positions.get(location.key) : undefined;
     let observer;
     const restore = () => {
-      viewport.scrollTop = target;
+      window.scrollTo({ top: target, left: 0, behavior: 'instant' });
       if (Math.abs(viewport.scrollTop - target) < 1) observer?.disconnect();
     };
     const stop = () => observer?.disconnect();
@@ -118,22 +118,22 @@ function StudioLayout() {
       if (target > viewport.scrollTop + 1) {
         observer = new ResizeObserver(restore);
         observer.observe(mainRef.current);
-        viewport.addEventListener('pointerdown', stop, { passive: true });
-        viewport.addEventListener('wheel', stop, { passive: true });
-        viewport.addEventListener('keydown', stop);
+        window.addEventListener('pointerdown', stop, { passive: true });
+        window.addEventListener('wheel', stop, { passive: true });
+        window.addEventListener('keydown', stop);
       }
     }
     const remember = () => {
       positions.set(location.key, viewport.scrollTop);
       if (positions.size > 60) positions.delete(positions.keys().next().value);
     };
-    viewport.addEventListener('scroll', remember, { passive: true });
+    window.addEventListener('scroll', remember, { passive: true });
     return () => {
       stop();
-      viewport.removeEventListener('scroll', remember);
-      viewport.removeEventListener('pointerdown', stop);
-      viewport.removeEventListener('wheel', stop);
-      viewport.removeEventListener('keydown', stop);
+      window.removeEventListener('scroll', remember);
+      window.removeEventListener('pointerdown', stop);
+      window.removeEventListener('wheel', stop);
+      window.removeEventListener('keydown', stop);
     };
   }, [location.key, location.pathname, navigationType, smallScreen]);
   useLayoutEffect(() => {
@@ -215,7 +215,6 @@ function StudioLayout() {
       {!isFocusMode && <footer className="studio-footer"><span className="studio-product-footer-identity"><StudioProductBrand /><span>{user?.workspace?.name || 'Team Alpha'}</span></span>{IS_COMMERCIAL_DEPLOYMENT && user?.isPreview ? <span className="studio-preview-label">Sample workspace · Changes in this preview are temporary.</span> : <span>Made for the stories you create.</span>}</footer>}
     </div>
     {!isFocusMode && (iPhoneNavigation ? <IPhoneNavigation key={location.key} /> : <MobileNavigation menuOpen={drawerOpen} onMenuClick={openSidebar} />)}
-    {IS_COMMERCIAL_DEPLOYMENT && smallScreen && !isFocusMode && <div className="studio-phone-canvas-edge" aria-hidden="true" />}
   </div>;
 }
 export default function Layout() { return <StudioPreferencesProvider><OfflineDraftsProvider><StudioLayout /></OfflineDraftsProvider></StudioPreferencesProvider>; }

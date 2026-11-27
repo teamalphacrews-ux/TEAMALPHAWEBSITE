@@ -2,19 +2,6 @@ const editableSelector = 'textarea, input:not([type=checkbox]):not([type=radio])
 const properties = ['--studio-visible-height', '--studio-visible-top'];
 const positive = (value, fallback) => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : fallback;
 
-function revealWorkspaceField(field) {
-  const workspace = field.closest?.('#sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) > .studio-workspace');
-  if (!workspace) return;
-  const bounds = workspace.getBoundingClientRect();
-  const input = field.getBoundingClientRect();
-  const inset = 12;
-  if (input.top < bounds.top + inset || input.height > bounds.height - inset * 2) {
-    workspace.scrollTop += input.top - bounds.top - inset;
-  } else if (input.bottom > bounds.bottom - inset) {
-    workspace.scrollTop += input.bottom - bounds.bottom + inset;
-  }
-}
-
 /** Track occlusion without treating hardware-keyboard focus or pinch zoom as a keyboard. */
 export function installStudioMobileViewport(win, doc) {
   const viewport = win.visualViewport;
@@ -24,8 +11,6 @@ export function installStudioMobileViewport(win, doc) {
   let width = positive(win.innerWidth, root.clientWidth || 390);
   let baseline = Math.max(positive(win.innerHeight, root.clientHeight || 1), positive(viewport?.height, 1));
   let keyboard = false, frame = null, settle = null, disposed = false, resetBaseline = false;
-  let revealedField = null;
-  let previousHeight = 0;
   const publish = (name, value) => {
     if (root.style.getPropertyValue(name) !== value) root.style.setProperty(name, value);
   };
@@ -54,15 +39,6 @@ export function installStudioMobileViewport(win, doc) {
     root.toggleAttribute('data-studio-keyboard', keyboard);
     publish('--studio-visible-height', `${Math.round(visibleHeight)}px`);
     publish('--studio-visible-top', `${Math.round(top)}px`);
-    // Keep normal scrolling free while the keyboard is open. Reveal on focus
-    // or shrink only, because Safari also sends events as its viewport pans.
-    if (keyboard && editing && (field !== revealedField || visibleHeight < previousHeight)) {
-      revealWorkspaceField(field);
-      revealedField = field;
-    } else if (!keyboard || !editing) {
-      revealedField = null;
-    }
-    previousHeight = visibleHeight;
   };
   const schedule = () => {
     if (!disposed && frame === null) frame = win.requestAnimationFrame(update);
