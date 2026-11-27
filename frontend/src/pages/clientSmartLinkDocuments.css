@@ -1,7 +1,6 @@
 @media screen {
   .shared-quotation.studio-client-glass:has(> .sq-smart-link-state) {
-    background: linear-gradient(100deg, rgb(8 8 10 / 94%), rgb(8 8 10 / 78%)),
-      #080808 url('/assets/studio-x-os/media/20261115/fluid-hero-poster-c2fb6664b63b.jpg') center / cover;
+    background: #09090a;
   }
 
   .shared-quotation.studio-client-glass > .sq-smart-link-state {

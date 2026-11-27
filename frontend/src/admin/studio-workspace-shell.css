@@ -66,8 +66,7 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
   display:flex; align-items:center; gap:13px; position:relative; width:100%;
   min-width:0; min-height:44px; padding:9px 14px; margin:2px 0; border:0; border-radius:13px;
   font:550 13.5px/1.4 var(--studio-font); letter-spacing:0; text-align:start; text-decoration:none;
-  color:var(--desk-ink); background:transparent; box-shadow:none; cursor:pointer;
-  transition:background-color .18s var(--desk-ease),color .18s var(--desk-ease);
+  color:var(--desk-ink); background:transparent; box-shadow:none; cursor:pointer; transition:none;
 }
 #sx-workspace-shell .sx-desk-sidebar .studio-nav-item::before { display:none; }
 #sx-workspace-shell .sx-desk-sidebar .studio-nav-item:hover { background:var(--desk-control); }
@@ -293,7 +292,7 @@ html[data-studio-motion=reduced] #sx-workspace-shell .studio-loader { animation:
 }
 @media (prefers-reduced-motion:no-preference) {
   html:not([data-studio-motion=reduced]) #sx-workspace-shell .sx-desk-group-pages:not([hidden]) { animation:sx-desk-nav-in .2s var(--desk-ease) both; }
-  @keyframes sx-desk-nav-in { from { opacity:.25; transform:translateY(-3px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes sx-desk-nav-in { from { opacity:.8; } to { opacity:1; } }
 }
 
 .studio-commercial-glass.studio-iphone-more-overlay .studio-more-panel {
@@ -312,11 +311,11 @@ html[data-studio-motion=reduced] #sx-workspace-shell .studio-loader { animation:
   #sx-workspace-shell.studio-sidebar-compact { --studio-nav-width:var(--desk-compact-width); }
 }
 #sx-workspace-shell .sx-desk-nav { position:relative; isolation:isolate; }
+/* The moving highlight is decorative. Each selected row keeps its own contrast. */
 #sx-workspace-shell .sx-desk-nav-indicator {
   position:absolute; inset-inline:0; z-index:-1; border-radius:13px; pointer-events:none;
-  background:var(--desk-selected); box-shadow:0 8px 18px -10px rgb(0 0 0 / 45%);
+  background:var(--desk-control);
 }
-#sx-workspace-shell .sx-desk-nav:has(.sx-desk-nav-indicator:not([hidden])) .studio-nav-item:is(.is-active,.has-current) { background:transparent; }
 
 @media (prefers-reduced-motion:no-preference) {
   html:not([data-studio-motion=reduced]) #sx-workspace-shell .sx-desk-nav-indicator[data-travel=down] {

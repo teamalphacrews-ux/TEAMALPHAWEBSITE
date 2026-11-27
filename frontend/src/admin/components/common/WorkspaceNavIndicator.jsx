@@ -9,12 +9,13 @@ export default function WorkspaceNavIndicator({ navRef, selection }) {
     const render = (animate = false) => {
       const link = nav.querySelector('[aria-current="page"],.has-current');
       if (!link?.offsetHeight || !nav.clientWidth) { ink.hidden = true; return; }
-      const top = link.offsetTop;
+      const row = link.getBoundingClientRect();
+      const top = row.top - nav.getBoundingClientRect().top + nav.scrollTop - nav.clientTop;
       const previous = Number(ink.dataset.top);
       const mayTravel = animate && !ink.hidden && previous !== top;
       ink.dataset.travel = mayTravel ? (top > previous ? 'down' : 'up') : 'none';
       ink.style.top = top + 'px';
-      ink.style.bottom = 'calc(100% - ' + (top + link.offsetHeight) + 'px)';
+      ink.style.bottom = 'calc(100% - ' + (top + row.height) + 'px)';
       ink.dataset.top = String(top);
       ink.hidden = false;
     };

@@ -70,11 +70,6 @@
   .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar { flex-wrap: wrap; gap: 16px 24px; }
   .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar>div:first-of-type { flex: 1 1 220px; }
   .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar-tools { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--client-line); border-radius: 999px; background: var(--client-glass-strong); color: var(--client-ink); font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1.4; cursor: pointer; }
-  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle>span { max-width: 165px; font-size: 13px; line-height: 1.4; letter-spacing: 0; text-transform: none; }
-  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle:hover:not(:disabled) { border-color: var(--client-focus); background: var(--client-paper); }
-  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle:disabled { opacity: 1; color: var(--client-muted); cursor: default; }
-  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle:focus-visible { outline: 3px solid var(--client-focus); outline-offset: 4px; }
 }
 
 @media screen and (max-width: 600px) {
@@ -82,8 +77,6 @@
   .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar>div:first-of-type { flex-basis: 100%; }
   .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar-tools { width: 100%; gap: 8px; }
   .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-topbar-tools .cp-private-label { width: auto; height: auto; min-height: 44px; padding: 8px 12px; font-size: 12px; line-height: 1.4; letter-spacing: 0; }
-  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle { width: 44px; height: 44px; padding: 0; flex: 0 0 44px; }
-  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-effects-toggle>span { display: none; }
 }
 @media screen and (prefers-reduced-motion: reduce) {
   .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-feature-card { animation: none !important; transition: none !important; }
@@ -92,5 +85,5 @@
   .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-feature-card { background: color-mix(in srgb,var(--radiance-accent) 12%,var(--client-paper)); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 @media screen and (forced-colors: active) {
-  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(.cp-feature-card,.cp-feature-status,.cp-feature-icon,.cp-card>.cp-accordion-heading,.cp-chat-launcher,.cp-effects-toggle) { background: Canvas; color: CanvasText; border-color: CanvasText; box-shadow: none; }
+  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] :is(.cp-feature-card,.cp-feature-status,.cp-feature-icon,.cp-card>.cp-accordion-heading,.cp-chat-launcher) { background: Canvas; color: CanvasText; border-color: CanvasText; box-shadow: none; }
 }

@@ -215,7 +215,7 @@
     --client-focus: #f6b95e;
   }
   .client-project.cp-dashboard.studio-client-glass[data-theme] .cp-main { padding-top: 24px; }
-  .client-project.cp-dashboard.studio-client-glass[data-theme] :is(.cp-button,.cp-effects-toggle,.cp-theme-toggle) { border-radius: 10px; }
+  .client-project.cp-dashboard.studio-client-glass[data-theme] :is(.cp-button,.cp-theme-toggle) { border-radius: 10px; }
 }
 
 @media screen and (min-width: 960px) {

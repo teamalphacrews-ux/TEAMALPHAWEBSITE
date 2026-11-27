@@ -1,4 +1,4 @@
-/* The commercial Smart Link shares the public homepage's film and type.
+/* The commercial Smart Link shares the public site's typography and palette.
    Keep the tenant's document paper and its print layout independent. */
 @media screen {
   html[data-studio-browser-theme]:has(.client-project.studio-client-radiance),
@@ -16,7 +16,6 @@
     font-family: var(--sx-public-font);
     --smart-action: var(--sx-public-action);
     --smart-action-ink: var(--sx-public-on-action);
-    --smart-cover-text-shade: rgb(5 5 8 / 68%);
 
     &[data-theme="dark"] {
       --client-canvas: #080808;
@@ -47,7 +46,7 @@
       color: var(--client-muted);
     }
 
-    & :is(.cp-theme-toggle, .cp-effects-toggle, .cp-button, .cp-private-label) {
+    & :is(.cp-theme-toggle, .cp-button, .cp-private-label) {
       border-radius: 100px;
     }
 
@@ -63,40 +62,6 @@
       -webkit-backdrop-filter: none;
     }
 
-    & .cp-fluid-cover, & .cp-fluid-cover :is(img, video) {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
-
-    & .cp-fluid-cover { z-index: 0; }
-    & .cp-fluid-cover-video { opacity: 0; }
-    & .cp-fluid-cover[data-playing="true"] .cp-fluid-cover-video { opacity: 1; }
-    & .cp-fluid-cover :is(img, video) {
-      object-fit: cover;
-      object-position: center 56%;
-      filter: saturate(.76);
-    }
-
-    & .cp-welcome .cp-cover-image {
-      display: block;
-      z-index: 0;
-      inset: 0 0 0 auto;
-      width: 50%;
-      height: 100%;
-      border-radius: 0;
-      mask-image: linear-gradient(to right, transparent, black 45%);
-    }
-
-    & .cp-cover-shade {
-      display: block;
-      z-index: 0;
-      background: linear-gradient(90deg, rgb(5 5 8 / 91%), rgb(5 5 8 / 81%) 35%, var(--smart-cover-text-shade) 80%, rgb(5 5 8 / 24%)),
-        linear-gradient(0deg, rgb(5 5 8 / 58%), transparent 54%);
-    }
-
     & .cp-welcome-content {
       position: relative;
       width: 100%;
@@ -105,7 +70,6 @@
     }
 
     & .cp-welcome h1 {
-      max-width: 78%;
       margin: 0;
       color: white;
       font: 550 clamp(40px, 5.4vw, 76px)/1.05 var(--sx-public-font);
@@ -236,15 +200,10 @@
     & .cp-topbar img { width: 36px; height: 36px; flex-shrink: 0; }
     & .cp-welcome { min-height: 228px; }
     & .cp-welcome-content { padding: 26px 22px; }
-    & .cp-welcome h1 { max-width: 100%; font-size: 39px; }
+    & .cp-welcome h1 { font-size: 39px; }
     & .cp-welcome p { max-width: 100%; font-size: 24px; }
-    & .cp-cover-shade { background: linear-gradient(90deg, rgb(5 5 8 / 85%), var(--smart-cover-text-shade)); }
     & .cp-cover-footer { flex-direction: column; align-items: flex-start; gap: 4px; max-inline-size: 100%; }
   }
-}
-
-@media (forced-colors: active) {
-  .client-project.cp-dashboard.studio-client-glass.studio-client-radiance[data-theme] .cp-welcome :is(.cp-fluid-cover, .cp-cover-image, .cp-cover-shade) { display: none; }
 }
 
 @media screen and (max-width: 600px) {

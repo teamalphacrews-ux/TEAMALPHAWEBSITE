@@ -143,9 +143,9 @@ export default function SharedQuotation() {
         <>
           <header
             className="sq-hero"
-            style={{
+            style={!IS_COMMERCIAL_DEPLOYMENT || preview ? {
               backgroundImage: `linear-gradient(#10291e35,#14261e35),url("${quote.design?.coverImage || "/assets/banner.jpg"}")`,
-            }}
+            } : undefined}
           >
             <img src={resolveStudioImage(quote.studio.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt={quote.studio.name} />
             <strong>{quote.studio.name}</strong>

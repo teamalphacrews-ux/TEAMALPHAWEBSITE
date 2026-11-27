@@ -16,8 +16,6 @@
     --smart-overlay-shadow: 0 18px 64px #261d1640;
     --smart-overlay-action: var(--sx-public-action, linear-gradient(135deg, #f8c062, #f4a43a 52%, #ef8a2a));
     --smart-overlay-action-ink: #1c1304;
-    --smart-overlay-cover: linear-gradient(100deg, #0c0b0bee 8%, #171016c9 58%, #0a090b66),
-      url('/assets/studio-x-os/media/20261115/fluid-hero-poster-c2fb6664b63b.jpg') center 55% / cover #171417;
   }
 
   body:has(.client-project.studio-client-radiance[data-theme="dark"]) {
@@ -62,13 +60,14 @@
       color: var(--smart-overlay-ink);
       background: var(--smart-overlay-panel);
       box-shadow: var(--smart-overlay-shadow);
+      animation: none;
 
       & .cp-chat-heading {
         align-items: flex-start;
         padding: 16px;
         color: #fff;
         border-color: #343136;
-        background: var(--smart-overlay-cover);
+        background: #171417;
       }
       & .cp-chat-heading h2 { color: #fffaf5; font-size: 18px; line-height: 1.25; letter-spacing: -.025em; overflow-wrap: anywhere; }
       & .cp-chat-heading p { margin-top: 4px; color: #e6ded8; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }

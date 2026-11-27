@@ -19,8 +19,6 @@ import {
   UsersRound,
   Sun,
   Moon,
-  Pause,
-  Play,
   X,
 } from "lucide-react";
 import { API_BASE_URL } from "../utils/apiConfig";
@@ -32,7 +30,6 @@ import {
 } from "../utils/clientProjectData";
 import { InvoiceDocument } from "./PublicInvoice";
 import ClientFeatureCard from './ClientFeatureCard';
-import ClientFluidCover from './ClientFluidCover';
 import ClientPaymentDialog from './ClientPaymentDialog';
 import { clientDashboardSummary, clientPaymentRows } from '../utils/clientDashboardData';
 import "./clientProjectWorkspace.css";
@@ -46,8 +43,6 @@ import './clientSmartLinkOverlays.css';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../saas/release';
 
 const projectSections = ["quotation", "invoice", "payments", "delivery", "crew"];
-const effectsPauseKey = 'studio-commercial-client-effects-paused';
-const readEffectsPause = () => { try { return sessionStorage.getItem(effectsPauseKey) === 'true'; } catch { return false; } };
 const sectionFromHash = () => {
   const id = typeof window === 'undefined' ? '' : window.location.hash.replace("#project-", "");
   return projectSections.includes(id) ? id : null;
@@ -146,29 +141,6 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
   useLayoutEffect(() => {
     if (IS_COMMERCIAL_DEPLOYMENT) return installStudioBrowserTheme(document, appearance === 'dark' ? 'dark' : 'light');
   }, [appearance]);
-  const [effectsPaused, setEffectsPaused] = useState(() => IS_COMMERCIAL_DEPLOYMENT && readEffectsPause());
-  const [effectsReduced, setEffectsReduced] = useState(() => IS_COMMERCIAL_DEPLOYMENT && (typeof window === 'undefined' || Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)));
-  const [effectsVisible, setEffectsVisible] = useState(() => typeof document !== 'undefined' && !document.hidden);
-  useEffect(() => {
-    if (!IS_COMMERCIAL_DEPLOYMENT) return undefined;
-    const preference = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    const updatePreference = () => setEffectsReduced(Boolean(preference?.matches));
-    const updateVisibility = () => setEffectsVisible(!document.hidden);
-    preference?.addEventListener?.('change', updatePreference);
-    document.addEventListener('visibilitychange', updateVisibility);
-    return () => {
-      preference?.removeEventListener?.('change', updatePreference);
-      document.removeEventListener('visibilitychange', updateVisibility);
-    };
-  }, []);
-  const effectsMode = effectsReduced ? 'reduced' : effectsPaused || !effectsVisible ? 'paused' : 'playing';
-  const effectsLabel = effectsReduced ? 'Effects reduced' : effectsPaused ? 'Resume effects' : 'Pause effects';
-  const toggleEffects = () => {
-    if (effectsReduced) return;
-    const next = !effectsPaused;
-    setEffectsPaused(next);
-    try { sessionStorage.setItem(effectsPauseKey, String(next)); } catch { /* Effects remain controllable for this visit. */ }
-  };
   const accepted = quote.status === 'Accepted';
   const [error, setError] = useState(""),
     [messageError, setMessageError] = useState(""),
@@ -311,7 +283,8 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
     requestAnimationFrame(() => {
       const section = document.getElementById('project-' + id);
       section?.querySelector('.cp-accordion-heading > button')?.focus({ preventScroll: true });
-      section?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      section?.scrollIntoView({ behavior: IS_COMMERCIAL_DEPLOYMENT || reducedMotion ? 'instant' : 'smooth', block: 'start' });
     });
   };
   const selectPrintDocument = (document) => {
@@ -638,7 +611,6 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
     <div
       className={`client-project cp-dashboard${IS_COMMERCIAL_DEPLOYMENT ? " studio-client-glass studio-client-radiance" : ""}`}
       data-theme={appearance}
-      data-client-effects={IS_COMMERCIAL_DEPLOYMENT ? effectsMode : undefined}
       ref={workspaceRef}
       data-print-document={approved ? "invoice" : "quote"}
     >
@@ -654,7 +626,6 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
         </div>
         <div className="cp-topbar-tools">
           <button type="button" className="cp-theme-toggle" aria-label={appearance === 'dark' ? 'Switch to Daylight mode' : 'Switch to Dark mode'} onClick={() => setAppearance(mode => mode === 'dark' ? 'daylight' : 'dark')}>{appearance === 'dark' ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}</button>
-          {IS_COMMERCIAL_DEPLOYMENT && <button type="button" className="cp-effects-toggle" onClick={toggleEffects} aria-label={effectsLabel} aria-pressed={effectsMode !== 'playing'} title={effectsReduced ? 'Effects are reduced by your device motion preference.' : effectsLabel} disabled={effectsReduced}>{effectsPaused && !effectsReduced ? <Play size={17} aria-hidden="true" /> : <Pause size={17} aria-hidden="true" />}<span>{effectsLabel}</span></button>}
         <span className="cp-private-label">
           <LockKeyhole size={13} strokeWidth={1.5} aria-hidden="true" /> Private
           project
@@ -663,14 +634,10 @@ export default function ClientProjectWorkspace({ token, quote, children }) {
       </header>
       <main className="cp-main">
         <section className="cp-welcome" aria-labelledby="client-project-title">
-          {IS_COMMERCIAL_DEPLOYMENT && <ClientFluidCover effectsMode={effectsMode} />}
-          {(!IS_COMMERCIAL_DEPLOYMENT || coverUrl !== '/assets/studio-wedding.webp') && <img
-            className="cp-cover-image"
-            src={coverUrl}
-            alt=""
-            fetchPriority="high"
-          />}
-          <div className="cp-cover-shade" />
+          {!IS_COMMERCIAL_DEPLOYMENT && <>
+            <img className="cp-cover-image" src={coverUrl} alt="" fetchPriority="high" />
+            <div className="cp-cover-shade" />
+          </>}
           <div className="cp-welcome-content">
             <span className="cp-eyebrow">YOUR PROJECT OVERVIEW</span>
             <h1 id="client-project-title">
