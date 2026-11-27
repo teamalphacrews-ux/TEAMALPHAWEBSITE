@@ -22,6 +22,30 @@ test('native keyboard resizing both viewports hides the dock',()=>{
  const e=fixture();e.focus();e.resize(470,470);assert.equal(e.keyboard(),true);assert.equal(e.root.style.getPropertyValue('--studio-visible-height'),'470px');
 });
 test('Safari keyboard resizing only visualViewport hides the dock',()=>{const e=fixture();e.focus();e.resize(470);assert.equal(e.keyboard(),true);});
+test('keyboard shrink reveals the focused workspace field without overriding manual scrolling while panning', () => {
+  const e = fixture();
+  const workspace = {
+    scrollTop: 0,
+    getBoundingClientRect: () => ({ top: 0, bottom: e.viewport.height, height: e.viewport.height }),
+  };
+  e.doc.activeElement = {
+    matches: () => true,
+    closest: () => workspace,
+    getBoundingClientRect: () => ({ top: 500 - workspace.scrollTop, bottom: 544 - workspace.scrollTop, height: 44 }),
+  };
+  e.doc.emit('focusin');
+  e.tick();
+  assert.equal(workspace.scrollTop, 0);
+  e.resize(470);
+  assert.equal(workspace.scrollTop, 86);
+  workspace.scrollTop = 40;
+  e.viewport.offsetTop = 50;
+  e.viewport.emit('scroll');
+  e.tick();
+  assert.equal(workspace.scrollTop, 40);
+  e.resize(440);
+  assert.equal(workspace.scrollTop, 116);
+});
 test('focusout before viewport restoration retains keyboard state until restoration',()=>{
  const e=fixture();e.focus();e.resize(470,470);e.blur();assert.equal(e.keyboard(),true);e.resize(844,844);assert.equal(e.keyboard(),false);
 });

@@ -82,6 +82,7 @@ html[data-studio-appearance=dark] .studio-app:not([data-studio-theme=light]) .sx
 .sx-desk-bars > [data-empty=true] { min-width: 0; padding: 0; overflow: hidden; opacity: 0; }
 .sx-desk-bars > .sx-desk-bar-empty { justify-items: center; flex-grow: 1; background: var(--desk-well); font-size: 12px; color: var(--desk-muted); }
 .sx-desk-text-button, .sx-desk-no-chart button { padding: 8px 0; min-height: 40px; color: var(--desk-ink); text-decoration: underline; }
+.sx-desk-pulse { min-height: 423px; }
 .sx-desk-filters, .sx-desk-filters > div { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
 .sx-desk-filters { gap: 7px; }
 .sx-desk-filters > div { padding: 2px; background: var(--desk-well); border-radius: 30px; box-shadow: inset 0 0 0 1px var(--desk-line); }
@@ -188,18 +189,78 @@ html[data-studio-appearance=dark] .studio-app:not([data-studio-theme=light]) .sx
 }
 @container workdesk (max-width: 545px) {
   .sx-desk-card, .sx-desk-account { padding: 17px 16px; border-radius: 19px; }
-  .sx-desk-work-row { grid-template-columns: minmax(0, 1fr) auto 28px; gap: 5px 10px; }
-  .sx-desk-count { flex-flow: row; align-items: baseline; gap: 5px; }
-  .sx-desk-bars { grid-column: 1/-1; grid-row: 2; height: 32px; }
+  .sx-desk-work .sx-desk-card-head { flex-direction: column; gap: 8px; margin-bottom: 4px; }
+  .sx-desk-key { margin: 0; font-size: 12px; line-height: 1.4; }
+  .sx-desk-work-row {
+    grid-template-columns: minmax(0, 1fr) fit-content(48%) 28px;
+    gap: 6px 8px;
+    padding-block: 8px;
+  }
+  .sx-desk-work-name { overflow-wrap: anywhere; }
+  .sx-desk-count {
+    flex-flow: row wrap;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 2px 5px;
+    min-width: 0;
+    text-align: end;
+    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
+  }
+  .sx-desk-count small { font-size: 11px; }
+  .sx-desk-bars { grid-column: 1/-1; grid-row: 2; min-height: 26px; height: auto; }
+  .sx-desk-bars > [data-empty=false] {
+    min-width: min-content;
+    padding-block: 3px;
+    font-size: 13px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
   .sx-desk-row-arrow { grid-column: 3; grid-row: 1; }
+  .sx-desk-account {
+    min-height: 0;
+    align-content: start;
+    row-gap: 12px;
+  }
+  .sx-desk-account header a { width: 44px; height: 44px; }
+  .sx-desk-account .sx-desk-account-total, .sx-desk-account dl { margin: 0; }
+  .sx-desk-account :is(.sx-desk-account-link, button) { min-height: 44px; }
   .sx-desk-plot { gap: 6px; height: 176px; }
   .sx-desk-filters { row-gap: 4px; }
+  .sx-desk-pulse { min-height: auto; }
   .sx-desk-pulse .sx-desk-card-head { gap: 12px; }
   .sx-desk-plot-axis small { font-size: 10px; }
 }
-@media (max-width: 760px) {
-  .sx-studio-desk .sx-desk-header { flex-flow: column; align-items: flex-start; gap: 12px; }
-  .sx-studio-desk .sx-desk-tools { max-width: 100%; flex-wrap: wrap; justify-content: flex-start; }
+@media (max-width: 768px) {
+  .sx-studio-desk .sx-desk-header {
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 0;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .sx-studio-desk .sx-desk-intro { min-width: 0; overflow-wrap: anywhere; }
+  .studio-app .sx-studio-desk .sx-desk-header h1 {
+    font-size: clamp(1.5rem, 6.6vw, 1.875rem);
+    line-height: 1.18;
+    letter-spacing: -.035em;
+    text-wrap: balance;
+  }
+  .studio-app .sx-studio-desk .sx-desk-header p { font-size: 13px; line-height: 1.5; }
+  .sx-studio-desk .sx-desk-tools {
+    width: min(100%, 28rem);
+    flex-wrap: wrap;
+  }
+  .sx-studio-desk .sx-desk-tools > * { flex: 1 1 min(100%, 8.5rem); min-width: 0; }
+  .sx-studio-desk .sx-desk-tools > a.studio-control-button { flex-basis: 100%; }
+  .sx-studio-desk .sx-desk-tools .sx-desk-options > button { width: 100%; }
+  .sx-studio-desk .sx-desk-tools :is(.sx-desk-new, .studio-control-button) {
+    min-height: 44px;
+    padding: 8px 12px;
+    text-align: center;
+  }
 }
 @media (pointer: coarse) {
   .sx-studio-desk .sx-desk-tools :is(.sx-desk-new, .studio-control-button),
@@ -211,10 +272,7 @@ html[data-studio-appearance=dark] .studio-app:not([data-studio-theme=light]) .sx
 .sx-desk-status-body dl > div { background: var(--desk-well); padding: 5px 8px; border-radius: 6px; }
 .sx-desk-status-body dl { gap: 5px; }
 .sx-desk-status .sx-desk-card-head > a { color: var(--desk-ink); }
-.sx-desk-pulse { min-height: 423px; }
 .sx-desk-plot-axis small { padding-bottom: 1px; }
-@media (max-width: 760px) { .sx-studio-desk .sx-desk-header { align-items: flex-start; } }
-@container workdesk (max-width: 545px) { .sx-desk-pulse { min-height: auto; } }
 
 #sx-workspace-shell .sx-studio-desk .studio-task-row h3 > a,
 #sx-workspace-shell .sx-studio-desk :is(.sx-desk-account dd,.overview-finance-amounts dd) a {

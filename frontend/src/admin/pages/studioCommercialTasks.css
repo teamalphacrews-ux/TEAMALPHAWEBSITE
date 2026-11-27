@@ -19,6 +19,7 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-task-toolbar { grid-template-columns:minmax(180px,1fr) minmax(170px,220px) minmax(135px,160px); padding:18px 0; gap:12px; border-bottom:0; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-task-toolbar .studio-search { min-width:0; width:100%; max-width:380px; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .production-filter-feedback { padding:0 0 16px; font-size:13px; }
+.sx-task-page .sx-task-empty-stage-toggle { display:none; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-board { position:relative; display:grid; grid-template-columns:repeat(5,minmax(220px,1fr)); align-items:start; gap:var(--sx-task-gap); max-width:100%; overflow-x:auto; padding:4px 1px 18px; scrollbar-color:var(--studio-control-border) transparent; scrollbar-width:thin; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane { min-width:0; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane-header { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:38px; margin-bottom:12px; padding:0 2px; }
@@ -86,6 +87,9 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-task-toolbar { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-task-toolbar > .studio-search { grid-column:1/-1; max-width:none; }
 }
+@media (pointer:coarse) {
+  #sx-workspace-shell .sx-task-page .ops-task-toolbar .ops-search > input { font-size:16px; }
+}
 @media (max-width:700px) {
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); align-items:start; gap:12px; margin-bottom:16px; padding-bottom:16px; }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-summary > div { display:grid; align-content:start; gap:4px; }
@@ -93,11 +97,53 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-section-heading { position:relative; flex-direction:column; align-items:start; gap:0; padding-bottom:16px; }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-view-switch { width:100%; }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-view-switch button { flex:1; }
-  .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-board { grid-template-columns:minmax(0,1fr); overflow:visible; gap:24px; }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane-items { gap:12px; }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card { padding:18px; }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-rail { grid-template-columns:minmax(0,1fr); }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-task-toolbar { padding:16px 0; }
+}
+@media (max-width:768px) {
+  #sx-workspace-shell .sx-task-page > .studio-page-heading { margin-bottom:14px; }
+  #sx-workspace-shell .sx-task-page .studio-phone-filter { padding:0; }
+  #sx-workspace-shell .sx-task-page .ops-task-toolbar { margin-block:0; padding:8px 0 12px; gap:8px; }
+  #sx-workspace-shell .sx-task-page .ops-task-toolbar .ops-search { --studio-search-outline-offset:-1px; }
+  #sx-workspace-shell .sx-task-page .sx-scheduled-next {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:8px;
+    margin:0 0 8px;
+    padding:4px 0 12px;
+  }
+  #sx-workspace-shell .sx-task-page .sx-scheduled-next button {
+    gap:4px;
+    padding-inline:8px;
+    font-size:.8125rem;
+  }
+  #sx-workspace-shell .sx-task-page .sx-task-board {
+    grid-template-columns:minmax(0,1fr);
+    overflow:visible;
+    gap:8px;
+    padding:0;
+  }
+  #sx-workspace-shell .sx-task-page .sx-task-lane { min-height:0; }
+  #sx-workspace-shell .sx-task-page .sx-task-lane-empty { min-height:0; padding:12px; }
+  #sx-workspace-shell .sx-task-page .sx-task-board:not([data-show-empty]):not([data-dragging]) .sx-task-lane[data-empty] { display:none; }
+  #sx-workspace-shell .sx-task-page .sx-task-empty-stage-toggle {
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:6px;
+    min-height:44px;
+    margin-left:auto;
+    padding:0 2px;
+    border:0;
+    background:none;
+    color:var(--studio-muted);
+    font-size:.8125rem;
+    cursor:pointer;
+  }
+  #sx-workspace-shell .sx-task-page .sx-task-empty-stage-toggle:hover { color:var(--studio-text); }
+  #sx-workspace-shell .sx-task-page .sx-task-empty-stage-toggle[aria-expanded="true"] svg { transform:rotate(180deg); }
 }
 @media (prefers-reduced-motion:reduce) {
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page :is(.sx-task-card,.sx-task-card-actions button,.sx-task-view-switch button) { transition:none; }

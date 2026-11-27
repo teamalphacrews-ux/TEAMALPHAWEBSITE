@@ -23,6 +23,19 @@ test('browser chrome tracks dark and light workspace themes and restores the pub
   restoreLight();
   assert.equal(doc.documentElement.style.getPropertyValue('--studio-browser-canvas'), '');
 });
+test('commercial workspace chrome matches its canvas and restores the viewport on exit', () => {
+  const doc = fakeDocument();
+  const viewport = doc.querySelector('meta[name="viewport"]');
+  for (const [theme, color] of [['dark', '#111213'], ['light', '#e6e7ea']]) {
+    const restore = installStudioBrowserTheme(doc, theme, { commercialWorkspace: true });
+    assert.equal(doc.meta.getAttribute('content'), color);
+    assert.equal(doc.documentElement.style.getPropertyValue('--studio-browser-canvas'), color);
+    assert.equal(viewport.getAttribute('content'), 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+    restore();
+    assert.equal(viewport.getAttribute('content'), 'width=device-width, initial-scale=1.0');
+    assert.equal(doc.meta.getAttribute('content'), '#F6F3ED');
+  }
+});
 test('sign-in uses a white safe-area canvas rather than the public ivory theme, then restores it', () => {
   const doc = fakeDocument();
   const restore = installStudioBrowserTheme(doc, 'auth');

@@ -4,6 +4,10 @@
 .studio-page-search .studio-record-results .studio-error { color: var(--studio-danger); }
 .studio-page-search .studio-record-results a { overflow-wrap: anywhere; align-content: center; }
 
+@media (max-width: 768px), (pointer: coarse) {
+  .studio-commercial-glass .studio-page-search .studio-search { --studio-search-outline-offset: -1px; }
+}
+
 @media (max-width: 680px) {
   .studio-commercial-glass.studio-modal-overlay:has(.studio-page-search) {
     align-items: flex-start;

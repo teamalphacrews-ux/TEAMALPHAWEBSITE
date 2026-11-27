@@ -4,7 +4,7 @@ import StudioSelect from '../components/common/StudioSelect';
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
 import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useState, useRef } from "react";
 import axios from "axios";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -13,6 +13,7 @@ import {
   Check,
   CheckCheck,
   CheckCircle2,
+  ChevronDown,
   Circle,
   Clock3,
   Columns3,
@@ -69,13 +70,29 @@ const taskLane = task => task.status === 'completed'
   : taskBoardLanes.find(lane => lane.stages.includes(task.productionStage))?.id || 'planned';
 
 function CommercialTaskBoard({ tasks, getProject, crew, today, busyId, openEditor, toggleTask, requestDelete, canWrite, canDelete, moveTask }) {
+  const boardId = useId();
   const [dragged, setDragged] = useState(null);
   const [dropLane, setDropLane] = useState(null);
+  const [showEmptyStages, setShowEmptyStages] = useState(false);
   const finishDrag = () => { setDragged(null); setDropLane(null); };
-  return <div className="sx-task-board" role="region" aria-label="Production task board" tabIndex={0}>
-    {taskBoardLanes.map(lane => {
-      const items = tasks.filter(task => taskLane(task) === lane.id);
-      return <section className="sx-task-lane" data-lane={lane.id} key={lane.id} aria-labelledby={'sx-task-lane-' + lane.id}
+  const lanes = taskBoardLanes.map(lane => ({
+    ...lane,
+    items: tasks.filter(task => taskLane(task) === lane.id),
+  }));
+  const emptyStages = lanes.filter(lane => !lane.items.length);
+  return <div className="sx-task-board" role="region" aria-label="Production task board" tabIndex={0}
+    data-show-empty={showEmptyStages || undefined} data-dragging={Boolean(dragged) || undefined}>
+    {emptyStages.length > 0 && (
+      <button type="button" className="sx-task-empty-stage-toggle" aria-expanded={showEmptyStages}
+        aria-controls={emptyStages.map(lane => boardId + '-' + lane.id).join(' ')} onClick={() => setShowEmptyStages(show => !show)}>
+        {showEmptyStages ? 'Hide empty stages' : 'Show empty stages'}
+        <ChevronDown size={16} aria-hidden="true" />
+      </button>
+    )}
+    {lanes.map(lane => {
+      const { items } = lane;
+      return <section className="sx-task-lane" id={boardId + '-' + lane.id} data-lane={lane.id} key={lane.id} aria-labelledby={'sx-task-lane-' + lane.id}
+        data-empty={!items.length || undefined}
         data-drop-target={dropLane === lane.id || undefined}
         onDragOver={event => {
           if (!dragged || !canWrite || taskLane(dragged) === lane.id) return;
@@ -581,10 +598,18 @@ export default function PostProduction() {
           </div>
           <div className="studio-toolbar ops-task-toolbar">
             <label className="studio-search ops-search">
-              <Search size={16} />
+              <Search size={16} aria-hidden="true" />
               <input
+                type="search"
+                enterKeyHint="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key !== 'Enter' || event.nativeEvent.isComposing
+                    || !window.matchMedia('(pointer: coarse)').matches) return;
+                  event.preventDefault();
+                  event.currentTarget.blur();
+                }}
                 placeholder="Search tasks or projects"
                 aria-label="Search tasks or projects"
               />

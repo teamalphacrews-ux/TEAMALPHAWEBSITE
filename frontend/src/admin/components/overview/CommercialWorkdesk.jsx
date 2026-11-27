@@ -19,7 +19,7 @@ export function WorkdeskHeader({ greeting, name, today, date, context, todayMode
   const navigate = useNavigate();
   const title = todayMode ? greeting + ', ' + name : 'Studio insights';
   return <header className="sx-desk-header">
-    <div><time dateTime={today}>{date(today, { weekday: 'long', day: 'numeric', month: 'long' })}</time>
+    <div className="sx-desk-intro"><time dateTime={today}>{date(today, { weekday: 'long', day: 'numeric', month: 'long' })}</time>
       <WorkspaceMotionTitle>{title}</WorkspaceMotionTitle>{context && <p>{context}</p>}</div>
     <div className="sx-desk-tools">
       <RestartPreviewLink className="studio-control-button" />

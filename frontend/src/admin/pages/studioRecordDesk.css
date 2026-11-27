@@ -137,10 +137,6 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
   html:not([data-studio-motion=reduced]) .studio-commercial-glass .record-person:hover { transform: translateY(-2px); }
 }
 @media (max-width:760px) {
-  html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-board {
-    grid-template-columns: repeat(5,minmax(245px,86%)); overflow-x: auto; scroll-snap-type: x proximity;
-  }
-  html .studio-commercial-glass .sx-task-lane { scroll-snap-align: start; }
   html .studio-commercial-glass .record-project-timeline li { flex-wrap: wrap; }
   html .studio-commercial-glass .record-enquiries .record-enquiry-lane { min-height: 0; }
 }

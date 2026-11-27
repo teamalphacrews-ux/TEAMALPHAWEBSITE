@@ -1,6 +1,11 @@
 /* On phones the tabs own their own row. Safari can resize the viewport without
    covering the last action on a long page or requiring a guessed bottom spacer. */
 @media (max-width: 768px) {
+  #sx-workspace-shell.studio-native-phone {
+    --workspace-phone-gutter: 12px;
+    --workspace-phone-left: max(var(--workspace-phone-gutter), env(safe-area-inset-left));
+    --workspace-phone-right: max(var(--workspace-phone-gutter), env(safe-area-inset-right));
+  }
   #sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) {
     display: flex;
     flex-direction: column;
@@ -16,11 +21,27 @@
     padding-bottom: 0;
     scroll-padding-block: 12px;
   }
-  #sx-workspace-shell.studio-native-phone .studio-topbar { flex-shrink: 0; }
-  #sx-workspace-shell.studio-native-phone .studio-main { padding-bottom: 24px; }
+  #sx-workspace-shell.studio-native-phone .studio-topbar {
+    flex-shrink: 0;
+    padding: calc(8px + env(safe-area-inset-top)) var(--workspace-phone-right) 8px var(--workspace-phone-left);
+  }
+  #sx-workspace-shell.studio-native-phone .studio-main {
+    padding-bottom: 24px;
+  }
+  #sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) .studio-main {
+    padding-inline: var(--workspace-phone-left) var(--workspace-phone-right);
+  }
+  #sx-workspace-shell.studio-native-phone .studio-topbar button.sx-desk-appearance {
+    flex: 0 0 44px; width: 44px; min-width: 44px; max-width: 44px;
+    justify-content: center; padding: 0;
+  }
+  #sx-workspace-shell .sx-desk-appearance[data-theme-choice=dark] span:last-child,
+  #sx-workspace-shell .sx-desk-appearance[data-theme-choice=light] span:first-child { display: none; }
+  #sx-workspace-shell .studio-topbar .sx-desk-appearance::before { content: none; }
+  #sx-workspace-shell .sx-desk-appearance span { width: 100%; color: var(--desk-ink); }
   #sx-workspace-shell .studio-iphone-navigation {
     flex: none;
-    padding: 6px max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    padding: 8px var(--workspace-phone-right) calc(8px + env(safe-area-inset-bottom)) var(--workspace-phone-left);
     background: var(--studio-canvas);
   }
   #sx-workspace-shell .studio-iphone-navigation > .studio-mobile-navigation {
@@ -31,7 +52,12 @@
     box-sizing: border-box;
   }
   html[data-studio-keyboard] #sx-workspace-shell .studio-iphone-navigation { display: none; }
-  html[data-studio-keyboard] #sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) { height: var(--studio-visible-height, 100dvh); }
+  /* iOS can pan the visual viewport as well as shrink it during editing. */
+  html[data-studio-keyboard] #sx-workspace-shell.studio-native-phone:not(.studio-focus-mode) {
+    position: fixed;
+    inset: var(--studio-visible-top, 0px) 0 auto;
+    height: var(--studio-visible-height, 100dvh);
+  }
 }
 
 /* Keep every action reachable in one row on ordinary phones. A second row
@@ -41,21 +67,15 @@
     flex-wrap: nowrap;
     gap: 4px;
     min-height: 64px;
-    padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
   }
   #sx-workspace-shell .studio-topbar .studio-topbar-context { flex: 1 1 0%; gap: 0; }
   #sx-workspace-shell .studio-topbar-context .sx-page-guide-trigger { max-width: calc(100% - 44px); gap: 4px; }
   #sx-workspace-shell .studio-topbar .studio-record-search-trigger,
-  #sx-workspace-shell .studio-topbar .studio-quick-create > button,
-  #sx-workspace-shell.studio-native-phone .studio-topbar button.sx-desk-appearance {
+  #sx-workspace-shell .studio-topbar .studio-quick-create > button {
     flex: 0 0 44px; width: 44px; min-width: 44px; max-width: 44px;
     justify-content: center; padding: 0;
   }
-  #sx-workspace-shell .studio-topbar :is(.sx-record-search-short, .studio-quick-create-label),
-  #sx-workspace-shell .sx-desk-appearance[data-theme-choice=dark] span:last-child,
-  #sx-workspace-shell .sx-desk-appearance[data-theme-choice=light] span:first-child { display: none; }
-  #sx-workspace-shell .studio-topbar .sx-desk-appearance::before { content: none; }
-  #sx-workspace-shell .sx-desk-appearance span { width: 100%; color: var(--desk-ink); }
+  #sx-workspace-shell .studio-topbar :is(.sx-record-search-short, .studio-quick-create-label) { display: none; }
 }
 
 .studio-commercial-glass #studio-iphone-more .studio-more-panel {

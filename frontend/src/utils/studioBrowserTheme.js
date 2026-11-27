@@ -1,8 +1,9 @@
 const colors = { dark: '#131416', light: '#ffffff', auth: '#ffffff', 'product-auth': '#000000' };
+const workspaceColors = { dark: '#111213', light: '#e6e7ea' };
 
 /** Match browser chrome and safe-area canvas to the workspace; restore public-page branding on exit. */
-export function installStudioBrowserTheme(document, theme) {
-  const color = colors[theme] || colors.light;
+export function installStudioBrowserTheme(document, theme, { commercialWorkspace = false } = {}) {
+  const color = commercialWorkspace ? workspaceColors[theme] || workspaceColors.light : colors[theme] || colors.light;
   const root = document.documentElement;
   let meta = document.querySelector('meta[name="theme-color"]');
   const created = !meta;
@@ -11,7 +12,7 @@ export function installStudioBrowserTheme(document, theme) {
     meta.setAttribute('name', 'theme-color');
     document.head.appendChild(meta);
   }
-  const viewport = theme === 'product-auth' ? document.querySelector('meta[name="viewport"]') : null;
+  const viewport = commercialWorkspace || theme === 'product-auth' ? document.querySelector('meta[name="viewport"]') : null;
   const viewportContent = viewport?.getAttribute('content');
   if (viewport && viewportContent != null) {
     const options = viewportContent.split(',').map(option => option.trim()).filter(option => option && !/^viewport-fit\s*=/i.test(option));
