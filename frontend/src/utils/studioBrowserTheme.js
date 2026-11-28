@@ -1,8 +1,9 @@
 const colors = { dark: '#131416', light: '#ffffff', auth: '#ffffff', 'product-auth': '#000000' };
 
 /** Match browser chrome and safe-area canvas to the workspace; restore public-page branding on exit. */
-export function installStudioBrowserTheme(document, theme) {
-  const color = colors[theme] || colors.light;
+export function installStudioBrowserTheme(document, theme, { canvasColor } = {}) {
+  const workspace = theme === 'dark' || theme === 'light';
+  const color = workspace && /^#[0-9a-f]{6}$/i.test(canvasColor) ? canvasColor : colors[theme] || colors.light;
   const root = document.documentElement;
   let meta = document.querySelector('meta[name="theme-color"]');
   const created = !meta;

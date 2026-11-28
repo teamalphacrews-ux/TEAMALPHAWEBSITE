@@ -87,6 +87,7 @@ export default function Settings() {
   const tab = availableSections.some(section => section.id === requestedSection) ? requestedSection : null;
   const current = availableSections.find(section => section.id === tab);
   const personalSection = current?.group === 'Personal';
+  const scopeNote = <span className="settings-scope-note">{personalSection ? 'Applies to you' : 'Shared with your studio'}</span>;
   const showSetupAction = IS_COMMERCIAL_DEPLOYMENT && canReviewStudioSetup(user) &&
     query.trim().toLowerCase().split(/\s+/).every(word => 'restart studio setup'.includes(word));
   const matching = availableSections.filter(section => (showSetupAction && section.id === 'profile') || query.trim().toLowerCase().split(/\s+/).every(word => (section.title + ' ' + t(section.title) + ' ' + section.description + ' ' + section.keywords).toLowerCase().includes(word)));
@@ -226,7 +227,7 @@ export default function Settings() {
           <p className="settings-directory-note">Personal preferences apply to your account. Studio settings are shared with your team.</p>
         </>}
       </section> : <>
-        <div className="settings-detail-toolbar"><button type="button" className="settings-back-button" onClick={() => selectSection(null)}><ArrowLeft size={17} />All settings</button><span className="settings-scope-note">{personalSection ? 'Applies to you' : 'Shared with your studio'}</span></div>
+        {!IS_COMMERCIAL_DEPLOYMENT && <div className="settings-detail-toolbar"><button type="button" className="settings-back-button" onClick={() => selectSection(null)}><ArrowLeft size={17} />All settings</button>{scopeNote}</div>}
         <div className="settings-layout">
           <aside className="settings-rail">
             {IS_COMMERCIAL_DEPLOYMENT && <div className="settings-studio-identity">
@@ -236,7 +237,11 @@ export default function Settings() {
             </div>}
             <nav aria-label={current.group + ' settings'}><p className="settings-rail-title">{t(current.group)}</p>{availableSections.filter(section => section.group === current.group).map(section => sectionLink(section, true))}</nav><button type="button" className="settings-rail-browse" onClick={() => selectSection(null)}>Browse all settings<ChevronRight size={14} /></button></aside>
           <div className="settings-content">
-            <header className="settings-section-heading"><StudioAppIcon icon={current.icon} tone={current.tone} size={40} /><div><h2 tabIndex={-1} ref={heading} lang={preferences.language} dir="auto">{t(current.title)}</h2><p>{current.description}</p></div></header>
+            <header className="settings-section-heading">
+              <StudioAppIcon icon={current.icon} tone={current.tone} size={40} />
+              <div><h2 tabIndex={-1} ref={heading} lang={preferences.language} dir="auto">{t(current.title)}</h2><p>{current.description}</p></div>
+              {IS_COMMERCIAL_DEPLOYMENT && scopeNote}
+            </header>
             <SettingsDisclosures key={tab}>
               {tab === 'device' ? <NativeDeviceSettings /> : tab === 'workspace' ? <WorkspacePreferences /> : tab === 'language' ? <LocalePreferences studioTimezone={values.timezone} /> : tab === 'notifications' ? <NotificationPreferences /> : ['security', 'backups'].includes(tab) ? <fieldset className="settings-edit-fields" disabled={busy}><SecurityRecoveryPanel mode={tab} settings={values} onChange={changeNested} /></fieldset> : <form id="studio-settings-form" onSubmit={event => { saveSettings(event).catch(() => {}); }} className="settings-editor"><fieldset className="settings-edit-fields" disabled={busy}><SettingsEditor tab={tab} values={values} change={change} changeNested={changeNested} beginProfilePhotoUpload={beginProfilePhotoUpload} saving={busy} /></fieldset></form>}
             </SettingsDisclosures>

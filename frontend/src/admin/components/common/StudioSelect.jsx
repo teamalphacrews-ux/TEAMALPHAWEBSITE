@@ -50,6 +50,7 @@ export default function StudioSelect({ children, className = '', value, defaultV
       onInvalid={event => { onInvalid?.(event); if (window.matchMedia('(max-width: 768px)').matches) { event.preventDefault(); show(); } }}>
       {children}
     </select>
+    {IS_COMMERCIAL_DEPLOYMENT && <ChevronDown size={16} className="studio-select-native-chevron" aria-hidden="true" />}
     <button ref={trigger} type="button" className={'studio-select-trigger ' + className} disabled={disabled} role="combobox" aria-label={(props['aria-label'] || title) ? (props['aria-label'] || title) + ": " + (selected?.label || "") : undefined} aria-labelledby={props['aria-labelledby']} aria-describedby={props['aria-describedby']} aria-invalid={props['aria-invalid']} aria-required={props.required || undefined} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? uid : undefined} onClick={show} onKeyDown={event => { if (event.key === 'ArrowDown') { event.preventDefault(); show(); } }}>
       <span className="studio-select-value">{selected?.label || options[0]?.label || 'Choose an option'}</span><ChevronDown size={16} aria-hidden="true"/>
     </button>

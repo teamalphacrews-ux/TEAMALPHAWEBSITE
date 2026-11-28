@@ -252,3 +252,40 @@
 #sx-workspace-shell .wa-wabb-grid .wa-wabb-field-help { font-size: 14px; line-height: 1.55; }
 #sx-workspace-shell .wa-wabb-message-help { font-size: 12px; }
 #sx-workspace-shell .wa-wabb-send-row > span { font-size: 12px; }
+
+#sx-workspace-shell .wa-workspace {
+  --wa-inset: clamp(14px, 2vw, 24px);
+  min-height: min(680px, 75vh);
+}
+#sx-workspace-shell .wa-inbox { padding: 0; }
+#sx-workspace-shell .wa-inbox-heading {
+  padding: 14px var(--wa-inset);
+  margin: 0;
+  border-bottom: 1px solid var(--studio-border);
+}
+#sx-workspace-shell :is(.wa-conversation-row, .wa-thread-heading, .wa-context-bar, .wa-messages, .wa-composer) {
+  padding-inline: var(--wa-inset);
+}
+#sx-workspace-shell .wa-conversation-row:focus-visible { outline-offset: -3px; }
+#sx-workspace-shell .wa-load-more { margin-block: 12px; }
+#sx-workspace-shell .wa-wabb-grid,
+#sx-workspace-shell .wa-wabb-sidebar { gap: clamp(14px, 2vw, 22px); }
+@media (max-width: 760px) {
+  #sx-workspace-shell .wa-workspace { min-height: 0; }
+  #sx-workspace-shell .wa-connection-strip {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  #sx-workspace-shell .wa-connection-strip > div { min-width: 0; }
+  #sx-workspace-shell .wa-connection-strip > :is(.studio-badge, .studio-button) {
+    grid-column: 2;
+    justify-self: start;
+    margin-inline: 0;
+  }
+  #sx-workspace-shell .studio-whatsapp-page .studio-heading-actions > .studio-button {
+    flex: 1 1 max-content;
+    max-inline-size: 100%;
+    justify-content: center;
+  }
+  #sx-workspace-shell .wa-context-bar :is(button, a) { min-height: 44px; }
+}

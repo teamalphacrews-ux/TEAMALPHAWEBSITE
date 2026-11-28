@@ -1,21 +1,23 @@
-/* Palette roles are shared by the workspace and the sample tiles in Settings.
-   Only an explicit custom palette remaps workspace tokens. */
+/* Daylight palettes tint the workspace materials. Dark mode shares neutral
+   materials across palettes, with color reserved for accents. */
+html[data-studio-appearance="light"] { --studio-workspace-canvas: #ffffff; }
+html[data-studio-appearance="dark"] { --studio-workspace-canvas: #000000; }
 :where(html[data-studio-color-theme], [data-studio-palette-preview]) {
+  --palette-canvas: var(--studio-workspace-canvas, #ffffff);
   --palette-gradient: linear-gradient(135deg, var(--palette-sheen), var(--palette-accent));
 }
 
 :is(html[data-studio-color-theme="rosso-corsa"], [data-studio-palette-preview="rosso-corsa"]) {
-  --palette-canvas: #f1ebed;
-  --palette-surface: #fffafb;
-  --palette-raised: #f4e9ec;
-  --palette-ink: #241d22;
-  --palette-muted: #62525a;
-  --palette-border: #d9c8ce;
+  --palette-surface: #fbf4f6;
+  --palette-raised: #f3edef;
+  --palette-ink: #251e22;
+  --palette-muted: #615059;
+  --palette-border: #d9ccd0;
   --palette-control-border: #8b717b;
-  --palette-accent: #a42035;
+  --palette-accent: #a71c32;
   --palette-accent-hover: #8e162b;
   --palette-on-accent: #fffafa;
-  --palette-sheen: #b62640;
+  --palette-sheen: #b82942;
   --palette-selection: #f3dbe1;
   --palette-on-selection: #84172e;
   --palette-focus: #9a1d35;
@@ -23,61 +25,43 @@
 
 html[data-studio-appearance="dark"][data-studio-color-theme="rosso-corsa"],
 html[data-studio-appearance="dark"] [data-studio-palette-preview="rosso-corsa"] {
-  --palette-canvas: #191517;
-  --palette-surface: #241d21;
-  --palette-raised: #302329;
-  --palette-ink: #fff1f3;
-  --palette-muted: #d4b4bc;
-  --palette-border: #513a42;
-  --palette-control-border: #b78291;
-  --palette-accent: #f05e68;
+  --palette-accent: #f3656e;
   --palette-accent-hover: #ff747b;
   --palette-on-accent: #2b1218;
   --palette-sheen: #ff787c;
-  --palette-selection: #4f2a37;
   --palette-on-selection: #ffb7c1;
   --palette-focus: #f5a1ad;
 }
 
 :is(html[data-studio-color-theme="riviera-teal"], [data-studio-palette-preview="riviera-teal"]) {
-  --palette-canvas: #e5eeed;
-  --palette-surface: #f7fcfa;
-  --palette-raised: #e9f3f0;
-  --palette-ink: #162723;
-  --palette-muted: #485e59;
-  --palette-border: #cadbd6;
+  --palette-surface: #f0f8fa;
+  --palette-raised: #eaf2f3;
+  --palette-ink: #14252c;
+  --palette-muted: #465d65;
+  --palette-border: #c8dbe0;
   --palette-control-border: #6e8880;
-  --palette-accent: #09655d;
+  --palette-accent: #006565;
   --palette-accent-hover: #084f49;
   --palette-on-accent: #f4fffd;
-  --palette-sheen: #13766c;
-  --palette-selection: #d9eee9;
+  --palette-sheen: #137477;
+  --palette-selection: #d7eded;
   --palette-on-selection: #07544c;
   --palette-focus: #0b665b;
 }
 
 html[data-studio-appearance="dark"][data-studio-color-theme="riviera-teal"],
 html[data-studio-appearance="dark"] [data-studio-palette-preview="riviera-teal"] {
-  --palette-canvas: #101c1d;
-  --palette-surface: #172629;
-  --palette-raised: #1f3334;
-  --palette-ink: #e5f8f4;
-  --palette-muted: #a9cac3;
-  --palette-border: #364d4b;
-  --palette-control-border: #759b94;
-  --palette-accent: #68cfc2;
-  --palette-accent-hover: #88e3d6;
+  --palette-accent: #58ceca;
+  --palette-accent-hover: #87e3de;
   --palette-on-accent: #102724;
-  --palette-sheen: #88e3d6;
-  --palette-selection: #234340;
+  --palette-sheen: #87e3de;
   --palette-on-selection: #a3ebe1;
   --palette-focus: #85ded0;
 }
 
 :is(html[data-studio-color-theme="alpine-jade"], [data-studio-palette-preview="alpine-jade"]) {
-  --palette-canvas: #e9eee6;
-  --palette-surface: #fafcf7;
-  --palette-raised: #ecf2e8;
+  --palette-surface: #f3f8f0;
+  --palette-raised: #edf2e9;
   --palette-ink: #1d291d;
   --palette-muted: #4b5c4b;
   --palette-border: #ced9c9;
@@ -85,7 +69,7 @@ html[data-studio-appearance="dark"] [data-studio-palette-preview="riviera-teal"]
   --palette-accent: #3a613e;
   --palette-accent-hover: #2b4e31;
   --palette-on-accent: #fbfff6;
-  --palette-sheen: #4a754a;
+  --palette-sheen: #50774a;
   --palette-selection: #e0ecd9;
   --palette-on-selection: #315837;
   --palette-focus: #37633b;
@@ -93,34 +77,25 @@ html[data-studio-appearance="dark"] [data-studio-palette-preview="riviera-teal"]
 
 html[data-studio-appearance="dark"][data-studio-color-theme="alpine-jade"],
 html[data-studio-appearance="dark"] [data-studio-palette-preview="alpine-jade"] {
-  --palette-canvas: #131d16;
-  --palette-surface: #19261d;
-  --palette-raised: #223225;
-  --palette-ink: #ebf6e8;
-  --palette-muted: #b7cbb3;
-  --palette-border: #384e3a;
-  --palette-control-border: #819e7d;
-  --palette-accent: #9bc58c;
+  --palette-accent: #9ac98a;
   --palette-accent-hover: #b7dca7;
   --palette-on-accent: #1b2b1d;
   --palette-sheen: #b8dba9;
-  --palette-selection: #344630;
   --palette-on-selection: #c8e5bd;
   --palette-focus: #b1d3a3;
 }
 
 :is(html[data-studio-color-theme="midnight-orchid"], [data-studio-palette-preview="midnight-orchid"]) {
-  --palette-canvas: #eeeaf4;
-  --palette-surface: #fbf9ff;
-  --palette-raised: #f2eef8;
+  --palette-surface: #f5f1fa;
+  --palette-raised: #f0edf8;
   --palette-ink: #261e31;
   --palette-muted: #5e526d;
   --palette-border: #d8cce2;
   --palette-control-border: #877796;
-  --palette-accent: #704398;
+  --palette-accent: #7246a0;
   --palette-accent-hover: #5a307e;
   --palette-on-accent: #fff9ff;
-  --palette-sheen: #8152ab;
+  --palette-sheen: #8450af;
   --palette-selection: #ebdcf6;
   --palette-on-selection: #623488;
   --palette-focus: #6a3c8d;
@@ -128,26 +103,17 @@ html[data-studio-appearance="dark"] [data-studio-palette-preview="alpine-jade"] 
 
 html[data-studio-appearance="dark"][data-studio-color-theme="midnight-orchid"],
 html[data-studio-appearance="dark"] [data-studio-palette-preview="midnight-orchid"] {
-  --palette-canvas: #191420;
-  --palette-surface: #241c2d;
-  --palette-raised: #30253b;
-  --palette-ink: #f3eafa;
-  --palette-muted: #cdbbdb;
-  --palette-border: #4c3b58;
-  --palette-control-border: #a289b5;
   --palette-accent: #c49ae4;
   --palette-accent-hover: #d5afea;
   --palette-on-accent: #2c193a;
   --palette-sheen: #d7b0ec;
-  --palette-selection: #483356;
   --palette-on-selection: #e4c1f4;
   --palette-focus: #d1a8ea;
 }
 
 :is(html[data-studio-color-theme="sahara-gold"], [data-studio-palette-preview="sahara-gold"]) {
-  --palette-canvas: #f3ebde;
-  --palette-surface: #fffbf3;
-  --palette-raised: #f6edde;
+  --palette-surface: #fbf5e9;
+  --palette-raised: #f5ede0;
   --palette-ink: #302518;
   --palette-muted: #655540;
   --palette-border: #dfcdb5;
@@ -163,24 +129,15 @@ html[data-studio-appearance="dark"] [data-studio-palette-preview="midnight-orchi
 
 html[data-studio-appearance="dark"][data-studio-color-theme="sahara-gold"],
 html[data-studio-appearance="dark"] [data-studio-palette-preview="sahara-gold"] {
-  --palette-canvas: #1d1912;
-  --palette-surface: #292318;
-  --palette-raised: #372e20;
-  --palette-ink: #faefd9;
-  --palette-muted: #d5c19f;
-  --palette-border: #51422f;
-  --palette-control-border: #ab926d;
-  --palette-accent: #edbc75;
+  --palette-accent: #efbc70;
   --palette-accent-hover: #f4d09a;
   --palette-on-accent: #2a1e0e;
   --palette-sheen: #f4ce92;
-  --palette-selection: #4b3a25;
   --palette-on-selection: #f2d6ac;
   --palette-focus: #f0c583;
 }
 
 [data-studio-palette-preview="default"] {
-  --palette-canvas: #e6e7ea;
   --palette-surface: #f5f5f6;
   --palette-raised: #ecedef;
   --palette-ink: #161718;
@@ -197,25 +154,17 @@ html[data-studio-appearance="dark"] [data-studio-palette-preview="sahara-gold"] 
 }
 
 html[data-studio-appearance="dark"] [data-studio-palette-preview="default"] {
-  --palette-canvas: #111213;
-  --palette-surface: #1b1c1e;
-  --palette-raised: #222326;
-  --palette-ink: #f0f0f1;
-  --palette-muted: #afb2b9;
-  --palette-border: #393a3c;
-  --palette-control-border: #83868c;
   --palette-accent: #f4a43a;
   --palette-accent-hover: #f7b14f;
   --palette-on-accent: #1c1304;
   --palette-sheen: #f8c062;
-  --palette-selection: #303236;
   --palette-on-selection: #f0f0f1;
   --palette-focus: #f6b95e;
 }
 
 .studio-personal-workspace:not(.studio-commercial-glass) [data-studio-palette-preview="default"] {
-  --palette-canvas: #fff;
   --palette-surface: #fff;
+  --palette-raised: #f5f6f8;
   --palette-ink: #20242b;
   --palette-muted: #69717d;
   --palette-border: #e3e7ed;
@@ -227,15 +176,20 @@ html[data-studio-appearance="dark"] [data-studio-palette-preview="default"] {
 }
 
 html[data-studio-appearance="dark"] .studio-personal-workspace:not(.studio-commercial-glass) [data-studio-palette-preview="default"] {
-  --palette-canvas: #131416;
-  --palette-surface: #202124;
-  --palette-ink: #f2f2f4;
-  --palette-muted: #b0b0b5;
-  --palette-border: #3c3d41;
   --palette-accent: #3265d7;
   --palette-sheen: #3265d7;
-  --palette-selection: #243355;
   --palette-on-selection: #a5c2ff;
+}
+
+html[data-studio-appearance="dark"][data-studio-color-theme],
+html[data-studio-appearance="dark"] [data-studio-palette-preview] {
+  --palette-surface: #141414;
+  --palette-raised: #1e1e1e;
+  --palette-ink: #f2f2f2;
+  --palette-muted: #b7b7b7;
+  --palette-border: #383838;
+  --palette-control-border: #808080;
+  --palette-selection: #2a2a2a;
 }
 
 /* Bind the high-specificity workspace, and its body-portaled dialogs, to the
@@ -267,6 +221,15 @@ html[data-studio-color-theme][data-studio-appearance]:not([data-studio-color-the
   --studio-accent-ink-text: var(--palette-focus);
   --studio-on-accent: var(--palette-on-accent);
   --studio-signature-gradient: var(--palette-gradient);
+  --studio-palette-accent: var(--palette-accent);
+  --studio-palette-sheen: var(--palette-sheen);
+  --studio-palette-on-accent: var(--palette-on-accent);
+  --studio-palette-ink: var(--palette-on-selection);
+  --studio-palette-surface: var(--palette-selection);
+  --studio-palette-border: var(--palette-control-border);
+  --studio-warning-ink: var(--palette-on-selection);
+  --studio-warning-surface: var(--palette-selection);
+  --studio-warning-border: var(--palette-control-border);
   --studio-hover: color-mix(in srgb, var(--palette-selection) 68%, transparent);
   --studio-selected: var(--palette-selection);
   --studio-nav-surface: var(--palette-surface);
@@ -307,22 +270,67 @@ html[data-studio-color-theme][data-studio-appearance]:not([data-studio-color-the
   --desk-line: var(--palette-border);
   --desk-selected: var(--palette-accent);
   --desk-selected-ink: var(--palette-on-accent);
+  --desk-icon: var(--palette-focus);
+  --desk-quick-create-bg: var(--palette-selection);
+  --desk-quick-create-ink: var(--palette-on-selection);
 }
 
 html[data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .sx-studio-desk {
   --desk-panel: var(--palette-surface);
   --desk-well: var(--palette-raised);
+  --desk-primary-background: var(--palette-gradient);
+  --desk-primary-ink: var(--palette-on-accent);
   --desk-ink: var(--palette-ink);
   --desk-muted: var(--palette-muted);
   --desk-line: var(--palette-border);
 }
 
-html[data-studio-color-theme][data-studio-appearance]:not([data-studio-color-theme="default"]) #sx-workspace-shell .ov-welcome {
+html[data-studio-appearance="light"][data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .sx-studio-desk {
+  --desk-primary-shadow: color-mix(in srgb, var(--palette-accent) 46%, transparent);
+}
+
+html[data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .sx-desk-new:hover {
+  --desk-primary-background: var(--palette-accent-hover);
+}
+
+html[data-studio-color-theme]:not([data-studio-color-theme="default"]) .studio-personal-workspace .studio-settings-page {
+  --settings-accent: var(--studio-focus);
+}
+
+html[data-studio-color-theme]:not([data-studio-color-theme="default"]) .studio-personal-workspace ::selection {
+  background: var(--palette-selection);
+  color: var(--palette-on-selection);
+}
+
+html[data-studio-color-theme][data-studio-appearance="light"]:not([data-studio-color-theme="default"]) #sx-workspace-shell .ov-welcome {
   --ov-welcome-surface: var(--palette-surface);
   --ov-welcome-edge: var(--palette-selection);
   --ov-welcome-ink: var(--palette-on-selection);
   --ov-welcome-amber: color-mix(in srgb, var(--palette-accent) 20%, transparent);
   --ov-welcome-glint: color-mix(in srgb, var(--palette-sheen) 17%, transparent);
+}
+
+html[data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .overview-organized :is([data-overview-card], .studio-quick-action) {
+  --ov-module-accent: var(--palette-focus);
+  --ov-module-muted: var(--palette-muted);
+  --ov-module-tint: var(--palette-selection);
+  --ov-module-highlight: color-mix(in srgb, var(--palette-accent) 10%, transparent);
+  --ov-module-edge: var(--palette-control-border);
+  --ov-module-focus: var(--palette-focus);
+}
+
+html[data-studio-appearance="dark"][data-studio-color-theme]:not([data-studio-color-theme="default"]) :is(
+  #sx-workspace-shell, .studio-commercial-glass.studio-iphone-more-overlay
+) {
+  --desk-selected: var(--palette-selection);
+  --desk-selected-ink: var(--palette-ink);
+  --desk-selected-icon: var(--palette-on-selection);
+}
+
+html[data-studio-appearance="dark"][data-studio-color-theme] #sx-workspace-shell .overview-organized :is([data-overview-card], .studio-quick-action) {
+  --ov-module-muted: var(--palette-muted);
+  --ov-module-tint: var(--palette-selection);
+  --ov-module-highlight: transparent;
 }
 
 html[data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .sx-desk-date::before {
@@ -340,16 +348,16 @@ html[data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-works
   color: var(--palette-on-selection);
 }
 
-html[data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .sx-desk-account {
+html[data-studio-appearance="light"][data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .sx-desk-account {
   background: linear-gradient(135deg, var(--palette-raised), var(--palette-selection));
   color: var(--palette-ink);
 }
 
-html[data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .sx-desk-account :is(dt, small, .overview-hide-card) {
+html[data-studio-appearance="light"][data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .sx-desk-account :is(dt, small, .overview-hide-card) {
   color: var(--palette-ink);
 }
 
-html[data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .sx-desk-account :is(dl > div, header a, .sx-desk-account-link) {
+html[data-studio-appearance="light"][data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .sx-desk-account :is(dl > div, header a, .sx-desk-account-link) {
   background: color-mix(in srgb, var(--palette-surface) 65%, transparent);
 }
 

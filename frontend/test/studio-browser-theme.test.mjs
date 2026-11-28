@@ -24,6 +24,38 @@ test('browser chrome tracks dark and light workspace themes and restores the pub
   restoreLight();
   assert.equal(doc.documentElement.style.getPropertyValue('--studio-browser-canvas'), '');
 });
+
+test('browser chrome uses the neutral workspace canvas across appearance changes', () => {
+  const doc = fakeDocument();
+  const root = doc.documentElement;
+  const restoreLight = installStudioBrowserTheme(doc, 'light', { canvasColor: '#ffffff' });
+  assert.equal(doc.meta.getAttribute('content'), '#ffffff');
+  assert.equal(root.style.getPropertyValue('--studio-browser-canvas'), '#ffffff');
+  assert.equal(root.style.colorScheme, 'light');
+
+  restoreLight();
+  const restoreDark = installStudioBrowserTheme(doc, 'dark', { canvasColor: '#000000' });
+  assert.equal(doc.meta.getAttribute('content'), '#000000');
+  assert.equal(root.style.getPropertyValue('--studio-browser-canvas'), '#000000');
+  assert.equal(root.style.colorScheme, 'dark');
+
+  restoreDark();
+  assert.equal(doc.meta.getAttribute('content'), '#F6F3ED');
+  assert.equal(root.style.getPropertyValue('--studio-browser-canvas'), '');
+  assert.equal(root.style.colorScheme, '');
+});
+
+test('an unavailable palette or a public account surface uses the route color', () => {
+  const doc = fakeDocument();
+  const restoreDark = installStudioBrowserTheme(doc, 'dark', { canvasColor: '' });
+  assert.equal(doc.meta.getAttribute('content'), '#131416');
+  restoreDark();
+
+  const restoreAuth = installStudioBrowserTheme(doc, 'product-auth', { canvasColor: '#e5eeed' });
+  assert.equal(doc.meta.getAttribute('content'), '#000000');
+  restoreAuth();
+});
+
 test('sign-in uses a white safe-area canvas rather than the public ivory theme, then restores it', () => {
   const doc = fakeDocument();
   const restore = installStudioBrowserTheme(doc, 'auth');

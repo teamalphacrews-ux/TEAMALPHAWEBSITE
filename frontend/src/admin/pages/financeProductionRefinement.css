@@ -147,3 +147,51 @@
 }
 @media (prefers-reduced-motion:reduce) { .studio-app.studio-app.studio-app .production-workspace-refined :is(.ops-task-table tr,.ops-complete-button,.ops-progress-track > span) { transition:none; } }
 .studio-app.studio-app.studio-app[data-studio-motion="reduced"] .production-workspace-refined :is(.ops-task-table tr,.ops-complete-button,.ops-progress-track > span) { transition:none; }
+
+#sx-workspace-shell .finance-register-tabs {
+  flex-wrap: wrap;
+  padding-inline: 20px;
+}
+#sx-workspace-shell .finance-register-tabs > button {
+  min-height: 44px;
+}
+#sx-workspace-shell .finance-register-context {
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+  padding-block: 16px;
+}
+#sx-workspace-shell .finance-register-context > div {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+#sx-workspace-shell .finance-record-count {
+  padding-top: 0;
+}
+#sx-workspace-shell .finance-account-card .studio-metric:not(:first-child) .workspace-metric-label {
+  min-height: 2lh;
+}
+
+#sx-workspace-shell .finance-due-queue > :is(header, footer) {
+  padding: 16px 20px;
+}
+#sx-workspace-shell .finance-due-queue > header {
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+#sx-workspace-shell .finance-due-queue > header h2 {
+  font-size: 17px;
+  font-weight: 650;
+}
+#sx-workspace-shell .finance-due-queue > header p {
+  margin: 5px 0 0;
+}
+#sx-workspace-shell .finance-due-queue > header > strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  #sx-workspace-shell .finance-due-queue > :is(header, footer, .finance-due-records) {
+    padding-inline: 16px;
+  }
+}

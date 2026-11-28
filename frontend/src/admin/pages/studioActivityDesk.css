@@ -14,7 +14,7 @@
 .sx-activity-bars time b { margin-inline-start: 3px; font-weight: 600; }
 .sx-activity-bar-well { height: 96px; width: 100%; position: relative; background: var(--studio-surface-2); border-radius: 12px; overflow: hidden; }
 .sx-activity-bar-well i { position: absolute; bottom: 0; inset-inline: 0; border-radius: inherit; background: var(--studio-text); }
-.sx-activity-bars li:last-child i { background: linear-gradient(135deg,#f8bd57,#ee8420); }
+.sx-activity-bars li:last-child i { background: var(--studio-palette-accent, linear-gradient(135deg,#f8bd57,#ee8420)); }
 .sx-activity-filter { display: flex; width: fit-content; padding: 3px; border-radius: 12px; background: var(--studio-surface-2); gap: 3px; margin-block: 14px; }
 .sx-activity-filter button { border: 0; min-height: 40px; padding: 4px 14px; border-radius: 10px; cursor: pointer; font: inherit; font-size: 13px; color: var(--studio-muted); background: transparent; }
 .sx-activity-filter button[aria-pressed="true"] { background: var(--studio-text); color: var(--studio-canvas); }
@@ -34,3 +34,14 @@
 #sx-workspace-shell .studio-activity-content time { font-size: 12px; }
 #sx-workspace-shell .studio-activity-actions { gap: 8px; }
 #sx-workspace-shell .sx-activity-filter button { min-height: 44px; }
+@media (max-width: 600px) {
+  #sx-workspace-shell .studio-activity-card > .studio-card-heading { flex-wrap: wrap; gap: 10px; }
+  #sx-workspace-shell .sx-activity-filter { display: grid; width: 100%; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #sx-workspace-shell .studio-activity-row {
+    display: grid;
+    grid-template-columns: auto minmax(0,1fr);
+    gap: 8px 12px;
+    padding-block: 16px;
+  }
+  #sx-workspace-shell .studio-activity-actions { grid-column: 2; justify-content: flex-start; }
+}

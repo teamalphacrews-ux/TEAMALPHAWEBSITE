@@ -1,6 +1,7 @@
 import { hasModuleAccess } from '../../utils/moduleAccess';
 import StudioIcon from '../components/common/StudioIcon';
 import StudioSelect from '../components/common/StudioSelect';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import StudioButton from '../components/common/StudioButton';
 import { useEffect, useState, useRef } from "react";
 import {
@@ -47,7 +48,13 @@ export default function Finance() {
   const [receiptFile,setReceiptFile]=useState(null),[openingReceipt,setOpeningReceipt]=useState('');
   const expenseRequest=useRef(''),saveLock=useRef(false);
   const [params, setParams] = useSearchParams();
-  const tab = (hasModuleAccess(user, 'invoices') ? ['due', 'invoices', 'ledger'] : ['ledger']).includes(params.get('view')) ? params.get('view') : 'bookings';
+  const financeViews = [
+    ['bookings', 'Booking payments'],
+    ...(hasModuleAccess(user, 'invoices') ? [['due', 'Due now'], ['invoices', 'Invoices']] : []),
+    ['ledger', 'Cash ledger'],
+  ];
+  const requestedView = params.get('view');
+  const tab = financeViews.some(([key]) => key === requestedView) ? requestedView : 'bookings';
   const setTab = value => setParams(current => { const next = new URLSearchParams(current); next.set('view', value); return next; });
   const { identity } = useStudioIdentity();
   const timezone = studioTimezone(identity?.timezone);
@@ -217,11 +224,16 @@ export default function Finance() {
       .includes(query.trim().toLowerCase()),
   );
   const viewContent = {
-    bookings: { title: 'Booking payments', description: 'Project values, payments received and balances for confirmed enquiries.', search: 'Search clients or payment status…', empty: 'No confirmed bookings yet', hint: 'Confirmed enquiries and their payment records will appear here.' },
-    due: { title: 'Due now', description: 'Issued invoice payments due today or overdue, with the earliest deadline first.', search: 'Search due invoices or clients…' },
-    invoices: { title: 'Invoices', description: 'Review invoice balances and update payment records after receiving payment.', search: 'Search invoices by client or status…', empty: 'No invoices yet', hint: 'Create an invoice or accept a quotation to prepare your first invoice.' },
-    ledger: { title: 'Cash ledger', description: 'Income and expenses recorded by your studio.', search: 'Search descriptions, categories or status…', empty: 'No transactions yet', hint: 'Record income or an expense to begin your studio cash ledger.' },
+    bookings: { title: 'Booking payments', description: 'Project values, payments received and balances for confirmed enquiries.', searchLabel: 'Search clients or payment status', empty: 'No confirmed bookings yet', hint: 'Confirmed enquiries and their payment records will appear here.' },
+    due: { title: 'Due now', searchLabel: 'Search due invoices or clients' },
+    invoices: { title: 'Invoices', description: 'Review invoice balances and update payment records after receiving payment.', searchLabel: 'Search invoices by client or status', empty: 'No invoices yet', hint: 'Create an invoice or accept a quotation to prepare your first invoice.' },
+    ledger: { title: 'Cash ledger', description: 'Income and expenses recorded by your studio.', searchLabel: 'Search descriptions, categories or status', empty: 'No transactions yet', hint: 'Record income or an expense to begin your studio cash ledger.' },
   }[tab];
+  const usesTopbarSearch = useWorkspaceModuleSearch({
+    label: viewContent.searchLabel,
+    query,
+    onChange: setQuery,
+  });
   const metrics = (
     <WorkspaceMetrics
         loading={loading || (!!error && !data.length)}
@@ -275,14 +287,15 @@ export default function Finance() {
       </details>
       <div className={tab === 'due' ? 'finance-due-layout' : 'workspace-two-column'}>
         <section className="studio-card finance-register" aria-label={viewContent.title}>
-          <div className="studio-phone-filter finance-view-filter"><StudioSelect aria-label="View finance records" value={tab} onChange={event=>{setTab(event.target.value);setQuery("");}}>{[["bookings","Booking payments"],["due","Due now"],["invoices","Invoices"],["ledger","Cash ledger"]].filter(([key]) => !['due','invoices'].includes(key) || hasModuleAccess(user, 'invoices')).map(([key,label])=><option key={key} value={key}>{label}</option>)}</StudioSelect></div><div className="studio-tabs finance-register-tabs">
-            {[
-              ["bookings", "Booking payments"],
-              ["due", "Due now"],
-              ["invoices", "Invoices"],
-              ["ledger", "Cash ledger"],
-            ].filter(([key]) => !['due','invoices'].includes(key) || hasModuleAccess(user, 'invoices')).map(([key, label]) => (
+          <div className="studio-phone-filter finance-view-filter">
+            <StudioSelect aria-label="View finance records" value={tab} onChange={event => { setTab(event.target.value); setQuery(''); }}>
+              {financeViews.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </StudioSelect>
+          </div>
+          <div className="studio-tabs finance-register-tabs" role="group" aria-label="View finance records">
+            {financeViews.map(([key, label]) => (
               <button
+                type="button"
                 className={tab === key ? "active" : ""}
                 aria-pressed={tab === key}
                 key={key}
@@ -295,18 +308,18 @@ export default function Finance() {
               </button>
             ))}
           </div>
-          <div className="finance-register-context">
+          {tab !== 'due' && <div className="finance-register-context">
             <div><h2>{viewContent.title}</h2><p>{viewContent.description}</p></div>
-            {!loading && !error && <span className="finance-record-count" role="status">{tab === 'due' ? dueRows.length : visible.length} {tab === 'due' ? 'payments' : 'records'}</span>}
-          </div>
-          <div className="studio-toolbar finance-register-toolbar">
+            {!loading && !error && <span className="finance-record-count" role="status">{visible.length} {visible.length === 1 ? 'record' : 'records'}</span>}
+          </div>}
+          {!usesTopbarSearch && <div className="studio-toolbar finance-register-toolbar">
             <WorkspaceSearch
               value={query}
               onChange={setQuery}
-              placeholder={viewContent.search}
+              placeholder={viewContent.searchLabel + '…'}
             />
             {query.trim() && <StudioButton variant="ghost" onClick={() => setQuery('')}>Clear search</StudioButton>}
-          </div>
+          </div>}
           {tab === 'due' ? <DuePayments rows={dueRows} loading={loading || (!!error && !data.length)} query={query} timezone={timezone} /> : loading || !visible.length ? (
             <WorkspaceEmpty
               loading={loading}

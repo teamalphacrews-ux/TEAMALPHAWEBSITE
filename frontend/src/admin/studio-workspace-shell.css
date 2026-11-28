@@ -11,13 +11,13 @@
   --desk-ease: cubic-bezier(.22, 1, .36, 1);
 }
 html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-glass.studio-iphone-more-overlay) {
-  --desk-panel: #1b1c1e;
-  --desk-control: #26272a;
-  --desk-ink: #eeeef0;
-  --desk-muted: #b4b6bd;
-  --desk-line: rgb(249 249 251 / 12%);
-  --desk-selected: #eeeef0;
-  --desk-selected-ink: #161718;
+  --desk-panel: var(--palette-surface, #141414);
+  --desk-control: var(--palette-raised, #1e1e1e);
+  --desk-ink: var(--palette-ink, #f2f2f2);
+  --desk-muted: var(--palette-muted, #b7b7b7);
+  --desk-line: var(--palette-border, #383838);
+  --desk-selected: var(--palette-selection, #2a2a2a);
+  --desk-selected-ink: var(--desk-ink);
 }
 #sx-workspace-shell .sx-desk-sidebar {
   display:flex; flex-direction:column; gap:12px;
@@ -50,11 +50,12 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
   background:transparent; border:1px solid var(--desk-line); color:var(--desk-ink); cursor:pointer;
 }
 #sx-workspace-shell .sx-desk-nav {
-  display:flex; flex-direction:column; overflow:auto; overscroll-behavior:contain; flex:1; min-height:0; padding:0;
+  display:flex; flex-direction:column; overflow:auto; overscroll-behavior:contain; flex:1; min-height:0;
+  padding:4px 3px; margin-block-start:8px; scroll-padding-block:4px;
   scrollbar-width:thin; scrollbar-color:var(--desk-line) transparent;
 }
 #sx-workspace-shell .sx-desk-nav-group { flex: none; }
-#sx-workspace-shell .sx-desk-nav-group:has(> h2) { margin-block-start: 12px; }
+#sx-workspace-shell .sx-desk-nav-group:has(> h2) { margin-block-start: 4px; }
 #sx-workspace-shell .sx-desk-nav-group:has(> h2) + .sx-desk-nav-group:not(:has(> h2)) {
   margin-block-start: 8px; padding-block-start: 6px; border-block-start: 1px solid var(--desk-line);
 }
@@ -71,6 +72,7 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
 #sx-workspace-shell .sx-desk-sidebar .studio-nav-item::before { display:none; }
 #sx-workspace-shell .sx-desk-sidebar .studio-nav-item:hover { background:var(--desk-control); }
 #sx-workspace-shell .sx-desk-sidebar .studio-nav-item:is(.is-active,.has-current) {
+  --desk-item-icon: var(--desk-selected-icon, currentColor);
   background:var(--desk-selected); color:var(--desk-selected-ink); box-shadow:none;
 }
 #sx-workspace-shell .sx-desk-sidebar .studio-nav-item .studio-nav-text { color:inherit; font:inherit; min-width:0; }
@@ -82,7 +84,7 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
   box-shadow:none!important; color:inherit!important; border:0;
 }
 #sx-workspace-shell .sx-desk-sidebar .studio-nav-item svg {
-  flex:none; width:17px; height:17px; color:inherit!important; stroke-width:1.7;
+  flex:none; width:17px; height:17px; color:var(--desk-item-icon,var(--desk-icon,currentColor))!important; stroke-width:1.7;
 }
 #sx-workspace-shell .sx-desk-expand-icon { margin-inline-start: auto; transition: transform .2s var(--desk-ease); }
 #sx-workspace-shell .sx-desk-more[aria-expanded=true] .sx-desk-expand-icon { transform: rotate(180deg); }
@@ -129,9 +131,12 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
   background:transparent; color:inherit; cursor:pointer;
 }
 #sx-workspace-shell .sx-desk-account-actions button { display:grid; place-items:center; width:44px; background:var(--desk-panel); border-radius:50%; }
+html:has(#sx-workspace-shell .studio-topbar) {
+  scroll-padding-block-start: var(--studio-topbar-height, 76px);
+}
 #sx-workspace-shell .studio-topbar {
-  position:relative; top:0; min-height:76px; height:auto; gap:12px; margin:0;
-  padding:16px 28px 14px; border:0; border-radius:0; background:transparent; box-shadow:none;
+  position:sticky; top:0; min-height:76px; height:auto; gap:12px; margin:0;
+  padding:16px 28px 14px; border:0; border-radius:0; background:var(--studio-canvas); box-shadow:none;
   backdrop-filter:none; -webkit-backdrop-filter:none;
 }
 #sx-workspace-shell .studio-topbar-context { order:1; flex:none; padding:0; }
@@ -152,8 +157,12 @@ html[data-studio-appearance=dark] :is(#sx-workspace-shell,.studio-commercial-gla
 #sx-workspace-shell .sx-desk-date { display:inline-flex; align-items:center; gap:8px; color:var(--desk-ink); white-space:nowrap; font:550 13.5px/1.4 var(--studio-font); }
 #sx-workspace-shell .sx-desk-date::before { content:""; width:8px; height:8px; border-radius:50%; background:#f29b23; box-shadow:0 0 0 4px rgb(242 155 35 / 18%); }
 #sx-workspace-shell .studio-topbar .studio-quick-create > button {
-  height:44px; padding:0 16px; background:var(--desk-panel)!important; border-color:var(--desk-line)!important;
-  color:var(--desk-ink)!important; -webkit-text-fill-color:var(--desk-ink)!important; border-radius:999px!important;
+  height:44px; padding:0 16px; background:var(--desk-quick-create-bg,var(--desk-panel))!important; border-color:var(--desk-line)!important;
+  color:var(--desk-quick-create-ink,var(--desk-ink))!important; -webkit-text-fill-color:currentColor!important; border-radius:999px!important;
+}
+#sx-workspace-shell .studio-topbar :is(.studio-notification-button,.sx-page-guide-trigger) > svg,
+#sx-workspace-shell .studio-topbar .studio-record-search-icon {
+  color:var(--desk-icon,currentColor);
 }
 #sx-workspace-shell .studio-topbar .sx-desk-appearance {
   display:inline-flex; align-items:center; justify-content:space-between; flex:none; gap:1px;
@@ -258,9 +267,9 @@ html[data-studio-motion=reduced] #sx-workspace-shell .studio-loader { animation:
     box-shadow:var(--desk-shadow); border:1px solid var(--desk-line);
   }
   :is(#sx-workspace-shell,.studio-commercial-glass.studio-iphone-more-overlay) .studio-mobile-navigation > :is(a,button) { min-height:54px; border-radius:18px; padding:4px 2px; gap:2px; color:var(--desk-muted); font-size:11px; background:transparent; }
-  :is(#sx-workspace-shell,.studio-commercial-glass.studio-iphone-more-overlay) .studio-mobile-navigation > .is-active { color:var(--desk-selected-ink); background:var(--desk-selected); }
+  :is(#sx-workspace-shell,.studio-commercial-glass.studio-iphone-more-overlay) .studio-mobile-navigation > .is-active { --desk-item-icon: var(--desk-selected-icon, currentColor); color:var(--desk-selected-ink); background:var(--desk-selected); }
   :is(#sx-workspace-shell,.studio-commercial-glass.studio-iphone-more-overlay) .studio-mobile-navigation .studio-symbol-tile,
-  :is(#sx-workspace-shell,.studio-commercial-glass.studio-iphone-more-overlay) .studio-mobile-navigation .studio-symbol-tile svg { width:20px; height:20px; color:inherit!important; background:transparent!important; box-shadow:none!important; }
+  :is(#sx-workspace-shell,.studio-commercial-glass.studio-iphone-more-overlay) .studio-mobile-navigation .studio-symbol-tile svg { width:20px; height:20px; color:var(--desk-item-icon,var(--desk-icon,currentColor))!important; background:transparent!important; box-shadow:none!important; }
   :is(#sx-workspace-shell,.studio-commercial-glass.studio-iphone-more-overlay) .studio-mobile-navigation .studio-mobile-tab-label { color:inherit; }
 }
 /* Keep the name, its guide and each action available on narrow and translated pages. */
@@ -287,7 +296,7 @@ html[data-studio-motion=reduced] #sx-workspace-shell .studio-loader { animation:
 @media (max-width: 768px) {
   #sx-workspace-shell .studio-notification-panel {
     inset-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
-    max-block-size: calc(var(--studio-visible-height, 100dvh) - 6rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    max-block-size: calc(var(--studio-visible-height, 100dvh) - var(--studio-topbar-height, 6rem) - env(safe-area-inset-bottom) - 8px);
   }
 }
 @media (prefers-reduced-motion:no-preference) {
@@ -302,7 +311,11 @@ html[data-studio-motion=reduced] #sx-workspace-shell .studio-loader { animation:
   color:inherit!important; background:transparent!important; box-shadow:none!important;
 }
 .studio-commercial-glass.studio-iphone-more-overlay .studio-symbol-tile svg { color:inherit!important; }
+.studio-commercial-glass.studio-iphone-more-overlay :is(.studio-more-shortcut,.studio-more-group-button,.studio-more-settings) > svg:first-child {
+  color:var(--desk-item-icon,var(--desk-icon,currentColor));
+}
 .studio-commercial-glass.studio-iphone-more-overlay :is(.studio-more-shortcut.is-active,.studio-more-group-button.is-selected) {
+  --desk-item-icon: var(--desk-selected-icon, currentColor);
   color:var(--desk-selected-ink); background:var(--desk-selected);
 }
 

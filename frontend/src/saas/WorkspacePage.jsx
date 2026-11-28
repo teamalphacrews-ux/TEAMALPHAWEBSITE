@@ -112,16 +112,14 @@ export default function WorkspacePage({ initialTab = 'overview' }) {
   const isTrial = ['trialing', 'trial'].includes(workspace?.subscriptionStatus);
   const seatLimit = Number(data?.seats?.limit) || 0, seatsUsed = Number(data?.seats?.used) || 0;
   const teamView = IS_COMMERCIAL_DEPLOYMENT && currentTab === 'team';
-  const teamDescription = workspace
-    ? workspace.name + ' · ' + members.length + (members.length === 1 ? ' member' : ' members') + ' · ' + invitations.length + (invitations.length === 1 ? ' pending invitation' : ' pending invitations')
-    : 'People, roles and invitations for your studio.';
   const inviteAction = <button type="button" className="studio-button primary" onClick={openInvite} disabled={previewMode || !owner || Boolean(busy) || seatsUsed >= seatLimit}><MailPlus size={16} />Invite a member</button>;
   return <div className={'saas-workspace-page' + (teamView ? ' sx-team-desk' : '')}>
-    <WorkspaceHeader eyebrow={teamView ? undefined : "A place for your people"} title={teamView ? "Team" : "Studio workspace"} description={teamView ? teamDescription : "Your studio, your team and the room to grow."}>{teamView && workspace && inviteAction}<button type="button" className="studio-button" onClick={refresh} disabled={previewMode || loading || Boolean(busy)}><RefreshCw size={15} />Refresh</button></WorkspaceHeader>
+    <WorkspaceHeader title="Studio workspace" description="Manage your workspace, team access and subscription.">
+      <button type="button" className="studio-button" onClick={refresh} disabled={previewMode || loading || Boolean(busy)}><RefreshCw size={15} />Refresh</button>
+    </WorkspaceHeader>
     {previewMode && <aside className="saas-preview-notice" role="note"><ShieldCheck size={20} aria-hidden="true" /><div><strong>SaaS design preview</strong><p>Sample studio, team and trial data. Explore the tabs below. Accounts, invitations and payments are disabled.</p></div><Link className="studio-button small" to="/admin">Back to overview<ArrowRight size={14} /></Link></aside>}
     <WorkspaceError error={error} retry={refresh} />
     {loading && !data ? <WorkspaceEmpty loading /> : !workspace ? <WorkspaceEmpty title="Studio details are unavailable" description="Reconnect to load your workspace and team." /> : <>
-      {!teamView && <section className="studio-card saas-workspace-hero"><span className="saas-workspace-emblem"><Building2 size={26} strokeWidth={1.5} /></span><div><span className="saas-kicker">YOUR CREATIVE HOME</span><h2>{workspace.name}</h2><p>{roleLabel(data.role)}<span aria-hidden="true"> · </span><span className="saas-workspace-slug">{workspace.slug}</span></p></div><span className={'saas-state ' + (isTrial ? 'is-trial' : '')}>{statusLabel(workspace.subscriptionStatus)}</span></section>}
       <div className="saas-workspace-tabs" role="tablist" aria-label="Workspace management" onKeyDown={navigateTabs}>
         {tabs.map(tab => (
           <button key={tab.id} id={'saas-tab-' + tab.id} role="tab" type="button" aria-label={tab.label}
@@ -135,11 +133,20 @@ export default function WorkspacePage({ initialTab = 'overview' }) {
       </div>
       <section role="tabpanel" aria-labelledby={'saas-tab-' + currentTab} id={'saas-panel-' + currentTab} className="saas-tab-content">
         {currentTab === 'overview' && <>
+          <section className="studio-card saas-workspace-hero">
+            <span className="saas-workspace-emblem"><Building2 size={26} strokeWidth={1.5} aria-hidden="true" /></span>
+            <div><h2>{workspace.name}</h2><p>{roleLabel(data.role)}<span aria-hidden="true"> · </span><span className="saas-workspace-slug">{workspace.slug}</span></p></div>
+            <span className={'saas-state ' + (isTrial ? 'is-trial' : '')}>{statusLabel(workspace.subscriptionStatus)}</span>
+          </section>
           <div className="saas-summary-grid"><article className="studio-card saas-summary"><span>Your plan</span><strong>{plan?.name || workspace.planId || 'Not selected'}</strong><small>{statusLabel(workspace.subscriptionStatus)}</small></article><article className="studio-card saas-summary"><span>Studio seats</span><strong>{seatsUsed}<em> / {seatLimit || '—'}</em></strong><small>Seats in use</small></article><article className="studio-card saas-summary"><span>{isTrial ? 'Trial remaining' : 'Team members'}</span><strong>{isTrial && daysLeft !== null ? daysLeft : members.length}<em>{isTrial ? ' days' : ''}</em></strong><small>{isTrial ? 'Until ' + safeDate(workspace.trialEndsAt) : 'Working together in this studio'}</small></article></div>
           <div className="saas-overview-grid"><section className="studio-card saas-content-card"><span className="saas-section-icon"><UsersRound size={21} /></span><h3>Bring your people together.</h3><p>Invite the people behind your projects and give each person their own sign-in.</p><div className="saas-avatar-stack" aria-label={members.length + ' studio members'}>{members.slice(0, 5).map(member => <span key={workspaceId(member)} title={memberName(member)}>{(member.firstName?.[0] || member.email?.[0] || '?').toUpperCase()}</span>)}</div><button type="button" className="studio-button" onClick={() => selectTab('team')}>Manage studio team<ArrowRight size={15} /></button></section><section className="studio-card saas-content-card"><span className="saas-section-icon"><ShieldCheck size={21} /></span><h3>A workspace of your own.</h3><p>Your branding, clients, documents and connected tools belong to this studio. Switch studios from the sidebar to open a different workspace.</p><Link className="studio-button" to="/admin/settings">Open studio settings<ArrowRight size={15} /></Link></section></div>
         </>}
         {currentTab === 'team' && <>
-          <section className={teamView ? "sx-team-roster" : "studio-card saas-content-card"}><div className="saas-section-heading"><div><h3>{teamView ? "People" : "Your studio team"}</h3>{!teamView && <p>Individual access for every person in your studio.</p>}</div>{teamView ? <span className="sx-seat-count">{seatsUsed}{seatLimit > 0 ? ' / ' + seatLimit : ''} seats in use</span> : inviteAction}</div>
+          <section className={teamView ? "sx-team-roster" : "studio-card saas-content-card"}>
+            <div className="saas-section-heading">
+              <div><h3>{teamView ? "People" : "Your studio team"}</h3><p>{teamView ? `${seatsUsed}${seatLimit > 0 ? ' / ' + seatLimit : ''} seats in use` : 'Individual access for every person in your studio.'}</p></div>
+              {inviteAction}
+            </div>
             {!owner && <p className="saas-help">Only the studio owner can invite people or change access.</p>}{owner && seatLimit > 0 && seatsUsed >= seatLimit && <p className="saas-help">All seats are in use. Review your team or choose a plan with more seats.</p>}
             <div className="saas-member-list">{members.map(member => {
               const self = workspaceId(member) === (previewMode ? 'saas-preview-owner' : String(user.id || user._id));

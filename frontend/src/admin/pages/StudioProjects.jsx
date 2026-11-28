@@ -1,4 +1,5 @@
 import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import { useAuth } from '../../context/AuthContext';
 import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
 import { canAccessStudioPath, hasModuleAccess } from '../../utils/moduleAccess';
@@ -69,6 +70,7 @@ export default function StudioProjects() {
       catch { return 'grid'; }
     }),
     navigate = useNavigate();
+  const useTopbarSearch = useWorkspaceModuleSearch({ label: 'Search projects', query, onChange: setQuery });
   const [params, setParams] = useSearchParams();
   const createRequested = IS_COMMERCIAL_DEPLOYMENT && params.get('new') === '1';
   const canCreate = hasModuleAccess(user, 'contacts') && (!IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'projects'));
@@ -103,8 +105,9 @@ export default function StudioProjects() {
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
+  const resultCount = <p className="project-contact-result-count" data-filtered={Boolean(loading || query || filter !== "All Projects")} role="status">{loading ? "Loading projects…" : `${visible.length} of ${projects.length} projects`}</p>;
   return (
-    <div className={'reference-workspace project-contact-workspace project-contact-register' + (IS_COMMERCIAL_DEPLOYMENT ? ' sx-project-register record-desk' : '')}>
+    <div data-topbar-search={useTopbarSearch || undefined} className={'reference-workspace project-contact-workspace project-contact-register' + (IS_COMMERCIAL_DEPLOYMENT ? ' sx-project-register record-desk' : '')}>
       <div className="reference-heading project-contact-heading">
         <div className="project-contact-heading-copy"><WorkspaceMotionTitle>Projects</WorkspaceMotionTitle><p>{IS_COMMERCIAL_DEPLOYMENT && !loading && !error ? `${projects.length} ${projects.length === 1 ? 'project' : 'projects'} on the slate · ${projects.filter(project => project.status === 'Booked').length} booked` : 'Quotes, invoices, schedules and delivery, connected to each client.'}</p></div>
         <div className="project-contact-heading-actions">
@@ -115,7 +118,7 @@ export default function StudioProjects() {
       {IS_COMMERCIAL_DEPLOYMENT && <RecordViewSwitch value={view} onChange={changeView} label="Project view"
         views={[{ id: 'grid', label: 'Slate', icon: LayoutGrid }, { id: 'timeline', label: 'Timeline', icon: CalendarDays }, { id: 'list', label: 'List', icon: List }]}
         surfaceSelector=".record-slate,.record-project-timeline,.reference-mobile-records,.reference-desktop-records" />}
-      <div className="project-contact-register-tools">
+      {!useTopbarSearch && <div className="project-contact-register-tools">
         <label className="reference-search">
           <Search size={17} aria-hidden="true" />
           <input
@@ -126,22 +129,22 @@ export default function StudioProjects() {
           />
         </label>
         {query && <button type="button" className="reference-icon-button" aria-label="Clear project search" onClick={() => setQuery("")}><X size={17} aria-hidden="true" /></button>}
-        <p className="project-contact-result-count" role="status">{loading ? "Loading projects…" : `${visible.length} of ${projects.length} projects`}</p>
-      </div>
-      <div className={IS_COMMERCIAL_DEPLOYMENT ? 'sx-project-register-toolbar' : undefined}>
-      <div className="reference-tabs project-contact-filters" role="group" aria-label="Filter projects by status">
-        {["All Projects", "Inquiry", "Booked", "Completed"].map((label) => (
-          <button
-            key={label}
-            className={label === filter ? "active" : ""}
-            aria-pressed={label === filter}
-            onClick={() => setFilter(label)}
-          >
-            <span>{label === "All Projects" ? "All projects" : label}</span><span className="project-contact-filter-count">{label === "All Projects" ? projects.length : projects.filter(project => project.status === label).length}</span>
-          </button>
-        ))}
-      </div>
-
+        {resultCount}
+      </div>}
+      <div className={IS_COMMERCIAL_DEPLOYMENT ? 'sx-project-register-toolbar record-register-summary' : undefined}>
+        <div className="reference-tabs project-contact-filters" role="group" aria-label="Filter projects by status">
+          {["All Projects", "Inquiry", "Booked", "Completed"].map((label) => (
+            <button
+              key={label}
+              className={label === filter ? "active" : ""}
+              aria-pressed={label === filter}
+              onClick={() => setFilter(label)}
+            >
+              <span>{label === "All Projects" ? "All projects" : label}</span><span className="project-contact-filter-count">{label === "All Projects" ? projects.length : projects.filter(project => project.status === label).length}</span>
+            </button>
+          ))}
+        </div>
+        {useTopbarSearch && resultCount}
       </div>
       <WorkspaceError error={error} retry={reload} />
       {visible.length ? (

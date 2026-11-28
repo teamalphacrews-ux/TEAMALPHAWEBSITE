@@ -9,6 +9,7 @@ import { recordDestination } from '../../utils/studioNavigation';
 import API from '../../utils/apiConfig';
 import { approvedTemplateDraft, confirmedWhatsAppSubmission, internationalWhatsAppPhone, mergeWhatsAppMessages, openWhatsAppUrl, refreshWhatsAppMessages, whatsappConnectionLabel, whatsappMessageStatus, whatsappReplyWindow, whatsappRequestId } from '../../utils/whatsappData';
 import { WorkspaceDialog, WorkspaceError, WorkspaceHeader } from '../components/operations/WorkspaceUI';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import WabbWorkspace from './WabbWorkspace';
 import './whatsappInbox.css';
 
@@ -142,6 +143,17 @@ export default function WhatsAppInbox() {
     return () => controller.abort();
   }, [modal, connected]);
   const chooseConversation = id => { const next = new URLSearchParams(params); if (id) next.set('conversation', id); else next.delete('conversation'); stickToLatest.current = true; setParams(next); setSendError({ id: '', text: '' }); };
+  const applySearch = value => {
+    setQuery(value.trim());
+    if (selected) chooseConversation('');
+  };
+  const usesTopbarSearch = useWorkspaceModuleSearch({
+    label: 'Search WhatsApp conversations',
+    query,
+    onChange: applySearch,
+    maxLength: 100,
+    enabled: connected,
+  });
   const updateDraft = patch => { if (selected) setDrafts(previous => ({ ...previous, [selected]: { ...(previous[selected] || draftDefault()), ...patch } })); };
   const updateConversation = useCallback(next => {
     if (!validConversation(next) || currentAccount.current !== accountKey) return;
@@ -259,7 +271,11 @@ export default function WhatsAppInbox() {
     <section className="wa-connection-strip studio-card"><span className="wa-brand-icon"><MessageCircle size={22} strokeWidth={1.5} /></span><div><strong>{connected ? status.verifiedName || 'Your WhatsApp Business account' : 'Keep your number. Keep your Business app.'}</strong><p>{connected ? status.displayPhoneNumber : preview ? 'This sample preview cannot access WhatsApp or send messages.' : 'Connect through Meta’s supported coexistence setup. Your phone account is not changed from this workspace.'}</p></div><span className={'studio-badge ' + (connected ? 'green' : 'gold')}>{preview ? 'Preview only' : statusError ? 'Unavailable' : whatsappConnectionLabel(status)}</span>{status?.owner && <button type="button" className="studio-button small" disabled={preview || !status.configured || !!busy} onClick={verify}><ShieldCheck size={14} />{busy === 'verify' ? 'Verifying…' : 'Verify connection'}</button>}</section>
     {!connected && <section className="studio-card wa-setup"><div className="wa-setup-heading"><span className="wa-brand-icon"><LockKeyhole size={22} /></span><div><h2>Connect your existing business number</h2><p>Official WhatsApp Business API · Coexistence connection</p></div></div><ol><li><span>01</span><div><h3>Complete the supported Meta connection</h3><p>Use the coexistence onboarding flow for your existing WhatsApp Business app. Availability depends on your Meta business account and provider setup.</p><a href="https://developers.facebook.com/documentation/business-messaging/whatsapp/embedded-signup/onboarding-business-app-users/" target="_blank" rel="noopener noreferrer">Meta setup guide <ArrowUpRight size={13} /></a></div></li><li><span>02</span><div><h3>Keep connection keys on the backend</h3><p>Your studio owner configures the connection privately in the backend hosting service. Access tokens and app secrets are never entered in client messages or shared links.</p>{!!status?.missing?.length && <details><summary>Backend settings still needed</summary><ul className="wa-config-fields">{status.missing.filter(value => typeof value === 'string' && /^WHATSAPP_[A-Z0-9_]+$/.test(value)).map(value => <li key={value}><code>{value}</code></li>)}</ul></details>}</div></li><li><span>03</span><div><h3>Verify the account and receive new messages</h3><p>{status?.owner ? 'Use Verify connection once the backend is configured. Studio OS checks that your Business app remains connected before enabling sending.' : 'Ask your studio owner to verify the configured account. Your Business app must remain connected before sending is enabled.'}</p>{webhook && <div className="wa-webhook-line"><code>{webhook}</code><button type="button" className="studio-icon-button" aria-label="Copy WhatsApp webhook address" onClick={copyWebhook}>{copied ? <Check size={15} /> : <Copy size={15} />}</button></div>}</div></li></ol><p className="wa-setup-footnote">Messages appear here as they are received after connection. Earlier app history and media downloads are not imported automatically. Meta messaging charges may apply.</p></section>}
     {connected && <section className={'wa-workspace' + (selected ? ' has-selection' : '')}>
-      <aside className="wa-inbox" aria-label="WhatsApp conversations"><div className="wa-inbox-heading"><h2>Conversations</h2><span>{rows.length}</span></div><form className="wa-search" onSubmit={event => { event.preventDefault(); setQuery(search.trim()); }}><Search size={16} aria-hidden="true" /><input value={search} onChange={event => setSearch(event.target.value)} aria-label="Search WhatsApp conversations" placeholder="Search name or number…" maxLength={100} /><button type="submit" className="studio-icon-button" aria-label="Search conversations"><ArrowUpRight size={15} /></button></form><WorkspaceError error={listError} retry={() => setRefresh(value => value + 1)} /><div className="wa-conversation-list" aria-busy={listResult.key !== listKey}>
+      <aside className="wa-inbox" aria-label="WhatsApp conversations">
+        <div className="wa-inbox-heading"><h2>Conversations</h2><span>{rows.length}</span></div>
+        {!usesTopbarSearch && <form className="wa-search" onSubmit={event => { event.preventDefault(); setQuery(search.trim()); }}><Search size={16} aria-hidden="true" /><input value={search} onChange={event => setSearch(event.target.value)} aria-label="Search WhatsApp conversations" placeholder="Search name or number…" maxLength={100} /><button type="submit" className="studio-icon-button" aria-label="Search conversations"><ArrowUpRight size={15} /></button></form>}
+        <WorkspaceError error={listError} retry={() => setRefresh(value => value + 1)} />
+        <div className="wa-conversation-list" aria-busy={listResult.key !== listKey}>
         {listResult.key !== listKey ? <div className="wa-empty" role="status"><RefreshCw size={24} /><p>Loading conversations…</p></div> : rows.length ? rows.map(row => <button type="button" key={row.id} className={'wa-conversation-row' + (selected === row.id ? ' selected' : '')} aria-pressed={selected === row.id} onClick={() => chooseConversation(row.id)}><span className="wa-avatar">{avatar(row.name || row.phone)}</span><span className="wa-conversation-copy"><span><strong>{row.name || row.phone}</strong><time>{date(row.lastMessageAt, true)}</time></span><span><small>{typeof row.lastMessage === 'string' ? row.lastMessage : row.lastMessage?.text || 'No messages yet'}</small>{row.unread && <b aria-label="Unread conversation" />}</span></span></button>) : <div className="wa-empty"><MessageCircle size={29} /><h3>{query ? 'No matching conversations' : 'Your next conversation starts here'}</h3><p>{query ? 'Try another client name or international number.' : 'New client messages will appear here once received.'}</p></div>}
       </div>{listResult.nextCursor && rows.length < 300 && <button type="button" className="studio-button small wa-load-more" disabled={moreBusy} onClick={loadMore}>{moreBusy ? 'Loading…' : 'More conversations'}</button>}</aside>
       <article className="wa-thread" aria-label="Selected WhatsApp conversation">

@@ -551,14 +551,16 @@ export function ContactNote({ note, onSave }) {
       <WorkspaceError error={error} />
       <div>
         <button
-          className="reference-text-button"
+          type="button"
+          className="studio-button"
           disabled={busy}
           onClick={() => setEditing(false)}
         >
           Cancel
         </button>
         <button
-          className="reference-button small"
+          type="button"
+          className="studio-button primary"
           disabled={busy}
           onClick={save}
         >
@@ -570,31 +572,33 @@ export function ContactNote({ note, onSave }) {
     <div>
       {note && <p className="reference-note-text">{note}</p>}
       <button
-        className="reference-text-button"
+        type="button"
+        className="studio-button"
         onClick={() => {
           setValue(note || "");
           setEditing(true);
         }}
       >
-        {note ? "Edit note" : "Add Note"}
+        {note ? "Edit note" : "Add note"}
       </button>
     </div>
   );
 }
-export function ReferenceSection({ title, action, children }) {
+export function ReferenceSection({ title, action, actionLabel, headingAction, children }) {
   return (
     <section className="reference-section">
       <div className="reference-section-heading">
         <h2>{title}</h2>
-        {action && (
+        {headingAction || (action && (
           <button
-            className="reference-text-button"
-            aria-label={`Add ${title.toLowerCase()}`}
+            type="button"
+            className="reference-icon-button reference-section-control"
+            aria-label={actionLabel || `Add ${title.toLowerCase()}`}
             onClick={action}
           >
-            <Plus size={17} />
+            <Plus size={17} aria-hidden="true" />
           </button>
-        )}
+        ))}
       </div>
       {children}
     </section>

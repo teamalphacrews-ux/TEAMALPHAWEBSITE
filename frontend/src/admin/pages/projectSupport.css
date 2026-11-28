@@ -400,8 +400,19 @@
   background: var(--studio-glass-highlight), var(--studio-glass-bg);
   border: 1px solid var(--studio-glass-border);
 }
+#sx-workspace-shell .support-inbox { padding-block: 0; }
+#sx-workspace-shell .support-thread-list > button:last-child { border-bottom: 0; }
+#sx-workspace-shell .support-thread-list > button:focus-visible { outline-offset: -3px; }
 #sx-workspace-shell .support-mail-filters button { min-inline-size: 44px; }
 @media (max-width: 700px) {
   #sx-workspace-shell .support-workspace { min-height: 0; }
   #sx-workspace-shell .support-thread-list { max-height: none; }
+  #sx-workspace-shell .support-conversation > header {
+    gap: 8px 12px;
+    padding: 14px 16px;
+  }
+  #sx-workspace-shell .support-context-links {
+    width: 100%;
+    margin-inline-start: 0;
+  }
 }

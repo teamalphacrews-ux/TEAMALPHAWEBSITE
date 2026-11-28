@@ -1,32 +1,169 @@
-.invoice-register-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
-.invoice-register-heading h2 { margin:0; font-size:17px; line-height:1.4; }
-.invoice-register-heading p,.invoice-register-zone { color:var(--studio-muted); font-size:12px; line-height:1.7; margin:5px 0 0; }
-.invoice-register-zone { text-align:right; }
-.studio-app.studio-app .invoice-register-toolbar { gap:10px; margin:18px 0; }
-.invoice-register-toolbar > .studio-search { flex:1 1 240px; max-width:none; }
-.invoice-register-toolbar > .studio-select { flex:0 1 180px; width:180px; min-width:0; }
-.studio-app.studio-app .invoice-register-table th,.studio-app.studio-app .invoice-register-table td { padding:14px 10px; }
-.studio-app.studio-app .invoice-register-table td { vertical-align:top; }
-.invoice-register-table { min-width:820px; }
-.invoice-register-reference { min-width:145px; }
-.invoice-register-reference a { display:inline-flex; align-items:center; gap:5px; color:var(--studio-text); font-weight:500; text-decoration:underline; text-decoration-color:var(--studio-border); text-underline-offset:4px; }
-.invoice-register-reference a:hover { text-decoration-color:currentColor; }
-.invoice-register-reference a svg { flex-shrink:0; }
-.invoice-register-client { max-width:180px; overflow-wrap:anywhere; }
-.invoice-register-money { white-space:nowrap; font-variant-numeric:tabular-nums; }
-.invoice-register-deadline { min-width:130px; }
-.invoice-register-timing { display:block; color:var(--studio-muted); font-size:11px; margin-top:4px; }
-.invoice-register-timing.is-overdue { color:var(--studio-text); font-weight:600; }
-.invoice-register-footer { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:16px; border-top:1px solid var(--studio-border); color:var(--studio-muted); font-size:12px; line-height:1.7; }
-.invoice-register-footer span { display:block; }
-.invoice-register-pages { display:flex; gap:8px; }
-.invoice-register-pages .studio-button { min-height:44px; }
-@media (max-width:768px) {
-  .invoice-register-heading { display:block; }
-  .invoice-register-zone { display:block; text-align:left; margin-top:8px; }
-  .invoice-register-toolbar > .studio-select { flex:1 1 100%; width:100%; }
-  .studio-app.studio-app .invoice-register-table .invoice-register-client { max-width:none; }
-  .studio-app.studio-app .invoice-register-table .invoice-register-money { white-space:normal; overflow-wrap:anywhere; }
-  .studio-app.studio-app.studio-personal-workspace .invoice-register-table td.invoice-register-deadline:last-child { display:block; }
-  .studio-app.studio-app.studio-personal-workspace .invoice-register-table td.invoice-register-deadline:last-child::before { display:block; }
+.invoice-register-toolbar {
+  flex: 0 1 360px;
+}
+.invoice-register-toolbar:not(.is-topbar-search) {
+  flex-grow: 1;
+}
+.invoice-register-selectors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 8px;
+  width: 100%;
+}
+.invoice-register-selectors > .studio-select {
+  width: 100%;
+}
+.invoice-register-scroll:focus-visible {
+  outline: 2px solid var(--studio-control-ring);
+  outline-offset: 2px;
+}
+.invoice-register-table {
+  width: 100%;
+  min-width: 740px;
+  table-layout: fixed;
+}
+.invoice-register-table col:first-child {
+  width: 22%;
+}
+.invoice-register-table col:nth-child(2) {
+  width: 19%;
+}
+.invoice-register-table col:nth-child(3) {
+  width: 12%;
+}
+.invoice-register-table col:nth-child(4) {
+  width: 11%;
+}
+.invoice-register-table col:nth-child(5) {
+  width: 11%;
+}
+.invoice-register-table col:nth-child(6) {
+  width: 12%;
+}
+.invoice-register-table col:last-child {
+  width: 13%;
+}
+:is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table :is(th, td) {
+  padding: 8px;
+  overflow-wrap: anywhere;
+}
+:is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table :is(th, td):first-child {
+  padding-inline-start: 0;
+}
+:is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+:is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table th {
+  background: transparent;
+  color: var(--studio-muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+:is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table td {
+  vertical-align: middle;
+}
+:is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-reference > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 100%;
+  color: var(--studio-text);
+  line-height: 1.45;
+  text-decoration: none;
+}
+.invoice-register-reference a:hover strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.invoice-register-reference a svg {
+  flex: none;
+  color: var(--studio-muted);
+}
+:is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table td strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+:is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table td small {
+  display: block;
+  margin: 2px 0 0;
+  color: var(--studio-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+:is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-money {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.invoice-register-timing {
+  display: block;
+  margin: 2px 0 0;
+  color: var(--studio-muted);
+  font-size: 12px;
+}
+.invoice-register-timing.is-overdue {
+  color: var(--studio-text);
+  font-weight: 600;
+}
+.invoice-register-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block-start: 12px;
+  border-top: 1px solid var(--studio-border);
+  color: var(--studio-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.invoice-register-footer span {
+  display: block;
+}
+.invoice-register-footer span + span {
+  margin-block-start: 4px;
+}
+.invoice-register-pages {
+  display: flex;
+  gap: 8px;
+}
+.invoice-register-pages .studio-button {
+  min-height: 44px;
+}
+@media (max-width: 768px) {
+  .invoice-register-toolbar {
+    flex: 1 1 100%;
+  }
+  .invoice-register-table colgroup {
+    display: none;
+  }
+  :is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table tbody {
+    gap: 8px;
+    padding: 0;
+  }
+  :is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table tbody > tr {
+    gap: 8px 12px;
+    padding: 12px;
+  }
+  :is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table tbody > tr > td {
+    padding: 0;
+  }
+  :is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table .invoice-register-reference {
+    grid-column: auto;
+    border: 0;
+  }
+  :is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table :is(.invoice-register-reference, .invoice-register-deadline)::before {
+    display: block;
+  }
+  :is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-table .invoice-register-deadline {
+    display: block;
+    padding-block-start: 8px;
+  }
+  :is(#sx-workspace-shell, .studio-app.studio-personal-workspace) .invoice-register-money {
+    text-align: start;
+  }
+  .invoice-register-footer {
+    margin-block-start: 12px;
+  }
 }

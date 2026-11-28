@@ -124,13 +124,17 @@ html[data-studio-appearance=dark] :is(.studio-app.studio-personal-workspace,.stu
 .studio-app .studio-symbol-precision.tone-indigo { --symbol-top:#8179ec; --symbol-base:#6056cd; }
 .studio-app .studio-symbol-precision.tone-violet { --symbol-top:#ac72dc; --symbol-base:#8752bb; }
 .studio-app .studio-symbol-precision.tone-rose { --symbol-top:#ef708c; --symbol-base:#d74c70; }
-.studio-app .studio-symbol-precision.tone-amber { --symbol-top:#dfa143; --symbol-base:#bb7b23; }
+.studio-app .studio-symbol-precision.tone-amber {
+  --symbol-top: var(--studio-palette-sheen, #dfa143);
+  --symbol-base: var(--studio-palette-accent, #bb7b23);
+  --symbol-ink: var(--studio-palette-on-accent, #fff);
+}
 .studio-app .studio-symbol-precision.tone-green { --symbol-top:#3fb38a; --symbol-base:#218364; }
 .studio-app .studio-symbol-precision.tone-cyan { --symbol-top:#37a9c2; --symbol-base:#227e9b; }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-symbol-precision,
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-nav-item .studio-symbol-precision {
   background:linear-gradient(160deg,var(--symbol-top),var(--symbol-base)) !important;
-  color:#fff !important; border:0; border-radius:27%; outline:none; overflow:hidden;
+  color:var(--symbol-ink, #fff) !important; border:0; border-radius:27%; outline:none; overflow:hidden;
   box-shadow:inset 0 1px 0 #ffffff38,inset 0 -1px 0 #0000000c,0 1px 3px #182b4218 !important;
 }
 :is(.studio-app.studio-app.studio-personal-workspace.studio-personal-workspace,.studio-crm-overlay.studio-crm-overlay) .studio-symbol-precision::before {

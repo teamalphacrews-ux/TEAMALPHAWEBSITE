@@ -185,8 +185,8 @@ html:not([data-studio-appearance="dark"]) .studio-commercial-glass .reference-wo
   color: var(--studio-muted);
 }
 .reference-status.inquiry {
-  background: #fdf9eb;
-  color: #ac8d32;
+  background: var(--studio-palette-surface, #fdf9eb);
+  color: var(--studio-palette-ink, #ac8d32);
 }
 .reference-status.booked {
   background: #edf9f3;
@@ -209,8 +209,8 @@ html:not([data-studio-appearance="dark"]) .studio-commercial-glass .reference-wo
   cursor: pointer;
 }
 .reference-status-select.inquiry {
-  color: #ad862a;
-  background: #fcf8eb;
+  color: var(--studio-palette-ink, #ad862a);
+  background: var(--studio-palette-surface, #fcf8eb);
 }
 .reference-status-select.lead {
   color: #6289bc;
@@ -652,45 +652,49 @@ html:not([data-studio-appearance="dark"]) .studio-commercial-glass .reference-wo
     padding: 14px 10px;
   }
 }
+.quote-template-workspace > .reference-heading {
+  justify-content: space-between;
+}
 .reference-template-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 255px), 1fr));
+  gap: clamp(12px, 2vw, 20px);
 }
 .reference-template-card {
+  display: flex;
+  flex-direction: column;
   border: 1px solid #e7ebe8;
-  padding: 25px;
+  padding: clamp(16px, 2vw, 22px);
   background: white;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .reference-template-card > svg {
-  color: #8f9b92;
-  margin-bottom: 14px;
+  color: var(--studio-muted, #8f9b92);
+  margin-bottom: 12px;
 }
 .reference-template-card h2 {
-  font:
-    500 16px/1.5 Arial,
-    Helvetica,
-    sans-serif !important;
-  margin: 0 0 8px !important;
-  overflow-wrap: anywhere;
+  font: 650 16px/1.4 var(--brand-sans);
+  margin: 0 0 6px;
 }
 .reference-template-card p {
   font-size: 13px;
   color: #6f7c73;
   line-height: 1.6;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 .reference-template-card small {
   font-size: 11px;
   color: #8c968f;
-  line-height: 1.8;
+  line-height: 1.6;
 }
 .reference-template-card-actions {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
-  margin-top: 24px;
+  padding-top: 18px;
+  margin-top: auto;
 }
 .reference-template-card-actions a {
   text-decoration: none;
@@ -949,10 +953,193 @@ html:not([data-studio-appearance="dark"]) .studio-commercial-glass .reference-wo
 @media (hover:hover) {
   .contact-detail-workspace .reference-list-row:hover { background: var(--appearance-subtle); border-color: var(--studio-muted); }
 }
-.contact-detail-workspace .reference-contact-sidebar .reference-section-heading { min-height: 44px; box-sizing: border-box; padding-right: 54px; align-items: center; }
-.contact-detail-workspace .reference-info-edit { top: 0; right: 0; width: 44px; height: 44px; border: 1px solid var(--studio-border); border-radius: 12px; color: var(--studio-text); }
-.contact-detail-workspace .reference-contact-identity > div { min-width: 0; }
-.contact-detail-workspace .reference-contact-identity :is(strong,small) { overflow-wrap: anywhere; word-break: normal; }
+.contact-detail-workspace .reference-contact-identity strong { min-width: 0; overflow-wrap: anywhere; }
+.contact-section-panels { min-width: 0; }
+.contact-note-section {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border-top: 1px solid var(--studio-border);
+  padding-block-start: 12px;
+}
+.contact-note-section h3 { margin: 0; color: var(--studio-muted); font-size: 13px; font-weight: 550; }
+
+#sx-workspace-shell .contact-detail-workspace {
+  --contact-card-padding: clamp(16px, 1.7vw, 24px);
+}
+#sx-workspace-shell[data-studio-text-size="comfortable"] .contact-detail-workspace { --contact-record-font: 16px; }
+#sx-workspace-shell .contact-detail-workspace > .reference-contact-heading { gap: 12px; margin-bottom: 16px; }
+#sx-workspace-shell .contact-detail-workspace .reference-section {
+  min-width: 0;
+  padding: var(--contact-card-padding);
+}
+#sx-workspace-shell .contact-detail-workspace .reference-section-heading {
+  min-height: 28px;
+  gap: 12px;
+  padding: 0 0 12px;
+  margin: 0 0 12px;
+}
+#sx-workspace-shell .contact-detail-workspace .reference-section-control {
+  box-sizing: border-box;
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  justify-content: center;
+  border: 1px solid var(--studio-border);
+  border-radius: 12px;
+  background: var(--studio-surface-2);
+  color: var(--studio-text);
+}
+#sx-workspace-shell .contact-detail-workspace .reference-section-control:hover { background: var(--studio-hover); }
+#sx-workspace-shell .contact-detail-workspace :is(.reference-section-control,.contact-related-records :is(a,button)):focus-visible {
+  outline: 2px solid var(--studio-focus);
+  outline-offset: 2px;
+}
+#sx-workspace-shell .contact-detail-workspace .reference-list { gap: 8px; }
+#sx-workspace-shell .contact-detail-workspace .reference-list-row {
+  min-height: 64px;
+  padding: 12px;
+  border: 1px solid var(--studio-border);
+  border-radius: var(--record-control-radius);
+}
+#sx-workspace-shell .contact-detail-workspace .reference-contact-sidebar { grid-template-columns: minmax(0, 1fr); }
+#sx-workspace-shell .contact-detail-workspace .reference-contact-identity {
+  margin: 0 0 16px;
+  gap: 12px;
+  align-items: center;
+}
+#sx-workspace-shell .contact-detail-workspace .reference-details {
+  grid-template-columns: minmax(60px, .36fr) minmax(0, 1fr);
+  gap: 12px;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+#sx-workspace-shell .contact-detail-workspace .contact-note-section textarea {
+  border: 1px solid var(--studio-border);
+  border-radius: 12px;
+  background: var(--studio-surface-2);
+  color: var(--studio-text);
+  font-size: 16px;
+}
+#sx-workspace-shell .contact-detail-workspace .contact-note-section .reference-note-editor > div:last-child { gap: 8px; flex-wrap: wrap; }
+#sx-workspace-shell .contact-detail-workspace .sx-client-next {
+  gap: 12px 16px;
+  border: 1px solid var(--studio-border);
+  border-radius: 16px;
+  background: var(--studio-surface);
+  padding: 12px var(--contact-card-padding);
+}
+#sx-workspace-shell .contact-detail-workspace .sx-client-next > :is(.studio-button,div) { min-width: 0; max-width: 100%; }
+#sx-workspace-shell .contact-detail-workspace .sx-client-next > .studio-button { min-height: 44px; border-radius: 12px; }
+
+/* Wrap related records to the panel's width. The same table metadata becomes a compact card when the panel is narrow. */
+#sx-workspace-shell .contact-detail-workspace .contact-related-records {
+  container: contact-records / inline-size;
+  overflow: visible;
+}
+#sx-workspace-shell .contact-detail-workspace .contact-related-records .reference-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+#sx-workspace-shell .contact-detail-workspace .contact-related-records :is(th,td) {
+  padding: 8px;
+  vertical-align: middle;
+  border-color: var(--studio-border);
+  color: var(--studio-text);
+  text-align: start;
+}
+#sx-workspace-shell .contact-detail-workspace .contact-related-records th {
+  background: var(--studio-surface-2);
+  color: var(--studio-muted);
+  font-weight: 550;
+}
+#sx-workspace-shell .contact-detail-workspace .contact-related-records .contact-amount-cell { text-align: end; }
+#sx-workspace-shell .contact-detail-workspace .contact-related-records tbody > tr:last-child td { border-bottom: 0; }
+#sx-workspace-shell .contact-detail-workspace .contact-related-records td:first-child > :is(a,button) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+#sx-workspace-shell .contact-detail-workspace .contact-related-records .reference-status {
+  max-width: 100%;
+  padding: 4px 8px;
+  font-size: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.contact-detail-workspace .contact-document-table th:first-child { width: 38%; }
+.contact-detail-workspace .contact-document-table th:nth-child(2) { width: 12%; }
+.contact-detail-workspace .contact-document-table th:nth-child(3),
+.contact-detail-workspace .contact-document-table th:nth-child(4) { width: 16%; }
+.contact-detail-workspace .contact-document-table th:last-child { width: 18%; }
+.contact-detail-workspace .contact-payment-table th:first-child { width: 30%; }
+.contact-detail-workspace .contact-payment-table th:nth-child(2),
+.contact-detail-workspace .contact-payment-table th:nth-child(4) { width: 16%; }
+.contact-detail-workspace .contact-payment-table th:nth-child(3) { width: 21%; }
+.contact-detail-workspace .contact-payment-table th:last-child { width: 17%; }
+
+@container contact-records (max-width: 520px) {
+  #sx-workspace-shell .contact-detail-workspace .contact-related-records .reference-table { display: block; position: relative; }
+  #sx-workspace-shell .contact-detail-workspace .contact-related-records thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  #sx-workspace-shell .contact-detail-workspace .contact-related-records tbody { display: grid; gap: 8px; padding: 0; }
+  #sx-workspace-shell .contact-detail-workspace .contact-related-records tbody > tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px;
+    padding: 8px 12px 12px;
+    border: 1px solid var(--studio-border);
+    border-radius: 12px;
+    background: var(--studio-surface);
+    box-shadow: none;
+  }
+  #sx-workspace-shell .contact-detail-workspace .contact-related-records tbody td {
+    display: block;
+    grid-column: auto;
+    min-width: 0;
+    border: 0;
+    padding: 0;
+    text-align: start;
+    font-size: var(--contact-record-font, 13px);
+    line-height: 1.5;
+  }
+  #sx-workspace-shell .contact-detail-workspace .contact-related-records tbody td.contact-amount-cell { text-align: start; }
+  #sx-workspace-shell .contact-detail-workspace .contact-related-records tbody td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    color: var(--studio-muted);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  #sx-workspace-shell .contact-detail-workspace .contact-related-records tbody > tr > td:first-child {
+    grid-column: 1 / -1;
+    border-block-end: 1px solid var(--studio-border);
+    padding-bottom: 4px;
+  }
+  #sx-workspace-shell .contact-detail-workspace .contact-related-records tbody td:first-child::before { display: none; }
+}
+@media (min-width: 1101px) {
+  #sx-workspace-shell .contact-detail-workspace > .reference-detail-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(255px, min(30%, 320px));
+  }
+}
 @media screen and (max-width: 760px) {
   .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .contact-detail-workspace .reference-contact-heading { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 14px 8px; align-items: start; margin: 0 0 18px; }
   .contact-detail-workspace .reference-contact-heading > .reference-back { min-height: 36px; justify-content: center; }
@@ -970,7 +1157,6 @@ html:not([data-studio-appearance="dark"]) .studio-commercial-glass .reference-wo
   .contact-detail-workspace .reference-section-heading > button { min-width: 44px; min-height: 44px; justify-content: center; }
   .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .contact-detail-workspace .reference-contact-sidebar { border: 0; padding: 0; }
   .contact-detail-workspace .reference-contact-sidebar .reference-section { padding-top: 16px; }
-  .contact-detail-workspace .reference-contact-sidebar .reference-info-edit { top: 16px; right: 16px; }
   .contact-detail-workspace .reference-contact-sidebar .reference-section-heading { min-height: 44px; }
   .contact-detail-workspace .reference-contact-identity { margin: 16px 0; align-items: flex-start; gap: 12px; }
   .contact-detail-workspace .reference-details { grid-template-columns: minmax(65px, .45fr) minmax(0,1fr); gap: 14px 12px; margin-bottom: 0; font-size: 13px; }
@@ -979,4 +1165,14 @@ html:not([data-studio-appearance="dark"]) .studio-commercial-glass .reference-wo
   .studio-app.studio-app.studio-personal-workspace.studio-personal-workspace .contact-detail-workspace .reference-tabs button { min-width: 0; min-height: 44px; padding: 8px 2px; font-size: 11px; border-radius: 10px; white-space: nowrap; }
   .contact-detail-workspace .reference-tabs button.active { background: var(--studio-surface); color: var(--studio-text); }
   .contact-detail-workspace .reference-tabs button.active:after { display: none; }
+  #sx-workspace-shell .contact-detail-workspace .reference-contact-heading {
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px 8px;
+  }
+  #sx-workspace-shell .contact-detail-workspace .reference-contact-heading > .reference-back { min-height: 44px; }
+  #sx-workspace-shell .contact-detail-workspace .reference-contact-title { display: flex; gap: 8px 12px; }
+  #sx-workspace-shell .contact-detail-workspace .reference-contact-title h1 { width: auto; }
+  #sx-workspace-shell .contact-detail-workspace .reference-contact-title .reference-status-select { min-height: 44px; }
+  #sx-workspace-shell .contact-detail-workspace .reference-tabs button { white-space: normal; overflow-wrap: anywhere; }
 }

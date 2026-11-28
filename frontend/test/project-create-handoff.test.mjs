@@ -21,6 +21,7 @@ test('switching the requested client remounts the draft, while unrelated query o
     '../../utils/moduleAccess': moduleAccess,
     '../../utils/workspaceActions': workspaceActions,
     '../../saas/release': { IS_COMMERCIAL_DEPLOYMENT: true },
+    '../components/common/WorkspaceModuleSearch': { useWorkspaceModuleSearch: () => true },
     '../components/operations/workspaceData': { useWorkspaceData: paths => ({ data: paths.map(path => path === '/api/contacts' ? clients : []), loading: refreshing }) },
     '../components/contacts/ContactWorkflowUI': { ProjectForm: 'ProjectForm', ContactForm: 'ContactForm' },
   };

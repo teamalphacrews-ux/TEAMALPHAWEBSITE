@@ -3,7 +3,7 @@
   --studio-nav-width: 220px;
   --studio-content-width: 1780px;
   --studio-page-gutter: clamp(18px, 2vw, 32px);
-  --studio-canvas: #fff;
+  --studio-canvas: var(--studio-workspace-canvas, #fff);
   --studio-surface: #fff;
   --studio-text: #17191c;
   --studio-muted: #6b7077;
@@ -18,7 +18,7 @@
   background: var(--studio-canvas);
 }
 html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspace.studio-overview-shell {
-  --studio-canvas: #141517;
+  --studio-canvas: var(--studio-workspace-canvas, #000);
   --studio-surface: #202225;
   --studio-text: #f4f5f6;
   --studio-muted: #aeb2b8;

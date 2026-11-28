@@ -100,7 +100,22 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
   min-height: 44px;
 }
 #sx-workspace-shell .settings-profile-photo .settings-check input { margin-block-start: 0; }
+
+#sx-workspace-shell .settings-directory { container: settings-directory / inline-size; }
+@container settings-directory (min-width: 800px) {
+  #sx-workspace-shell .settings-directory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+#sx-workspace-shell .settings-section-heading > .settings-scope-note {
+  flex: 0 1 auto;
+  align-self: flex-start;
+  margin-block-start: 4px;
+  color: var(--studio-muted);
+}
 @media (max-width: 600px) {
+  #sx-workspace-shell .settings-grouped .settings-page-title { margin-block-end: 16px; }
   #sx-workspace-shell .settings-primary-nav {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -115,6 +130,22 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
   #sx-workspace-shell .settings-primary-nav > .sx-section-selection {
     top: var(--section-rule-y);
     bottom: auto;
+  }
+  #sx-workspace-shell .settings-section-heading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px 12px;
+    padding-block-end: 14px;
+  }
+  #sx-workspace-shell .settings-section-heading > .settings-scope-note {
+    grid-column: 2;
+    max-width: none;
+    margin: 0;
+    text-align: start;
+  }
+  #sx-workspace-shell .settings-disclosure-heading > button {
+    min-height: 64px;
+    padding-block: 14px;
   }
 }
 

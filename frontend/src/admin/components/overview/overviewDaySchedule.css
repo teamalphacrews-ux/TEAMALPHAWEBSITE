@@ -54,6 +54,10 @@
 }
 .studio-app.studio-app .overview-day-event.tone-1 { background: #69c79a; color: #103323; }
 .studio-app.studio-app .overview-day-event.tone-2 { background: #f2f3ed; color: #282c28; }
+html[data-studio-color-theme]:not([data-studio-color-theme="default"]) .studio-app .overview-day-event.tone-0 {
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+}
 .studio-app.studio-app .overview-day-event.is-all-day { left: 0; width: 100%; }
 .studio-app.studio-app .overview-day-event strong { font-size: 13px; line-height: 1.4; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; }
 .studio-app.studio-app .overview-day-event span { font-size: 12px; line-height: 1.4; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: inherit; }

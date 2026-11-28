@@ -103,3 +103,50 @@
 @media (max-width:380px) { .studio-app.studio-app.studio-personal-workspace .shoot-day-controls > button:last-child { grid-row:2; grid-column:2; } }
 @media (prefers-reduced-motion:reduce) { .studio-app.studio-app.studio-personal-workspace .scheduling-calendar .workspace-agenda-event { transition:none; } }
 .studio-app.studio-app.studio-personal-workspace[data-studio-motion="reduced"] .scheduling-calendar .workspace-agenda-event { transition:none; }
+
+#sx-workspace-shell .scheduling-crew .ops-metrics {
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: clamp(10px, 1.3vw, 16px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+#sx-workspace-shell .scheduling-crew .ops-metrics > .studio-metric { padding: clamp(14px, 1.4vw, 20px); }
+#sx-workspace-shell .scheduling-crew .ops-metric-top {
+  align-items: center;
+  gap: 6px;
+  line-height: 1.4;
+}
+#sx-workspace-shell .scheduling-crew .ops-section-heading,
+#sx-workspace-shell .scheduling-crew .ops-crew-toolbar[data-topbar-search] { padding-inline: clamp(16px, 1.5vw, 22px); }
+#sx-workspace-shell .scheduling-crew .ops-crew-toolbar[data-topbar-search] {
+  grid-template-columns: repeat(2,minmax(0,220px));
+  justify-content: start;
+  gap: 10px;
+  padding-block: 0 16px;
+  margin: 0;
+}
+#sx-workspace-shell .shoot-day-event .project-hub-actions:empty { display: none; }
+@media (max-width: 768px) {
+  #sx-workspace-shell .scheduling-crew .ops-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #sx-workspace-shell .scheduling-crew .ops-crew-toolbar[data-topbar-search] { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #sx-workspace-shell .scheduling-crew .ops-crew-toolbar .studio-select-trigger { gap: 6px; }
+  #sx-workspace-shell .scheduling-crew .ops-crew-toolbar .studio-select-value { white-space: normal; overflow-wrap: anywhere; }
+  #sx-workspace-shell .scheduling-crew .ops-table-scroll { padding-block: 12px; }
+  #sx-workspace-shell .scheduling-crew .ops-crew-table tbody > tr > td { padding: 0; }
+  #sx-workspace-shell .scheduling-crew .ops-crew-table tbody > tr > td:first-child { padding-block-end: 10px; padding-inline-end: 46px; }
+  #sx-workspace-shell .scheduling-crew .ops-crew-table .ops-person { gap: 8px; }
+  #sx-workspace-shell .scheduling-crew .ops-crew-table .ops-person-email { overflow-wrap: anywhere; }
+  #sx-workspace-shell .scheduling-crew .ops-crew-table .ops-assignment-button { white-space: normal; }
+  #sx-workspace-shell .shoot-day-controls {
+    grid-template-columns: 44px minmax(0,1fr) 44px auto;
+    gap: 6px;
+    margin-block: 16px 10px;
+  }
+  #sx-workspace-shell .shoot-day-controls > .studio-button {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: stretch;
+  }
+  #sx-workspace-shell .shoot-day-zone { margin-block: 10px 16px; }
+}

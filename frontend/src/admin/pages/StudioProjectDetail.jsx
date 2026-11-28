@@ -239,7 +239,7 @@ function StudioProjectWorkspace({id}){
       {IS_COMMERCIAL_DEPLOYMENT && tab === 'overview' && <ProjectSummary detail={detail} user={user} onTab={setTab} />}
       <div ref={panelRef} className={'reference-detail-grid project'+(tab==='overview'?'':' project-hub-wide')}>
         <div style={{ minWidth: 0 }}>
-          {tabs.map(([value])=><div key={value} role="tabpanel" id={`${tabsId}-panel-${value}`} aria-labelledby={`${tabsId}-tab-${value}`} hidden={tab!==value} tabIndex={0}>{tab===value&&<>
+          {tabs.map(([value])=><div key={value} role="tabpanel" id={`${tabsId}-panel-${value}`} aria-labelledby={`${tabsId}-tab-${value}`} data-project-section={value} hidden={tab!==value} tabIndex={0}>{tab===value&&<>
           {tab==='overview'&&<ProjectOverview detail={detail} onTab={setTab} refreshing={loading} loadError={error}/>}
           {tab==='documents'&&<ReferenceSection title="Documents">
             {hasDocuments && (

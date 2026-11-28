@@ -9,7 +9,7 @@ export default function WorkspaceColorThemes({ current, onChange }) {
   return (
     <fieldset className="settings-color-themes">
       <legend>Color theme</legend>
-      <p>Choose a palette for your workspace. It works in daylight and dark mode.</p>
+      <p>Palettes color controls in both modes and surfaces in Daylight.</p>
       <div className="settings-color-grid">
         {STUDIO_COLOR_THEMES.map(({ value, label, description }) => (
           <label className="settings-color-option" data-studio-palette-preview={value} key={value}>
@@ -31,7 +31,7 @@ export default function WorkspaceColorThemes({ current, onChange }) {
             </span>
             <span className="settings-color-caption">
               <strong>{label}</strong>
-              {current === value && <Check size={16} aria-hidden="true" />}
+              <span className="settings-color-check"><Check size={13} aria-hidden="true" /></span>
             </span>
             <small id={name + '-' + value}>{description}</small>
           </label>

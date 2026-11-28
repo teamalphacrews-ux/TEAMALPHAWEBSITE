@@ -11,6 +11,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { WorkspaceHeader, WorkspaceError } from "../components/operations/WorkspaceUI";
+import { useWorkspaceModuleSearch } from "../components/common/WorkspaceModuleSearch";
 import {
   workspaceRequest,
   recordError,
@@ -163,11 +164,28 @@ export default function ProjectSupport() {
       focusRequest.current = { from: selected, to: id };
     }
     setSearch(id ? { quote: id } : {}, { replace: true });
-    setDraft({ id, text: "" });
-    setSendError("");
-    requestId.current = "";
+    if (draft.id !== id) {
+      setDraft({ id, text: "" });
+      setSendError("");
+      requestId.current = "";
+    }
     setThreadError("");
   };
+  const applySearch = (value) => {
+    setQuery(value);
+    if (selected) {
+      setSearch((previous) => {
+        const next = new URLSearchParams(previous);
+        next.delete("quote");
+        return next;
+      }, { replace: true });
+    }
+  };
+  const usesTopbarSearch = useWorkspaceModuleSearch({
+    label: "Search client conversations",
+    query,
+    onChange: applySearch,
+  });
   const send = async (event) => {
     event.preventDefault();
     if (sending || !text.trim() || !selected) return;
@@ -286,7 +304,7 @@ export default function ProjectSupport() {
       )}
       <div className={"support-workspace" + (selected ? " has-thread" : "") + (!loading && !filtered.length && !selected ? " is-empty" : "")}>
         <aside className="support-inbox">
-          <label className="studio-search">
+          {!usesTopbarSearch && <label className="studio-search">
             <Search size={15} />
             <input
               aria-label="Search client conversations"
@@ -294,7 +312,7 @@ export default function ProjectSupport() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
-          </label>
+          </label>}
           <div className="support-thread-list" ref={inboxList}>
             {loading ? (
               <p className="support-empty" role="status">

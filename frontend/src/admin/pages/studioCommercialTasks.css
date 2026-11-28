@@ -1,5 +1,5 @@
 /* Commercial task planning: real stage lanes, compact controls, liquid-glass cards. */
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page { --sx-task-gap:20px; font-variant-numeric:tabular-nums; }
+.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page { --sx-task-gap:12px; font-variant-numeric:tabular-nums; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-summary { display:flex; flex-wrap:wrap; align-items:center; gap:14px 32px; margin:0 0 28px; padding-bottom:22px; border-bottom:1px solid var(--studio-border); }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-summary > div { display:flex; align-items:baseline; gap:9px; min-width:0; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-summary strong { font-size:23px; font-weight:600; line-height:1.2; letter-spacing:-.025em; color:var(--studio-text); }
@@ -20,21 +20,18 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-task-toolbar .studio-search { min-width:0; width:100%; max-width:380px; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .production-filter-feedback { padding:0 0 16px; font-size:13px; }
 .sx-task-page .sx-task-empty-stage-toggle { display:none; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-board { position:relative; display:grid; grid-template-columns:repeat(5,minmax(220px,1fr)); align-items:start; gap:var(--sx-task-gap); max-width:100%; overflow-x:auto; padding:4px 1px 18px; scrollbar-color:var(--studio-control-border) transparent; scrollbar-width:thin; }
+.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-board { position:relative; display:grid; grid-template-columns:repeat(5,minmax(208px,1fr)); align-items:start; gap:var(--sx-task-gap); max-width:100%; overflow-x:auto; padding:2px 1px 8px; scrollbar-color:var(--studio-control-border) transparent; scrollbar-width:thin; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane { min-width:0; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane-header { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:38px; margin-bottom:12px; padding:0 2px; }
+.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane-header { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:28px; margin-bottom:8px; padding:0 4px; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane-header h3 { display:flex; align-items:center; gap:8px; margin:0; font-size:14px; font-weight:600; line-height:1.4; color:var(--studio-text); }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane-header h3 > span { width:7px; height:7px; flex:0 0 7px; border-radius:50%; background:var(--studio-muted); }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page [data-lane="working"] .sx-task-lane-header h3 > span { background:var(--studio-warning-ink); }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page [data-lane="review"] .sx-task-lane-header h3 > span { background:var(--studio-focus); }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page [data-lane="complete"] .sx-task-lane-header h3 > span { background:var(--studio-success-ink); }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane-count { min-width:25px; padding:2px 6px; border-radius:7px; background:var(--studio-hover); text-align:center; color:var(--studio-muted); font-size:13px; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane-items { display:grid; gap:14px; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card { display:flex; flex-direction:column; min-width:0; padding:16px; border:1px solid var(--studio-glass-border); border-radius:16px; background:var(--studio-glass-highlight),var(--studio-glass-elevated); box-shadow:var(--studio-glass-rim); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); transition:border-color 220ms ease,background-color 220ms ease; }
+.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane-items { display:grid; gap:8px; }
+.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card { display:grid; align-content:start; gap:8px; min-width:0; padding:16px; border:1px solid var(--studio-glass-border); border-radius:12px; background:var(--studio-glass-highlight),var(--studio-glass-elevated); box-shadow:var(--studio-glass-rim); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); transition:border-color 220ms ease,background-color 220ms ease; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card:hover { border-color:var(--studio-control-border); }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; min-height:22px; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-type { color:var(--studio-muted); font-size:12px; line-height:1.5; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-overdue { color:var(--studio-danger-ink); font-size:12px; line-height:1.5; }
 .studio-commercial-glass .sx-task-page .ops-next-task em {
   color: var(--studio-danger-ink);
   font-size: 12px;
@@ -53,36 +50,149 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
 }
 
 
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-title { display:block; min-height:44px; padding:2px 0; margin:0; border:0; background:transparent; color:var(--studio-text); font-size:15px; line-height:1.5; font-weight:600; text-align:left; overflow-wrap:anywhere; cursor:pointer; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-title:hover { text-decoration:underline; text-underline-offset:4px; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-project { display:flex; align-items:start; gap:6px; color:var(--studio-muted); font-size:13px; line-height:1.5; margin:4px 0 16px; overflow-wrap:anywhere; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-project svg { flex:0 0 13px; margin-top:3px; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-stage { align-self:start; max-width:100%; padding:4px 8px; border-radius:6px; background:var(--studio-selected); color:var(--studio-text); font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-stage.is-complete { background:var(--studio-success-surface); color:var(--studio-success-ink); }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-client-state { margin-top:9px; font-size:12px; color:var(--studio-muted); line-height:1.5; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-meta { display:grid; gap:7px; margin:18px 0 12px; font-size:12px; color:var(--studio-muted); }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-meta > span { display:flex; align-items:start; gap:7px; line-height:1.5; overflow-wrap:anywhere; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-meta svg { flex:0 0 13px; margin-top:2px; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-meta > span.is-overdue { color:var(--studio-danger-ink); }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions { display:flex; align-items:center; gap:2px; margin:auto -6px -6px; padding-top:10px; border-top:1px solid var(--studio-border); }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; border:0; border-radius:8px; background:transparent; color:var(--studio-muted); cursor:pointer; transition:background-color 200ms ease,color 200ms ease; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions .sx-task-complete { flex:1; justify-content:start; min-width:0; padding:7px 6px; font-size:13px; }
-.sx-task-card { container: task-card / inline-size; }
-@container task-card (max-width: 176px) {
-  .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions .sx-task-complete {
-    flex-direction: column; justify-content: center; gap: 3px; padding-inline: 2px; font-size: .75rem;
-  }
+#sx-workspace-shell .sx-task-page .sx-task-card {
+  padding: 16px;
+  border-radius: 12px;
 }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions .sx-task-icon { flex:0 0 44px; min-width:44px; padding:0; }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions button:hover { background:var(--studio-hover); color:var(--studio-text); }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card-actions button:last-child:hover { color:var(--studio-danger-ink); }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane-empty { margin:0; min-height:104px; padding:20px 16px; border:1px dashed var(--studio-border); border-radius:14px; color:var(--studio-muted); font-size:13px; line-height:1.5; }
+#sx-workspace-shell .sx-task-page :is(.sx-task-card-title,.ops-title-button) {
+  display: block;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--studio-text);
+  font-size: .9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: start;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+#sx-workspace-shell .sx-task-page :is(.sx-task-card-title,.ops-title-button):hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+#sx-workspace-shell .sx-task-page :is(.sx-task-card-project,.ops-task-project) {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  color: var(--studio-muted);
+  font-size: .8125rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+#sx-workspace-shell .sx-task-card-project > span { position: relative; top: -.13em; }
+#sx-workspace-shell .sx-task-card-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  color: var(--studio-muted);
+  font-size: .75rem;
+  line-height: 1.4;
+}
+#sx-workspace-shell .sx-task-stage {
+  display: inline-block;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--studio-selected);
+  color: var(--studio-text);
+  font-size: .75rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+#sx-workspace-shell .sx-task-stage.is-complete { background: var(--studio-success-surface); color: var(--studio-success-ink); }
+#sx-workspace-shell .sx-task-card-meta {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  color: var(--studio-muted);
+  font-size: .75rem;
+  line-height: 1.4;
+}
+#sx-workspace-shell :is(.sx-task-card-meta,.sx-task-list-details) > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+#sx-workspace-shell :is(.sx-task-card-meta,.sx-task-list-identity,.ops-task-table .ops-due) svg { flex: none; }
+#sx-workspace-shell .sx-task-card-meta .is-overdue { color: var(--studio-danger-ink); }
+#sx-workspace-shell .sx-task-card-actions {
+  margin: 0;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--studio-border);
+}
+#sx-workspace-shell .sx-task-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#sx-workspace-shell .sx-task-actions > .studio-button { border-radius: 12px; }
+#sx-workspace-shell .sx-task-page .sx-task-lane {
+  min-height: 0;
+  padding: 8px;
+  border-radius: 16px;
+}
+#sx-workspace-shell .sx-task-page .ops-task-workspace { container: task-board / inline-size; }
+#sx-workspace-shell .sx-task-page .sx-task-board {
+  grid-template-columns: repeat(5,minmax(208px,1fr));
+  align-items: start;
+  gap: var(--sx-task-gap);
+  padding: 2px 1px 8px;
+}
+#sx-workspace-shell .sx-task-page .sx-task-lane-header { min-height: 28px; margin-bottom: 8px; }
+#sx-workspace-shell .sx-task-lane-empty {
+  margin: 0;
+  padding: 8px 4px;
+  color: var(--studio-muted);
+  font-size: .8125rem;
+  line-height: 1.4;
+}
+#sx-workspace-shell .sx-task-page .ops-task-table {
+  table-layout: fixed;
+}
+#sx-workspace-shell .sx-task-page .ops-task-table th:first-child { width: auto; }
+#sx-workspace-shell .sx-task-page .ops-task-table th:nth-child(2) { width: 19%; }
+#sx-workspace-shell .sx-task-page .ops-task-table th:nth-child(3) { width: 20%; }
+#sx-workspace-shell .sx-task-page .ops-task-table th:nth-child(4) { width: 184px; text-align: end; }
+#sx-workspace-shell .sx-task-page .ops-task-table :is(th,td) { padding: 12px 16px; }
+#sx-workspace-shell .sx-task-page .ops-task-table .ops-due {
+  font-size: .8125rem;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+#sx-workspace-shell .sx-task-list-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 4px;
+  color: var(--studio-muted);
+  font-size: .75rem;
+  line-height: 1.4;
+}
+#sx-workspace-shell .ops-task-table .sx-task-actions { justify-content: end; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-table-scroll { border:1px solid var(--studio-glass-border); border-radius:16px; background:var(--studio-glass-bg); }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-list-stage { display:block; margin-top:6px; font-size:12px; line-height:1.5; color:var(--studio-muted); }
-.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-table-footer { padding:14px 0 0; font-size:13px; }
+.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-table-footer { flex-wrap:wrap; gap:8px 12px; padding:12px 0 0; background:transparent; font-size:13px; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-rail { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); align-items:start; gap:var(--sx-task-gap); }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page :is(.sx-task-board,.sx-task-card button,.sx-task-view-switch button):focus-visible { outline:2px solid var(--studio-focus); outline-offset:3px; }
 .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page button:disabled { cursor:wait; opacity:.55; }
+@media (min-width: 769px) {
+  @container task-board (max-width: 1090px) {
+    #sx-workspace-shell .sx-task-page .sx-task-board {
+      grid-template-columns: repeat(5,minmax(184px,1fr));
+      gap: 8px;
+    }
+    #sx-workspace-shell .sx-task-page .sx-task-lane { padding-inline: 4px; }
+    #sx-workspace-shell .sx-task-card-actions .sx-task-actions { gap: 4px; }
+  }
+}
 @media (max-width:900px) {
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-task-toolbar { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-task-toolbar > .studio-search { grid-column:1/-1; max-width:none; }
@@ -98,7 +208,6 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-view-switch { width:100%; }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-view-switch button { flex:1; }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-lane-items { gap:12px; }
-  .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .sx-task-card { padding:18px; }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-rail { grid-template-columns:minmax(0,1fr); }
   .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page .ops-task-toolbar { padding:16px 0; }
 }
@@ -122,11 +231,35 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
   #sx-workspace-shell .sx-task-page .sx-task-board {
     grid-template-columns:minmax(0,1fr);
     overflow:visible;
-    gap:8px;
+    gap:12px;
     padding:0;
   }
-  #sx-workspace-shell .sx-task-page .sx-task-lane { min-height:0; }
-  #sx-workspace-shell .sx-task-page .sx-task-lane-empty { min-height:0; padding:12px; }
+  #sx-workspace-shell .sx-task-page .sx-task-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+  #sx-workspace-shell .sx-task-page .ops-table-scroll {
+    overflow: visible;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  #sx-workspace-shell .sx-task-page .ops-task-table tbody { padding: 0; }
+  #sx-workspace-shell .sx-task-page .ops-task-table tr { gap: 12px; padding: 16px; }
+  #sx-workspace-shell .sx-task-page .ops-task-table td { padding: 0; }
+  #sx-workspace-shell .sx-task-page .ops-task-table td:first-child { border-bottom: 0; }
+  #sx-workspace-shell .sx-task-page .ops-task-table td[data-label="Actions"] {
+    padding-top: 8px;
+    border-top: 1px solid var(--studio-border);
+  }
+  #sx-workspace-shell .sx-task-page .ops-task-table td[data-label="Status"]:last-child {
+    display: block;
+    grid-column: 2;
+    border: 0;
+  }
+  #sx-workspace-shell .sx-task-page .ops-task-table td[data-label="Status"]:last-child::before { display: block; }
+  #sx-workspace-shell .ops-task-table .sx-task-actions { justify-content: start; }
   #sx-workspace-shell .sx-task-page .sx-task-board:not([data-show-empty]):not([data-dragging]) .sx-task-lane[data-empty] { display:none; }
   #sx-workspace-shell .sx-task-page .sx-task-empty-stage-toggle {
     display:flex;
@@ -154,3 +287,59 @@ html[data-studio-motion="reduced"] .studio-app.studio-commercial-glass.studio-co
 @keyframes sx-task-view-settle { from { opacity:.8; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
 @media (prefers-reduced-motion:reduce) { .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page :is(.sx-task-board,.ops-table-scroll) { animation:none; } }
 html[data-studio-motion="reduced"] .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-task-page :is(.sx-task-board,.ops-table-scroll) { animation:none; }
+
+#sx-workspace-shell .sx-task-page .ops-task-controls[data-topbar-search] {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0 0 12px;
+}
+#sx-workspace-shell .ops-task-controls[data-topbar-search] .sx-task-view-switch {
+  width: auto;
+  margin: 0;
+}
+#sx-workspace-shell .ops-task-controls[data-topbar-search] .ops-task-toolbar {
+  grid-template-columns: minmax(0,220px) minmax(0,160px);
+  justify-content: end;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+#sx-workspace-shell .ops-task-controls[data-topbar-search] .ops-tabs {
+  grid-column: 1 / -1;
+  gap: 4px 8px;
+  margin: 0;
+  border: 0;
+}
+#sx-workspace-shell .ops-task-controls[data-topbar-search] .ops-tabs > button {
+  padding-inline: 8px;
+}
+#sx-workspace-shell .ops-task-controls[data-topbar-search] .ops-tabs > button[aria-pressed="true"] {
+  position: relative;
+  border-bottom-color: transparent;
+  color: var(--studio-text);
+}
+#sx-workspace-shell .ops-task-controls[data-topbar-search] .ops-tabs > button[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -2px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--studio-signature-gradient, var(--studio-accent));
+}
+#sx-workspace-shell .ops-task-controls[data-topbar-search] .ops-tabs > button[aria-pressed="true"] > span {
+  background: color-mix(in srgb,var(--studio-accent) 14%,var(--studio-surface));
+  color: var(--studio-text);
+}
+
+@media (max-width: 768px) {
+  #sx-workspace-shell .sx-task-page .ops-task-controls[data-topbar-search] { grid-template-columns: minmax(0,1fr); }
+  #sx-workspace-shell .ops-task-controls[data-topbar-search] .sx-task-view-switch > button { flex: 1; }
+  #sx-workspace-shell .ops-task-controls[data-topbar-search] .ops-task-toolbar { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  #sx-workspace-shell .ops-task-controls[data-topbar-search] .studio-phone-filter { min-width: 0; }
+}
+@media (max-width: 510px) {
+  #sx-workspace-shell .ops-task-controls[data-topbar-search] .ops-task-toolbar { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #sx-workspace-shell .ops-task-controls[data-topbar-search] .studio-phone-filter { grid-column: 1 / -1; }
+}

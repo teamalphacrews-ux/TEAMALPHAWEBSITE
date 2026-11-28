@@ -3,6 +3,8 @@ import { hasModuleAccess } from '../../utils/moduleAccess';
 import { useState } from "react";
 import { Plus, Pencil, HardDrive, Archive, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
+import StudioSelect from '../components/common/StudioSelect';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import {
   WorkspaceHeader,
   WorkspaceMetrics,
@@ -43,6 +45,7 @@ export default function DataManagement() {
     [busy, setBusy] = useState(false),
     [saveError, setSaveError] = useState(""),
     [archiving, setArchiving] = useState(null);
+  const useTopbarSearch = useWorkspaceModuleSearch({ label: "Search project, folder or location", query, onChange: setQuery });
   const open = (record) => {
     setEditing(record || null);
     setForm(
@@ -152,13 +155,13 @@ export default function DataManagement() {
         </p>
       </div>
       <section className="studio-card">
-        <div className="studio-toolbar">
-          <WorkspaceSearch
+        <div className="studio-toolbar ops-storage-toolbar" data-topbar-search={useTopbarSearch || undefined}>
+          {!useTopbarSearch && <WorkspaceSearch
             value={query}
             onChange={setQuery}
             placeholder="Search project, folder or location…"
-          />
-          <select
+          />}
+          <StudioSelect
             aria-label="Filter backup status"
             className="studio-input workspace-select"
             value={filter}
@@ -169,7 +172,7 @@ export default function DataManagement() {
                 {v === "all" ? "All backup states" : v}
               </option>
             ))}
-          </select>
+          </StudioSelect>
         </div>
         {error && !data.length ? (
           <WorkspaceEmpty

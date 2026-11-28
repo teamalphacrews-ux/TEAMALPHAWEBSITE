@@ -1,15 +1,21 @@
 /* Calendar views use the workspace material and keep day boundaries in studio time. */
 .studio-commercial-glass .studio-calendar-page .workspace-calendar {
   --calendar-rim: var(--studio-border);
-  --booking-fill: #f6d19f;
-  --booking-ink: #382812;
+  --booking-fill: var(--studio-palette-surface, #f6d19f);
+  --booking-ink: var(--studio-palette-ink, #382812);
   --booking-alt: #d6dce6;
+  --calendar-today-fill: color-mix(in srgb, var(--studio-palette-accent, #f29b23) 5%, transparent);
   padding: clamp(14px, 1.6vw, 22px);
 }
 html[data-studio-appearance="dark"] .studio-commercial-glass .workspace-calendar {
-  --booking-fill: #674421;
-  --booking-ink: #ffdfb0;
+  --booking-fill: var(--studio-palette-surface, #674421);
+  --booking-ink: var(--studio-palette-ink, #ffdfb0);
   --booking-alt: #354256;
+  --calendar-today-fill: var(--studio-surface-2);
+}
+html[data-studio-color-theme]:not([data-studio-color-theme="default"]) #sx-workspace-shell .workspace-calendar-event.type-wedding {
+  background: var(--booking-fill);
+  color: var(--booking-ink);
 }
 .studio-commercial-glass .workspace-calendar-heading,
 .studio-commercial-glass .scheduling-calendar-filters { flex-wrap: wrap; }
@@ -19,6 +25,23 @@ html[data-studio-appearance="dark"] .studio-commercial-glass .workspace-calendar
 .studio-commercial-glass .scheduling-calendar-filters .studio-search { flex: 1 1 180px; max-width: 420px; }
 .studio-commercial-glass .studio-calendar-page .workspace-calendar .workspace-view-tabs { flex-shrink: 0; }
 .studio-commercial-glass .studio-calendar-page .scheduling-connection { margin: 16px 0; }
+#sx-workspace-shell .workspace-calendar .scheduling-calendar-filters[data-topbar-search] {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px 12px;
+  margin-block: 16px;
+}
+#sx-workspace-shell .scheduling-calendar-filters[data-topbar-search] .scheduling-filter-field {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  flex: 0 1 220px;
+  width: auto;
+}
+#sx-workspace-shell .scheduling-calendar-filters[data-topbar-search] .scheduling-filter-field > .studio-select { flex: 1; }
+#sx-workspace-shell .scheduling-connection-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .sx-week-schedule { container: calendar-week / inline-size; min-width: 0; }
 .sx-week-compact { display: none; }
 .sx-week-scroll { width: 100%; max-width: 100%; overflow: auto; border: 1px solid var(--calendar-rim); border-radius: 18px; }
@@ -34,7 +57,10 @@ html[data-studio-appearance="dark"] .studio-commercial-glass .workspace-calendar
 .sx-week-date span { color: var(--studio-muted); font-size: 12px; }
 .sx-week-date .sx-week-date-count { color: var(--studio-text); font-size: 11px; font-variant-numeric: tabular-nums; }
 .sx-week-date strong { display: grid; place-items: center; min-width: 26px; min-height: 26px; border-radius: 50%; font-size: 17px; line-height: 1; }
-.sx-week-date.is-today strong { color: #281b09; background: #f4a030; }
+.sx-week-date.is-today strong {
+  color: var(--studio-palette-on-accent, #281b09);
+  background: var(--studio-palette-accent, #f4a030);
+}
 .sx-week-all > * { min-width: 0; padding: 5px 2px; border-top: 1px solid var(--calendar-rim); }
 .sx-week-all > div { display: grid; align-content: start; gap: 3px; border-left: 1px solid var(--calendar-rim); }
 .sx-week-all > small { align-self: center; text-align: center; font-size: 11px; }
@@ -49,7 +75,7 @@ html[data-studio-appearance="dark"] .studio-commercial-glass .workspace-calendar
   position: relative; min-width: 0; border-left: 1px solid var(--calendar-rim);
   background: repeating-linear-gradient(to bottom, var(--calendar-rim) 0 1px, transparent 1px var(--week-hour-height));
 }
-.sx-week-day.is-today { background-color: color-mix(in srgb,#f29b23 5%,transparent); }
+.sx-week-day.is-today { background-color: var(--calendar-today-fill); }
 .sx-week-day .sx-week-booking {
   position: absolute; overflow: hidden; box-sizing: border-box; min-height: 4px;
   margin-left: 2px; box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--booking-ink) 18%,transparent);
@@ -164,6 +190,7 @@ html[data-studio-appearance="dark"] .studio-commercial-glass .workspace-calendar
 }
 
 @media (max-width: 768px) {
+  #sx-workspace-shell .scheduling-calendar-filters[data-topbar-search] .scheduling-filter-field { flex: 1 1 150px; }
   #sx-workspace-shell .studio-calendar-page .scheduling-connection {
     display: grid;
     gap: 12px;
@@ -172,7 +199,6 @@ html[data-studio-appearance="dark"] .studio-commercial-glass .workspace-calendar
   }
   #sx-workspace-shell .scheduling-connection-copy strong { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
   #sx-workspace-shell .scheduling-connection-copy .scheduling-status { font-size: 0.82em; font-weight: 500; color: var(--studio-muted); }
-  #sx-workspace-shell .scheduling-connection-actions { display: flex; flex-wrap: wrap; gap: 8px; }
   #sx-workspace-shell .scheduling-connection-actions > button { flex: 1 1 auto; min-height: 44px; }
   #sx-workspace-shell .studio-calendar-page .calendar-summary { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin-block: 0 16px; }
   #sx-workspace-shell [data-calendar-view="month"] .studio-calendar-insight { display: none; }

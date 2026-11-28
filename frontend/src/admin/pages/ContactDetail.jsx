@@ -199,7 +199,7 @@ function ContactRecord({ id }) {
         ))}
       </div>
       <div className="reference-detail-grid">
-        <div style={{ minWidth: 0 }}>
+        <div className="contact-section-panels">
           <div role="tabpanel" id={`${tabsId}-panel-Overview`} aria-labelledby={`${tabsId}-tab-Overview`} hidden={tab !== 'Overview'} tabIndex={0}>{tab === "Overview" && (
             <>
               {nextAction && <section className="sx-client-next" aria-label="Next step for this client">
@@ -209,6 +209,7 @@ function ContactRecord({ id }) {
               </section>}
               {hasModuleAccess(user, 'projects') && <ReferenceSection
                 title="Projects"
+                actionLabel="Add project"
                 action={!canStartProject || (IS_COMMERCIAL_DEPLOYMENT && contact.archived) ? undefined : () => setNewProject(true)}
               >
                 {projects.length ? (
@@ -244,6 +245,7 @@ function ContactRecord({ id }) {
               </ReferenceSection>}
               <ReferenceSection
                 title="Recent conversations"
+                actionLabel="Create message draft"
                 action={canEditContact ? () => openDocument("Message") : undefined}
               >
                 <ContactConversations
@@ -257,6 +259,7 @@ function ContactRecord({ id }) {
           <div role="tabpanel" id={`${tabsId}-panel-Documents`} aria-labelledby={`${tabsId}-tab-Documents`} hidden={tab !== 'Documents'} tabIndex={0}>{tab === "Documents" && (
             <ReferenceSection title="Documents">
               <ContactDocuments
+                fitContactPanel={IS_COMMERCIAL_DEPLOYMENT}
                 quotations={quotations}
                 invoices={invoices}
                 documents={documents}
@@ -267,36 +270,31 @@ function ContactRecord({ id }) {
           {tabs.includes('Payments') && <div role="tabpanel" id={`${tabsId}-panel-Payments`} aria-labelledby={`${tabsId}-tab-Payments`} hidden={tab !== 'Payments'} tabIndex={0}>{tab === "Payments" && (
             <ReferenceSection title="Payments">
               <ContactPaymentSummary invoices={invoices} />
-              <ContactPayments invoices={invoices} />
+              <ContactPayments invoices={invoices} fitContactPanel={IS_COMMERCIAL_DEPLOYMENT} />
             </ReferenceSection>
           )}</div>}
           {tabs.includes('Sessions') && <div role="tabpanel" id={`${tabsId}-panel-Sessions`} aria-labelledby={`${tabsId}-tab-Sessions`} hidden={tab !== 'Sessions'} tabIndex={0}>{tab === "Sessions" && (
             <ReferenceSection
               title="Sessions"
+              actionLabel="Schedule a session"
               action={canSchedule ? () => navigate(`/admin/calendar?contact=${id}`) : undefined}
             >
               <ContactSessions sessions={sessions} />
             </ReferenceSection>
           )}</div>}
         </div>
-        <aside className="reference-contact-sidebar">
-          <ReferenceSection title="Contact details">
-            {canEditContact && <button
-              className="reference-info-edit reference-icon-button"
-              aria-label="Edit contact info"
-              onClick={() => setEditing(true)}
-            >
-              <Pencil size={17} />
-            </button>}
+        <aside className="reference-contact-sidebar" aria-label="Contact information">
+          <ReferenceSection title="Contact details" headingAction={canEditContact && (
+            <button type="button" className="reference-section-control reference-icon-button" aria-label="Edit contact info" onClick={() => setEditing(true)}>
+              <Pencil size={17} aria-hidden="true" />
+            </button>
+          )}>
             <div className="reference-contact-identity">
-              <span className="reference-avatar">
+              <span className="reference-avatar" aria-hidden="true">
                 {contact.firstName[0]}
                 {contact.lastName?.[0]}
               </span>
-              <div>
-                <strong>{name}</strong>
-                <small>{contact.email}</small>
-              </div>
+              <strong>{name}</strong>
             </div>
             <dl className="reference-details">
               <dt>Email</dt>
@@ -323,19 +321,17 @@ function ContactRecord({ id }) {
                     ))
                   : "—"}
               </dd>
-              <dt>Note</dt>
-              <dd>
-                {canEditContact ? <ContactNote
-                  note={contact.note}
-                  onSave={async (note) => {
-                    await workspaceRequest("patch", "/api/contacts/" + id, {
-                      note,
-                    });
-                    await reload();
-                  }}
-                /> : contact.note || "—"}
-              </dd>
             </dl>
+            <div className="contact-note-section">
+              <h3>Note</h3>
+              {canEditContact ? <ContactNote
+                note={contact.note}
+                onSave={async (note) => {
+                  await workspaceRequest("patch", "/api/contacts/" + id, { note });
+                  await reload();
+                }}
+              /> : contact.note || "—"}
+            </div>
           </ReferenceSection>
         </aside>
       </div>

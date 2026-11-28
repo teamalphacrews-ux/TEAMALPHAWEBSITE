@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, ChevronLeft, ChevronRight, Inbox, Mail, Paperclip, RefreshCw, Search, Send, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { WorkspaceDialog, WorkspaceError, WorkspaceHeader } from '../components/operations/WorkspaceUI';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import { gmailRequest, gmailError, gmailHandoff } from '../components/integrations/gmailApi';
 import GmailSetupPanel from '../components/integrations/GmailSetupPanel';
 import './integrations.css';
@@ -80,7 +81,15 @@ export default function GmailInbox() {
   };
   const resetList = () => { setPages(['']); setPage(0); setSelected(''); };
   const chooseFolder = value => { resetList(); setFolder(value); };
-  const submitSearch = event => { event.preventDefault(); resetList(); setQuery(search.trim()); setRefresh(value => value + 1); };
+  const applySearch = value => { resetList(); setQuery(value.trim()); setRefresh(previous => previous + 1); };
+  const usesTopbarSearch = useWorkspaceModuleSearch({
+    label: 'Search Gmail',
+    query,
+    onChange: applySearch,
+    maxLength: 500,
+    enabled: Boolean(status?.connected),
+  });
+  const submitSearch = event => { event.preventDefault(); applySearch(search); };
   const next = () => { if (mail?.nextPageToken) { setPages(previous => [...previous.slice(0, page + 1), mail.nextPageToken]); setPage(value => value + 1); setSelected(''); } };
   const showMessage = (id, trigger) => {
     messageTrigger.current = trigger;
@@ -105,7 +114,7 @@ export default function GmailInbox() {
     {status?.connected ? <section className="studio-card studio-email-workspace">
       <div className="studio-email-toolbar"><div className="studio-email-account"><Mail size={18} /><div><strong>{status.email}</strong><small>Read access · Emails remain in Gmail</small></div></div><button className="studio-icon-button" aria-label="Refresh email" onClick={() => setRefresh(value => value + 1)} disabled={loading}><RefreshCw size={16} /></button></div>
       <div className="studio-email-controls"><nav aria-label="Email folders">{folders.map(({ id, label }) => <button key={id} className={folder === id ? 'selected' : ''} aria-current={folder === id ? 'page' : undefined} onClick={() => chooseFolder(id)}>{folderIcons[id]}{label}</button>)}</nav>
-        <form className="studio-email-search" onSubmit={submitSearch}><Search size={16} /><input aria-label="Search Gmail" value={search} onChange={event => setSearch(event.target.value)} maxLength={500} placeholder="Search email…" /><button className="studio-button small" type="submit">Search</button></form></div>
+        {!usesTopbarSearch && <form className="studio-email-search" onSubmit={submitSearch}><Search size={16} /><input aria-label="Search Gmail" value={search} onChange={event => setSearch(event.target.value)} maxLength={500} placeholder="Search email…" /><button className="studio-button small" type="submit">Search</button></form>}</div>
       <div className={'studio-email-columns' + (selected ? ' has-selection' : '')}>
         <div className="studio-email-list" aria-label="Email messages" aria-busy={loading}>
           {loading ? <p className="studio-email-empty" role="status">Loading your email…</p> : mail?.messages?.length ? mail.messages.map(message => <button key={message.id} className={'studio-email-row' + (selected === message.id ? ' selected' : '') + (message.unread ? ' unread' : '')} onClick={event => showMessage(message.id, event.currentTarget)} aria-pressed={selected === message.id}>

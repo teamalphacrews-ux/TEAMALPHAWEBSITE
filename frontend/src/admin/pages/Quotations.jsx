@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess, hasFullModuleAccess } from '../../utils/moduleAccess';
 import StudioButton from '../components/common/StudioButton';
 import StudioSelect from '../components/common/StudioSelect';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import DocumentSettingsPanel from '../components/common/DocumentSettingsPanel';
 import { useEffect, useId, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../../utils/branding";
@@ -50,6 +51,8 @@ import "./quotationList.css";
 import "./documentWorkflowRepair.css";
 import "./quotationEditorPolish.css";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
+import { WorkspaceHeader } from "../components/operations/WorkspaceUI";
+import "./documentRegister.css";
 const covers = [
   ['Classic banner', '/assets/quote-wallpapers/classic-banner.webp'],
   ['Wedding', '/assets/services/wedding.jpg'],
@@ -248,6 +251,12 @@ export default function Quotations() {
     }),
     [history, setHistory] = useState([]),
     [clock, setClock] = useState(() => Date.now());
+  const usesTopbarSearch = useWorkspaceModuleSearch({
+    label: 'Search quotes',
+    query: search,
+    onChange: setSearch,
+    enabled: mode === 'list',
+  });
   const formRef = useRef(form),
     currentRef = useRef(current),
     saveRef = useRef(null),
@@ -792,16 +801,17 @@ export default function Quotations() {
   }, [loading, data, location.search]);
   const statusFilters = (
     <div className="qw-list-filters" role="group" aria-label="Filter quotations by status">
-      {quoteFilters.map(value => <button type="button" key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value}</button>)}
+      {quoteFilters.map(value => <button type="button" key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{value === 'All' ? 'All quotes' : value}</button>)}
     </div>
   );
+  const normalizedSearch = search.trim().toLowerCase();
   const visible = quotes.filter(
     (q) =>
       (filter === "All" || status(q) === filter) &&
       [q.clientName, q.documentNumber, q.title]
         .join(" ")
         .toLowerCase()
-        .includes(search.toLowerCase()),
+        .includes(normalizedSearch),
   );
   const startNewQuote = () => {
     setDraft(defaultForm(settings));
@@ -822,30 +832,49 @@ export default function Quotations() {
     </WorkspaceActionMenu>
   );
   return (
-    <div className={'qw-page' + (mode === 'list' ? ' qw-list-workspace' : '')}>
+    <div className={'qw-page' + (mode === 'list' ? ' qw-list-workspace document-register-page' : '')}>
       {mode === "list" && (
         <>
-          <header className="qw-list-header">
-            <div><WorkspaceMotionTitle>Quotations</WorkspaceMotionTitle><p>Prepare quotes, share them with clients and follow their decisions.</p></div>
-            <div className="qw-list-actions">
-              {canUseTemplates && <Link className="studio-button" to="/admin/quote-templates"><Copy size={15} />Templates</Link>}
-              {canWriteQuotes && <button className="studio-button primary" onClick={startNewQuote}><Plus size={16} />New quote</button>}
-            </div>
-          </header>
-          {IS_COMMERCIAL_DEPLOYMENT && statusFilters}
-          <section className="qw-list-panel" aria-label="Quotation list">
-            <div className="qw-list-toolbar">
-              <label className="studio-search qw-list-search"><Search size={17} aria-hidden="true" /><input aria-label="Search quotes" placeholder="Search quote or client name" value={search} onChange={event => setSearch(event.target.value)} /></label>
-              <label className="qw-list-status-filter"><span>Status</span><StudioSelect className="studio-input" aria-label="Quote status" value={filter} onChange={event => setFilter(event.target.value)}>{quoteFilters.map(value => <option key={value}>{value}</option>)}</StudioSelect></label>
-              <span className="qw-list-count" role="status">{error ? 'Unavailable' : loading ? 'Loading…' : `${visible.length} of ${quotes.length} quotes`}</span>
-            </div>
-            {!IS_COMMERCIAL_DEPLOYMENT && statusFilters}
+          <WorkspaceHeader title="Quotations" description="Prepare quotes, share them with clients and follow their decisions.">
+            {canUseTemplates && <Link className="studio-button" to="/admin/quote-templates"><Copy size={16} aria-hidden="true" />Templates</Link>}
+            {canWriteQuotes && <button type="button" className="studio-button primary" onClick={startNewQuote}><Plus size={16} aria-hidden="true" />New quote</button>}
+          </WorkspaceHeader>
+          <section className="qw-list-panel document-register-panel" aria-labelledby="quote-register-heading">
+            <header className="document-register-heading">
+              <div className="document-register-intro">
+                <h2 id="quote-register-heading">Quote register</h2>
+                <p className="document-register-meta" role="status">
+                  {error ? 'Unavailable' : loading ? 'Loading quotations…' : visible.length === quotes.length
+                    ? `${quotes.length} ${quotes.length === 1 ? 'quote' : 'quotes'}`
+                    : `${visible.length} of ${quotes.length} quotes`}
+                </p>
+              </div>
+              <div className={'document-register-controls qw-list-toolbar' + (usesTopbarSearch ? ' is-topbar-search' : '')}>
+                {!usesTopbarSearch && <label className="studio-search qw-list-search"><Search size={17} aria-hidden="true" /><input aria-label="Search quotes" placeholder="Search quote or client name" value={search} onChange={event => setSearch(event.target.value)} /></label>}
+                <div className="qw-list-status-filter">
+                  <StudioSelect aria-label="Quote status" value={filter} onChange={event => setFilter(event.target.value)}>
+                    {quoteFilters.map(value => <option key={value} value={value}>{value === 'All' ? 'All statuses' : value}</option>)}
+                  </StudioSelect>
+                </div>
+              </div>
+            </header>
+            {statusFilters}
             {error ? <div className="studio-error" role="alert"><span>{error}</span><button className="studio-button small" onClick={reload}>Retry</button></div> : loading ? <div className="qw-list-empty" role="status"><span className="studio-loader" />Loading quotations…</div> : visible.length ? <>
-              <div className="qw-list-columns" aria-hidden="true"><span>Client / quote</span><div className="qw-quote-metadata"><span>Reference</span><span>Amount</span><span>Accept by</span><span>Status</span></div></div>
+              <div className="qw-list-columns" aria-hidden="true"><span>Client and quote</span><div className="qw-quote-metadata"><span>Quote number</span><span className="qw-quote-amount">Amount</span><span>Accept by</span><span>Status</span></div></div>
               <div className="qw-quote-records">{visible.map(quote => <article className="qw-quote-row" key={quote._id} aria-labelledby={'quote-list-' + quote._id}>
-                <div className="qw-quote-description"><h2 id={'quote-list-' + quote._id}><button className="qw-quote-title" aria-label={`Open quote ${quoteNumber(quote)} for ${quote.clientName || 'client to be confirmed'}`} onClick={() => openListQuote(quote)}><span>{quote.clientName || 'Client to be confirmed'}</span><ArrowUpRight size={16} aria-hidden="true" /></button></h2>{quote.title && <p>{quote.title}</p>}</div>
+                <div className="qw-quote-description">
+                  <h3 id={'quote-list-' + quote._id}>
+                    <button type="button" className="qw-quote-title" aria-describedby={quote.title ? 'quote-title-' + quote._id : undefined} aria-label={`Open quote ${quoteNumber(quote)} for ${quote.clientName || 'client to be confirmed'}`} onClick={() => openListQuote(quote)}>
+                      <span>
+                        <strong>{quote.clientName || 'Client to be confirmed'}</strong>
+                        {quote.title && <small id={'quote-title-' + quote._id}>{quote.title}</small>}
+                      </span>
+                      <ArrowUpRight size={16} aria-hidden="true" />
+                    </button>
+                  </h3>
+                </div>
                 <dl className="qw-quote-metadata">
-                  <div className="qw-quote-reference"><dt>Reference</dt><dd>{quoteNumber(quote)}</dd></div>
+                  <div className="qw-quote-reference"><dt>Quote number</dt><dd>{quoteNumber(quote)}</dd></div>
                   <div className="qw-quote-amount"><dt>Amount</dt><dd>{rupees(quote.totalPaise / 100)}</dd></div>
                   <div><dt>Accept by</dt><dd>{quote.expiryEnabled === false ? 'No deadline' : recordDate(quote.validUntil)}</dd></div>
                   <div><dt>Status</dt><dd><span className="qw-badge" data-status={status(quote).toLowerCase()}>{status(quote)}</span></dd></div>

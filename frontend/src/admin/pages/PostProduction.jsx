@@ -1,4 +1,5 @@
 import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import StudioButton from '../components/common/StudioButton';
 import StudioSelect from '../components/common/StudioSelect';
 import { useAuth } from '../../context/AuthContext';
@@ -21,10 +22,12 @@ import {
   List,
   UserRound,
   Film,
+  Eye,
   FolderOpen,
   ListChecks,
   Pencil,
   Plus,
+  RotateCcw,
   Search,
   Trash2,
 } from "lucide-react";
@@ -69,6 +72,18 @@ const taskBoardLanes = [
 const taskLane = task => task.status === 'completed'
   ? 'complete'
   : taskBoardLanes.find(lane => lane.stages.includes(task.productionStage))?.id || 'planned';
+
+function TaskActionButtons({ task, disabled, canDelete, onToggle, onEdit, onDelete }) {
+  const completed = task.status === 'completed';
+  return <div className="sx-task-actions" role="group" aria-label={'Actions for ' + task.title}>
+    <StudioButton type="button" variant="icon" icon={completed ? RotateCcw : Check} data-task-action="complete"
+      label={`${completed ? 'Reopen' : 'Complete'} task: ${task.title}`} disabled={disabled} onClick={() => onToggle(task)} />
+    <StudioButton type="button" variant="icon" icon={Pencil}
+      label={'Edit task: ' + task.title} disabled={disabled} onClick={() => onEdit(task)} />
+    {canDelete && <StudioButton type="button" variant="destructive" icon={Trash2} iconOnly
+      label={'Delete task: ' + task.title} disabled={disabled} onClick={() => onDelete(task)} />}
+  </div>;
+}
 
 function CommercialTaskBoard({ tasks, getProject, crew, today, busyId, openEditor, toggleTask, requestDelete, canWrite, canDelete, moveTask }) {
   const boardId = useId();
@@ -123,16 +138,29 @@ function CommercialTaskBoard({ tasks, getProject, crew, today, busyId, openEdito
                 event.dataTransfer.setData('text/plain', task._id);
                 setDragged(task);
               }} onDragEnd={finishDrag}>
-              <p className="sx-task-card-project"><span aria-hidden="true" />{project?.name || (getLeadId(task) ? 'Linked project' : 'Studio task')}</p>
-              <button type="button" data-task-action="open" className="sx-task-card-title" disabled={Boolean(busyId)} onClick={() => openEditor(task)}>{task.title}</button>
-              <div className="sx-task-card-top"><span className="sx-task-type">{task.deliveryType || 'Other'}</span>{late && <span className="sx-task-overdue">Overdue</span>}</div>
-              <span className={'sx-task-stage' + (done ? ' is-complete' : '')}>{done ? 'Completed' : task.productionStage || 'Not started'}</span>
-              {task.clientVisible && <span className="sx-task-client-state">Client-visible update</span>}
-              <div className="sx-task-card-meta"><span className={late ? 'is-overdue' : ''}><CalendarDays size={13} aria-hidden="true" />{task.dueDate ? operationDate(task.dueDate) : 'No due date'}</span><span>{assignee ? <i className="record-assignee" aria-hidden="true">{assignee.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('')}</i> : <UserRound size={13} aria-hidden="true" />}{assignee || (task.assignee ? 'Assigned crew' : 'Unassigned')}</span></div>
+              <header className="sx-task-card-heading">
+                <button type="button" data-task-action="open" className="sx-task-card-title"
+                  disabled={Boolean(busyId)} onClick={() => openEditor(task)}>{task.title}</button>
+                <p className="sx-task-card-project"><span aria-hidden="true" />{project?.name || (getLeadId(task) ? 'Linked project' : 'Studio task')}</p>
+              </header>
+              <div className="sx-task-card-status">
+                <span className={'sx-task-stage' + (done ? ' is-complete' : '')}>{done ? 'Completed' : task.productionStage || 'Not started'}</span>
+                <span>{task.deliveryType || 'Other'}</span>
+              </div>
+              <div className="sx-task-card-meta">
+                <span className={late ? 'is-overdue' : ''}>
+                  <CalendarDays size={14} aria-hidden="true" />
+                  <span>{late && 'Overdue · '}{task.dueDate ? operationDate(task.dueDate) : 'No due date'}</span>
+                </span>
+                <span>
+                  {assignee ? <i className="record-assignee" aria-hidden="true">{assignee.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('')}</i> : <UserRound size={14} aria-hidden="true" />}
+                  <span>{assignee || (task.assignee ? 'Assigned crew' : 'Unassigned')}</span>
+                </span>
+                {task.clientVisible && <span><Eye size={14} aria-hidden="true" /><span>Client-visible update</span></span>}
+              </div>
               {canWrite && <footer className="sx-task-card-actions">
-                <button type="button" data-task-action="complete" className="sx-task-complete" disabled={Boolean(busyId)} aria-label={`${done ? 'Reopen' : 'Complete'} task: ${task.title}`} onClick={() => toggleTask(task)}>{done ? <CheckCircle2 size={16} aria-hidden="true" /> : <Circle size={16} aria-hidden="true" />}{done ? 'Reopen' : 'Complete'}</button>
-                <button type="button" className="sx-task-icon" disabled={Boolean(busyId)} aria-label={'Edit task: ' + task.title} onClick={() => openEditor(task)}><Pencil size={15} aria-hidden="true" /></button>
-                {canDelete && <button type="button" className="sx-task-icon" disabled={Boolean(busyId)} aria-label={'Delete task: ' + task.title} onClick={() => requestDelete(task)}><Trash2 size={15} aria-hidden="true" /></button>}
+                <TaskActionButtons task={task} disabled={Boolean(busyId)} canDelete={canDelete}
+                  onToggle={toggleTask} onEdit={openEditor} onDelete={requestDelete} />
               </footer>}
             </article>;
           }) : <p className="sx-task-lane-empty">No tasks in this stage.</p>}
@@ -157,6 +185,7 @@ export default function PostProduction() {
   const [projectError, setProjectError] = useState("");
   const [crewError, setCrewError] = useState("");
   const [query, setQuery] = useState("");
+  const useTopbarSearch = useWorkspaceModuleSearch({ label: 'Search tasks or projects', query, onChange: setQuery });
   const viewKey = 'studioxos-task-view:' + (user?._id || user?.id || 'current');
   const [taskView, setTaskView] = useState(() => {
     if (!IS_COMMERCIAL_DEPLOYMENT) return 'list';
@@ -479,6 +508,10 @@ export default function PostProduction() {
   const moveTask = (task, lane) => updateTaskStage(task,
     lane.id === 'complete' ? { status: 'completed' } : { productionStage: lane.stages[0] },
     'Task moved to ' + lane.title.toLowerCase() + '.');
+  const requestDelete = task => {
+    setDeleting(task);
+    setFormError('');
+  };
   const deleteTask = async () => {
     if (saving || !canDelete) return;
     setSaving(true);
@@ -499,6 +532,36 @@ export default function PostProduction() {
       setSaving(false);
     }
   };
+
+  const taskStages = [
+    { id: "all", label: "All tasks", count: tasks.length },
+    { id: "pending", label: "Pending", count: pending.length },
+    { id: "completed", label: "Completed", count: completed.length },
+    { id: "overdue", label: "Overdue", count: overdue.length },
+  ];
+  const phoneStatus = <div className="studio-phone-filter">
+    <StudioSelect aria-label="Filter tasks by status" value={filter} onChange={event => setFilter(event.target.value)}>
+      {taskStages.map(stage => <option key={stage.id} value={stage.id}>{stage.label} · {stage.count}</option>)}
+    </StudioSelect>
+  </div>;
+
+  const viewSwitch = <RecordViewSwitch value={taskView} onChange={chooseTaskView} label="Task view"
+    className="sx-task-view-switch" surfaceSelector=".sx-task-board,.ops-table-scroll"
+    views={[{ id: 'board', label: 'Board', icon: Columns3 }, { id: 'list', label: 'List', icon: List }]} />;
+  const statusFilters = <div className="studio-tabs ops-tabs" role="group" aria-label="Filter tasks">
+    {taskStages.map((tab) => (
+      <button
+        key={tab.id}
+        type="button"
+        className={filter === tab.id ? "active" : ""}
+        aria-pressed={filter === tab.id}
+        onClick={() => setFilter(tab.id)}
+      >
+        {tab.label}
+        <span>{tab.count}</span>
+      </button>
+    ))}
+  </div>;
 
   return (
     <div ref={workspace} className={"studio-ops production-workspace-refined" + (IS_COMMERCIAL_DEPLOYMENT ? " sx-task-page" : "")} data-task-view={IS_COMMERCIAL_DEPLOYMENT ? taskView : undefined}>
@@ -566,7 +629,7 @@ export default function PostProduction() {
       )}
       <div className="ops-workspace-grid">
         <section className="studio-card ops-task-workspace">
-          <div className="ops-section-heading">
+          {!useTopbarSearch && <div className="ops-section-heading">
             {!IS_COMMERCIAL_DEPLOYMENT && <div>
               <h2 className="studio-section-title">
                 Task workspace{" "}
@@ -578,74 +641,59 @@ export default function PostProduction() {
                 Open a task to edit its brief, assignment or client update.
               </p>
             </div>}
-            {IS_COMMERCIAL_DEPLOYMENT ? <RecordViewSwitch value={taskView} onChange={chooseTaskView} label="Task view"
-              className="sx-task-view-switch" surfaceSelector=".sx-task-board,.ops-table-scroll"
-              views={[{ id: 'board', label: 'Board', icon: Columns3 }, { id: 'list', label: 'List', icon: List }]} /> : <ListChecks size={19} className="ops-quiet-icon" />}
-          </div>
-          <div className="studio-phone-filter"><StudioSelect aria-label="Filter tasks by status" value={filter} onChange={event=>setFilter(event.target.value)}>{[{id:"all",label:"All tasks",count:tasks.length},{id:"pending",label:"Pending",count:pending.length},{id:"completed",label:"Completed",count:completed.length},{id:"overdue",label:"Overdue",count:overdue.length}].map(tab=><option key={tab.id} value={tab.id}>{tab.label} · {tab.count}</option>)}</StudioSelect></div><div className="studio-tabs ops-tabs" aria-label="Filter tasks">
-            {[
-              { id: "all", label: "All tasks", count: tasks.length },
-              { id: "pending", label: "Pending", count: pending.length },
-              { id: "completed", label: "Completed", count: completed.length },
-              { id: "overdue", label: "Overdue", count: overdue.length },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={filter === tab.id ? "active" : ""}
-                aria-pressed={filter === tab.id}
-                onClick={() => setFilter(tab.id)}
-              >
-                {tab.label}
-                <span>{tab.count}</span>
-              </button>
-            ))}
-          </div>
-          <div className="studio-toolbar ops-task-toolbar">
-            <label className="studio-search ops-search">
-              <Search size={16} aria-hidden="true" />
-              <input
-                type="search"
-                enterKeyHint="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                onKeyDown={event => {
-                  if (event.key !== 'Enter' || event.nativeEvent.isComposing
-                    || !window.matchMedia('(pointer: coarse)').matches) return;
-                  event.preventDefault();
-                  event.currentTarget.blur();
-                }}
-                placeholder="Search tasks or projects"
-                aria-label="Search tasks or projects"
-              />
-            </label>
-            <label className="production-project-filter"><span className="ops-sr-only">Project</span>
-            <StudioSelect
-              className="studio-input ops-select"
-              value={projectFilter}
-              onChange={(event) => setProjectFilter(event.target.value)}
-              aria-label="Filter by project"
-            >
-              <option value="all">All projects</option>
-              <option value="unassigned">Studio tasks</option>
-              {leads.map((lead) => (
-                <option value={lead._id} key={lead._id}>
-                  {lead.name}
-                </option>
-              ))}
-            </StudioSelect>
-            </label>
-            <label className="ops-sort">
-              <ArrowDownWideNarrow size={15} />
-              <StudioSelect
-                value={sort}
-                onChange={(event) => setSort(event.target.value)}
-                aria-label="Sort tasks"
-              >
-                <option value="due">Due date</option>
-                <option value="newest">Newest first</option>
-              </StudioSelect>
-            </label>
+            {IS_COMMERCIAL_DEPLOYMENT ? viewSwitch : <ListChecks size={19} className="ops-quiet-icon" />}
+          </div>}
+          <div className="ops-task-controls" data-topbar-search={useTopbarSearch || undefined}>
+            {useTopbarSearch ? viewSwitch : phoneStatus}
+            {!useTopbarSearch && statusFilters}
+            <div className="studio-toolbar ops-task-toolbar">
+              {useTopbarSearch && phoneStatus}
+              {!useTopbarSearch && <label className="studio-search ops-search">
+                <Search size={16} aria-hidden="true" />
+                <input
+                  type="search"
+                  enterKeyHint="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key !== 'Enter' || event.nativeEvent.isComposing
+                      || !window.matchMedia('(pointer: coarse)').matches) return;
+                    event.preventDefault();
+                    event.currentTarget.blur();
+                  }}
+                  placeholder="Search tasks or projects"
+                  aria-label="Search tasks or projects"
+                />
+              </label>}
+              <label className="production-project-filter"><span className="ops-sr-only">Project</span>
+                <StudioSelect
+                  className="studio-input ops-select"
+                  value={projectFilter}
+                  onChange={(event) => setProjectFilter(event.target.value)}
+                  aria-label="Filter by project"
+                >
+                  <option value="all">All projects</option>
+                  <option value="unassigned">Studio tasks</option>
+                  {leads.map((lead) => (
+                    <option value={lead._id} key={lead._id}>
+                      {lead.name}
+                    </option>
+                  ))}
+                </StudioSelect>
+              </label>
+              <label className="ops-sort">
+                <ArrowDownWideNarrow size={15} />
+                <StudioSelect
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value)}
+                  aria-label="Sort tasks"
+                >
+                  <option value="due">Due date</option>
+                  <option value="newest">Newest first</option>
+                </StudioSelect>
+              </label>
+            </div>
+            {useTopbarSearch && statusFilters}
           </div>
           {(query || projectFilter !== "all" || filter !== "all") && <div className="production-filter-feedback"><span>Filtered task view</span><StudioButton variant="ghost" onClick={() => { setQuery(""); setProjectFilter("all"); setFilter("all"); }}>Clear filters</StudioButton></div>}
           {nextTask && <ScheduledWorkAction
@@ -669,16 +717,16 @@ export default function PostProduction() {
               <p>Try again to reconnect to your production workspace.</p>
             </div>
           ) : filteredTasks.length ? (
-            IS_COMMERCIAL_DEPLOYMENT && taskView === 'board' ? <CommercialTaskBoard tasks={filteredTasks} getProject={getProject} crew={crew} today={today} busyId={busyId} openEditor={openEditor} toggleTask={toggleTask} canWrite={canWrite} canDelete={canDelete} moveTask={moveTask} requestDelete={task => { setDeleting(task); setFormError(''); }} /> : <div className="ops-table-scroll">
+            IS_COMMERCIAL_DEPLOYMENT && taskView === 'board' ? <CommercialTaskBoard tasks={filteredTasks} getProject={getProject} crew={crew} today={today} busyId={busyId} openEditor={openEditor} toggleTask={toggleTask} canWrite={canWrite} canDelete={canDelete} moveTask={moveTask} requestDelete={requestDelete} /> : <div className="ops-table-scroll">
               <table role="table" aria-label="Production tasks" className="studio-table ops-task-table studio-phone-record-table">
                 <thead role="rowgroup">
                   <tr role="row">
                     <th role="columnheader" scope="col">Task & project</th>
                     <th role="columnheader" scope="col">Due date</th>
                     <th role="columnheader" scope="col">Status</th>
-                    <th role="columnheader" scope="col">
-                      <span className="ops-sr-only">Actions</span>
-                    </th>
+                    {(!IS_COMMERCIAL_DEPLOYMENT || canWrite) && <th role="columnheader" scope="col">
+                      {IS_COMMERCIAL_DEPLOYMENT ? 'Actions' : <span className="ops-sr-only">Actions</span>}
+                    </th>}
                   </tr>
                 </thead>
                 <tbody role="rowgroup">
@@ -693,54 +741,67 @@ export default function PostProduction() {
                         className={done ? "ops-task-done" : ""}
                       >
                         <td role="cell" data-label="Task & project">
-                          <div className="ops-task-title">
-                            <button
-                              data-task-action="complete" className={`ops-complete-button ${done ? "is-complete" : ""}`}
-                              disabled={!!busyId || !canWrite}
-                              onClick={() => toggleTask(task)}
-                              aria-label={`${done ? "Reopen" : "Complete"} task: ${task.title}`}
-                            >
-                              {done ? (
-                                <CheckCircle2 size={20} />
-                              ) : (
-                                <Circle size={20} />
-                              )}
-                            </button>
-                            <div>
+                          {IS_COMMERCIAL_DEPLOYMENT ? <div className="sx-task-list-identity">
+                            <button type="button" data-task-action="open" className="ops-title-button"
+                              disabled={Boolean(busyId)} onClick={() => openEditor(task)}>{task.title}</button>
+                            <p className="ops-task-project">
+                              <FolderOpen size={13} aria-hidden="true" />
+                              <span>{project?.name || (getLeadId(task) ? 'Linked project' : 'Studio task')}{project?.eventType && ' · ' + project.eventType}</span>
+                            </p>
+                            {(task.assignee || task.clientVisible) && <div className="sx-task-list-details">
+                              {task.assignee && <span><UserRound size={13} aria-hidden="true" />{task.assignee.name || crew.find(person => person._id === task.assignee)?.name || 'Assigned crew'}</span>}
+                              {task.clientVisible && <span><Eye size={13} aria-hidden="true" />{task.deliveryType ? task.deliveryType + ' · Client-visible' : 'Client-visible update'}</span>}
+                            </div>}
+                          </div> : (
+                            <div className="ops-task-title">
                               <button
-                                data-task-action="open" className="ops-title-button"
-                                disabled={!!busyId}
-                                onClick={() => openEditor(task)}
+                                data-task-action="complete" className={`ops-complete-button ${done ? "is-complete" : ""}`}
+                                disabled={!!busyId || !canWrite}
+                                onClick={() => toggleTask(task)}
+                                aria-label={`${done ? "Reopen" : "Complete"} task: ${task.title}`}
                               >
-                                {task.title}
-                              </button>
-                              <span className="ops-task-project">
-                                <FolderOpen size={12} />
-                                {project?.name ||
-                                  (getLeadId(task)
-                                    ? "Linked project"
-                                    : "Studio task")}
-                                {project?.eventType && (
-                                  <i> / {project.eventType}</i>
+                                {done ? (
+                                  <CheckCircle2 size={20} />
+                                ) : (
+                                  <Circle size={20} />
                                 )}
-                              </span>
-                              {task.clientVisible && (
-                                <span className="ops-published-update">
-                                  {task.deliveryType} · {task.productionStage} ·
-                                  Client-visible
+                              </button>
+                              <div>
+                                <button
+                                  data-task-action="open" className="ops-title-button"
+                                  disabled={!!busyId}
+                                  onClick={() => openEditor(task)}
+                                >
+                                  {task.title}
+                                </button>
+                                <span className="ops-task-project">
+                                  <FolderOpen size={12} />
+                                  {project?.name ||
+                                    (getLeadId(task)
+                                      ? "Linked project"
+                                      : "Studio task")}
+                                  {project?.eventType && (
+                                    <i> / {project.eventType}</i>
+                                  )}
                                 </span>
-                              )}
-                              {task.assignee && (
-                                <span className="ops-published-update">
-                                  {task.assignee.name ||
-                                    crew.find(
-                                      (person) => person._id === task.assignee,
-                                    )?.name ||
-                                    "Assigned crew"}
-                                </span>
-                              )}
+                                {task.clientVisible && (
+                                  <span className="ops-published-update">
+                                    {task.deliveryType} · {task.productionStage} ·
+                                    Client-visible
+                                  </span>
+                                )}
+                                {task.assignee && (
+                                  <span className="ops-published-update">
+                                    {task.assignee.name ||
+                                      crew.find(
+                                        (person) => person._id === task.assignee,
+                                      )?.name ||
+                                      "Assigned crew"}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </td>
                         <td role="cell" data-label="Due date">
                           <span
@@ -748,51 +809,54 @@ export default function PostProduction() {
                           >
                             {task.dueDate ? (
                               <>
-                                <CalendarDays size={13} />
-                                {operationDate(task.dueDate)}
+                                <CalendarDays size={13} aria-hidden="true" />
+                                <span>{IS_COMMERCIAL_DEPLOYMENT && late && 'Overdue · '}{operationDate(task.dueDate)}</span>
                               </>
                             ) : (
                               "No due date"
                             )}
                           </span>
-                          {late && (
+                          {late && !IS_COMMERCIAL_DEPLOYMENT && (
                             <small className="ops-overdue-caption">
                               Overdue
                             </small>
                           )}
                         </td>
                         <td role="cell" data-label="Status">
-                          <span
-                            className={`studio-badge ops-status ${done ? "completed" : "pending"}`}
-                          >
-                            <span />
-                            {done ? "Completed" : "Pending"}
-                          </span>
-                          {IS_COMMERCIAL_DEPLOYMENT && <small className="sx-task-list-stage">{task.productionStage || 'Not started'}</small>}
+                          {IS_COMMERCIAL_DEPLOYMENT ? (
+                            <span className={'sx-task-stage' + (done ? ' is-complete' : '')}>{done ? 'Completed' : task.productionStage || 'Not started'}</span>
+                          ) : (
+                            <span className={`studio-badge ops-status ${done ? "completed" : "pending"}`}>
+                              <span />
+                              {done ? "Completed" : "Pending"}
+                            </span>
+                          )}
                         </td>
-                        <td role="cell" data-label="Actions">
-                          <div className="ops-row-actions">
-                            {canWrite && <button
-                              className="ops-icon-button"
-                              disabled={!!busyId}
-                              aria-label={`Edit task: ${task.title}`}
-                              onClick={() => openEditor(task)}
-                            >
-                              <Pencil size={15} />
-                            </button>}
-                            {canDelete && <button
-                              className="ops-icon-button"
-                              disabled={!!busyId}
-                              aria-label={`Delete task: ${task.title}`}
-                              onClick={() => {
-                                setDeleting(task);
-                                setFormError("");
-                              }}
-                            >
-                              <Trash2 size={15} />
-                            </button>}
-                          </div>
-                        </td>
+                        {(!IS_COMMERCIAL_DEPLOYMENT || canWrite) && <td role="cell" data-label="Actions">
+                          {IS_COMMERCIAL_DEPLOYMENT ? canWrite && (
+                            <TaskActionButtons task={task} disabled={Boolean(busyId)} canDelete={canDelete}
+                              onToggle={toggleTask} onEdit={openEditor} onDelete={requestDelete} />
+                          ) : (
+                            <div className="ops-row-actions">
+                              {canWrite && <button
+                                className="ops-icon-button"
+                                disabled={!!busyId}
+                                aria-label={`Edit task: ${task.title}`}
+                                onClick={() => openEditor(task)}
+                              >
+                                <Pencil size={15} />
+                              </button>}
+                              {canDelete && <button
+                                className="ops-icon-button"
+                                disabled={!!busyId}
+                                aria-label={`Delete task: ${task.title}`}
+                                onClick={() => requestDelete(task)}
+                              >
+                                <Trash2 size={15} />
+                              </button>}
+                            </div>
+                          )}
+                        </td>}
                       </tr>
                     );
                   })}

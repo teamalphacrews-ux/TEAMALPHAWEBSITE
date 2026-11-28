@@ -1,6 +1,15 @@
 /* The overview is a working canvas: warm photography, quiet chrome, useful data. */
 .studio-app.studio-app .studio-overview-reference { --ov-orange: #ef702d; --ov-track: #f0f1f2; --ov-bar: #7b828b; --ov-track-edge: #7b828b; --ov-change-positive: #237653; --ov-change-negative: #b54427; --ov-completed: #ff8d55; --ov-accent-edge: #bd4b1f; --ov-gap: 14px; width: 100%; max-width: 1780px; margin: 0 auto; }
 html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-reference { --ov-track: #34373b; --ov-bar: #858b94; --ov-track-edge: #858b94; --ov-change-positive: #77cca6; --ov-change-negative: #ffab91; --ov-accent-edge: #ff9d6c; }
+html[data-studio-color-theme]:not([data-studio-color-theme="default"]) .studio-app.studio-app .studio-overview-reference {
+  --ov-series-accent: var(--studio-accent);
+  --ov-series-focus: var(--studio-focus);
+  --ov-completed: var(--ov-series-accent);
+  --ov-accent-edge: var(--ov-series-focus);
+  --ov-selection-fill: var(--studio-selected);
+  --ov-heat-low: color-mix(in srgb, var(--ov-series-accent) 28%, var(--studio-surface));
+  --ov-heat-mid: color-mix(in srgb, var(--ov-series-accent) 58%, var(--studio-surface));
+}
 .studio-app.studio-app .studio-overview-reference :is(h1,h2,h3,p) { text-transform: none; }
 .studio-app.studio-app .studio-overview-reference .ov-page-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .studio-app.studio-app .studio-overview-reference .ov-page-eyebrow { font-size: 9px; font-weight: 550; letter-spacing: .1em; color: var(--studio-muted); }
@@ -58,7 +67,7 @@ html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-refere
 .studio-overview-reference .ov-chart-days { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 4px; }
 .studio-overview-reference .ov-area-chart .ov-chart-days { padding: 0 15px; }
 .studio-overview-reference .ov-chart-days button { border: 0; background: transparent; color: var(--studio-muted); min-height: 44px; padding: 4px 2px; border-radius: 7px; font: 500 12px/1.4 var(--studio-font); cursor: pointer; }
-.studio-overview-reference .ov-chart-days button:is(:hover,[aria-pressed=true]) { background: #fff0e5; color: #ae461c; }
+.studio-overview-reference .ov-chart-days button:is(:hover,[aria-pressed=true]) { background: var(--ov-selection-fill, #fff0e5); color: var(--ov-series-focus, #ae461c); }
 .studio-overview-reference .ov-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; font-size: 12px; line-height: 1.5; color: var(--studio-muted); border-top: 1px solid var(--studio-border); padding-top: 8px; margin-top: 6px; }
 .studio-overview-reference .ov-card-bottom b { color: var(--studio-text); }
 .studio-overview-reference .ov-chart-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; line-height: 1.4; color: var(--studio-muted); margin-top: -5px; }
@@ -74,7 +83,7 @@ html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-refere
 .studio-overview-reference .ov-chart-legend { display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; font-size: 12px; line-height: 1.5; color: var(--studio-muted); }
 .studio-overview-reference .ov-chart-legend span { display: flex; align-items: center; gap: 5px; }
 .studio-overview-reference .ov-chart-legend i { width: 6px; height: 6px; border-radius: 2px; background: var(--ov-bar); }
-.studio-overview-reference .ov-chart-legend .is-orange { background: var(--ov-completed); outline: 1px solid var(--ov-accent-edge); }
+.studio-overview-reference .ov-chart-legend .is-completed { background: var(--ov-completed); outline: 1px solid var(--ov-accent-edge); }
 .studio-overview-reference .ov-chart-legend .is-line { height: 2px; width: 10px; background: var(--studio-text); }
 .studio-overview-reference .ov-chart-legend a { display: flex; align-items: center; gap: 5px; min-height: 44px; margin-left: auto; color: var(--studio-text); }
 .studio-overview-reference .ov-heatmap-orientation { max-width: 65ch; margin: 0 0 12px; color: var(--studio-muted); font-size: 12px; line-height: 1.5; }
@@ -85,9 +94,9 @@ html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-refere
 .studio-overview-reference .ov-activity-days { margin-left: 44px; }
 .studio-overview-reference :is(.ov-heatmap i,.ov-heatmap-foot i) { display: block; box-sizing: border-box; aspect-ratio: 1; border: 1px solid var(--ov-track-edge); border-radius: 50%; background: var(--ov-track); width: 100%; max-width: 9px; justify-self: center; }
 .studio-overview-reference :is(.ov-heatmap i,.ov-heatmap-foot i):not([data-level="0"]) { border-color: var(--ov-accent-edge); }
-.studio-overview-reference [data-level="1"] { background: #ffd6bf !important; }
-.studio-overview-reference [data-level="2"] { background: #ffaa7e !important; }
-.studio-overview-reference [data-level="3"] { background: #f36b2a !important; }
+.studio-overview-reference [data-level="1"] { background: var(--ov-heat-low, #ffd6bf) !important; }
+.studio-overview-reference [data-level="2"] { background: var(--ov-heat-mid, #ffaa7e) !important; }
+.studio-overview-reference [data-level="3"] { background: var(--ov-series-accent, #f36b2a) !important; }
 .studio-overview-reference .ov-heatmap-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
 .studio-overview-reference .ov-heatmap-foot p { font-size: 12px; line-height: 1.5; margin: 0; color: var(--studio-muted); }
 .studio-overview-reference .ov-heatmap-foot strong { color: var(--studio-text); font-weight: 600; }
@@ -122,7 +131,8 @@ html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-refere
 .studio-app.studio-app .studio-overview-reference .overview-feature-card.finance::before { border: 0; }
 .studio-app.studio-app .studio-overview-reference .overview-finance-profit { color: var(--studio-text); font-size: 32px; }
 .studio-app.studio-app .studio-overview-reference .overview-feature-label { color: var(--studio-text); font-size: 13px; }
-.studio-app.studio-app .studio-overview-reference .overview-finance-waves { opacity: .1; color: #f87938; }
+.studio-app.studio-app .studio-overview-reference .overview-finance-waves { opacity: .1; color: var(--ov-series-accent, #f87938); }
+html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-reference .overview-finance-waves { color: var(--studio-muted); }
 .studio-app.studio-app .studio-overview-reference .overview-fluid-glow { display: none; }
 .studio-app.studio-app .studio-overview-reference .overview-feature-card.finance > a { color: var(--studio-text); background: var(--studio-canvas); border: 0; }
 .studio-app.studio-app .studio-overview-reference .overview-stat { border: 0 !important; background: var(--studio-surface) !important; border-radius: 18px !important; }
@@ -142,10 +152,10 @@ html[data-studio-appearance=dark] .studio-app.studio-app .studio-overview-refere
 .studio-overview-reference .ov-week-days { display: flex; gap: 12px; margin-left: auto; }
 .studio-overview-reference .ov-week-days > span { display: grid; justify-items: center; gap: 4px; }
 .studio-overview-reference .ov-week-days i { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: var(--ov-track); color: var(--studio-muted); }
-.studio-overview-reference .ov-week-days i.is-active { background: #fff0e7; color: #f16e29; }
+.studio-overview-reference .ov-week-days i.is-active { background: var(--ov-selection-fill, #fff0e7); color: var(--ov-series-focus, #f16e29); }
 .studio-overview-reference .ov-week-days small { font-size: 12px; color: var(--studio-muted); }
 .studio-overview-reference .ov-week-strip > a { display: inline-flex; align-items: center; gap: 13px; min-height: 44px; margin-left: auto; padding: 10px 14px; border-radius: 999px; background: #17191c; color: white; font-size: 13px; white-space: nowrap; }
-.studio-overview-reference :is(button,a,summary):focus-visible { outline: 2px solid #ec782f; outline-offset: 3px; }
+.studio-overview-reference :is(button,a,summary):focus-visible { outline: 2px solid var(--ov-series-focus, #ec782f); outline-offset: 3px; }
 .studio-overview-reference .ov-draw-line { animation: ov-line-in .9s ease both; }
 @keyframes ov-line-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes ov-warm-glow { to { transform: translate(8%,-6%) scale(1.15); opacity: .9; } }

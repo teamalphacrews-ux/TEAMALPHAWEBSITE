@@ -401,3 +401,156 @@
 }
 .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass[data-studio-motion=reduced] :is(.sx-project-grid,.sx-project-card,.sx-project-card-footer > a,.sx-project-register .reference-table-scroll,.sx-project-detail [role=tabpanel]:not([hidden])) { animation: none; transform: none; transition: none; }
 .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass[data-studio-motion=reduced] :is(.sx-project-view-control > button,.sx-project-register .project-contact-filters > button,.sx-project-detail .project-contact-detail-tabs > button,.sx-project-context-links > button) { transition: none; }
+
+#sx-workspace-shell .sx-project-detail {
+  --project-panel-inset: clamp(16px, 1.7vw, 24px);
+
+  & > .reference-heading { gap: 12px 20px; margin-bottom: var(--record-section-gap); }
+  & .sx-project-identity .record-category { padding-inline: 0; }
+  & .sx-project-identity .record-category::before { content: none; }
+  & .project-hub-header-actions { flex: 0 1 auto; gap: 8px; margin: 0; }
+  & .record-project-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 128px), 1fr));
+    gap: 8px;
+    margin: 0 0 var(--record-section-gap);
+    padding: 12px var(--project-panel-inset);
+  }
+  & .record-project-summary > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0;
+  }
+  & .record-project-summary > div > dd {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin: auto 0 0;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  & [data-project-section]:not([hidden]),
+  & .sx-project-reference-rail { display: grid; min-width: 0; gap: var(--record-section-gap); }
+  & [data-project-section] > :is(.project-hub-overview,.project-hub-section,.reference-section),
+  & .sx-project-reference-rail > .reference-section {
+    min-width: 0;
+    margin: 0;
+    padding: var(--project-panel-inset);
+  }
+  & .project-hub-section > header { margin-bottom: 12px; }
+  & .project-hub-section > .studio-muted { margin-block: 0 12px; }
+  & .reference-section-heading { margin-bottom: 12px; padding-bottom: 8px; }
+  & .reference-info-edit { top: var(--project-panel-inset); right: var(--project-panel-inset); }
+  & .sx-project-contact-actions,
+  & .sx-project-schedule .project-hub-actions { gap: 8px; margin: 12px 0 0; }
+  & .sx-project-contact-actions:empty { display: none; }
+  & .sx-project-next-step { gap: 12px 16px; }
+  & .sx-project-next-step .sx-project-description { margin: 4px 0 0; }
+  & .sx-project-work-list > li { gap: 4px 8px; padding-block: 12px; }
+  & .sx-project-work-stage { overflow-wrap: anywhere; }
+  & .sx-project-team-list { display: grid; gap: 12px; margin-block-end: 12px; }
+  & .sx-project-team-list > li { margin: 0; }
+  & .reference-project-notes:empty { display: none; }
+  & .reference-section form:has(.reference-project-note) { display: grid; gap: 8px; }
+  & .reference-section form:has(.reference-project-note) > .reference-button { justify-self: start; min-height: 44px; }
+
+  & [data-project-section="documents"] .reference-group-label { margin-block: 16px 8px; }
+  & [data-project-section="documents"] .reference-action-list {
+    grid-template-columns: repeat(auto-fit,minmax(min(100%,210px),1fr));
+    gap: 8px;
+  }
+  & [data-project-section="documents"] .reference-action-list > button { min-height: 64px; padding: 12px; }
+  & [data-project-section="documents"] .reference-action-list > button > span { min-width: 0; overflow-wrap: anywhere; }
+  & [data-project-section="payments"] .reference-payment-summary { margin-block: 0 12px; }
+  & [data-project-section="payments"] .reference-payment-summary > div { gap: 8px; }
+  & [data-project-section="payments"] .reference-table :is(td,th):nth-child(n+2):nth-child(-n+4) { font-variant-numeric: tabular-nums; }
+  & .project-hub-crew > article {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 12px 0;
+  }
+  & .project-hub-crew > article > div:first-child { flex: 1 1 110px; }
+  & .project-hub-crew > article > .project-hub-crew-actions { flex-wrap: wrap; max-width: 100%; justify-content: flex-start; }
+  & .project-hub-add {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    align-items: end;
+    gap: 8px 12px;
+    max-width: 540px;
+    margin: 16px 0 0;
+  }
+  & .project-hub-task {
+    gap: 8px 12px;
+    padding: 12px 0;
+  }
+  & .project-hub-task-add {
+    align-items: end;
+    gap: 8px 12px;
+    margin: 16px 0 12px;
+  }
+  & :is(.project-hub-add,.project-hub-task-add) .studio-field { min-width: 0; gap: 6px; margin: 0; }
+  & :is(.project-hub-add,.project-hub-task-add) .studio-input { min-width: 0; min-height: 44px; max-width: 100%; }
+  & :is(.project-hub-add,.project-hub-task-add) .studio-select { width: 100%; }
+  & [data-project-section] :is(.studio-button,.reference-button) {
+    min-height: 44px;
+    max-width: 100%;
+    border-radius: 12px;
+    line-height: 1.4;
+    white-space: normal;
+  }
+  & [data-project-section] :is(.studio-button,.reference-button) svg { flex: none; }
+}
+
+@media (min-width: 1101px) {
+  #sx-workspace-shell .sx-project-detail .project-hub-task-add { grid-template-columns: minmax(0,1.6fr) repeat(2,minmax(0,1fr)) auto; }
+  #sx-workspace-shell .sx-project-detail .project-hub-task-add > button { grid-column: auto; }
+}
+
+@media (min-width: 761px) {
+  #sx-workspace-shell .sx-project-detail [data-project-section="payments"] .reference-table :is(td,th):nth-child(n+2):nth-child(-n+4) { text-align: end; }
+  #sx-workspace-shell .sx-project-detail [data-project-section="documents"] .reference-table { min-width: 0; white-space: normal; }
+  #sx-workspace-shell .sx-project-detail [data-project-section="documents"] .reference-table td:first-child { overflow-wrap: anywhere; }
+  #sx-workspace-shell .sx-project-detail [data-project-section="documents"] .reference-table :is(td,th):nth-child(4) {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (max-width: 760px) {
+  #sx-workspace-shell .sx-project-detail {
+    & .project-hub-header-actions {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto auto;
+      align-items: center;
+    }
+    & .project-hub-header-actions > :is(.studio-select,.reference-more,.reference-create-menu) { min-width: 0; width: 100%; max-width: none; }
+    & .project-hub-header-actions > .studio-select { grid-column: auto; }
+    & .project-hub-header-actions > :is(.reference-more,.reference-create-menu) > button { padding-inline: 8px; }
+    & .record-project-summary { grid-template-columns: repeat(auto-fit,minmax(min(100%, 72px),1fr)); }
+    & .record-project-summary dd { font-size: 18px; }
+    & .record-project-summary > div:last-child { display: none; }
+    & .record-project-summary:has(> :only-child) { display: none; }
+    & .sx-project-reference-rail { grid-template-columns: minmax(0,1fr); }
+    & .sx-project-contact-actions > .studio-button,
+    & .sx-project-schedule .project-hub-actions > .studio-button { text-wrap: balance; }
+    & .sx-project-contact-actions > .studio-error { grid-column: 1 / -1; }
+    & .project-hub-crew-actions > .studio-icon-button { width: 44px; flex-basis: 44px; padding: 0; }
+    & .project-hub-task > .studio-select { max-width: 220px; }
+    & :is(.project-hub-add,.project-hub-task,.project-hub-task-add) .studio-select-value { white-space: normal; overflow-wrap: anywhere; }
+    & [data-project-section="payments"] .reference-payment-summary > div { min-height: 44px; padding-block: 8px; }
+  }
+}
+
+@media (max-width: 360px) {
+  #sx-workspace-shell .sx-project-detail .project-hub-header-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #sx-workspace-shell .sx-project-detail .project-hub-header-actions > .reference-create-menu { grid-column: 1 / -1; }
+  #sx-workspace-shell .sx-project-detail .project-contact-detail-tabs > button { font-size: 12px; }
+}
+
+@media (min-width: 360px) and (max-width: 760px) {
+  #sx-workspace-shell .sx-project-detail .project-hub-task-add { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}

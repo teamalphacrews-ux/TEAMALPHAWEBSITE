@@ -272,12 +272,11 @@
     grid-template-columns: minmax(0, 1fr) 88px 132px 108px;
     gap: 14px;
     align-items: start;
-    margin: 0;
-    padding: 20px 0;
-    border: 0;
-    border-top: 1px solid var(--studio-border);
-    border-radius: 0;
-    background: transparent;
+    margin: 0 0 12px;
+    padding: clamp(12px, 1.5vw, 20px);
+    border: 1px solid var(--studio-border);
+    border-radius: 14px;
+    background: var(--studio-surface-2);
     box-shadow: none;
   }
   .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass :is(.qw-quote-editor .qw-item-copy,.invoice-editor .invoice-item-copy) { min-width: 0; grid-column: 1; grid-row: 1 / span 2; border-radius: var(--studio-radius-control); background: var(--studio-field-surface); border: 1px solid var(--studio-control-border); }
@@ -544,6 +543,18 @@
 /* Commercial operational screens share the reference's account tiles, ruled
    navigation, and compact register rows. Client paper and print stay separate. */
 @media screen {
+  html[data-studio-appearance="dark"] #sx-workspace-shell .finance-account-overview > .finance-account-card {
+    background: var(--studio-surface);
+    color: var(--studio-text);
+    border-color: var(--studio-border);
+  }
+  html[data-studio-appearance="dark"] #sx-workspace-shell .finance-account-card .studio-metric:not(:first-child) {
+    background: var(--studio-surface-2);
+  }
+  html[data-studio-appearance="dark"] #sx-workspace-shell .finance-account-card .studio-metric :is(.workspace-metric-label, .workspace-metric-value, .studio-muted, .finance-due-summary-link) {
+    color: var(--studio-text);
+  }
+
   html body.studio-commercial-workspace .studio-app.studio-marlo-workspace[data-studio-theme][data-studio-text-size].studio-commercial-glass {
     & :is(.finance-workspace-refined, .invoice-register-page, .qw-list-workspace, .studio-settings-page) {
       font-family: inherit;

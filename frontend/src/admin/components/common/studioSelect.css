@@ -1,11 +1,17 @@
 :is(.studio-app,.studio-crm-overlay) .studio-select{display:inline-block;min-width:0;max-width:100%;box-sizing:border-box;position:relative;vertical-align:middle;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;min-height:0!important;height:auto}
 .studio-select-native{width:100%;max-width:100%;box-sizing:border-box}
-.studio-select-trigger{display:none}
+.studio-select-trigger,.studio-select-native-chevron{display:none}
 /* Caller form classes must not expose the phone replacement on desktop. */
 @media(min-width:769px){
  :is(.studio-app,.studio-crm-overlay) .studio-select>.studio-select-trigger{display:none!important}
  :is(.studio-app.studio-app,.studio-crm-overlay.studio-crm-overlay) .studio-select>.studio-select-native{display:block;width:100%;max-width:100%;min-width:0;min-height:44px;height:44px;box-sizing:border-box;padding:10px 30px 10px 12px;border:1px solid var(--studio-border);border-radius:11px;background:var(--studio-surface);color:var(--studio-text);font-family:inherit;font-size:13px;line-height:1.4;vertical-align:middle}
  :is(.studio-app,.studio-crm-overlay) :is(.studio-field,.ops-field,.invoice-field,.qw-field)>.studio-select{display:block;width:100%}
+ :is(.studio-commercial-glass,.studio-crm-overlay) .studio-select > .studio-select-native:has(+ .studio-select-native-chevron){appearance:none;padding-inline-end:34px}
+ :is(.studio-commercial-glass,.studio-crm-overlay) .studio-select-native-chevron{display:block;position:absolute;inset-inline-end:11px;inset-block-start:50%;transform:translateY(-50%);color:var(--studio-muted);pointer-events:none}
+}
+@media(min-width:769px) and (forced-colors:active){
+ :is(.studio-commercial-glass,.studio-crm-overlay) .studio-select > .studio-select-native:has(+ .studio-select-native-chevron){appearance:auto}
+ :is(.studio-commercial-glass,.studio-crm-overlay) .studio-select-native-chevron{display:none}
 }
 
 .studio-app.studio-select-overlay{position:fixed;inset:0;z-index:1600;display:flex;align-items:flex-end;justify-content:center;min-height:0;padding:12px;background:rgba(0,0,0,.45)!important;backdrop-filter:blur(8px);box-sizing:border-box}

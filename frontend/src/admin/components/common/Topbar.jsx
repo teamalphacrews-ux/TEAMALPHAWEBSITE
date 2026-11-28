@@ -60,6 +60,19 @@ export default function Topbar({ onMenuClick, nativeNavigation, navOpen }) {
   const [markingRead, setMarkingRead] = useState(false);
   const panelRef = useRef(null);
   useLayoutEffect(() => {
+    const bar = panelRef.current;
+    if (!IS_COMMERCIAL_DEPLOYMENT || !bar) return;
+    const root = bar.ownerDocument.documentElement;
+    const syncHeight = () => root.style.setProperty('--studio-topbar-height', bar.offsetHeight + 'px');
+    syncHeight();
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(bar, { box: 'border-box' });
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--studio-topbar-height');
+    };
+  }, []);
+  useLayoutEffect(() => {
     if (!panelRef.current || !workspaceMotionAllowed()) return;
     const controls = panelRef.current.querySelectorAll('.sx-desk-mobile-mark,.studio-record-search-trigger,.sx-desk-date,.studio-quick-create > button,.sx-desk-appearance,.studio-notification-button,.studio-profile-button,.sx-page-guide-trigger');
     const players = [...controls].filter(control => control.offsetHeight).map((control, index) => control.animate([
@@ -182,9 +195,9 @@ export default function Topbar({ onMenuClick, nativeNavigation, navOpen }) {
           onClick={event => toggleTheme(event.currentTarget)} title={resolvedTheme === 'dark' ? 'Daylight mode' : 'Dark mode'}>
           <span><Sun size={15} aria-hidden="true" /></span><span><Moon size={15} aria-hidden="true" /></span>
         </button> : <StudioButton type="button" variant="icon" className="studio-icon-button studio-theme-toggle" icon={resolvedTheme === 'dark' ? Sun : Moon} onClick={event => toggleTheme(event.currentTarget)} label={resolvedTheme === 'dark' ? 'Switch to Daylight mode' : 'Switch to Dark mode'} title={resolvedTheme === 'dark' ? 'Daylight mode' : 'Dark mode'} />}
-        <div className="studio-global-search"><Search size={16} /><input ref={searchInputRef} aria-label={t("Find a page")} aria-controls="studio-page-results" aria-expanded={searchOpen} placeholder={t("Find a page") + "…"} value={query} onFocus={() => { setSearchOpen(true); setShowNotifications(false); }} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'ArrowDown') { e.preventDefault(); setSearchOpen(true); panelRef.current?.querySelector('.studio-search-results a')?.focus(); } if (e.key === 'Enter' && matches[0]) { navigate(matches[0][1]); setSearchOpen(false); setQuery(''); } }} /><kbd className="studio-search-shortcut" aria-hidden="true">{searchShortcut}</kbd>
+        {!IS_COMMERCIAL_DEPLOYMENT && <div className="studio-global-search"><Search size={16} /><input ref={searchInputRef} aria-label={t("Find a page")} aria-controls="studio-page-results" aria-expanded={searchOpen} placeholder={t("Find a page") + "…"} value={query} onFocus={() => { setSearchOpen(true); setShowNotifications(false); }} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'ArrowDown') { e.preventDefault(); setSearchOpen(true); panelRef.current?.querySelector('.studio-search-results a')?.focus(); } if (e.key === 'Enter' && matches[0]) { navigate(matches[0][1]); setSearchOpen(false); setQuery(''); } }} /><kbd className="studio-search-shortcut" aria-hidden="true">{searchShortcut}</kbd>
           {searchOpen && <div id="studio-page-results" className="studio-search-results" onKeyDown={event => { if (!['ArrowDown','ArrowUp'].includes(event.key)) return; const links = [...event.currentTarget.querySelectorAll('a')]; const index = links.indexOf(document.activeElement); if (index < 0) return; event.preventDefault(); links[(index + (event.key === 'ArrowDown' ? 1 : links.length - 1)) % links.length]?.focus(); }}><p className="studio-search-label">{t("Find a page")}</p>{matches.length ? matches.map(item => <Link to={item[1]} key={item[1]} onClick={() => { setSearchOpen(false); setQuery(''); }}>{t(item[0])}<ArrowUpRight size={14} /></Link>) : <p className="studio-muted">No matching pages.</p>}</div>}
-        </div>
+        </div>}
         {fullAccess && <div className="studio-notification-wrap"><button type="button" className="studio-icon-button studio-notification-button" aria-label={'Notifications' + (badgeUnread ? ', ' + badgeUnread + ' unread' : '')} aria-expanded={showNotifications} aria-controls="studio-notifications" ref={notificationButtonRef} onClick={() => { setShowNotifications(value => !value); setSearchOpen(false); }}><StudioIcon icon={Bell} size={18} />{badgeUnread > 0 && (IS_COMMERCIAL_DEPLOYMENT ? <span className="sx-desk-badge" aria-hidden="true">{badgeUnread > 99 ? "99+" : badgeUnread}</span> : <i />)}</button>
           {notificationPresence.present && <section inert={notificationPresence.leaving} aria-hidden={notificationPresence.leaving || undefined} data-leaving={notificationPresence.leaving || undefined} className="studio-notification-panel" id="studio-notifications" aria-label="Notifications"><div className="studio-notification-heading"><h2>Notifications</h2><StudioButton type="button" variant="icon" className="studio-icon-button" label="Close notifications" icon={X} onClick={closeNotifications} /></div>{notificationError ? <p className="studio-empty">Activity is unavailable. Try again shortly.</p> : notifications.length ? <div className="studio-notification-list">{notifications.slice(0, 6).map(item => <Link key={item._id} to={notificationLink(item)} className={item.isRead ? '' : 'is-unread'} onClick={() => setShowNotifications(false)}><span className="studio-status-dot" /><div><strong>{item.title}</strong><p>{item.description}</p></div></Link>)}</div> : <p className="studio-empty">You’re all caught up.</p>}<div className="studio-notification-footer"><StudioButton type="button" variant="ghost" size="sm" icon={CheckCheck} onClick={markAll} disabled={!unread} loading={markingRead} loadingLabel="Marking notifications as read">Mark all read</StudioButton><Link to="/admin/activity-log" onClick={() => setShowNotifications(false)}>View all <ArrowUpRight size={14} /></Link></div></section>}
         </div>}

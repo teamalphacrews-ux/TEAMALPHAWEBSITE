@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import API from '../../utils/apiConfig';
 import { STUDIO_MODULE_GROUPS, STUDIO_MODULE_IDS, permittedModules, hasFullModuleAccess, canManageTeam, canEditTeamMember } from '../../utils/moduleAccess';
 import { WorkspaceDialog, WorkspaceEmpty, WorkspaceError, WorkspaceHeader, WorkspaceSearch } from '../components/operations/WorkspaceUI';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import './studioSettings.css';
 
 const blankMember = () => ({ firstName: '', lastName: '', email: '', password: '', moduleAccess: ['overview', 'projects', 'contacts', 'calendar'] });
@@ -16,6 +17,7 @@ export default function UserManagement() {
   const preview = signedIn?.isPreview === true;
   const [users, setUsers] = useState([]), [access, setAccess] = useState(null), [loading, setLoading] = useState(true), [error, setError] = useState(''), [accessError, setAccessError] = useState('');
   const [search, setSearch] = useState(''), [dialog, setDialog] = useState(null), [form, setForm] = useState(blankMember), [busy, setBusy] = useState(false), [formError, setFormError] = useState('');
+  const useTopbarSearch = useWorkspaceModuleSearch({ label: 'Search team members', query: search, onChange: setSearch });
   const actor = { ...signedIn, ...(access || {}), studioOwner: access?.owner === true || signedIn?.studioOwner === true };
   const manager = Boolean(access && canManageTeam(actor));
   const grantable = permittedModules(actor);
@@ -65,7 +67,7 @@ export default function UserManagement() {
     <WorkspaceError error={error} retry={() => load()} /><WorkspaceError error={accessError} retry={() => loadAccess()} />
     {preview ? <p className="workspace-info">You’re viewing a sample team. Account changes are available in your connected Studio OS.</p> : access && !manager ? <div className="workspace-info" role="status"><ShieldCheck size={16} /><div><strong>Administrator · view-only team directory</strong><p>You can view your studio team here. Ask a team administrator to add or update sign-in accounts and assigned modules.</p></div></div> : !access && !accessError ? <p className="workspace-info" role="status">Checking account permissions…</p> : null}
     <section className="studio-card studio-team-directory">
-      <div className="studio-card-heading"><div><h2>Studio team <span className="studio-inline-count">{users.length}</span></h2><p className="studio-card-subtitle">Administrator accounts with access to the studio workspace.</p></div><WorkspaceSearch value={search} onChange={setSearch} placeholder="Search team members…" /></div>
+      <div className="studio-card-heading"><div><h2>Studio team <span className="studio-inline-count">{users.length}</span></h2><p className="studio-card-subtitle">Administrator accounts with access to the studio workspace.</p></div>{!useTopbarSearch && <WorkspaceSearch value={search} onChange={setSearch} placeholder="Search team members…" />}</div>
       {loading ? <WorkspaceEmpty loading /> : filtered.length ? <div className="studio-team-list">{filtered.map(member => {
         const name = [member.firstName, member.lastName].filter(Boolean).join(' ') || member.email;
         const self = String(member._id) === String(signedIn?._id || signedIn?.id);

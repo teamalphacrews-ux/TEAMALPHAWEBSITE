@@ -7,7 +7,7 @@
   }
 }
 .studio-webhook-intro { display:flex; align-items:center; gap:18px; margin-bottom:22px; padding:25px; }
-.studio-webhook-icon { display:grid; place-items:center; height:52px; width:52px; border-radius:10px; color:#a78c62; background:#f4efe6; flex-shrink:0; }
+.studio-webhook-icon { display:grid; place-items:center; height:52px; width:52px; border-radius:10px; color:var(--studio-palette-ink,#a78c62); background:var(--studio-palette-surface,#f4efe6); flex-shrink:0; }
 .studio-webhook-intro h2 { font-size:17px; font-weight:500; }
 .studio-webhook-intro p { font-size:11px; color:#9e8ea5; margin:6px 0 0; }
 .studio-webhook-intro > .studio-badge { margin-left:auto; }
@@ -15,11 +15,11 @@
 .studio-connection-steps { list-style:none; margin:25px 0 0; padding:0; }
 .studio-connection-steps li { display:flex; gap:15px; margin-bottom:26px; }
 .studio-connection-steps li:last-child { margin-bottom:0; }
-.studio-connection-steps li > span { width:28px; height:28px; border:1px solid #e8dede; background:var(--brand-paper); color:#ad9067; border-radius:50%; display:grid; place-items:center; font-size:9px; flex-shrink:0; }
+.studio-connection-steps li > span { width:28px; height:28px; border:1px solid #e8dede; background:var(--brand-paper); color:var(--studio-palette-ink,#ad9067); border-radius:50%; display:grid; place-items:center; font-size:9px; flex-shrink:0; }
 .studio-connection-steps li > div { min-width:0; }
 .studio-connection-steps h3 { font-size:12px; font-weight:500; margin:4px 0 8px; }
 .studio-connection-steps p { font-size:11px; line-height:1.85; color:#938299; margin:0; }
-.studio-connection-steps code { font-size:10px; color:#8f6d45; overflow-wrap:anywhere; }
+.studio-connection-steps code { font-size:10px; color:var(--studio-palette-ink,#8f6d45); overflow-wrap:anywhere; }
 .studio-connection-steps pre { white-space:pre-wrap; overflow-wrap:anywhere; font:10px/1.9 monospace; background:var(--brand-paper); border:1px solid #eae1d7; padding:14px; border-radius:5px; color:#8c7264; margin-top:14px; }
 .studio-copy-line { display:flex; align-items:center; gap:10px; background:var(--brand-paper); border:1px solid #eae1d7; padding:10px 12px; border-radius:5px; margin-top:13px; }
 .studio-copy-line .studio-icon-button { margin-left:auto; }
@@ -27,7 +27,7 @@
 .studio-webhook-json { background:#302735; color:#dcc6ad; border-radius:6px; font:10px/1.9 monospace; white-space:pre-wrap; overflow-wrap:anywhere; padding:20px; margin:17px 0; }
 .studio-webhook-required { font-size:10px; line-height:1.8; color:#9f8da8; }
 .studio-webhook-security { background:#f0ece6; border-color:#e6ddd1; }
-.studio-webhook-security > svg { color:#a98c64; margin-bottom:14px; }
+.studio-webhook-security > svg { color:var(--studio-palette-ink,#a98c64); margin-bottom:14px; }
 .studio-webhook-security h2 { font-size:13px; font-weight:500; }
 .studio-webhook-security p { font-size:10px; line-height:1.9; color:#928091; margin:10px 0 0; }
 .studio-integration-outro { margin-top:22px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
@@ -140,3 +140,56 @@
 .studio-email-workspace .studio-email-pagination{font-size:11px;flex-wrap:wrap}
 @media(max-width:760px){.studio-gmail-card>div:nth-child(2){min-width:180px}.studio-gmail-card>.studio-button{margin-left:0;width:100%;justify-content:center}.studio-email-controls nav{flex-wrap:wrap}.studio-email-controls nav button{flex:1;justify-content:center;padding:9px}.studio-email-account strong{font-size:12px}.studio-email-search{gap:6px;padding-left:11px}.studio-email-search>.studio-button{flex-shrink:0}.studio-integrations .studio-webhook-intro>.studio-badge{margin-left:0}.studio-email-pagination .studio-button{padding:8px 12px}.studio-email-detail dl>div{gap:9px}.studio-email-detail-heading>a{width:100%;justify-content:center}}
 @media(prefers-reduced-motion:reduce){.studio-email-workspace .studio-email-row{transition:none}}
+
+#sx-workspace-shell .studio-integrations > .studio-page-heading {
+  margin-block: 0;
+}
+#sx-workspace-shell .studio-integrations .studio-heading-actions:empty {
+  display: none;
+}
+#sx-workspace-shell .studio-email-workspace {
+  --email-gutter: clamp(14px, 2vw, 24px);
+}
+#sx-workspace-shell :is(.studio-email-toolbar, .studio-email-row, .studio-email-pagination, .studio-email-detail, .studio-email-footnote) {
+  padding-inline: var(--email-gutter);
+}
+#sx-workspace-shell .studio-email-account > svg { flex-shrink: 0; }
+#sx-workspace-shell .studio-email-controls {
+  padding: 8px var(--email-gutter);
+}
+#sx-workspace-shell .studio-email-controls nav {
+  gap: 6px;
+  min-width: 0;
+}
+#sx-workspace-shell .studio-email-controls nav button {
+  min-height: 44px;
+  border-radius: 12px;
+}
+#sx-workspace-shell .studio-email-controls nav button.selected {
+  background: var(--studio-surface-2);
+  color: var(--studio-text);
+}
+#sx-workspace-shell .studio-email-pagination {
+  padding-block: 12px;
+}
+@media (max-width: 760px) {
+  #sx-workspace-shell .studio-integrations { gap: 20px; }
+  #sx-workspace-shell .studio-integrations .studio-integration-services { gap: 16px; }
+  #sx-workspace-shell .studio-email-page .studio-heading-actions > .studio-button {
+    flex: 1 1 max-content;
+    max-inline-size: 100%;
+    justify-content: center;
+  }
+  #sx-workspace-shell .studio-email-controls nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  #sx-workspace-shell .studio-email-controls nav button {
+    gap: 5px;
+    min-inline-size: 0;
+    padding-inline: 4px;
+  }
+  #sx-workspace-shell .studio-email-controls nav svg { flex-shrink: 0; }
+  #sx-workspace-shell .studio-email-columns { min-height: 0; }
+  #sx-workspace-shell .studio-email-empty { padding-block: 32px; }
+}

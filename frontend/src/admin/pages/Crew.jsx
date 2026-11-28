@@ -1,6 +1,7 @@
 import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import StudioButton from '../components/common/StudioButton';
 import StudioSelect from '../components/common/StudioSelect';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
@@ -37,6 +38,7 @@ export default function Crew() {
   const [crewError, setCrewError] = useState("");
   const [calendarError, setCalendarError] = useState("");
   const [query, setQuery] = useState("");
+  const useTopbarSearch = useWorkspaceModuleSearch({ label: "Search crew by name, role or email", query, onChange: setQuery });
   const [statusFilter, setStatusFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
   const [selectedId, setSelectedId] = useState("");
@@ -124,7 +126,29 @@ export default function Crew() {
     {canViewCalendar && <div className="studio-metric-grid ops-metrics">{[{ label: "Active crew", value: crew.filter(member => member.status === "Active").length, icon: Users, detail: `${crew.length} members in your roster`, tone: "plum" }, { label: "Upcoming events", value: calendarError ? "—" : upcomingEvents.length, icon: CalendarDays, detail: "From the shared studio calendar", tone: "gold" }, { label: "Events with crew", value: calendarError ? "—" : assignedEvents.length, icon: ShieldCheck, detail: "With at least one assigned member", tone: "sage" }, { label: "Schedule overlaps", value: calendarError ? "—" : conflicts.length, icon: AlertTriangle, detail: `${conflictedMembers.size} crew members to review`, tone: "rose" }].map(metric => <div className="studio-metric" key={metric.label}><div className="ops-metric-top"><span>{metric.label}</span><span className={`ops-metric-icon ${metric.tone}`}><metric.icon size={18} /></span></div><strong>{loading || crewError ? "—" : metric.value}</strong><small>{metric.detail}</small></div>)}</div>}
     {crewError && <OperationsError onRetry={retryWorkspace}>{crewError}</OperationsError>}{calendarError && <OperationsError onRetry={retryWorkspace}>{calendarError}</OperationsError>}
     <div className="ops-workspace-grid ops-crew-grid" style={canViewCalendar ? undefined : { gridTemplateColumns: "minmax(0, 1fr)" }}>
-      <section className="studio-card ops-roster"><div className="ops-section-heading"><div><h2 className="studio-section-title">Studio roster <span className="ops-count">{loading || crewError ? "—" : crew.length}</span></h2><p className="studio-muted">Find the right people for the next story.</p></div><Camera size={19} className="ops-quiet-icon" /></div><div className="studio-toolbar ops-crew-toolbar"><label className="studio-search ops-search"><Search size={16} /><input placeholder="Search name, role or email" aria-label="Search crew" value={query} onChange={event => setQuery(event.target.value)} /></label><StudioSelect className="studio-input ops-select" aria-label="Filter crew by status" value={statusFilter} onChange={event => setStatusFilter(event.target.value)}><option value="all">All statuses</option><option>Active</option><option>Inactive</option></StudioSelect><StudioSelect className="studio-input ops-role-select" aria-label="Filter crew by specialty" value={roleFilter} onChange={event => setRoleFilter(event.target.value)}><option value="all">All specialties</option>{SERVICE_ROLES.map(role => <option value={role} key={role}>{roleLabel(role)}</option>)}</StudioSelect></div>
+      <section className="studio-card ops-roster">
+        <div className="ops-section-heading">
+          <div>
+            <h2 className="studio-section-title">Studio roster <span className="ops-count">{loading || crewError ? "—" : crew.length}</span></h2>
+            <p className="studio-muted">Find the right people for the next story.</p>
+          </div>
+          <Camera size={19} className="ops-quiet-icon" aria-hidden="true" />
+        </div>
+        <div className="studio-toolbar ops-crew-toolbar" data-topbar-search={useTopbarSearch || undefined}>
+          {!useTopbarSearch && <label className="studio-search ops-search">
+            <Search size={16} aria-hidden="true" />
+            <input placeholder="Search name, role or email" aria-label="Search crew" value={query} onChange={event => setQuery(event.target.value)} />
+          </label>}
+          <StudioSelect className="studio-input ops-select" aria-label="Filter crew by status" value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
+            <option value="all">All statuses</option>
+            <option>Active</option>
+            <option>Inactive</option>
+          </StudioSelect>
+          <StudioSelect className="studio-input ops-role-select" aria-label="Filter crew by specialty" value={roleFilter} onChange={event => setRoleFilter(event.target.value)}>
+            <option value="all">All specialties</option>
+            {SERVICE_ROLES.map(role => <option value={role} key={role}>{roleLabel(role)}</option>)}
+          </StudioSelect>
+        </div>
       {loading ? <OperationsLoading label="Loading your studio crew…" /> : crewError && !crew.length ? <div className="studio-empty ops-empty"><Users size={32} /><h3>Crew roster unavailable</h3><p>Try again to reconnect to your studio roster.</p></div> : filteredCrew.length ? <div className="ops-table-scroll"><table role="table" aria-label="Crew roster" className="studio-table ops-crew-table studio-phone-record-table"><thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Crew member</th><th role="columnheader" scope="col">Specialty</th>{canViewCalendar && <th role="columnheader" scope="col">Assignments</th>}<th role="columnheader" scope="col">Status</th><th role="columnheader" scope="col"><span className="ops-sr-only">Actions</span></th></tr></thead><tbody role="rowgroup">{filteredCrew.map((member, index) => {
         const booked = assignments.get(member._id) || []; const hasConflict = conflictedMembers.has(member._id);
         return <tr role="row" key={member._id} className={selectedId === member._id ? "ops-selected-row" : ""}><td role="cell" data-label="Crew member"><div className="ops-person"><span className={`ops-avatar tone-${index % 4}`} aria-hidden="true">{initials(member.name)}</span><div>{canViewCalendar ? <button className="ops-title-button" aria-pressed={selectedId === member._id} aria-controls="crew-schedule" onClick={() => selectMember(selectedId === member._id ? "" : member._id)}>{member.name}</button> : <strong>{member.name}</strong>}<a className="ops-person-email" href={`mailto:${member.email}`}>{member.email}</a></div></div></td><td role="cell" data-label="Specialty"><span className="ops-role-label">{roleLabel(member.specialty)}</span>{member.phone && <a className="ops-person-phone" href={`tel:${member.phone}`}><Phone size={11} />{member.phone}</a>}</td>{canViewCalendar && <td role="cell" data-label="Assignments"><button className="ops-assignment-button" aria-controls="crew-schedule" onClick={() => selectMember(member._id)} aria-label={`View ${member.name}'s assignments`}><CalendarDays size={13} />{calendarError ? "Unavailable" : `${booked.length} upcoming`}{hasConflict && <AlertTriangle size={13} className="ops-conflict-icon" />}</button></td>}<td role="cell" data-label="Status"><span className={`studio-badge ops-status ${member.status === "Active" ? "completed" : "inactive"}`}><span />{member.status || "Active"}</span></td><td role="cell" data-label="Actions"><button className="ops-icon-button" aria-label={`Edit crew member: ${member.name}`} onClick={() => openEditor(member)}><Pencil size={15} /></button></td></tr>;

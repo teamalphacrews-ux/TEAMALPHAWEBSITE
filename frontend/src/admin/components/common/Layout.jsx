@@ -14,6 +14,7 @@ import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
 import useStudioDialog from '../studio/useStudioDialog';
 import StudioProductBrand from '../../../components/StudioProductBrand';
 import { StudioPreferencesProvider, useStudioPreferences } from './StudioPreferences';
+import { WorkspaceModuleSearchProvider } from './WorkspaceModuleSearch';
 import '../../studio-appearance.css';
 import '../../studio-responsive.css';
 import '../../studio-sidebar.css';
@@ -218,4 +219,10 @@ function StudioLayout() {
     {!isFocusMode && (iPhoneNavigation ? <IPhoneNavigation key={location.key} /> : <MobileNavigation menuOpen={drawerOpen} onMenuClick={openSidebar} />)}
   </div>;
 }
-export default function Layout() { return <StudioPreferencesProvider><OfflineDraftsProvider><StudioLayout /></OfflineDraftsProvider></StudioPreferencesProvider>; }
+export default function Layout() {
+  return <StudioPreferencesProvider>
+    <OfflineDraftsProvider>
+      <WorkspaceModuleSearchProvider><StudioLayout /></WorkspaceModuleSearchProvider>
+    </OfflineDraftsProvider>
+  </StudioPreferencesProvider>;
+}

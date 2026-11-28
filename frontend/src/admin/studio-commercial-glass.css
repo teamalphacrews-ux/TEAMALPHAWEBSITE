@@ -5,7 +5,7 @@
  * Legacy body portals are included only while commercial Layout is mounted.
  */
 html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass, body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay) {
-  --studio-canvas: #e6e7ea;
+  --studio-canvas: var(--studio-workspace-canvas, #ffffff);
   --studio-canvas-image: none;
   --studio-surface: #f5f5f6;
   --studio-surface-2: #ecedef;
@@ -101,17 +101,17 @@ html :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.
 }
 html[data-studio-appearance="dark"] :is(.studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass:not([data-studio-theme="light"]), body.studio-commercial-workspace > .studio-select-overlay, body.studio-commercial-workspace > .studio-crm-overlay),
 html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass[data-studio-theme="dark"] {
-  --studio-canvas: #111213;
+  --studio-canvas: var(--studio-workspace-canvas, #000000);
   --studio-canvas-image: none;
-  --studio-surface: #1b1c1e;
-  --studio-surface-2: #222326;
-  --studio-text: #f0f0f1;
-  --studio-muted: #afb2b9;
-  --studio-border: rgb(255 255 255 / .14);
-  --studio-control-border: #83868c;
-  --studio-glass-bg: rgb(27 28 30 / .97);
-  --studio-glass-elevated: #1f2023;
-  --studio-glass-strong: rgb(33 34 37 / .98);
+  --studio-surface: var(--palette-surface, #141414);
+  --studio-surface-2: var(--palette-raised, #1e1e1e);
+  --studio-text: var(--palette-ink, #f2f2f2);
+  --studio-muted: var(--palette-muted, #b7b7b7);
+  --studio-border: var(--palette-border, #383838);
+  --studio-control-border: var(--palette-control-border, #808080);
+  --studio-glass-bg: color-mix(in srgb, var(--studio-surface) 97%, transparent);
+  --studio-glass-elevated: var(--studio-surface-2);
+  --studio-glass-strong: var(--studio-surface-2);
   --studio-glass-border: rgb(255 255 255 / .075);
   --studio-glass-highlight: linear-gradient(180deg, rgb(255 255 255 / .018), transparent 32%);
   --studio-glass-rim: inset 0 1px 0 rgb(255 255 255 / .04);
@@ -121,7 +121,7 @@ html .studio-app.studio-app.studio-commercial-glass.studio-commercial-glass.stud
   --studio-on-accent: #1c1304;
   --studio-accent-hover: #f7b14f;
   --studio-hover: rgb(255 255 255 / .07);
-  --studio-selected: #303236;
+  --studio-selected: var(--palette-selection, #2a2a2a);
   --studio-scrim: rgb(0 0 0 / .58);
   --studio-danger-ink: #ffb5c3;
   --studio-danger-border: #bc7b8a;

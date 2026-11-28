@@ -1,5 +1,6 @@
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Plus, Pencil, Trash2, Layers } from "lucide-react";
@@ -366,6 +367,11 @@ export default function QuoteTemplates() {
   const [query, setQuery] = useState(""),
     [editing, setEditing] = useState(undefined),
     [busyId, setBusyId] = useState("");
+  const usesTopbarSearch = useWorkspaceModuleSearch({
+    label: 'Search quotation templates',
+    query,
+    onChange: setQuery,
+  });
   const remove = async (template) => {
     if (
       !window.confirm(
@@ -387,6 +393,7 @@ export default function QuoteTemplates() {
       setBusyId("");
     }
   };
+  const normalizedSearch = query.trim().toLowerCase();
   const visible = templates.filter((template) =>
     [
       template.name,
@@ -395,13 +402,13 @@ export default function QuoteTemplates() {
     ]
       .join(" ")
       .toLowerCase()
-      .includes(query.toLowerCase()),
+      .includes(normalizedSearch),
   );
   return (
-    <div className="reference-workspace">
+    <div className="reference-workspace quote-template-workspace">
       <div className="reference-heading">
         <WorkspaceMotionTitle>{IS_COMMERCIAL_DEPLOYMENT ? "Quote templates" : "Templates"}</WorkspaceMotionTitle>
-        <label className="reference-search">
+        {!usesTopbarSearch && <label className="reference-search">
           <Search size={16} />
           <input
             aria-label="Search quotation templates"
@@ -409,9 +416,9 @@ export default function QuoteTemplates() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
-        </label>
+        </label>}
         <button className="reference-button" onClick={() => setEditing(null)}>
-          New Template
+          <Plus size={16} aria-hidden="true" /> New template
         </button>
       </div>
       {!IS_COMMERCIAL_DEPLOYMENT && (
@@ -463,10 +470,10 @@ export default function QuoteTemplates() {
       ) : (
         <WorkspaceEmpty
           loading={loading}
-          title={
-            query ? "No matching templates" : "Build your template library"
-          }
-          description="Save services, pricing, terms, and settings once. Reuse them for every new client."
+          title={query.trim() ? "No matching templates" : "Build your template library"}
+          description={query.trim()
+            ? "Try another template name or service."
+            : "Save services, pricing, terms, and settings once. Reuse them for every new client."}
         />
       )}
       {editing !== undefined && (

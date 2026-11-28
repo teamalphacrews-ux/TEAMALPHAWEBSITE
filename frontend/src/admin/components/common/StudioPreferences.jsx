@@ -102,7 +102,9 @@ function AccountPreferences({ children, storageKey, token, preview, user }) {
       if (previousColorTheme) html.setAttribute('data-studio-color-theme', previousColorTheme); else html.removeAttribute('data-studio-color-theme');
     };
   }, [resolvedTheme, preferences.reduceMotion, preferences.colorTheme]);
-  useLayoutEffect(() => installStudioBrowserTheme(document, resolvedTheme), [resolvedTheme]);
+  useLayoutEffect(() => installStudioBrowserTheme(document, resolvedTheme, {
+    canvasColor: resolvedTheme === 'dark' ? '#000000' : '#ffffff',
+  }), [resolvedTheme]);
   useEffect(() => () => cancelStudioThemeTransition(), []);
   useEffect(() => {
     if (ready && location.pathname === '/admin' && location.state?.studioSignIn === true) navigate(canAccessStudioPath(user, preferences.landingPage) ? preferences.landingPage : '/admin', { replace: true, state: null });

@@ -33,6 +33,7 @@ import { useStudioIdentity } from "../../utils/studioIdentity";
 import { eventOnStudioDay, eventStartDay, shiftDayKey, studioDayKey, studioDateTimeToISO } from "../../utils/studioTime";
 import { eventScheduleLabel } from "../../utils/eventSchedule";
 import { useStudioPreferences } from '../components/common/StudioPreferences';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import { formatWorkspaceDate, formatWorkspaceTime, resolveWorkspaceTimezone } from '../../utils/workspaceLocale';
 import '../components/calendar/calendarRefinements.css';
 import './calendarWorkspace.css';
@@ -124,6 +125,7 @@ export default function Calendar() {
     [saveError, setSaveError] = useState(""),
     [syncBusy, setSyncBusy] = useState(false),
     [connectionError, setConnectionError] = useState("");
+  const useTopbarSearch = useWorkspaceModuleSearch({ label: "Search events or locations", query, onChange: setQuery });
   const callbackResult = sessionParams.get("sync");
   const todayKey = studioDayKey(new Date(), timezone);
   const month = linkedDay ? linkedDay.slice(0, 7) : monthState || todayKey.slice(0, 7);
@@ -399,12 +401,12 @@ export default function Calendar() {
             {IS_COMMERCIAL_DEPLOYMENT && <SectionSelectionIndicator selection={view} />}
           </div>
         </div>
-        <div className="studio-toolbar scheduling-calendar-filters">
-          <WorkspaceSearch
+        <div className="studio-toolbar scheduling-calendar-filters" data-topbar-search={useTopbarSearch || undefined}>
+          {!useTopbarSearch && <WorkspaceSearch
             value={query}
             onChange={setQuery}
             placeholder="Search events or locations…"
-          />
+          />}
           <label className="scheduling-filter-field"><span>Crew</span><StudioSelect
             className="studio-input workspace-select"
             aria-label="Filter calendar crew"
@@ -418,7 +420,7 @@ export default function Calendar() {
               </option>
             ))}
           </StudioSelect></label>
-          {(query.trim() || crewFilter !== 'all') && <button type="button" className="studio-button scheduling-clear-filters" onClick={() => { setQuery(''); setCrewFilter('all'); }}>Clear filters</button>}
+          {((!useTopbarSearch && query.trim()) || crewFilter !== 'all') && <button type="button" className="studio-button scheduling-clear-filters" onClick={() => { setQuery(''); setCrewFilter('all'); }}>Clear filters</button>}
         </div>
         {nextEvent && <ScheduledWorkAction
           title={'Next event · ' + nextEvent.title}

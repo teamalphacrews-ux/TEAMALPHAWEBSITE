@@ -410,10 +410,10 @@
   margin-bottom: 9px;
 }
 .studio-app .studio-task-load .has-overdue {
-  color: #a27831;
+  color: var(--studio-palette-ink, #a27831);
 }
 .studio-app .studio-task-load .studio-insight-track > i {
-  background: #cfac6f;
+  background: var(--studio-palette-accent, #cfac6f);
 }
 .studio-app .studio-calendar-insight {
   margin-bottom: 22px;

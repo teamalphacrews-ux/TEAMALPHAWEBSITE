@@ -1,4 +1,5 @@
 import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
@@ -61,7 +62,10 @@ function EnquiryRow({ lead, onSelect, reducedMotion, children }) {
     const rows = [...row.parentElement.querySelectorAll('[data-enquiry-id]')];
     const index = rows.indexOf(row);
     const next = [...rows.slice(index + 1), ...rows.slice(0, index).reverse()].find(item => item.dataset.exiting !== 'true');
-    const target = next?.querySelector('.studio-crm-row-actions button') || row.closest('.studio-enquiries-page')?.querySelector('input[aria-label="Search enquiries"]');
+    const toolbar = row.closest('.studio-enquiries-page')?.querySelector('.studio-crm-toolbar');
+    const target = next?.querySelector('.studio-crm-row-actions button')
+      || toolbar?.querySelector('input[aria-label="Search enquiries"]')
+      || toolbar?.querySelector('button[title="Refresh enquiries"]');
     target?.focus({ preventScroll: true });
   }, [isPresent]);
   return <Motion.tr ref={rowRef} role="row" data-enquiry-id={lead._id} data-exiting={!isPresent || undefined}
@@ -110,6 +114,7 @@ function EnquiryPipeline({ leads, finance, onSelect, onDelete }) {
 
 export function EnquiriesView({ leads = [], loading = false, error = "", query = "", onQuery = () => {}, status = "All", onStatus = () => {}, sort = "newest", onSort = () => {}, onSelect = () => {}, onCreate, onDelete, onRefresh = () => {}, navigation = null }) {
   const { user } = useAuth();
+  const useTopbarSearch = useWorkspaceModuleSearch({ label: 'Search enquiries', query, onChange: onQuery });
   const reducedMotion = useReducedStudioMotion();
   const [view, setView] = useState(IS_COMMERCIAL_DEPLOYMENT ? 'pipeline' : 'list');
   const finance = hasModuleAccess(user, 'finance');
@@ -127,6 +132,11 @@ export function EnquiriesView({ leads = [], loading = false, error = "", query =
     if (sort === "oldest") return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
   });
+  const stageFilters = <div className="studio-crm-stage-filters" role="group" aria-label="Filter by enquiry stage">
+    {stages.map(stage => <button type="button" key={stage} aria-pressed={status === stage} onClick={() => onStatus(stage)} className={status === stage ? "active" : ""}>
+      {stage === "All" ? "All enquiries" : leadStatusLabel(stage)}<span>{countForStage(stage)}</span>
+    </button>)}
+  </div>;
   return <div className={'studio-enquiries-page' + (IS_COMMERCIAL_DEPLOYMENT ? ' record-enquiries' : '')}>
     <div className="studio-page-heading"><div><WorkspaceMotionTitle>Enquiries</WorkspaceMotionTitle><p className="studio-muted">{IS_COMMERCIAL_DEPLOYMENT && !loading && !error ? `${open.length} open · ${attention.length} need attention` : 'Follow up, prepare quotations and keep each client moving forward.'}</p></div><div className="studio-heading-actions">{hasModuleAccess(user, 'projects') && <Link className="studio-button" to="/admin/studio-projects">View projects <ArrowUpRight size={15} /></Link>}{onCreate && <button className="studio-button primary" onClick={onCreate}><Plus size={17} />New enquiry</button>}</div></div>
     {navigation}
@@ -134,15 +144,15 @@ export function EnquiriesView({ leads = [], loading = false, error = "", query =
       views={[{ id: 'pipeline', label: 'Pipeline', icon: Columns3 }, { id: 'list', label: 'List', icon: List }]}
       surfaceSelector=".record-pipeline,.studio-crm-table-scroll" />}
     <section className="studio-card studio-crm-table-card" aria-label="Enquiry pipeline" aria-busy={loading}>
-      <div className="studio-toolbar studio-crm-toolbar">
-        <div className="studio-search studio-crm-search"><Search size={18} aria-hidden="true" /><input aria-label="Search enquiries" value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Search enquiries" autoComplete="off" />{query && <button type="button" className="studio-crm-clear-search" aria-label="Clear enquiry search" onClick={() => onQuery("")}><X size={16} aria-hidden="true" /></button>}</div>
+      <div className="studio-toolbar studio-crm-toolbar" data-topbar-search={useTopbarSearch || undefined}>
+        {useTopbarSearch ? stageFilters : <div className="studio-search studio-crm-search"><Search size={18} aria-hidden="true" /><input aria-label="Search enquiries" value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Search enquiries" autoComplete="off" />{query && <button type="button" className="studio-crm-clear-search" aria-label="Clear enquiry search" onClick={() => onQuery("")}><X size={16} aria-hidden="true" /></button>}</div>}
         <div className="studio-phone-filter"><StudioSelect aria-label="Filter by enquiry stage" value={status} onChange={event => onStatus(event.target.value)}>{stages.map(stage => <option key={stage} value={stage}>{stage === "All" ? "All enquiries" : leadStatusLabel(stage)} · {countForStage(stage)}</option>)}</StudioSelect></div>
         <div className="studio-crm-toolbar-actions">
           <StudioSelect aria-label="Sort enquiries" className="studio-input studio-crm-sort" value={sort} onChange={(event) => onSort(event.target.value)}><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="event">Event date</option><option value="name">Client name</option>{finance && <option value="value">Project value</option>}</StudioSelect>
           <button type="button" className="studio-icon-button" aria-label={loading ? "Refreshing enquiries" : "Refresh enquiries"} title="Refresh enquiries" disabled={loading} onClick={onRefresh}><RefreshCw size={17} className={loading ? "studio-crm-spin" : undefined} /></button>
         </div>
       </div>
-      <div className="studio-crm-stage-filters" role="group" aria-label="Filter by enquiry stage">{stages.map(stage => <button type="button" key={stage} aria-pressed={status === stage} onClick={() => onStatus(stage)} className={status === stage ? "active" : ""}>{stage === "All" ? "All enquiries" : leadStatusLabel(stage)}<span>{countForStage(stage)}</span></button>)}</div>
+      {!useTopbarSearch && stageFilters}
       {error ? <div className="studio-error studio-crm-load-error" role="alert"><p>{error}</p><button className="studio-button small" onClick={onRefresh}>Try again</button></div> : view === 'pipeline' && !loading && filtered.length ? <EnquiryPipeline leads={filtered} finance={finance} onSelect={onSelect} onDelete={onDelete} /> : <div className="studio-crm-table-scroll"><table role="table" aria-label="Enquiries" className="studio-table studio-crm-table studio-phone-record-table"><thead role="rowgroup"><tr role="row"><th role="columnheader">Client</th><th role="columnheader">Project & date</th><th role="columnheader">Stage</th>{finance && <th role="columnheader">Project value</th>}<th role="columnheader">Next follow-up</th><th role="columnheader"><span className="studio-crm-sr-only">Actions</span></th></tr></thead><tbody role="rowgroup">
         <AnimatePresence initial={false}>{loading ? <tr role="row" key="loading"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><RefreshCw size={25} className="studio-crm-spin" /><h3>Loading your enquiries…</h3><p>Bringing the latest conversations into view.</p></div></td></tr> : filtered.length ? filtered.map((lead) => <EnquiryRow key={lead._id} lead={lead} onSelect={onSelect} reducedMotion={reducedMotion}><td role="cell" data-label="Client"><div className="studio-crm-client"><span className="studio-crm-avatar">{initials(lead.name)}</span><div><strong>{lead.name}</strong><small>{lead.email}</small></div></div></td><td role="cell" data-label="Project & date"><ProjectCell lead={lead} /></td><td role="cell" data-label="Stage"><AnimatePresence initial={false} mode="wait"><Motion.span key={lead.status} className={`studio-badge studio-crm-badge ${statusClass(lead.status)}`} initial={{ opacity: reducedMotion ? 1 : .35 }} animate={{ opacity: 1 }} exit={{ opacity: reducedMotion ? 1 : .35 }} transition={{ duration: reducedMotion ? 0 : .1 }}>{leadStatusLabel(lead.status)}</Motion.span></AnimatePresence><QuoteState lead={lead} /></td>{finance && <td role="cell" data-label="Project value"><strong>{money(lead.totalAmount)}</strong><small>{lead.paymentStatus || "Unpaid"}</small></td>}<td role="cell" data-label="Follow-up"><span className={`studio-crm-followup-cell ${lead.followUpDate && new Date(lead.followUpDate) < new Date() ? "overdue" : ""}`}>{lead.followUpDate && <CalendarDays size={13} />}{displayDate(lead.followUpDate, "Not scheduled")}</span></td><td role="cell" data-label="Actions"><EnquiryRowActions lead={lead} onSelect={onSelect} onDelete={onDelete} /></td></EnquiryRow>) : <tr role="row" key="empty"><td role="cell" colSpan={finance ? 6 : 5}><div className="studio-empty"><Users size={28} /><h3>{leads.length ? "No matching enquiries" : "No enquiries yet"}</h3><p>{leads.length ? "Try a different search or clear your filters." : "Add your first enquiry and keep every detail in one place."}</p>{leads.length ? <button type="button" className="studio-button" onClick={clearFilters}>Clear filters</button> : onCreate && <button type="button" className="studio-button primary" onClick={onCreate}><Plus size={16} />Add an enquiry</button>}</div></td></tr>}</AnimatePresence>
       </tbody></table></div>}

@@ -37,7 +37,18 @@ export default function Sidebar({ onClose, compact, onToggleCompact }) {
   const navRef = useRef(null);
   const { railRef, toggleRail } = useWorkspaceRailMotion(compact, onToggleCompact);
   useEffect(() => {
-    navRef.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: "nearest" });
+    const nav = navRef.current;
+    const link = nav?.querySelector('[aria-current="page"]');
+    if (!link) return;
+    if (!IS_COMMERCIAL_DEPLOYMENT) {
+      link.scrollIntoView({ block: 'nearest' });
+      return;
+    }
+    const { top, bottom } = nav.getBoundingClientRect();
+    const row = link.getBoundingClientRect();
+    const inset = parseFloat(getComputedStyle(nav).scrollPaddingBlockStart) || 0;
+    if (row.top < top + inset) nav.scrollTop += row.top - top - inset;
+    else if (row.bottom > bottom - inset) nav.scrollTop += row.bottom - bottom + inset;
   }, [pathname, compact]);
   useEffect(() => {
     if (!user || !token || !hasModuleAccess(user, 'support')) return;

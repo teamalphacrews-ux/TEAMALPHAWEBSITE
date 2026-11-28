@@ -8,11 +8,15 @@ import { Link } from "react-router-dom";
 import { recordDate, rupees } from "../operations/workspaceData";
 import { contactPaymentTotals } from "./contactPaymentTotals";
 import { quotationStatus } from "../../../utils/quotationStatus";
+
+const phoneTableClasses = " studio-phone-record-table studio-phone-detail-table";
+
 export function ContactDocuments({
   quotations = [],
   invoices = [],
   documents = [],
   onDraft,
+  fitContactPanel = false,
 }) {
   const { user } = useAuth();
   const [clock, setClock] = useState(() => Date.now());
@@ -53,15 +57,15 @@ export function ContactDocuments({
       })),
   ];
   return rows.length ? (
-    <div className="reference-table-scroll">
-      <table role="table" aria-label="Client documents" className="reference-table studio-phone-record-table studio-phone-detail-table">
+    <div className="reference-table-scroll contact-related-records">
+      <table role="table" aria-label="Client documents" className={"reference-table contact-document-table" + (fitContactPanel ? "" : phoneTableClasses)}>
         <thead role="rowgroup">
           <tr role="row">
-            <th role="columnheader">Document</th>
-            <th role="columnheader">Type</th>
-            <th role="columnheader">Status</th>
-            <th role="columnheader">Amount</th>
-            <th role="columnheader">Created</th>
+            <th role="columnheader" scope="col">Document</th>
+            <th role="columnheader" scope="col">Type</th>
+            <th role="columnheader" scope="col">Status</th>
+            <th role="columnheader" scope="col" className="contact-amount-cell">Amount</th>
+            <th role="columnheader" scope="col">Created</th>
           </tr>
         </thead>
         <tbody role="rowgroup">
@@ -74,6 +78,7 @@ export function ContactDocuments({
                   </Link>
                 ) : (
                   <button
+                    type="button"
                     className="reference-text-button"
                     onClick={() => onDraft(item)}
                   >
@@ -85,7 +90,7 @@ export function ContactDocuments({
               <td role="cell" data-label="Status">
                 <span className="reference-status neutral">{item.status}</span>
               </td>
-              <td role="cell" data-label="Amount">{item.amount}</td>
+              <td role="cell" data-label="Amount" className="contact-amount-cell">{item.amount}</td>
               <td role="cell" data-label="Created">{recordDate(item.createdAt || item.invoiceDate)}</td>
             </tr>
           ))}
@@ -98,7 +103,7 @@ export function ContactDocuments({
     </p>
   );
 }
-export function ContactPayments({ invoices = [] }) {
+export function ContactPayments({ invoices = [], fitContactPanel = false }) {
   const { user } = useAuth();
   if (!hasModuleAccess(user, 'finance') || !hasModuleAccess(user, 'invoices')) return null;
   const issued = invoices.filter(
@@ -107,15 +112,15 @@ export function ContactPayments({ invoices = [] }) {
       item.status !== "Cancelled",
   );
   return issued.length ? (
-    <div className="reference-table-scroll">
-      <table role="table" aria-label="Client payments" className="reference-table studio-phone-record-table studio-phone-detail-table">
+    <div className="reference-table-scroll contact-related-records">
+      <table role="table" aria-label="Client payments" className={"reference-table contact-payment-table" + (fitContactPanel ? "" : phoneTableClasses)}>
         <thead role="rowgroup">
           <tr role="row">
-            <th role="columnheader">Invoice</th>
-            <th role="columnheader">Total</th>
-            <th role="columnheader">Advance recorded</th>
-            <th role="columnheader">Balance</th>
-            <th role="columnheader">Status</th>
+            <th role="columnheader" scope="col">Invoice</th>
+            <th role="columnheader" scope="col" className="contact-amount-cell">Total</th>
+            <th role="columnheader" scope="col" className="contact-amount-cell">Advance recorded</th>
+            <th role="columnheader" scope="col" className="contact-amount-cell">Balance</th>
+            <th role="columnheader" scope="col">Status</th>
           </tr>
         </thead>
         <tbody role="rowgroup">
@@ -129,9 +134,9 @@ export function ContactPayments({ invoices = [] }) {
                   {item.invoiceNumber || item.documentNumber || item.clientName}
                 </Link>
               </td>
-              <td role="cell" data-label="Total">{rupees(item.total)}</td>
-              <td role="cell" data-label="Advance recorded">{rupees(item.advancePaid)}</td>
-              <td role="cell" data-label="Balance">
+              <td role="cell" data-label="Total" className="contact-amount-cell">{rupees(item.total)}</td>
+              <td role="cell" data-label="Advance recorded" className="contact-amount-cell">{rupees(item.advancePaid)}</td>
+              <td role="cell" data-label="Balance" className="contact-amount-cell">
                 {rupees(
                   item.status === "Paid"
                     ? 0

@@ -84,9 +84,14 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
   .record-person-identity { min-width: 0; overflow-wrap: anywhere; }
   .record-avatar,.record-assignee {
     display: inline-grid; place-items: center; flex: none; border-radius: 50%;
-    width: 44px; height: 44px; font: 650 15px/1 var(--studio-font); color: #3a2b16; background: linear-gradient(135deg,#f8d582,#ebb477);
+    width: 44px; height: 44px; font: 650 15px/1 var(--studio-font);
+    color: var(--studio-palette-ink, #3a2b16);
+    background: var(--studio-palette-surface, linear-gradient(135deg,#f8d582,#ebb477));
   }
-  .record-avatar[data-type=Lead] { color: #412716; background: linear-gradient(135deg,#f8d9a9,#eda17d); }
+  .record-avatar[data-type=Lead] {
+    color: var(--studio-palette-ink, #412716);
+    background: var(--studio-palette-surface, linear-gradient(135deg,#f8d9a9,#eda17d));
+  }
   .record-avatar[data-type=Other] { color: #252c37; background: linear-gradient(135deg,#eceef3,#bbc5d3); }
   .record-person-methods { display: grid; gap: 6px; margin: 14px 0; }
   .record-person-methods a { min-height: 44px; color: var(--studio-muted); text-decoration: none; font-size: 14px; padding: 2px 0; }
@@ -172,7 +177,10 @@ html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commerci
     border-radius: 0; color: var(--studio-muted); background: transparent; box-shadow: none; font-weight: 600;
   }
   :is(.sx-project-detail,.contact-detail-workspace) .project-contact-detail-tabs > button[aria-selected=true] { color: var(--studio-text); border-bottom-color: var(--studio-accent); background: transparent; box-shadow: none; }
-  .sx-project-detail .sx-project-team-avatar { background: linear-gradient(135deg,#f8d582,#ebb477); color: #3a2b16; border: 0; font-weight: 650; }
+  .sx-project-detail .sx-project-team-avatar {
+    background: var(--studio-palette-surface, linear-gradient(135deg,#f8d582,#ebb477));
+    color: var(--studio-palette-ink, #3a2b16); border: 0; font-weight: 650;
+  }
 }
 @media (min-width:1101px) {
   html .studio-app.studio-commercial-glass.studio-commercial-glass.studio-commercial-glass .sx-project-detail .reference-detail-grid.project:not(.project-hub-wide) {
@@ -391,5 +399,50 @@ html[data-studio-motion=reduced] .studio-commercial-glass [data-record-key] { tr
     .reference-section:has(.reference-payment-summary) .studio-phone-detail-table td:first-child > a {
       display: inline-flex; align-items: center; min-height: 44px; max-width: 100%;
     }
+  }
+}
+
+#sx-workspace-shell :is(.record-desk, .contact-detail-workspace, .sx-project-detail) {
+  --record-section-gap: clamp(12px, 1.35vw, 20px);
+}
+#sx-workspace-shell .record-desk[data-topbar-search] .record-register-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 var(--record-section-gap);
+  padding: 0;
+  border: 0;
+}
+#sx-workspace-shell .record-desk[data-topbar-search] .record-register-summary .project-contact-filters { margin: 0; }
+#sx-workspace-shell .record-desk[data-topbar-search] .project-contact-result-count { margin: 0 0 0 auto; }
+#sx-workspace-shell .record-desk[data-topbar-search] .project-contact-result-count[data-filtered="false"] { display: none; }
+#sx-workspace-shell .record-desk :is(.record-slate, .record-people, .record-project-timeline) { gap: var(--record-section-gap); }
+#sx-workspace-shell .record-contact-directory .record-people { grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); }
+#sx-workspace-shell :is(.contact-detail-workspace, .sx-project-detail) > .reference-detail-grid {
+  align-items: start;
+  gap: var(--record-section-gap);
+}
+#sx-workspace-shell .contact-detail-workspace [role="tabpanel"]:not([hidden]) {
+  display: grid;
+  gap: var(--record-section-gap);
+}
+#sx-workspace-shell .contact-detail-workspace [role="tabpanel"] > :is(.reference-section, .sx-client-next) { margin: 0; }
+#sx-workspace-shell .contact-detail-workspace .reference-contact-sidebar {
+  display: grid;
+  gap: var(--record-section-gap);
+}
+#sx-workspace-shell .contact-detail-workspace .reference-contact-sidebar > .reference-section { margin: 0; }
+#sx-workspace-shell :is(.contact-detail-workspace, .sx-project-detail) .project-contact-detail-tabs { margin-bottom: var(--record-section-gap); }
+
+@media (max-width: 600px) {
+  #sx-workspace-shell .record-contact-directory[data-topbar-search] .record-contact-views .record-views { width: 100%; }
+  #sx-workspace-shell .record-contact-directory[data-topbar-search] .record-register-summary .record-contact-type-picker { flex: 1 1 144px; }
+  #sx-workspace-shell .record-contact-directory[data-topbar-search] .record-contact-type-picker .studio-select { width: 100%; }
+  #sx-workspace-shell .sx-project-register[data-topbar-search] .record-register-summary .project-contact-filters { width: 100%; }
+}
+@media (max-width: 440px) {
+  #sx-workspace-shell :is(.contact-detail-workspace, .sx-project-detail) .project-contact-detail-tabs > button {
+    padding-inline: clamp(1px, calc((100vw - 300px) / 10), 6px);
   }
 }

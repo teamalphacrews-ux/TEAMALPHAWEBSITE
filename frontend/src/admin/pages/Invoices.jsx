@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import StudioSelect from '../components/common/StudioSelect';
+import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import { workspaceRequest } from '../components/operations/workspaceData';
 import { operationError } from '../components/operations/operationsUtils';
 import { WorkspaceHeader, WorkspaceSearch, WorkspaceError, WorkspaceEmpty } from '../components/operations/WorkspaceUI';
 import { useStudioIdentity } from '../../utils/studioIdentity';
 import { formatStudioDate, studioDayBounds, studioDayKey, studioTimezone } from '../../utils/studioTime';
+import './documentRegister.css';
 import './invoiceRegister.css';
 
 const amount = (value, currency) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: /^[A-Z]{3}$/.test(currency || '') ? currency : 'INR', maximumFractionDigits: 2 }).format(Number(value) || 0);
@@ -15,6 +17,12 @@ export default function Invoices() {
   const { identity } = useStudioIdentity();
   const timezone = studioTimezone(identity?.timezone);
   const [query, setQuery] = useState('');
+  const usesTopbarSearch = useWorkspaceModuleSearch({
+    label: 'Find an invoice or client',
+    query,
+    onChange: setQuery,
+    maxLength: 512,
+  });
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [sort, setSort] = useState('overdue');
@@ -58,29 +66,51 @@ export default function Invoices() {
     if (direction > 0 && nextCursor) setPages({ key: pageKey, entries: [...history, { offset: offset + rows.length, cursor: nextCursor }] });
   };
 
-  return <div className="invoice-register-page">
+  return <div className="invoice-register-page document-register-page">
     <WorkspaceHeader title="Invoices" description="Prepare and manage client invoices.">
-      <Link className="studio-button primary" to="/admin/invoices/new"><Plus size={16} />New invoice</Link>
+      <Link className="studio-button primary" to="/admin/invoices/new"><Plus size={16} aria-hidden="true" />New invoice</Link>
     </WorkspaceHeader>
     <WorkspaceError error={error} retry={reload} />
-    <section className="studio-card invoice-register" aria-label="Invoice register">
-      <div className="invoice-register-heading"><div><h2>Invoice register</h2><p aria-live="polite">{loading ? 'Loading invoices…' : error ? 'Invoices unavailable' : `${total} ${total === 1 ? 'invoice' : 'invoices'}`}{overdue > 0 && <span> · {overdue} overdue</span>}</p></div><span className="invoice-register-zone">Due dates in {timezone}</span></div>
-      <div className="studio-toolbar invoice-register-toolbar">
-        <WorkspaceSearch value={query} onChange={setQuery} maxLength={512} placeholder="Find an invoice or client…" />
-        <StudioSelect aria-label="Filter invoices" value={filter} onChange={event => setFilter(event.target.value)}>
-          <option value="all">All invoices</option><option value="outstanding">Outstanding balances</option><option value="overdue">Overdue</option><option value="today">Due today</option><option value="upcoming">Upcoming payments</option><option value="unscheduled">No due date</option><option value="paid">Paid</option><option value="draft">Drafts</option>
-        </StudioSelect>
-        <StudioSelect aria-label="Sort invoices" value={sort} onChange={event => setSort(event.target.value)}>
-          <option value="overdue">Overdue first</option><option value="due">Due date: earliest</option><option value="newest">Newest invoice</option><option value="balance">Balance: high to low</option>
-        </StudioSelect>
-      </div>
-      {loading ? <WorkspaceEmpty loading /> : error ? <WorkspaceEmpty title="Invoices unavailable" description="Retry the connection to load your invoice register.">{history.length > 0 && <button type="button" className="studio-button" onClick={() => setPages({ key: pageKey, entries: [] })}>Return to first page</button>}</WorkspaceEmpty> : rows.length ? <div className="studio-table-wrap invoice-register-scroll"><table role="table" className="studio-table studio-phone-record-table invoice-register-table" aria-label="Client invoices">
-        <thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Invoice</th><th role="columnheader" scope="col">Client</th><th role="columnheader" scope="col">Document</th><th role="columnheader" scope="col">Payment</th><th role="columnheader" scope="col">Total</th><th role="columnheader" scope="col">Balance due</th><th role="columnheader" scope="col">Next due</th></tr></thead>
+    <section className="studio-card invoice-register document-register-panel" aria-labelledby="invoice-register-heading">
+      <header className="document-register-heading">
+        <div className="document-register-intro">
+          <h2 id="invoice-register-heading">Invoice register</h2>
+          <p className="document-register-meta">
+            <span role="status">
+              {loading ? 'Loading invoices…' : error ? 'Invoices unavailable' : `${total} ${total === 1 ? 'invoice' : 'invoices'}`}
+              {overdue > 0 && ` · ${overdue} overdue`}
+            </span>
+            {' · '}Due dates in {timezone}
+          </p>
+        </div>
+        <div className={'document-register-controls invoice-register-toolbar' + (usesTopbarSearch ? ' is-topbar-search' : '')}>
+          {!usesTopbarSearch && <WorkspaceSearch value={query} onChange={setQuery} maxLength={512} placeholder="Find an invoice or client…" />}
+          <div className="invoice-register-selectors">
+            <StudioSelect aria-label="Filter invoices" value={filter} onChange={event => setFilter(event.target.value)}>
+              <option value="all">All invoices</option><option value="outstanding">Outstanding balances</option><option value="overdue">Overdue</option><option value="today">Due today</option><option value="upcoming">Upcoming payments</option><option value="unscheduled">No due date</option><option value="paid">Paid</option><option value="draft">Drafts</option>
+            </StudioSelect>
+            <StudioSelect aria-label="Sort invoices" value={sort} onChange={event => setSort(event.target.value)}>
+              <option value="overdue">Overdue first</option><option value="due">Due date: earliest</option><option value="newest">Newest invoice</option><option value="balance">Balance: high to low</option>
+            </StudioSelect>
+          </div>
+        </div>
+      </header>
+      {loading ? <WorkspaceEmpty loading /> : error ? <WorkspaceEmpty title="Invoices unavailable" description="Retry the connection to load your invoice register.">{history.length > 0 && <button type="button" className="studio-button" onClick={() => setPages({ key: pageKey, entries: [] })}>Return to first page</button>}</WorkspaceEmpty> : rows.length ? <div className="studio-table-wrap invoice-register-scroll" role="region" aria-label="Invoice records" tabIndex={0}><table role="table" className="studio-table studio-phone-record-table invoice-register-table" aria-label="Client invoices">
+        <colgroup><col /><col /><col /><col /><col /><col /><col /></colgroup>
+        <thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Invoice</th><th role="columnheader" scope="col">Client</th><th role="columnheader" scope="col">Document status</th><th role="columnheader" scope="col">Payment status</th><th role="columnheader" scope="col" className="invoice-register-money">Total</th><th role="columnheader" scope="col" className="invoice-register-money">Balance due</th><th role="columnheader" scope="col">Next due</th></tr></thead>
         <tbody role="rowgroup">{rows.map(({ invoice, documentStatus, paymentStatus, balance, nextDue, daysOverdue, state }) => <tr role="row" key={invoice._id}>
-          <td role="cell" data-label="Invoice" className="invoice-register-reference"><Link to={'/admin/invoices/' + invoice._id}>{invoice.invoiceNumber || invoice.documentNumber || 'Draft invoice'}<ArrowUpRight size={13} aria-hidden="true" /></Link><small>{date(invoice.invoiceDate || invoice.createdAt)}</small></td>
+          <td role="cell" data-label="Invoice" className="invoice-register-reference">
+            <Link to={'/admin/invoices/' + invoice._id}>
+              <span>
+                <strong>{invoice.invoiceNumber || invoice.documentNumber || 'Draft invoice'}</strong>
+                <small>{date(invoice.invoiceDate || invoice.createdAt)}</small>
+              </span>
+              <ArrowUpRight size={16} aria-hidden="true" />
+            </Link>
+          </td>
           <td role="cell" data-label="Client" className="invoice-register-client"><strong>{invoice.clientName}</strong>{invoice.title && <small>{invoice.title}</small>}</td>
-          <td role="cell" data-label="Document"><span className="studio-badge">{documentStatus === 'Sent' ? 'Issued' : documentStatus}</span></td>
-          <td role="cell" data-label="Payment"><span className={'studio-badge' + (state === 'paid' ? ' green' : '')}>{paymentStatus}</span></td>
+          <td role="cell" data-label="Document status"><span className="studio-badge">{documentStatus === 'Sent' ? 'Issued' : documentStatus}</span></td>
+          <td role="cell" data-label="Payment status"><span className={'studio-badge' + (state === 'paid' ? ' green' : '')}>{paymentStatus}</span></td>
           <td role="cell" data-label="Total" className="invoice-register-money">{amount(invoice.total, invoice.currency)}</td>
           <td role="cell" data-label="Balance due" className="invoice-register-money"><strong>{state === 'inactive' ? '—' : amount(balance, invoice.currency)}</strong></td>
           <td role="cell" data-label="Next due" className="invoice-register-deadline">{nextDue?.dueDate ? <><strong>{dueDate(nextDue.dueDate)}</strong><small>{amount(nextDue.amountPaise / 100, invoice.currency)}</small><span className={'invoice-register-timing' + (state === 'overdue' ? ' is-overdue' : '')}>{daysOverdue ? `${daysOverdue} ${daysOverdue === 1 ? 'day' : 'days'} overdue` : state === 'today' ? 'Due today' : 'Upcoming'}</span></> : <span className="studio-muted">{state === 'paid' ? 'Settled' : state === 'inactive' ? '—' : 'Not set'}</span>}</td>
