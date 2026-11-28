@@ -6,6 +6,7 @@ const models = require('./models');
 const { runInWorkspace, workspaceDatabase } = require('./tenantContext');
 const { TRIAL_DAYS, plans } = require('./plans');
 const { failure } = require('./access');
+const archiveGate = require('../services/studioArchiveGate');
 const MAX_OWNED_WORKSPACES = 5;
 const PROVISIONING_WINDOW_MS = 10 * 60 * 1000;
 const emailOf = value => typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -38,15 +39,21 @@ function workspaceView(workspace, membership) {
     planId: workspace.planId, subscriptionStatus: workspace.subscriptionStatus, status: workspace.subscriptionStatus,
     trialEndsAt: workspace.trialEndsAt, state: workspace.state, setupRequired: require('./setupAccess').requiresSetup(workspace) };
 }
+function defaultStudioProfile(name, email) {
+  return { key: 'studio', studioName: name, legalName: name,
+    email, logoUrl: '/assets/studio-os-mark.svg', profilePhotoUrl: '', coverImage: '', invoicePrefix: 'INV',
+    billingDefaults: { ...require('../utils/studioSettings').DEFAULTS.billingDefaults, quotationPrefix: 'Q', invoicePrefix: 'INV' },
+    communication: { senderName: name, replyTo: email } };
+}
 async function localMember(workspace, account, role, session) {
-  return runInWorkspace(workspace, async () => {
+  return runInWorkspace(workspace, () => archiveGate.withShared(async () => {
     const User = require('../models/User');
     let user = await User.findOne({ email: account.email }).session(session || null);
     if (!user) user = await new User({ firstName: account.firstName, lastName: account.lastName, email: account.email,
       // Account credentials are kept only in the global identity store, never in the password vault.
       password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12), role: 'admin', studioOwner: role === 'owner' }).save({ session });
     return user;
-  });
+  }));
 }
 async function lockWorkspaceOwnership(accountId, session) {
   // Every concurrent reservation and activation writes the same account row.
@@ -78,10 +85,7 @@ async function provisionWorkspace(account, name) {
       const connection = mongoose.connection.useDb(workspace.databaseName, { useCache: true });
       ensureWorkspaceModels(connection);
       await Promise.all(Object.values(connection.models).map(model => model.init()));
-      await require('../models/StudioConfig').create({ key: 'studio', studioName: name, legalName: name,
-        email: account.email, logoUrl: '/assets/studio-os-mark.svg', profilePhotoUrl: '', coverImage: '', invoicePrefix: 'INV',
-        billingDefaults: { ...require('../utils/studioSettings').DEFAULTS.billingDefaults, quotationPrefix: 'Q', invoicePrefix: 'INV' },
-        communication: { senderName: name, replyTo: account.email } });
+      await archiveGate.withShared(() => require('../models/StudioConfig').create(defaultStudioProfile(name, account.email)));
     });
     const user = await localMember(workspace, account, 'owner');
     return await mongoose.connection.transaction(async session => {
@@ -101,16 +105,22 @@ async function provisionWorkspace(account, name) {
     throw error;
   }
 }
-async function issueSession(account, workspace, membership, req) {
+async function issueSession(account, workspace, membership, req, { accountAuthenticatedAt } = {}) {
   if (workspace.state !== 'active' || membership.state !== 'active') throw failure(403, 'This studio is not available.');
-  return runInWorkspace(workspace, async () => {
+  // Workspace switches do not establish fresh provider authentication.
+  const accountId = String(account._id);
+  const inherited = req?.saas?.decoded?.accountId === accountId ? req.saas.decoded.accountAuthenticatedAt : undefined;
+  const verifiedAt = accountAuthenticatedAt ?? inherited;
+  return runInWorkspace(workspace, () => archiveGate.withShared(async () => {
     const user = await require('../models/User').findById(membership.localUserId);
     if (!user) throw failure(403, 'Your team account is not available.');
-    const sign = (payload, secret, options) => jwt.sign({ ...payload, accountId: String(account._id), workspaceId: String(workspace._id) }, secret, options);
+    const sign = (payload, secret, options) => jwt.sign({ ...payload, accountId, workspaceId: String(workspace._id),
+      ...(Number.isSafeInteger(verifiedAt) && verifiedAt > 0 && { accountAuthenticatedAt: verifiedAt }) }, secret, options);
     const token = await require('../services/studioSecurity').openSession(user, req, sign, process.env.JWT_SECRET);
-    return { token, user: { id: String(user._id), accountId: String(account._id), firstName: user.firstName, lastName: user.lastName,
-      email: account.email, role: 'admin', ...require('../utils/moduleAccess').accessPayload(user), workspaceRole: membership.role, workspace: workspaceView(workspace, membership) } };
-  });
+    return { token, user: { id: String(user._id), accountId, firstName: user.firstName, lastName: user.lastName,
+      email: account.email, role: 'admin', workspaceDataVersion: user.workspaceDataVersion || 0,
+      ...require('../utils/moduleAccess').accessPayload(user), workspaceRole: membership.role, workspace: workspaceView(workspace, membership) } };
+  }));
 }
 async function releaseSeat(workspaceId, session) {
   const result = await models.Workspace.updateOne({ _id: workspaceId, seatsReserved: { $gt: 1 } }, { $inc: { seatsReserved: -1 } }, { session });
@@ -135,4 +145,4 @@ async function expireInvitations(workspaceId) {
     await releaseInvitation({ _id: row._id, workspaceId, state: 'pending', expiresAt: { $lte: new Date() } }, 'expired');
   }
 }
-module.exports = { emailOf, text, credentials, authenticateAccount, workspaceView, localMember, provisionWorkspace, issueSession, expireInvitations, releaseInvitation, releaseSeat };
+module.exports = { emailOf, text, credentials, authenticateAccount, workspaceView, defaultStudioProfile, localMember, provisionWorkspace, issueSession, expireInvitations, releaseInvitation, releaseSeat };

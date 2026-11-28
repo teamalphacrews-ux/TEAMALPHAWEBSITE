@@ -13,7 +13,7 @@ const schema = new mongoose.Schema({
   maintenanceUntil: Date,
   readers: { type: [reader], default: () => [] },
 }, { versionKey: false });
-// This singleton belongs to the personal installation, never a tenant database.
+// The control database keeps one lease row per studio and one for the personal installation.
 // No timestamps: no-op admission checks must not change a transaction snapshot.
 module.exports = mongoose.connection.models.StudioArchiveState ||
   mongoose.connection.model('StudioArchiveState', schema);

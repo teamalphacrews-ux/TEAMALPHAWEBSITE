@@ -93,7 +93,7 @@ async function inTransaction(work) {
   } finally { await session.endSession(); }
 }
 async function retentionDays() { const config = await require('../models/StudioConfig').findOne({ key: 'studio' }).select('backups').lean(); return config?.backups?.retentionDays || 30; }
-async function recoverableDelete({ Model, filter, actorId, label }) {
+async function recoverableDelete({ Model, filter, actorId, label, beforeDelete }) {
   await require('./studioSecurity').assertPermission(actorId, 'deletion');
   if (!MODEL_NAMES.includes(Model.modelName)) throw fail('This record type does not support recovery.', 400);
   const Recovery = require('../models/RecoveryRecord');
@@ -101,9 +101,11 @@ async function recoverableDelete({ Model, filter, actorId, label }) {
   return inTransaction(async session => {
     const row = await Model.findOne(filter).session(session).lean();
     if (!row) return null;
+    await beforeDelete?.({ row, session });
     const snapshot = { format: 'teamalpha-business-records', version: 1, collections: { [Model.modelName]: [safeValue(row)] } };
     validateSnapshot(snapshot);
-    await Recovery.create([{ model: Model.modelName, recordId: String(row._id), label: String(label || row.name || row.title || row.clientName || Model.modelName).slice(0, 200), deletedBy: actorId, encrypted: seal(snapshot), expiresAt }], { session });
+    const contactName = [row.firstName, row.lastName].filter(Boolean).join(' ');
+    await Recovery.create([{ model: Model.modelName, recordId: String(row._id), label: String(label || row.name || row.title || row.clientName || contactName || Model.modelName).slice(0, 200), deletedBy: actorId, encrypted: seal(snapshot), expiresAt }], { session });
     const result = await Model.deleteOne({ ...filter, _id: row._id }, { session });
     if (result.deletedCount !== 1) throw fail('The record changed before deletion. Try again.', 409);
     if (Model.modelName === 'Task' && row.lead) {
@@ -138,8 +140,10 @@ async function restoreRecovery({ id, actorId }) {
   return inTransaction(async session => {
     const row = await Recovery.findOne({ _id: id, restoredAt: null, expiresAt: { $gt: new Date() } }).select('+encrypted').session(session);
     if (!row) throw fail('Recoverable record not found or already restored.', 404);
-    const result = await mergeSnapshot(readStoredSnapshot(row.encrypted), session);
+    const snapshot = readStoredSnapshot(row.encrypted);
+    const result = await mergeSnapshot(snapshot, session);
     if (!result.inserted) throw fail('A record with this identity already exists; it was not overwritten.', 409);
+    if (row.model === 'StudioProject') await require('./projectDeletion').restoreProjectEnquiry(snapshot.collections.StudioProject[0], session);
     row.restoredAt = new Date(); await row.save({ session });
     return result;
   });

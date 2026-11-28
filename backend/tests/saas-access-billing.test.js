@@ -50,6 +50,33 @@ test('public smart links are independent of the viewer account and integrations 
   await middleware({ headers: { authorization: 'Bearer ' + token() }, originalUrl: '/api/media', method: 'GET' }, res, () => assert.fail('Legacy integration credentials must not be inherited'));
   assert.equal(res.code, 409);
 });
+test('workspace integration access admits only tenant-scoped routes with the existing role and plan checks', async () => {
+  async function request(method, path, options = { role: 'owner' }) {
+    const res = response();
+    const middleware = createWorkspaceMiddleware({ models: registry(options), env });
+    let selected;
+    await middleware({ headers: { authorization: 'Bearer ' + token() }, originalUrl: path, method }, res, () => { selected = currentWorkspace()._id; });
+    return { status: res.code, selected };
+  }
+  for (const [method, path] of [
+    ['GET', '/api/integrations/gmail/messages/abc_123?folder=inbox'],
+    ['POST', '/api/integrations/gmail/connect'],
+    ['GET', '/api/integrations/assistants/status'],
+    ['POST', '/api/integrations/assistants/openai/draft'],
+    ['DELETE', '/api/integrations/assistants/claude/connection'],
+  ]) assert.deepEqual(await request(method, path), { status: 200, selected: wid });
+  assert.equal((await request('GET', '/api/integrations/gmail/status', { role: 'admin' })).status, 200);
+  assert.equal((await request('GET', '/api/integrations/gmail/status', { role: 'staff' })).status, 403);
+  const expired = { role: 'owner', studio: { ...workspace(), trialEndsAt: new Date(0) } };
+  assert.equal((await request('POST', '/api/integrations/assistants/openai/test', expired)).status, 402);
+  for (const [method, path] of [
+    ['GET', '/api/integrations/gmail/begin'],
+    ['PUT', '/api/integrations/gmail/connect'],
+    ['POST', '/api/integrations/assistants/openclaw/test'],
+    ['GET', '/api/integrations/whatsapp/status'],
+    ['GET', '/api/Integrations/drive-backups/status'],
+  ]) assert.deepEqual(await request(method, path), { status: 409, selected: undefined });
+});
 test('plans never invent prices or enable checkout without a complete configuration', () => {
   assert.equal(plans({})[0].monthlyAmount, null); assert.equal(plans({})[0].configured, false);
   assert.equal(plans({ SAAS_STARTER_MONTHLY_INR: 'bad' })[0].configured, false);

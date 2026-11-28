@@ -1,16 +1,27 @@
 const crypto = require('node:crypto');
 const { google } = require('googleapis');
 const { vaultKey } = require('../utils/vaultCrypto');
+const { currentWorkspace } = require('../saas/tenantContext');
 
 const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
 const MESSAGE_ID = /^[a-f0-9]{1,64}$/i;
 const BODY_LIMIT = 100000;
 const publicError = (message, status = 502, code = 'GMAIL_UNAVAILABLE') => Object.assign(new Error(message), { status, code });
 
+function gmailClient(env) {
+  if (env.GMAIL_CLIENT_ID || env.GMAIL_CLIENT_SECRET) return { clientId: env.GMAIL_CLIENT_ID, clientSecret: env.GMAIL_CLIENT_SECRET };
+  if (env.SAAS_ENABLED === 'true') return { clientId: env.SAAS_GOOGLE_CLIENT_ID, clientSecret: env.SAAS_GOOGLE_CLIENT_SECRET };
+  return { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET };
+}
+
+function matchesCommercialApi(url, env) {
+  if (env.SAAS_ENABLED !== 'true' || !env.API_PUBLIC_URL) return true;
+  try { return new URL(env.API_PUBLIC_URL).origin === url.origin; }
+  catch { return false; }
+}
+
 function gmailConfiguration(env = process.env) {
-  const dedicatedClient = Boolean(env.GMAIL_CLIENT_ID || env.GMAIL_CLIENT_SECRET);
-  const clientId = dedicatedClient ? env.GMAIL_CLIENT_ID : env.GOOGLE_CLIENT_ID;
-  const clientSecret = dedicatedClient ? env.GMAIL_CLIENT_SECRET : env.GOOGLE_CLIENT_SECRET;
+  const { clientId, clientSecret } = gmailClient(env);
   if (!clientId || !clientSecret) throw publicError('Gmail setup is incomplete. Configure the Google OAuth client on the backend.', 503, 'GMAIL_CONFIGURATION');
   const parse = value => {
     let url;
@@ -21,39 +32,46 @@ function gmailConfiguration(env = process.env) {
   };
   const redirect = parse(env.GMAIL_REDIRECT_URI);
   const frontend = parse(env.FRONTEND_URL);
-  if (redirect.pathname !== '/api/integrations/gmail/callback' || redirect.search || redirect.hash) throw publicError('Configure the Gmail callback at /api/integrations/gmail/callback.', 503, 'GMAIL_CONFIGURATION');
+  if (redirect.pathname !== '/api/integrations/gmail/callback' || redirect.search || redirect.hash || !matchesCommercialApi(redirect, env)) throw publicError('Configure the Gmail callback at this API’s /api/integrations/gmail/callback address.', 503, 'GMAIL_CONFIGURATION');
   vaultKey(env);
   const secure = redirect.protocol === 'https:';
+  const workspace = currentWorkspace();
+  const cookie = workspace ? 'sx_gmail_oauth_' + workspace._id : 'ta_gmail_oauth';
   return { clientId, clientSecret, redirectUri: redirect.href, beginUrl: new URL('/api/integrations/gmail/begin', redirect).href,
-    frontendOrigin: frontend.origin, cookieName: secure ? '__Host-ta_gmail_oauth' : 'ta_gmail_oauth',
+    frontendOrigin: frontend.origin, cookieName: secure ? '__Host-' + cookie : cookie,
     cookie: { httpOnly: true, secure, sameSite: 'lax', path: '/', maxAge: 10 * 60 * 1000 } };
 }
 
 function gmailSetupChecks(env = process.env) {
-  const dedicated = Boolean(env.GMAIL_CLIENT_ID || env.GMAIL_CLIENT_SECRET);
+  const { clientId, clientSecret } = gmailClient(env);
   const secureAddress = (value, callback = false) => {
     try {
       const url = new URL(value);
       const local = env.NODE_ENV !== 'production' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
       return !url.username && !url.password && !url.search && !url.hash &&
         (url.protocol === 'https:' || (local && url.protocol === 'http:')) &&
-        (!callback || url.pathname === '/api/integrations/gmail/callback');
+        (!callback || (url.pathname === '/api/integrations/gmail/callback' && matchesCommercialApi(url, env)));
     } catch { return false; }
   };
   let encryptionReady = false;
   try { vaultKey(env); encryptionReady = true; } catch { /* Return readiness only, never credentials. */ }
   return [
-    { id: 'oauth', label: 'Google app credentials', ready: Boolean(dedicated ? env.GMAIL_CLIENT_ID && env.GMAIL_CLIENT_SECRET : env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET), help: 'Save a complete Google OAuth client in the backend’s private settings.' },
+    { id: 'oauth', label: 'Google app credentials', ready: Boolean(clientId && clientSecret), help: 'Save a complete Google OAuth client in the backend’s private settings.' },
     { id: 'callback', label: 'Gmail return address', ready: secureAddress(env.GMAIL_REDIRECT_URI, true), help: 'Register the backend’s /api/integrations/gmail/callback address in Google Cloud and in its private settings.' },
     { id: 'website', label: 'Secure studio website', ready: secureAddress(env.FRONTEND_URL), help: 'Use the current HTTPS Studio OS address for the return to your workspace.' },
     { id: 'encryption', label: 'Private connection storage', ready: encryptionReady, help: 'The backend needs its existing vault key to protect saved Google connections. Keep that key unchanged.' },
   ];
 }
 
+function mailboxBinding(userId) {
+  const workspace = currentWorkspace();
+  return Buffer.from('gmail:' + (workspace ? workspace._id + ':' : '') + String(userId));
+}
+
 function sealTokens(tokens, userId, env = process.env) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', vaultKey(env), iv);
-  cipher.setAAD(Buffer.from('gmail:' + String(userId)));
+  cipher.setAAD(mailboxBinding(userId));
   const data = Buffer.concat([cipher.update(JSON.stringify(tokens), 'utf8'), cipher.final()]);
   return ['v1', iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), data.toString('base64url')].join('.');
 }
@@ -63,7 +81,7 @@ function openTokens(envelope, userId, env = process.env) {
   if (version !== 'v1' || !iv || !tag || !data || extra !== undefined) throw publicError('Reconnect Gmail to restore this connection.', 409, 'GMAIL_RECONNECT');
   try {
     const decipher = crypto.createDecipheriv('aes-256-gcm', vaultKey(env), Buffer.from(iv, 'base64url'));
-    decipher.setAAD(Buffer.from('gmail:' + String(userId)));
+    decipher.setAAD(mailboxBinding(userId));
     decipher.setAuthTag(Buffer.from(tag, 'base64url'));
     return JSON.parse(Buffer.concat([decipher.update(Buffer.from(data, 'base64url')), decipher.final()]).toString('utf8'));
   } catch { throw publicError('Reconnect Gmail to restore this connection.', 409, 'GMAIL_RECONNECT'); }

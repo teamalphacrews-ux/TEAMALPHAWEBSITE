@@ -3,10 +3,11 @@ import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSe
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from '../../context/AuthContext';
-import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
+import { canDeleteWorkspaceModule, canWriteWorkspaceModule } from '../../utils/workspaceActions';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import { LayoutGrid, List, Pencil, Plus, Search, X } from "lucide-react";
 import { ContactForm } from "../components/contacts/ContactWorkflowUI";
+import { ContactDeleteButton, ContactDeleteDialog } from "../components/contacts/ContactRecordActions";
 import { CompactContacts } from "../components/contacts/CompactWorkspaceRecords";
 import {
   useWorkspaceData,
@@ -33,12 +34,14 @@ const contactFilters = [
 export default function Contacts() {
   const { user } = useAuth();
   const canEdit = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'contacts');
+  const canDelete = IS_COMMERCIAL_DEPLOYMENT && canDeleteWorkspaceModule(user, 'contacts');
   const { data, loading, error, reload } = useWorkspaceData(["/api/contacts"]),
     [contacts = []] = data;
   const [tab, setTab] = useState("All Contacts"),
     [view, setView] = useState(IS_COMMERCIAL_DEPLOYMENT ? 'people' : 'list'),
     [query, setQuery] = useState(""),
     [editing, setEditing] = useState(undefined),
+    [deleting, setDeleting] = useState(null),
     navigate = useNavigate();
   const useTopbarSearch = useWorkspaceModuleSearch({ label: 'Search contacts', query, onChange: setQuery });
   const [params, setParams] = useSearchParams();
@@ -113,9 +116,9 @@ export default function Contacts() {
         {useTopbarSearch && resultCount}
       </div>
       <WorkspaceError error={error} retry={reload} />
-      {visible.length && view === 'people' ? <ContactDirectory contacts={visible} onEdit={canEdit ? setEditing : undefined} /> : visible.length ? (
+      {visible.length && view === 'people' ? <ContactDirectory contacts={visible} onEdit={canEdit ? setEditing : undefined} onDelete={canDelete ? setDeleting : undefined} /> : visible.length ? (
         <>
-        <CompactContacts contacts={visible} onEdit={canEdit ? setEditing : undefined} />
+        <CompactContacts contacts={visible} onEdit={canEdit ? setEditing : undefined} onDelete={canDelete ? setDeleting : undefined} />
         <div className="reference-table-scroll reference-desktop-records">
           <table className="reference-table">
             <thead>
@@ -157,14 +160,17 @@ export default function Contacts() {
                   <td>{contact.phone ? <a href={`tel:${contact.phone}`}>{contact.phone}</a> : "—"}</td>
                   <td>{recordDate(contact.createdAt)}</td>
                   <td>
-                    {canEdit && <button
-                      className="reference-icon-button"
-                      aria-label={`Edit ${contact.firstName} ${contact.lastName || ""}`}
-                      title="Edit contact"
-                      onClick={() => setEditing(contact)}
-                    >
-                      <Pencil size={17} aria-hidden="true" />
-                    </button>}
+                    {(canEdit || canDelete) && <div className="contact-record-actions">
+                      {canEdit && <button
+                        className="reference-icon-button"
+                        aria-label={`Edit ${contact.firstName} ${contact.lastName || ""}`}
+                        title="Edit contact"
+                        onClick={() => setEditing(contact)}
+                      >
+                        <Pencil size={17} aria-hidden="true" />
+                      </button>}
+                      {canDelete && <ContactDeleteButton contact={contact} onDelete={setDeleting} />}
+                    </div>}
                   </td>
                 </tr>
               ))}
@@ -185,6 +191,11 @@ export default function Contacts() {
           {(query || tab !== "All Contacts") && <button type="button" className="studio-button" onClick={() => { setQuery(""); setTab("All Contacts"); }}>View all contacts</button>}
         </WorkspaceEmpty>
       )}
+      {canDelete && deleting && <ContactDeleteDialog
+        contact={deleting}
+        onClose={() => setDeleting(null)}
+        onDeleted={() => { setDeleting(null); reload(); }}
+      />}
       {canEdit && formRecord !== undefined && (
         <ContactForm
           key={formRecord?._id || 'new-contact'}

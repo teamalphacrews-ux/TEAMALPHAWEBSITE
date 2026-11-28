@@ -1,3 +1,7 @@
+const crypto = require('node:crypto');
+const { currentWorkspace } = require('../saas/tenantContext');
+const { vaultKey } = require('../utils/vaultCrypto');
+
 const TASKS = Object.freeze(['reply', 'quotation', 'project-update']);
 const TONES = Object.freeze(['warm', 'professional', 'concise']);
 const MAX_CONTEXT = 12000;
@@ -17,13 +21,55 @@ function safeAssistantError(error) {
   if (error?.code === 'WORKSPACE_INTEGRATIONS_PAUSED') return fail('Studio integrations are paused. Resume them in Backups & recovery before using an assistant.', 409, 'ASSISTANT_PAUSED');
   return fail('The assistant is temporarily unavailable. Please try again.', 503, 'ASSISTANT_UNAVAILABLE');
 }
-function providerOf(value) {
-  const provider = PROVIDERS.find(row => row.id === value);
+function providerOf(value, scope) {
+  const provider = PROVIDERS.find(row => row.id === value && (!scope || row.draftSupported));
   if (!provider) throw fail('Choose a supported assistant.', 404, 'ASSISTANT_PROVIDER');
   return provider;
 }
 function credential(value) { return typeof value === 'string' && value.length >= 8 && value.length <= 4096 && !/[\s\u0000-\u001f\u007f]/.test(value) ? value : null; }
 function modelOf(value) { return typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,119}$/.test(value) ? value : null; }
+function connectionInput(value) {
+  const key = credential(value?.apiKey), model = modelOf(value?.model);
+  if (!plain(value) || Object.keys(value).some(field => !['apiKey', 'model'].includes(field)) ||
+      !key || !model || model.includes(key)) {
+    throw fail('Enter a valid API key and model name for this provider.');
+  }
+  return { key, model };
+}
+const unavailableStorage = () => fail('Private assistant connection storage is unavailable. Ask the service administrator to check the vault configuration.', 503, 'ASSISTANT_STORAGE');
+const reconnect = () => fail('Save this assistant connection again to restore access.', 409, 'ASSISTANT_RECONNECT');
+const connectionBinding = (scope, provider, model) => Buffer.from(`studio-assistant:v1:${scope._id}:${provider.id}:${model}`);
+function sealKey(key, encryptionKey, binding) {
+  const iv = crypto.randomBytes(12), cipher = crypto.createCipheriv('aes-256-gcm', encryptionKey, iv);
+  cipher.setAAD(binding);
+  const data = Buffer.concat([cipher.update(key, 'utf8'), cipher.final()]);
+  return ['v1', iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), data.toString('base64url')].join('.');
+}
+function openKey(envelope, encryptionKey, binding) {
+  if (typeof envelope !== 'string' || envelope.length > 22000) throw reconnect();
+  const [version, iv, tag, data, extra] = envelope.split('.');
+  if (version !== 'v1' || !iv || !tag || !data || extra !== undefined) throw reconnect();
+  try {
+    const decipher = crypto.createDecipheriv('aes-256-gcm', encryptionKey, Buffer.from(iv, 'base64url'), { authTagLength: 16 });
+    decipher.setAAD(binding);
+    decipher.setAuthTag(Buffer.from(tag, 'base64url'));
+    const key = credential(Buffer.concat([decipher.update(Buffer.from(data, 'base64url')), decipher.final()]).toString('utf8'));
+    if (!key) throw reconnect();
+    return key;
+  } catch { throw reconnect(); }
+}
+function tenantStatus(provider, model, storageAvailable = true) {
+  return {
+    id: provider.id,
+    name: provider.name,
+    configured: Boolean(storageAvailable && model),
+    model,
+    draftSupported: true,
+    setupMessage: !storageAvailable ? unavailableStorage().message : model
+      ? 'Connection saved. Test the connection before drafting. API usage is billed separately by your provider.'
+      : 'Save a studio API key and model from your provider account. A chat subscription does not configure API access.',
+  };
+}
 function gatewayUrl(value) {
   try {
     const url = new URL(value), loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
@@ -69,23 +115,55 @@ function providerFailure(status) {
   if (status === 429) return fail('The provider is limiting requests or its API balance needs attention. Wait a moment or check provider billing.', 429, 'ASSISTANT_RATE_LIMIT');
   return fail('The provider could not complete this request. Check the selected API model and try again.', 502, 'ASSISTANT_PROVIDER_RESPONSE');
 }
-function createStudioAssistantService({ env = process.env, fetchImpl = globalThis.fetch, now = Date.now, timeoutMs = REQUEST_TIMEOUT_MS, preview = () => env.STUDIO_LOCAL_PREVIEW === 'true' && env.NODE_ENV !== 'production' } = {}) {
+function createStudioAssistantService({ env = process.env, fetchImpl = globalThis.fetch, now = Date.now, timeoutMs = REQUEST_TIMEOUT_MS, preview = () => env.STUDIO_LOCAL_PREVIEW === 'true' && env.NODE_ENV !== 'production', Connection } = {}) {
   const windows = new Map(), active = new Set();
-  function reserve(actorId) {
+  const workspaceConnections = () => Connection || require('../models/StudioAssistantConnection');
+  const assertNotPreview = () => {
+    if (preview()) throw fail('Assistant requests are disabled in the sample preview. Use your signed-in studio to test a configured connection.', 409, 'ASSISTANT_PREVIEW');
+  };
+  function workspaceScope() {
+    const scope = currentWorkspace();
+    if (!scope && env.SAAS_ENABLED === 'true') throw fail('Sign in to your studio workspace to manage assistant connections.', 403, 'ASSISTANT_WORKSPACE');
+    return scope;
+  }
+  function connectionKey() {
+    // Commercial connections always require an explicit key, including in development.
+    try { return vaultKey({ VAULT_SECRET: env.VAULT_SECRET, NODE_ENV: 'production' }); }
+    catch { throw unavailableStorage(); }
+  }
+  async function tenantStatuses() {
+    let storageAvailable = true;
+    try { connectionKey(); } catch { storageAvailable = false; }
+    const rows = await workspaceConnections().find().select('_id model').lean();
+    const providers = PROVIDERS.filter(provider => provider.draftSupported).map(provider =>
+      tenantStatus(provider, modelOf(rows.find(row => row._id === provider.id)?.model), storageAvailable));
+    return { providers, tasks: [...TASKS], preview: preview(), connectionStorageAvailable: storageAvailable };
+  }
+  async function tenantConfiguration(scope, provider) {
+    assertNotPreview();
+    const encryptionKey = connectionKey();
+    const row = await workspaceConnections().findById(provider.id).select('model +keyEnvelope').lean();
+    const model = modelOf(row?.model);
+    const status = tenantStatus(provider, model);
+    if (!status.configured) return status;
+    return { ...status, key: openKey(row.keyEnvelope, encryptionKey, connectionBinding(scope, provider, model)) };
+  }
+  function reserve(actorId, scope) {
     if (typeof actorId !== 'string' || !actorId || actorId.length > 128) throw fail('Sign in with the studio owner account.', 403, 'ASSISTANT_OWNER');
+    const actor = scope ? `${scope._id}:${actorId}` : actorId;
     const stamp = now();
     for (const [key, entry] of windows) if (entry.until <= stamp) windows.delete(key);
-    const row = windows.get(actorId);
-    if (active.has(actorId)) throw fail('An assistant request is already running. Please wait for it to finish.', 409, 'ASSISTANT_BUSY');
+    const row = windows.get(actor);
+    if (active.has(actor)) throw fail('An assistant request is already running. Please wait for it to finish.', 409, 'ASSISTANT_BUSY');
     if (active.size >= 3 || (row && row.count >= 6) || (!row && windows.size >= 1000)) throw fail('Please wait one minute before making another assistant request.', 429, 'ASSISTANT_RATE_LIMIT');
-    windows.set(actorId, row ? { ...row, count: row.count + 1 } : { count: 1, until: stamp + 60000 }); active.add(actorId);
-    return () => active.delete(actorId);
+    windows.set(actor, row ? { ...row, count: row.count + 1 } : { count: 1, until: stamp + 60000 }); active.add(actor);
+    return () => active.delete(actor);
   }
-  async function request(provider, config, values, actorId, check = false) {
-    if (preview()) throw fail('Assistant requests are disabled in the sample preview. Use your signed-in studio to test a configured connection.', 409, 'ASSISTANT_PREVIEW');
+  async function request(provider, config, values, actorId, scope, check) {
+    assertNotPreview();
     if (!config.configured) throw fail(config.setupMessage, 503, 'ASSISTANT_CONFIGURATION');
     if (!provider.draftSupported && !check) throw fail('OpenClaw drafting is disabled until a dedicated gateway with restricted tools and permissions has been verified. Connection checks remain available.', 409, 'ASSISTANT_CAPABILITY');
-    const release = reserve(actorId), controller = new AbortController();
+    const release = reserve(actorId, scope), controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       let url, options;
@@ -118,10 +196,40 @@ function createStudioAssistantService({ env = process.env, fetchImpl = globalThi
       throw safeAssistantError(error);
     } finally { clearTimeout(timer); release(); }
   }
+  async function execute(providerId, actorId, values, check) {
+    const scope = workspaceScope(), provider = providerOf(providerId, scope);
+    const config = scope ? await tenantConfiguration(scope, provider) : configuration(provider, env);
+    return request(provider, config, values, actorId, scope, check);
+  }
+
   return {
-    status() { return { providers: PROVIDERS.map(provider => { const config = configuration(provider, env); return { id: provider.id, name: provider.name, configured: config.configured, model: config.model, draftSupported: provider.draftSupported, setupMessage: config.setupMessage }; }), tasks: [...TASKS], preview: preview() }; },
-    test(providerId, actorId) { const provider = providerOf(providerId); return request(provider, configuration(provider, env), { task: 'reply', tone: 'professional', context: 'Connection test only. Respond with: Studio OS connection verified.' }, actorId, true); },
-    draft(providerId, value, actorId) { const provider = providerOf(providerId), values = draftInput(value); return request(provider, configuration(provider, env), values, actorId); },
+    status() {
+      if (workspaceScope()) return tenantStatuses();
+      return { providers: PROVIDERS.map(provider => { const config = configuration(provider, env); return { id: provider.id, name: provider.name, configured: config.configured, model: config.model, draftSupported: provider.draftSupported, setupMessage: config.setupMessage }; }), tasks: [...TASKS], preview: preview() };
+    },
+    async saveConnection(providerId, value) {
+      const scope = workspaceScope();
+      if (!scope) throw fail('Manage personal assistant credentials in the backend’s private settings.', 403, 'ASSISTANT_WORKSPACE');
+      assertNotPreview();
+      const provider = providerOf(providerId, scope), { key, model } = connectionInput(value);
+      const keyEnvelope = sealKey(key, connectionKey(), connectionBinding(scope, provider, model));
+      await workspaceConnections().updateOne({ _id: provider.id }, { $set: { model, keyEnvelope } }, { upsert: true, runValidators: true });
+      return tenantStatus(provider, model);
+    },
+    async disconnect(providerId) {
+      const scope = workspaceScope();
+      if (!scope) throw fail('Manage personal assistant credentials in the backend’s private settings.', 403, 'ASSISTANT_WORKSPACE');
+      assertNotPreview();
+      const provider = providerOf(providerId, scope);
+      await workspaceConnections().deleteOne({ _id: provider.id });
+      return tenantStatus(provider, null);
+    },
+    test(providerId, actorId) {
+      return execute(providerId, actorId, { task: 'reply', tone: 'professional', context: 'Connection test only. Respond with: Studio OS connection verified.' }, true);
+    },
+    async draft(providerId, value, actorId) {
+      return execute(providerId, actorId, draftInput(value), false);
+    },
   };
 }
 module.exports = { createStudioAssistantService, safeAssistantError, configuration, gatewayUrl, draftInput, MAX_CONTEXT, MAX_RESPONSE_BYTES, REQUEST_TIMEOUT_MS, TASKS, TONES };

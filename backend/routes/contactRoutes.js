@@ -7,10 +7,13 @@ const Document = require("../models/ContactDocument");
 const Quotation = require("../models/Quotation");
 const Invoice = require("../models/Invoice");
 const Event = require("../models/Event");
+const Lead = require("../models/Lead");
+const WhatsAppConversation = require("../models/WhatsAppConversation");
 const validate = require("../utils/contactRecords");
 const { manualCreation } = require('../utils/manualCreation');
 const pipeline = require("../services/enquiryPipeline");
 const modules = require('../utils/moduleAccess');
+const { withRecordDeletion } = require("../services/studioArchiveGate");
 const router = express.Router();
 router.use(["/contacts", "/studio-projects", "/contact-documents"], auth, requireAdmin);
 const error = (message, status = 400) =>
@@ -65,21 +68,28 @@ const projectLinks = async (values, existing, session) => {
     throw error("Project end date must follow its start date");
 };
 const escaped = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+async function contactFinancialFilters(contact, session) {
+  const direct = { contactId: contact._id };
+  const filters = { quoteFilter: direct, invoiceFilter: direct };
+  if (!contact.email) return filters;
+
+  const email = new RegExp('^' + escaped(contact.email) + '$', 'i');
+  // Legacy standalone documents lack durable links. A name alone or a shared
+  // address cannot establish which contact owns billing history.
+  if (await Contact.countDocuments({ email }, session ? { session } : undefined) !== 1) return filters;
+  const name = [contact.firstName, contact.lastName].filter(Boolean).join(' ');
+  const standalone = { contactId: null, studioProjectId: null, clientName: new RegExp('^' + escaped(name) + '$', 'i') };
+  return {
+    quoteFilter: { $or: [direct, { ...standalone, lead: null, email }] },
+    invoiceFilter: { $or: [direct, { ...standalone, leadId: null, sourceQuotation: null, clientEmail: email }] },
+  };
+}
+
 async function documentsFor(contact, studioProjectId, user) {
-  const contactId = contact._id;
-  const projectFilter = studioProjectId ? { studioProjectId } : { contactId };
-  let quoteFilter = projectFilter, invoiceFilter = projectFilter;
-  if (!studioProjectId && contact.email && (modules.hasModule(user, 'quotations') || modules.hasModule(user, 'invoices'))) {
-    const email = new RegExp('^' + escaped(contact.email) + '$', 'i');
-    // Legacy standalone documents lack durable links. A name alone or a shared
-    // address cannot establish which contact owns billing history.
-    if (await Contact.countDocuments({ email }) === 1) {
-      const name = [contact.firstName, contact.lastName].filter(Boolean).join(' ');
-      const standalone = { contactId: null, studioProjectId: null, clientName: new RegExp('^' + escaped(name) + '$', 'i') };
-      quoteFilter = { $or: [projectFilter, { ...standalone, lead: null, email }] };
-      invoiceFilter = { $or: [projectFilter, { ...standalone, leadId: null, sourceQuotation: null, clientEmail: email }] };
-    }
-  }
+  const projectFilter = studioProjectId ? { studioProjectId } : { contactId: contact._id };
+  const { quoteFilter, invoiceFilter } = !studioProjectId && (modules.hasModule(user, 'quotations') || modules.hasModule(user, 'invoices'))
+    ? await contactFinancialFilters(contact)
+    : { quoteFilter: projectFilter, invoiceFilter: projectFilter };
   const [quotations, invoices, sessions, documents] = await Promise.all([
     modules.hasModule(user, 'quotations') ? Quotation.find(quoteFilter)
       .select(
@@ -152,6 +162,37 @@ router.patch(
     if (!record) throw error("Contact not found", 404);
     await pipeline.syncContact(record._id);
     res.json(record);
+  }),
+);
+router.delete(
+  "/contacts/:id",
+  wrap(async (req, res) => {
+    const recordId = id(req);
+    const contact = await withRecordDeletion(() => require("../services/studioRecovery").recoverableDelete({
+      Model: Contact,
+      filter: { _id: recordId },
+      actorId: req.user.id,
+      beforeDelete: async ({ row, session }) => {
+        const contactId = row._id;
+        const { quoteFilter, invoiceFilter } = await contactFinancialFilters(row, session);
+        const relationships = [
+          [Project, { $or: [{ contactId }, { additionalClients: contactId }] }],
+          [Lead, { contactId }],
+          [Quotation, quoteFilter],
+          [Invoice, invoiceFilter],
+          [Event, { contactId }],
+          [Document, { contactId }],
+          [WhatsAppConversation, { contactId }],
+        ];
+        for (const [Model, filter] of relationships) {
+          if (await Model.exists(filter).session(session)) {
+            throw error("This contact has linked records. Archive the contact to keep its history.", 409);
+          }
+        }
+      },
+    }));
+    if (!contact) throw error("Contact not found", 404);
+    res.json({ success: true });
   }),
 );
 router.get(
@@ -233,6 +274,18 @@ router.patch(
       return updated;
     });
     res.json(project);
+  }),
+);
+router.delete(
+  "/studio-projects/:id",
+  wrap(async (req, res) => {
+    const projectId = id(req);
+    const project = await withRecordDeletion(() => require("../services/projectDeletion").deleteProject({
+      projectId,
+      actorId: req.user.id,
+    }));
+    if (!project) throw error("Project not found", 404);
+    res.json({ message: "Project moved to recovery." });
   }),
 );
 router.post(

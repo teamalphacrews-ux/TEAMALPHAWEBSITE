@@ -10,6 +10,7 @@ import API from '../../utils/apiConfig';
 import { approvedTemplateDraft, confirmedWhatsAppSubmission, internationalWhatsAppPhone, mergeWhatsAppMessages, openWhatsAppUrl, refreshWhatsAppMessages, whatsappConnectionLabel, whatsappMessageStatus, whatsappReplyWindow, whatsappRequestId } from '../../utils/whatsappData';
 import { WorkspaceDialog, WorkspaceError, WorkspaceHeader } from '../components/operations/WorkspaceUI';
 import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
+import WhatsAppWebHandoff from '../components/integrations/WhatsAppWebHandoff';
 import WabbWorkspace from './WabbWorkspace';
 import './whatsappInbox.css';
 
@@ -259,14 +260,23 @@ export default function WhatsAppInbox() {
 
   if (preview || status?.provider === 'wabb') return <WabbWorkspace key={JSON.stringify([status?.provider, status?.displayPhoneNumber, status?.dashboardUrl, user?._id || user?.id || user?.email])} status={status} preview={preview} busy={busy === 'verify'} error={statusError} onVerify={verify} onRefresh={() => setRefresh(value => value + 1)} timezone={timezone} accountId={user?._id || user?.id || user?.email || ''} />;
 
-  if (!status) return <div className="studio-whatsapp-page"><WorkspaceHeader eyebrow="CLIENT COMMUNICATION" title="WhatsApp Business" description="Checking your studio’s configured WhatsApp provider."><Link className="studio-button" to="/admin/integrations"><ArrowLeft size={15} />Integrations</Link><button type="button" className="studio-button" onClick={() => setRefresh(value => value + 1)}><RefreshCw size={15} />Refresh status</button></WorkspaceHeader><WorkspaceError error={statusError} retry={() => setRefresh(value => value + 1)} />{!statusError && <section className="studio-card wa-empty" role="status"><MessageCircle size={25} /><p>Checking connection…</p></section>}</div>;
+  if (!status) return <div className="studio-whatsapp-page">
+    <WorkspaceHeader eyebrow="CLIENT COMMUNICATION" title="WhatsApp Business" description="Access WhatsApp Web and manage your studio’s messaging integration.">
+      <Link className="studio-button" to="/admin/integrations"><ArrowLeft size={15} />Integrations</Link>
+      <button type="button" className="studio-button" onClick={() => setRefresh(value => value + 1)}><RefreshCw size={15} />Refresh status</button>
+    </WorkspaceHeader>
+    <WhatsAppWebHandoff />
+    <WorkspaceError error={statusError} retry={() => setRefresh(value => value + 1)} />
+    {!statusError && <section className="studio-card wa-empty" role="status"><MessageCircle size={25} /><p>Checking connection…</p></section>}
+  </div>;
 
   return <div className="studio-whatsapp-page">
-    <WorkspaceHeader eyebrow="CLIENT CONVERSATIONS" title="WhatsApp Business" description="Your client conversations, connected to the studio.">
+    <WorkspaceHeader eyebrow="CLIENT CONVERSATIONS" title="WhatsApp Business" description="Access WhatsApp Web and manage your studio’s Meta inbox.">
       <Link className="studio-button" to="/admin/integrations"><ArrowLeft size={15} />Integrations</Link>
       <button type="button" className="studio-button" onClick={() => setRefresh(value => value + 1)} disabled={preview || !!busy} aria-label="Refresh WhatsApp"><RefreshCw size={15} />Refresh</button>
       <button type="button" className="studio-button primary" disabled={!connected || !!busy} onClick={() => showModal('new')}><Plus size={16} />New conversation</button>
     </WorkspaceHeader>
+    <WhatsAppWebHandoff />
     <WorkspaceError error={statusError} retry={() => setRefresh(value => value + 1)} />
     <section className="wa-connection-strip studio-card"><span className="wa-brand-icon"><MessageCircle size={22} strokeWidth={1.5} /></span><div><strong>{connected ? status.verifiedName || 'Your WhatsApp Business account' : 'Keep your number. Keep your Business app.'}</strong><p>{connected ? status.displayPhoneNumber : preview ? 'This sample preview cannot access WhatsApp or send messages.' : 'Connect through Meta’s supported coexistence setup. Your phone account is not changed from this workspace.'}</p></div><span className={'studio-badge ' + (connected ? 'green' : 'gold')}>{preview ? 'Preview only' : statusError ? 'Unavailable' : whatsappConnectionLabel(status)}</span>{status?.owner && <button type="button" className="studio-button small" disabled={preview || !status.configured || !!busy} onClick={verify}><ShieldCheck size={14} />{busy === 'verify' ? 'Verifying…' : 'Verify connection'}</button>}</section>
     {!connected && <section className="studio-card wa-setup"><div className="wa-setup-heading"><span className="wa-brand-icon"><LockKeyhole size={22} /></span><div><h2>Connect your existing business number</h2><p>Official WhatsApp Business API · Coexistence connection</p></div></div><ol><li><span>01</span><div><h3>Complete the supported Meta connection</h3><p>Use the coexistence onboarding flow for your existing WhatsApp Business app. Availability depends on your Meta business account and provider setup.</p><a href="https://developers.facebook.com/documentation/business-messaging/whatsapp/embedded-signup/onboarding-business-app-users/" target="_blank" rel="noopener noreferrer">Meta setup guide <ArrowUpRight size={13} /></a></div></li><li><span>02</span><div><h3>Keep connection keys on the backend</h3><p>Your studio owner configures the connection privately in the backend hosting service. Access tokens and app secrets are never entered in client messages or shared links.</p>{!!status?.missing?.length && <details><summary>Backend settings still needed</summary><ul className="wa-config-fields">{status.missing.filter(value => typeof value === 'string' && /^WHATSAPP_[A-Z0-9_]+$/.test(value)).map(value => <li key={value}><code>{value}</code></li>)}</ul></details>}</div></li><li><span>03</span><div><h3>Verify the account and receive new messages</h3><p>{status?.owner ? 'Use Verify connection once the backend is configured. Studio OS checks that your Business app remains connected before enabling sending.' : 'Ask your studio owner to verify the configured account. Your Business app must remain connected before sending is enabled.'}</p>{webhook && <div className="wa-webhook-line"><code>{webhook}</code><button type="button" className="studio-icon-button" aria-label="Copy WhatsApp webhook address" onClick={copyWebhook}>{copied ? <Check size={15} /> : <Copy size={15} />}</button></div>}</div></li></ol><p className="wa-setup-footnote">Messages appear here as they are received after connection. Earlier app history and media downloads are not imported automatically. Meta messaging charges may apply.</p></section>}

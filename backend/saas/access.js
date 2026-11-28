@@ -23,6 +23,11 @@ async function resolveSession(token, { models = require('./models'), env = proce
   return { account, workspace, membership, decoded };
 }
 const isRead = method => ['GET', 'HEAD', 'OPTIONS'].includes(method);
+function workspaceIntegrationAllowed(method, path) {
+  if (method === 'GET') return /^\/api\/integrations\/(?:gmail\/(?:status|messages(?:\/[a-zA-Z0-9_-]+)?)|assistants\/status)\/?$/.test(path);
+  if (method === 'POST') return /^\/api\/integrations\/(?:gmail\/(?:connect|disconnect)|assistants\/(?:openai|claude)\/(?:test|draft|connection))\/?$/.test(path);
+  return method === 'DELETE' && /^\/api\/integrations\/assistants\/(?:openai|claude)\/connection\/?$/.test(path);
+}
 function requestAllowed(role, method, path) {
   if (role === 'owner' || role === 'admin') return true;
   if (role !== 'staff') return false;
@@ -45,8 +50,8 @@ function createWorkspaceMiddleware({ models, env = process.env, onWorkspace = ()
       const path = req.originalUrl.split('?')[0];
       if (requiresSetup(workspace) && !allowedDuringSetup(req.method, path, membership.role))
         return res.status(409).json({ msg: 'Finish studio setup before opening the workspace.', code: 'STUDIO_SETUP_REQUIRED' });
-      // Existing global integration credentials are never inherited by a new studio.
-      if (/^\/api\/(?:integrations|google-sheets|media|drive-gallery|gallery|chats|auth\/google)(?:\/|$)/.test(path))
+      // Only explicitly tenant-scoped integration operations are available here.
+      if (/^\/api\/(?:integrations|google-sheets|media|drive-gallery|gallery|chats|auth\/google)(?:\/|$)/i.test(path) && !workspaceIntegrationAllowed(req.method, path))
         return res.status(409).json({ msg: 'This integration is being prepared for independent studios. Your workspace data remains available.', code: 'SAAS_INTEGRATION_PENDING' });
       if (path.startsWith('/api/admin-users')) return res.status(409).json({ msg: 'Manage studio members and invitations from Workspace & plan.' });
       if (!requestAllowed(membership.role, req.method, path)) return res.status(403).json({ msg: 'Your studio role does not allow this action.' });

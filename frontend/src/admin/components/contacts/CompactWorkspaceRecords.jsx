@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import { ArrowUpRight, CalendarDays, Pencil } from "lucide-react";
 import { recordDate } from "../operations/workspaceData";
+import { ContactDeleteButton } from "./ContactRecordActions";
+import { ProjectDeleteButton } from "../projects/ProjectDeleteDialog";
 
-export function CompactContacts({ contacts, onEdit }) {
+export function CompactContacts({ contacts, onEdit, onDelete }) {
   return <ul className="reference-mobile-records" aria-label="Contacts">
     {contacts.map(contact => {
       const name = `${contact.firstName || ""} ${contact.lastName || ""}`.trim() || "Unnamed contact";
@@ -22,18 +24,22 @@ export function CompactContacts({ contacts, onEdit }) {
           <div><dt>Added</dt><dd><CalendarDays size={13} aria-hidden="true" />{recordDate(contact.createdAt)}</dd></div>
           <div><dt>Type</dt><dd><span className={`reference-status ${type.toLowerCase()}`}>{type}</span></dd></div>
         </dl>
-        <Link className="reference-mobile-record-action" to={`/admin/contacts/${contact._id}`} aria-label={`Open contact ${name}`}>Open contact<ArrowUpRight size={15} aria-hidden="true" /></Link>
+        <div className="contact-mobile-record-actions">
+          <Link className="reference-mobile-record-action" to={`/admin/contacts/${contact._id}`} aria-label={`Open contact ${name}`}>Open contact<ArrowUpRight size={15} aria-hidden="true" /></Link>
+          {onDelete && <ContactDeleteButton contact={contact} onDelete={onDelete} />}
+        </div>
       </li>;
     })}
   </ul>;
 }
 
-export function CompactProjects({ projects }) {
+export function CompactProjects({ projects, onDelete }) {
   return <ul className="reference-mobile-records" aria-label="Projects">
     {projects.map(project => {
       const contact = project.contactId;
       const clientName = contact && `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
       const status = project.status || "Inquiry";
+      const openProject = <Link className="reference-mobile-record-action" to={`/admin/studio-projects/${project._id}`} aria-label={`Open project ${project.name}`}>Open project<ArrowUpRight size={15} aria-hidden="true" /></Link>;
       return <li className="reference-mobile-record" key={project._id}>
         <div className="reference-mobile-record-heading"><h2><Link to={`/admin/studio-projects/${project._id}`}>{project.name || "Untitled project"}</Link></h2></div>
         <div className="reference-mobile-contact-info">
@@ -44,7 +50,10 @@ export function CompactProjects({ projects }) {
           <div><dt>Project date</dt><dd><CalendarDays size={13} aria-hidden="true" />{project.startDate ? recordDate(project.startDate) : "To be confirmed"}</dd></div>
           <div><dt>Status</dt><dd><span className={`reference-status ${status.toLowerCase()}`}>{status}</span></dd></div>
         </dl>
-        <Link className="reference-mobile-record-action" to={`/admin/studio-projects/${project._id}`} aria-label={`Open project ${project.name}`}>Open project<ArrowUpRight size={15} aria-hidden="true" /></Link>
+        {onDelete ? <div className="sx-project-record-actions">
+          {openProject}
+          <ProjectDeleteButton project={project} onDelete={onDelete} />
+        </div> : openProject}
       </li>;
     })}
   </ul>;

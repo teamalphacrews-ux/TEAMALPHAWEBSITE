@@ -554,3 +554,24 @@
 @media (min-width: 360px) and (max-width: 760px) {
   #sx-workspace-shell .sx-project-detail .project-hub-task-add { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+.sx-project-record-actions { display: flex; align-items: center; gap: 8px; }
+.sx-project-record-actions > .reference-mobile-record-action { flex: 1; min-width: 0; }
+#sx-workspace-shell .sx-project-delete.studio-control-button { min-width: 44px; min-height: 44px; }
+#sx-workspace-shell .sx-project-delete[data-variant="icon"] { flex: 0 0 44px; }
+#sx-workspace-shell .sx-project-delete.studio-control-button:not(:disabled) { color: var(--studio-danger-ink); }
+#sx-workspace-shell .sx-project-delete.studio-control-button:enabled:is(:hover,:focus-visible) { background: var(--studio-danger-surface); }
+.sx-project-register .reference-table .sx-project-table-actions { width: 1%; text-align: end; }
+
+@media (max-width: 760px) {
+  #sx-workspace-shell .sx-project-detail .project-hub-header-actions:has(> .sx-project-delete) {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  #sx-workspace-shell .sx-project-detail .project-hub-header-actions:has(> .sx-project-delete) > .reference-create-menu { grid-column: auto; }
+  #sx-workspace-shell .sx-project-detail .project-hub-header-actions > .sx-project-delete {
+    width: 100%;
+    padding-inline: 8px;
+    white-space: normal;
+  }
+}

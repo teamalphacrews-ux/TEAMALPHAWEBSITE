@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { recordPositions, settleRecordPositions } from './recordTransitions';
 import useReducedStudioMotion from '../components/operations/useReducedStudioMotion';
+import { ProjectDeleteButton } from '../components/projects/ProjectDeleteDialog';
 import { ArrowUpRight, CalendarDays, MapPin, Pin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStudioPreferences } from '../components/common/StudioPreferences';
@@ -59,7 +60,7 @@ function ProjectPercent({ value }) {
   return <strong ref={label} aria-hidden="true">{value}%</strong>;
 }
 
-export function ProjectSlate({ projects, progress, pinned, togglePin, canReadClients }) {
+export function ProjectSlate({ projects, progress, pinned, togglePin, canReadClients, onDelete }) {
   const slate = useRef(null);
   const previous = useRef(null);
   useLayoutEffect(() => {
@@ -94,7 +95,13 @@ export function ProjectSlate({ projects, progress, pinned, togglePin, canReadCli
         {name && <p>{canReadClients && client._id ? <Link to={'/admin/contacts/' + client._id}>{name}</Link> : name}</p>}
       </div></div>
       <div className="record-project-meta"><span className={'reference-status ' + status.toLowerCase()}>{status}</span>{tasks && <span>{tasks.done} / {tasks.total} tasks</span>}<span>{recordDate(project.startDate)}</span></div>
-      <footer><span><MapPin size={15} />{project.location || 'Location to be confirmed'}</span><Link className="record-open" to={destination} aria-label={'Open project ' + title}><ArrowUpRight size={17} /></Link></footer>
+      <footer>
+        <span><MapPin size={15} />{project.location || 'Location to be confirmed'}</span>
+        <div className="sx-project-record-actions">
+          {onDelete && <ProjectDeleteButton project={project} onDelete={onDelete} />}
+          <Link className="record-open" to={destination} aria-label={'Open project ' + title}><ArrowUpRight size={17} /></Link>
+        </div>
+      </footer>
     </article>;
   })}</div>;
 }

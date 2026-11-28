@@ -1332,28 +1332,28 @@ export const DOC_GUIDES = [
   },
   {
     "slug": "integrations-ai",
-    "title": "Check integrations and assistant readiness",
-    "summary": "Distinguish configured connections, planned capabilities and reviewed drafts before granting access or promising automated work.",
+    "title": "Connect writing assistants and review drafts",
+    "summary": "Set up ChatGPT or Claude as the studio owner, check the connection and review drafts before using them.",
     "category": "communication",
     "sections": [
       {
         "id": "readiness",
         "title": "Read connection status first",
         "paragraphs": [
-          "Provider artwork identifies a service; it does not prove the service is connected. Commercial assistant connections are being prepared and send no studio data through that preview. Gmail, Google Calendar, Drive and outgoing document mail have separate setup and permission requirements."
+          "Studio owners can connect ChatGPT or Claude in Integrations when secure key storage is available. Gmail, Google Calendar, Drive and outgoing document mail each have their own setup and permissions."
         ],
         "steps": [
           {
             "title": "Open Integrations",
-            "body": "Read each service’s actual status and setup message before attempting a connection or test."
+            "body": "Open Integrations while signed in as the studio owner, then find ChatGPT or Claude under Writing assistants."
           },
           {
-            "title": "Complete available setup",
-            "body": "Use an enabled provider connection or Test connection only when your workspace is configured and eligible."
+            "title": "Save the provider connection",
+            "body": "Choose Connect, enter the API key and exact model ID from your provider account, then save. Studio X OS encrypts the key for your studio."
           },
           {
-            "title": "Verify the intended account",
-            "body": "Confirm the provider identity and permissions, then return to the actual workflow to check its available actions."
+            "title": "Test the configured connection",
+            "body": "Choose Test connection to send a sample prompt to the provider. A successful test shows Verified this session. Use Update or Disconnect to replace or remove the saved key."
           }
         ],
         "screenshot": {
@@ -1362,14 +1362,14 @@ export const DOC_GUIDES = [
           "alt": "Integrations with provider cards, connection states and assistant area."
         },
         "tips": [
-          "A ChatGPT sign-in does not connect an OpenAI API account; OpenClaw is connection-only rather than drafting."
+          "OpenAI and Anthropic API access and billing are separate from ChatGPT and Claude chat subscriptions."
         ]
       },
       {
         "id": "drafts",
         "title": "Review assistant drafts when enabled",
         "paragraphs": [
-          "In an eligible configured drafting environment, the assistant uses the text entered into the request. It does not automatically attach studio records, send the result or change quotations. Do not treat a disabled commercial preview as an active assistant connection."
+          "The selected provider receives the text you enter after you confirm sharing it. Your studio records stay separate. Review and copy the draft yourself when it is ready."
         ],
         "steps": [
           {

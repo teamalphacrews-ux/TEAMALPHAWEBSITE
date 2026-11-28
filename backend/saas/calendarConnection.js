@@ -2,6 +2,8 @@ const crypto = require('node:crypto');
 const mongoose = require('mongoose');
 const { currentWorkspace, runInWorkspace } = require('./tenantContext');
 const { accessStatus } = require('./plans');
+const { requiresSetup } = require('./setupAccess');
+const archiveGate = require('../services/studioArchiveGate');
 
 const workspaceToken = /^cal\.([a-f0-9]{24})\.([a-f0-9]{64})$/;
 const unavailable = () => Object.assign(new Error('This studio calendar connection is unavailable.'), { status: 403 });
@@ -20,8 +22,8 @@ function scopedCalendarReturn(handler, parameter, models = require('./models')) 
     try {
       if (!match) throw unavailable();
       const workspace = await models.Workspace.findOne({ _id: match[1], state: 'active' });
-      if (!workspace || String(workspace._id) !== match[1] || !['active', 'trialing'].includes(accessStatus(workspace))) throw unavailable();
-      return await runInWorkspace(workspace, () => handler(req, res, match[2]));
+      if (!workspace || requiresSetup(workspace) || String(workspace._id) !== match[1] || !['active', 'trialing'].includes(accessStatus(workspace))) throw unavailable();
+      return await runInWorkspace(workspace, () => archiveGate.withShared(() => handler(req, res, match[2]), { integrations: true, rejectPaused: true }));
     } catch {
       return res.status(403).send('This calendar connection has expired. Return to your Studio X OS calendar and connect again.');
     }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import axios from 'axios';
 import IntegrationLogo from './IntegrationLogo';
+import { WhatsAppWebLink } from './WhatsAppWebHandoff';
 import { useAuth } from '../../../context/AuthContext';
 import API from '../../../utils/apiConfig';
 import { wabbManualTextReady, whatsappConnectionLabel } from '../../../utils/whatsappData';
@@ -22,11 +23,15 @@ export default function WhatsAppConnectionCard() {
   }, [preview]);
   const wabb = status?.provider === 'wabb';
   const ready = !preview && !error && (wabb ? wabbManualTextReady(status) : status?.connected === true);
-  const description = preview ? 'Your studio’s WhatsApp communication, with sending enabled after a supported connection is verified.' : wabb ? 'Send individual client messages through your existing Wabb account.' : 'Client conversations, replies and approved messages in your studio workspace.';
-  const summary = preview ? 'The sample preview cannot access your WhatsApp account.' : error || (wabb ? [status?.displayPhoneNumber, 'Inbox synchronization is not enabled; your Business app and Wabb connection stay in place.'].filter(Boolean).join(' · ') : status?.connected ? [status.verifiedName, status.displayPhoneNumber].filter(Boolean).join(' · ') : 'Keep your existing number and Business app through a supported coexistence connection.');
+  const description = 'Open WhatsApp Web with your existing Business app account.';
+  const summary = preview ? 'This sample workspace only has messaging examples.' : error || (wabb ? [status?.displayPhoneNumber, 'Wabb supports individual replies. Read and manage your conversations in Wabb.'].filter(Boolean).join(' · ') : status?.connected ? [status.verifiedName, status.displayPhoneNumber, 'Meta inbox'].filter(Boolean).join(' · ') : 'To receive messages in Studio X OS, set up the Meta Business API inbox.');
   return <section className="studio-card studio-gmail-card studio-whatsapp-connection">
     <IntegrationLogo brand="whatsapp-business" size={47} />
     <div><h2>WhatsApp Business</h2><p>{description}</p><small>{summary}</small></div>
-    <div className="studio-gmail-card-actions"><span className={'studio-badge ' + (ready ? 'green' : 'gold')}>{preview ? 'Preview only' : error ? 'Unavailable' : whatsappConnectionLabel(status)}</span><Link className="studio-button primary" to="/admin/whatsapp">Open WhatsApp <ArrowUpRight size={15} /></Link></div>
+    <div className="studio-gmail-card-actions">
+      <span className={'studio-badge ' + (ready ? 'green' : 'gold')}>{preview ? 'Preview only' : error ? 'Integration unavailable' : whatsappConnectionLabel(status)}</span>
+      <Link className="studio-button" to="/admin/whatsapp">WhatsApp workspace <ArrowUpRight size={15} aria-hidden="true" /></Link>
+      <WhatsAppWebLink primary />
+    </div>
   </section>;
 }

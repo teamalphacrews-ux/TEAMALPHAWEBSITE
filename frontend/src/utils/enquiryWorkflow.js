@@ -3,6 +3,13 @@ import { quotationStatus } from './quotationStatus.js';
 const id = value => typeof value === 'object' ? value?._id : value;
 export const enquiryProjectId = lead => id(lead?.studioProjectId) || '';
 export const enquiryQuoteId = lead => id(lead?.quotationId) || '';
+
+export function enquiryRemovalAction(lead) {
+  const linked = enquiryProjectId(lead) || enquiryQuoteId(lead) || lead.tasks?.length || lead.cloudLink || lead.galleryTag ||
+    Number(lead.depositAmount) > 0 || ['Deposit Paid', 'Paid'].includes(lead.paymentStatus);
+  return linked ? (lead.status === 'Archived' ? '' : 'archive') : 'delete';
+}
+
 export function enquiryProjectDestination(project) {
   const projectId = id(project);
   if (!projectId) throw new Error('The enquiry project could not be prepared. Please retry.');

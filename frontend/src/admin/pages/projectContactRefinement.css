@@ -118,3 +118,24 @@
 .sx-client-next > div { flex: 1 1 15rem; min-width: 0; }
 .sx-client-next h2 { margin: 0 0 4px; font-size: 16px; color: var(--studio-text); }
 .sx-client-next p { margin: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; color: var(--studio-muted); }
+
+.contact-delete-shortcut {
+  min-height: 44px;
+  flex: none;
+}
+.contact-record-actions,
+.contact-mobile-record-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.contact-mobile-record-actions { flex-wrap: wrap; }
+.contact-mobile-record-actions > .reference-mobile-record-action { flex: 1 0 auto; }
+.project-contact-register .reference-table td:last-child:has(.contact-delete-shortcut) { width: 1%; }
+.record-person footer:has(.contact-delete-shortcut) { flex-wrap: wrap; gap: 8px; }
+.project-contact-detail .reference-contact-actions:has(> .contact-delete-shortcut) { flex-wrap: wrap; }
+.contact-delete-name { overflow-wrap: anywhere; }
+
+@media (max-width: 760px) {
+  .reference-contact-actions > .contact-delete-shortcut { justify-self: start; }
+}

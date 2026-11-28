@@ -14,7 +14,7 @@ const permissionLabels = { discounts: 'Apply discounts', deletion: 'Delete busin
 export default function SecurityRecoveryPanel({ mode = 'security', settings = {}, onChange }) {
   const { token, logout, user } = useAuth();
   const preview = user?.isPreview === true;
-  const [access, setAccess] = useState(null), [sessions, setSessions] = useState([]), [backups, setBackups] = useState([]), [trash, setTrash] = useState([]), [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState(''), [restore, setRestore] = useState(null), [confirmation, setConfirmation] = useState('');
+  const [access, setAccess] = useState(null), [sessions, setSessions] = useState([]), [backups, setBackups] = useState([]), [trash, setTrash] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState(''), [restore, setRestore] = useState(null), [confirmation, setConfirmation] = useState('');
   const request = useCallback(async (path, method = 'GET', body) => {
     const response = await fetch(endpoint + path, { method, headers: { Authorization: 'Bearer ' + token, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
     const result = await response.json();
@@ -22,12 +22,32 @@ export default function SecurityRecoveryPanel({ mode = 'security', settings = {}
     if (path === '/access' && typeof result?.owner !== 'boolean') throw new Error('Account permissions could not be verified. Please try again.');
     return result;
   }, [token]);
-  const load = async () => {
-    const result = await request('/access'); setAccess(result);
-    if (mode === 'security') setSessions(await request('/sessions'));
-    else if (result.owner) { const [history, recovery] = await Promise.all([request('/backups'), request('/recovery')]); setBackups(history.backups); setTrash(recovery); }
-  };
-  useEffect(() => { if (preview) return; let active = true; request('/access').then(async result => { if (!active) return; setError(''); setAccess(result); if (mode === 'security') { const rows = await request('/sessions'); if (active) setSessions(rows); } else if (result.owner) { const [history, recovery] = await Promise.all([request('/backups'), request('/recovery')]); if (active) { setBackups(history.backups); setTrash(recovery); } } }).catch(e => { if (active) setError(e.message); }); return () => { active = false; }; }, [mode, request, preview]); // Each request is scoped to the signed-in administrator.
+  const loadControls = useCallback(async (result, isActive = () => true) => {
+    if (!isActive()) return;
+    setAccess(result);
+    if (mode === 'security') {
+      const rows = await request('/sessions');
+      if (isActive()) setSessions(rows);
+    } else if (result.owner) {
+      const [history, recovery] = await Promise.all([
+        mode === 'backups' ? request('/backups') : null,
+        request('/recovery'),
+      ]);
+      if (!Array.isArray(recovery)) throw new Error('The Recovery bin could not be loaded.');
+      if (isActive()) {
+        if (history) setBackups(history.backups);
+        setTrash(recovery);
+      }
+    }
+  }, [mode, request]);
+  useEffect(() => {
+    if (preview) return;
+    let active = true;
+    request('/access').then(result => loadControls(result, () => active))
+      .catch(failure => { if (active) setError(failure.message); });
+    return () => { active = false; };
+  }, [loadControls, request, preview]);
+  const load = async () => loadControls(await request('/access'));
   const run = async action => { if (busy) return; setBusy(true); setError(''); setNotice(''); try { await action(); } catch (e) { setError(e.message); } finally { setBusy(false); } };
   const security = settings.security || {}, backupSettings = settings.backups || {};
   const owner = access?.owner === true;
@@ -40,10 +60,13 @@ export default function SecurityRecoveryPanel({ mode = 'security', settings = {}
     if (await saveNativeWorkspaceFile(blob, filename, workspaceContext)) return;
     const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  if (preview && mode === 'recovery') return <SettingsGroup title="Recovery bin" description="Restore deleted records within their retention period.">
+    <p className="studio-muted">The Recovery bin is available in a connected studio.</p>
+  </SettingsGroup>;
   if (preview) return mode === 'backups' ? <WorkspaceBackupPanel /> : <section className="studio-card security-preview"><ShieldCheck size={24} /><h2>Security & access</h2><p className="studio-muted">Session controls and owner permissions are available when you sign in to your connected Studio OS.</p><span className="studio-badge">Sample preview</span></section>;
   if (!access) return <section className="studio-card"><p className="studio-muted" role="status">{error ? 'Security controls are unavailable until account permissions can be verified.' : 'Checking account permissions…'}</p>{error && <div className="studio-error" role="alert">{error}<button type="button" className="studio-button small" disabled={busy} onClick={() => run(load)}>Retry</button></div>}</section>;
   return <div className="security-recovery-panel">
-    {error && <div className="studio-error" role="alert">{error}</div>}
+    {error && <div className="studio-error" role="alert">{error}{mode === 'recovery' && !trash && <button type="button" className="studio-button small" disabled={busy} onClick={() => run(load)}>Retry</button>}</div>}
     {notice && <p className="studio-muted" role="status">{notice}</p>}
     {mode === 'security' ? <>
       <SettingsGroup defaultOpen title="Security policy" description="Session timeouts and administrator permissions.">
@@ -60,6 +83,7 @@ export default function SecurityRecoveryPanel({ mode = 'security', settings = {}
       </SettingsGroup>
     </> : <>
       {!owner ? <section className="studio-card"><h2>Backups & recovery</h2><p className="studio-muted">Only the studio owner can download or restore studio records.</p></section> : <>
+        {mode === 'backups' && <>
         <WorkspaceBackupPanel />
         <SettingsGroup title="Record snapshot schedule" description="Existing automatic records-only snapshots and retention.">
           <div className="studio-form-grid"><label className="studio-field">Scheduled backups<StudioSelect title="Scheduled backups" className="studio-input" value={backupSettings.enabled ? 'on' : 'off'} onChange={e => onChange('backups', 'enabled', e.target.value === 'on')}><option value="off">Off</option><option value="on">On</option></StudioSelect></label><label className="studio-field">Frequency<StudioSelect title="Backup frequency" className="studio-input" value={backupSettings.frequency || 'daily'} onChange={e => onChange('backups', 'frequency', e.target.value)}><option value="daily">Daily</option><option value="weekly">Weekly</option></StudioSelect></label><label className="studio-field">Retention (days)<input className="studio-input" type="number" min="1" max="365" value={backupSettings.retentionDays ?? 30} onChange={e => onChange('backups', 'retentionDays', Number(e.target.value))} /></label></div>
@@ -67,8 +91,9 @@ export default function SecurityRecoveryPanel({ mode = 'security', settings = {}
           <div className="security-actions"><button type="button" className="studio-button" disabled={busy} onClick={() => run(async () => { await request('/backups', 'POST', {}); await load(); setNotice('Encrypted backup created.'); })}>Create backup now</button></div>
         </SettingsGroup>
         <SettingsGroup title="Record snapshot history" description="Legacy records-only snapshots; these do not include team accounts or file attachments."><div className="security-session-list">{backups.map(row => <div key={row._id}><div><strong>{date(row.createdAt)}</strong><small>{row.kind} · {Object.values(row.counts || {}).reduce((sum, count) => sum + count, 0)} records · expires {date(row.expiresAt)}</small></div><div className="security-actions"><button type="button" className="studio-button" disabled={busy} onClick={() => run(() => download(row._id))}><Download size={15} />Download</button><button type="button" className="studio-button" disabled={busy} onClick={() => { setRestore({ type: 'backup', id: row._id }); setConfirmation(''); }}>Restore missing</button></div></div>)}{!backups.length && <p className="studio-muted">No snapshots yet.</p>}</div></SettingsGroup>
-        <SettingsGroup title="Recovery bin" description="Restore deleted records within their retention period."><div className="security-session-list">{trash.map(row => <div key={row._id}><div><strong>{row.label || row.model}</strong><small>{row.model} · Deleted {date(row.createdAt)} · expires {date(row.expiresAt)}</small></div><button type="button" className="studio-button" disabled={busy} onClick={() => { setRestore({ type: 'record', id: row._id }); setConfirmation(''); }}>Restore</button></div>)}{!trash.length && <p className="studio-muted">No deleted records to recover.</p>}</div></SettingsGroup>
-        {restore && <section className="studio-card security-confirmation" aria-label="Confirm restore"><h2>Review restore</h2><p className="studio-muted">Only missing records are added. Existing records are never overwritten. A conflict rolls back the entire restore. Restored document reminders stay off and client links must be issued again.</p><label className="studio-field">Type {restorePhrase}<input className="studio-input" value={confirmation} onChange={e => setConfirmation(e.target.value)} autoComplete="off" /></label><div className="security-actions"><button type="button" className="studio-button" onClick={() => setRestore(null)}>Cancel</button><button type="button" className="studio-button primary" disabled={busy || confirmation !== restorePhrase} onClick={() => run(async () => { const result = await request((restore.type === 'backup' ? '/backups/' : '/recovery/') + restore.id + '/restore', 'POST', { confirmation }); setRestore(null); await load(); setNotice(`Restored ${result.inserted} missing records; ${result.skipped} existing records kept.`); })}>Confirm restore</button></div></section>}
+        </>}
+        <SettingsGroup defaultOpen={mode === 'recovery'} title="Recovery bin" description="Restore deleted records within their retention period."><div className="security-session-list">{trash?.map(row => <div key={row._id}><div><strong>{row.label || row.model}</strong><small>{row.model} · Deleted {date(row.createdAt)} · expires {date(row.expiresAt)}</small></div><button type="button" className="studio-button" disabled={busy} onClick={() => { setRestore({ type: 'record', id: row._id }); setConfirmation(''); }}>Restore</button></div>)}{trash?.length === 0 && <p className="studio-muted">No deleted records to recover.</p>}{!trash && !error && <p className="studio-muted" role="status">Loading deleted records…</p>}</div></SettingsGroup>
+        {restore && <section className="studio-card security-confirmation" aria-label="Confirm restore"><h2>Review restore</h2><p className="studio-muted">A restore adds missing records only and preserves existing records. Restored documents need new client links and manually enabled reminders.</p><label className="studio-field">Type {restorePhrase}<input className="studio-input" value={confirmation} onChange={e => setConfirmation(e.target.value)} autoComplete="off" /></label><div className="security-actions"><button type="button" className="studio-button" onClick={() => setRestore(null)}>Cancel</button><button type="button" className="studio-button primary" disabled={busy || confirmation !== restorePhrase} onClick={() => run(async () => { const result = await request((restore.type === 'backup' ? '/backups/' : '/recovery/') + restore.id + '/restore', 'POST', { confirmation }); setRestore(null); await load(); setNotice(`Restored ${result.inserted} missing records; ${result.skipped} existing records kept.`); })}>Confirm restore</button></div></section>}
       </>}
     </>}
   </div>;

@@ -17,7 +17,7 @@ import StudioAppIcon from '../components/common/StudioAppIcon';
 import SettingsEditor from '../components/settings/SettingsEditor';
 import DocumentAutomationSummary from '../components/settings/DocumentAutomationSummary';
 import { saasRequest, workspaceId } from '../../saas/api';
-import { canReviewStudioSetup, STUDIO_SETUP_REVIEW_PATH } from '../../saas/studioSetupAccess';
+import { canReviewStudioSetup, STUDIO_SETUP_PATH, STUDIO_SETUP_REVIEW_PATH } from '../../saas/studioSetupAccess';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import { SettingsDisclosures } from '../components/settings/SettingsDisclosures';
 import WorkspacePreferences from '../components/settings/WorkspacePreferences';
@@ -29,6 +29,7 @@ import { formatWorkspaceTime } from '../../utils/workspaceLocale';
 import { studioImageUrl, studioImageFallback } from '../../utils/studioIdentity';
 import NativeDeviceSettings from '../../native/NativeDeviceSettings';
 import SecurityRecoveryPanel from '../components/settings/SecurityRecoveryPanel';
+import StudioStartFresh from '../components/settings/StudioStartFresh';
 import { settingsWithDefaults, changedSettingsSections, settingsSectionKeys, restoreSettingsSection } from '../../utils/settingsEditorState';
 import { createSettingsActionGate } from '../../utils/settingsActionGate';
 import './studioSettings.css';
@@ -48,16 +49,19 @@ const sections = [
   ['communication', 'Email & messages', 'Shared sender details and client message defaults.', Mail, 'cyan', 'Workflow', 'sender reply subject support hours terms deliverables mail test SMTP'],
   ['production', 'Production templates', 'Reusable checklists for thoughtful delivery.', Workflow, 'indigo', 'Workflow', 'photos album traditional video cinematic film stages tasks deadlines'],
   ['client', 'Client smart links', 'Choose what clients see in new shared documents.', Eye, 'rose', 'Workflow', 'visibility crew progress deliverables payment invoice schedule support chat expire link'],
-  ['connections', 'Connections', 'Writing assistants, Google Drive and your connected studio services.', Plug, 'violet', 'Workspace management', 'ChatGPT OpenAI Claude Anthropic OpenClaw assistants drafts Google Drive backups Gmail Google Calendar integrations website enquiry webhook whatsapp team'],
+  ['connections', 'Connections', 'Writing assistants, Google Drive and your connected studio services.', Plug, 'violet', 'Workspace management', `${IS_COMMERCIAL_DEPLOYMENT ? '' : 'OpenClaw '}ChatGPT OpenAI Claude Anthropic assistants drafts Google Drive backups Gmail Google Calendar integrations website enquiry webhook whatsapp team`],
   ['security', 'Security & access', 'Control access and manage signed-in devices.', ShieldCheck, 'slate', 'Workspace management', 'permissions password sessions devices sign out timeout owner policy'],
-  ['backups', 'Backups & recovery', 'Back up, restore or reset your studio data.', Database, 'blue', 'Workspace management', 'master reset delete all data backup restore export download retention bin trash'],
+  ['backups', IS_COMMERCIAL_DEPLOYMENT ? 'Studio data' : 'Backups & recovery',
+    IS_COMMERCIAL_DEPLOYMENT ? 'Restore deleted records or reset your studio.' : 'Back up, restore or reset your studio data.',
+    Database, 'blue', 'Workspace management', IS_COMMERCIAL_DEPLOYMENT ? 'reset start fresh delete remove all workspace data recovery bin restore' : 'master reset delete all data backup restore export download retention bin trash'],
 ].map(([id, title, description, icon, tone, group, keywords]) => ({ id, title, description, icon, tone, group, keywords }));
 
 export default function Settings() {
   const { data, loading, error, reload } = useWorkspaceData(['/api/studio/settings']);
   const { user, token } = useAuth();
   const fullAccess = hasFullModuleAccess(user);
-  const availableSections = fullAccess ? sections : sections.filter(section => ['workspace','language','notifications','device','profile','branding','connections','security'].includes(section.id));
+  const managedSections = IS_COMMERCIAL_DEPLOYMENT && !canReviewStudioSetup(user) ? sections.filter(section => section.id !== 'backups') : sections;
+  const availableSections = fullAccess ? managedSections : managedSections.filter(section => ['workspace','language','notifications','device','profile','branding','connections','security'].includes(section.id));
   const { preferences, resolvedTheme, update } = useStudioPreferences();
   const t = text => studioText(preferences.language, text);
   const [params, setParams] = useSearchParams(), navigate = useNavigate();
@@ -69,6 +73,7 @@ export default function Settings() {
   const saveLock = useRef(false), heading = useRef(null), pageTop = useRef(null);
   const actionGate = useRef(createSettingsActionGate());
   const reviewRequest = useRef(null);
+  const resetConfirmed = useRef(false);
   useEffect(() => () => reviewRequest.current?.abort(), []);
   const beginProfilePhotoUpload = useCallback(() => {
     const release = actionGate.current.begin('photo');
@@ -86,6 +91,7 @@ export default function Settings() {
   const requestedSection = params.get('section') ?? (IS_COMMERCIAL_DEPLOYMENT ? 'profile' : null);
   const tab = availableSections.some(section => section.id === requestedSection) ? requestedSection : null;
   const current = availableSections.find(section => section.id === tab);
+  const commercialData = IS_COMMERCIAL_DEPLOYMENT && tab === 'backups';
   const personalSection = current?.group === 'Personal';
   const scopeNote = <span className="settings-scope-note">{personalSection ? 'Applies to you' : 'Shared with your studio'}</span>;
   const showSetupAction = IS_COMMERCIAL_DEPLOYMENT && canReviewStudioSetup(user) &&
@@ -103,7 +109,7 @@ export default function Settings() {
   };
   useEffect(() => {
     if (!dirty) return;
-    const warn = event => { event.preventDefault(); event.returnValue = ''; };
+    const warn = event => { if (!resetConfirmed.current) { event.preventDefault(); event.returnValue = ''; } };
     const guardLink = event => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const anchor = event.target.closest?.('a[href]');
@@ -138,6 +144,11 @@ export default function Settings() {
       return result;
     } catch (failure) { setSaveError(['ECONNABORTED', 'ETIMEDOUT'].includes(failure.code) ? 'The studio did not confirm your save in time. Reload settings to check whether it was saved before retrying.' : recordError(failure)); throw failure; }
     finally { release(); saveLock.current = false; setBusy(false); }
+  };
+  const finishReset = () => {
+    resetConfirmed.current = true;
+    // Re-verify the session and let the workspace epoch invalidate old browser drafts and preferences.
+    window.location.replace(STUDIO_SETUP_PATH);
   };
   const restartSetup = async () => {
     const release = actionGate.current.begin('restart');
@@ -242,10 +253,13 @@ export default function Settings() {
               <div><h2 tabIndex={-1} ref={heading} lang={preferences.language} dir="auto">{t(current.title)}</h2><p>{current.description}</p></div>
               {IS_COMMERCIAL_DEPLOYMENT && scopeNote}
             </header>
-            <SettingsDisclosures key={tab}>
+            {commercialData ? <div className="settings-studio-data">
+              <StudioStartFresh disabled={busy || photoUploading} onComplete={finishReset} />
+              <SettingsDisclosures><SecurityRecoveryPanel mode="recovery" /></SettingsDisclosures>
+            </div> : <SettingsDisclosures key={tab}>
               {tab === 'device' ? <NativeDeviceSettings /> : tab === 'workspace' ? <WorkspacePreferences /> : tab === 'language' ? <LocalePreferences studioTimezone={values.timezone} /> : tab === 'notifications' ? <NotificationPreferences /> : ['security', 'backups'].includes(tab) ? <fieldset className="settings-edit-fields" disabled={busy}><SecurityRecoveryPanel mode={tab} settings={values} onChange={changeNested} /></fieldset> : <form id="studio-settings-form" onSubmit={event => { saveSettings(event).catch(() => {}); }} className="settings-editor"><fieldset className="settings-edit-fields" disabled={busy}><SettingsEditor tab={tab} values={values} change={change} changeNested={changeNested} beginProfilePhotoUpload={beginProfilePhotoUpload} saving={busy} /></fieldset></form>}
-            </SettingsDisclosures>
-            {settingsSectionKeys[tab] && <div className="settings-section-tools"><span>{changed.includes(tab) ? 'This section has unsaved changes.' : savedAt ? 'Saved at ' + formatWorkspaceTime(savedAt, preferences, values.timezone) : 'Changes apply after saving.'}</span><button type="button" className="settings-text-button" disabled={busy || photoUploading || !changed.includes(tab)} onClick={() => setConfirmation({ kind: 'section', section: tab })}><RotateCcw size={13} />Revert section</button></div>}
+            </SettingsDisclosures>}
+            {!commercialData && settingsSectionKeys[tab] && <div className="settings-section-tools"><span>{changed.includes(tab) ? 'This section has unsaved changes.' : savedAt ? 'Saved at ' + formatWorkspaceTime(savedAt, preferences, values.timezone) : 'Changes apply after saving.'}</span><button type="button" className="settings-text-button" disabled={busy || photoUploading || !changed.includes(tab)} onClick={() => setConfirmation({ kind: 'section', section: tab })}><RotateCcw size={13} />Revert section</button></div>}
           </div>
         </div>
       </>}

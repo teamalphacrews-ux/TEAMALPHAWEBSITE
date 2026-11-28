@@ -41,6 +41,7 @@ function nonceModel() {
 function createOAuthStateService({
   store = nonceModel(),
   User = require("../models/User"),
+  moduleId = "calendar",
   authorize = () => true,
   now = Date.now,
   randomBytes = crypto.randomBytes,
@@ -50,7 +51,7 @@ function createOAuthStateService({
     if (typeof userId !== "string" || !/^[a-f\d]{24}$/i.test(userId))
       throw fail(403);
     const user = await User.findOne({ _id: userId, role: "admin" });
-    if (!user || user.accountDisabled || user.role !== "admin" || !(await authorize(userId)) || !require("./moduleAccess").hasModule(user, "calendar")) throw fail(403);
+    if (!user || user.accountDisabled || user.role !== "admin" || !require("./moduleAccess").hasModule(user, moduleId) || !(await authorize(userId))) throw fail(403);
     return user;
   }
   async function issue(identity) {

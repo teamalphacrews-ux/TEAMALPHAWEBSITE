@@ -9,6 +9,7 @@ const { failure, validId } = require('./access');
 const { runInWorkspace } = require('./tenantContext');
 const billing = require('./billing');
 const auth = require('../middleware/auth');
+const archiveGate = require('../services/studioArchiveGate');
 const digest = token => crypto.createHash('sha256').update(token).digest('hex');
 const guarded = fn => async (req, res, next) => { try { await fn(req, res, next); } catch (error) {
   if (error.status === 400 && error.fieldErrors) return res.status(400).json({ msg: error.message, fieldErrors: error.fieldErrors });
@@ -18,10 +19,10 @@ const enabled = (req, res, next) => process.env.SAAS_ENABLED === 'true' ? next()
 const owner = (req, res, next) => req.saas?.membership.role === 'owner' ? next() : res.status(403).json({ msg: 'Only the studio owner can manage team access and the subscription.' });
 // Bound memory and throttle credential guessing. Production ingress should also enforce a shared rate limit.
 const attempts = new Map();
-function authLimit(req, res, next) {
+function authLimit(req, res, next, emailAddress = req.body?.email) {
   const trustedProxy = /^[12]$/.test(process.env.SAAS_TRUST_PROXY_HOPS || '');
   const source = trustedProxy ? req.ip : req.socket.remoteAddress || 'unknown', now = Date.now();
-  const email = service.emailOf(req.body?.email);
+  const email = service.emailOf(emailAddress);
   const keys = [[`source:${source}`, 3000], ...(email ? [[`account:${digest(email)}`, 20]] : [])];
   for (const [key, limit] of keys) {
     const row = attempts.get(key);
@@ -72,7 +73,7 @@ router.post('/invitations/:token/accept', enabled, authLimit, guarded(async (req
   if (!['active', 'trialing'].includes(accessStatus(workspace))) throw failure(402, 'Ask the studio owner to renew the subscription before joining.');
   // The invitation supplies the email. A caller cannot change the recipient.
   const account = await service.authenticateAccount({ ...req.body, email: invite.email }, { create: true });
-  const membership = await mongoose.connection.transaction(async session => {
+  const membership = await runInWorkspace(workspace, () => archiveGate.withShared(() => mongoose.connection.transaction(async session => {
     const existing = await models.Membership.exists({ workspaceId: workspace._id, accountId: account._id, state: 'active' }).session(session);
     if (existing) throw failure(409, 'You already belong to this studio. Sign in to continue.');
     const claimed = await models.Invitation.findOneAndUpdate(
@@ -82,7 +83,7 @@ router.post('/invitations/:token/accept', enabled, authLimit, guarded(async (req
     const user = await service.localMember(workspace, account, invite.role, session);
     return models.Membership.findOneAndUpdate({ workspaceId: workspace._id, accountId: account._id },
       { $set: { localUserId: user._id, role: invite.role, state: 'active' } }, { upsert: true, new: true, runValidators: true, session });
-  });
+  })));
   res.json(await service.issueSession(account, workspace, membership, req));
 }));
 
@@ -119,6 +120,29 @@ router.get('/setup', guarded(async (req, res) => res.json(await require('./works
 router.post('/setup/restart', guarded(async (req, res) => res.json(await require('./workspaceSetup').restartSetup(req.saas, req.body))));
 router.patch('/setup', guarded(async (req, res) => res.json(await require('./workspaceSetup').saveSetup(req.saas, req.body))));
 router.post('/setup/complete', guarded(async (req, res) => res.json(await require('./workspaceSetup').saveSetup(req.saas, req.body || {}, true))));
+router.use('/workspace/reset', (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+router.get('/workspace/reset', guarded(async (req, res) => {
+  res.json(require('./workspaceReset').getStatus(req.saas, req.user.id, req.sessionId));
+}));
+router.post('/workspace/reset', (req, res, next) => authLimit(req, res, next, req.saas.account.email), async (req, res) => {
+  try {
+    const result = await require('./workspaceReset').resetWorkspace(req.saas, req.user.id, req.sessionId, req.body);
+    try {
+      const io = req.app.get('io');
+      io?.to('admin').emit('workspace_data_changed', { dataVersion: (req.saas.workspace.resetRevision || 0) + 1 });
+      for (const socket of io?.sockets?.sockets?.values?.() || []) socket.disconnect(true);
+    } catch {
+      // The reset is already committed. Clients also revalidate their sessions.
+      console.warn('Workspace reset completed without realtime refresh.');
+    }
+    res.json(result);
+  } catch (error) {
+    const code = error.code === 'WORKSPACE_GENERATION_CHANGED' ? 'WORKSPACE_RESET_STALE' :
+      (error.status && typeof error.code === 'string' ? error.code : 'WORKSPACE_RESET_FAILED');
+    res.status(error.status || 503).json({ code, msg: error.status ? error.message :
+      'The studio could not be reset. Refresh to check your studio before trying again.' });
+  }
+});
 router.get('/workspaces', guarded(async (req, res) => {
   const memberships = await models.Membership.find({ accountId: req.saas.account._id, state: 'active' });
   const workspaces = await models.Workspace.find({ _id: { $in: memberships.map(item => item.workspaceId) }, state: 'active' });

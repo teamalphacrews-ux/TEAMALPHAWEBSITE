@@ -195,7 +195,7 @@ function createSocialAuth({ models = require('./models'), service = require('./s
       if (!await models.Account.exists({ _id: account._id, state: 'active' })) throw failure(403, 'This account is not available.');
       const consumed = await models.OAuthFlow.updateOne({ _id: flow._id, status: 'completing', expiresAt: { $gt: new Date(now()) } }, { $set: { status: 'consumed' }, $unset: { profile: 1, proofHash: 1 } });
       if (!consumed.modifiedCount) throw failure(401, 'The sign-in request has expired.');
-      return await service.issueSession(account, existing.workspace, existing.membership, req);
+      return await service.issueSession(account, existing.workspace, existing.membership, req, { accountAuthenticatedAt: now() });
     } catch (error) {
       await models.OAuthFlow.updateOne({ _id: flow._id, status: 'completing' }, { $set: { status: 'failed' }, $unset: { profile: 1, proofHash: 1 } }).catch(() => {});
       throw error;

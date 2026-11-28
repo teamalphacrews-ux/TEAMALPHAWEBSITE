@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowUpRight, Check, Clock3, FileText, LockKeyhole, MessageC
 import API from '../../utils/apiConfig';
 import { internationalWhatsAppPhone, safeWabbDashboardUrl, wabbAttemptStatus, wabbManualDraft, wabbManualTextReady, whatsappConnectionLabel, whatsappRequestId } from '../../utils/whatsappData';
 import { WorkspaceError, WorkspaceHeader } from '../components/operations/WorkspaceUI';
+import WhatsAppWebHandoff from '../components/integrations/WhatsAppWebHandoff';
 
 const attemptStates = ['sending', 'submitted', 'failed', 'unknown'];
 const safeError = error => typeof error?.response?.data?.error === 'string' ? error.response.data.error : 'The request could not be completed.';
@@ -77,11 +78,12 @@ export default function WabbWorkspace({ status, preview = false, busy = false, e
   const time = value => value && Number.isFinite(Date.parse(value)) ? new Intl.DateTimeFormat('en-IN', { timeZone: timezone, day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(value)) : '';
 
   return <div className="studio-whatsapp-page wa-wabb-page">
-    <WorkspaceHeader eyebrow="CLIENT COMMUNICATION" title="WhatsApp Business" description={preview ? 'A workspace for your studio’s WhatsApp communication.' : 'Your existing Wabb account. A simpler way to send a client message.'}>
+    <WorkspaceHeader eyebrow="CLIENT COMMUNICATION" title="WhatsApp Business" description={preview ? 'Explore WhatsApp Web access and the studio’s messaging workspace.' : 'Open WhatsApp Web or use Wabb to submit an individual reply.'}>
       <Link className="studio-button" to="/admin/integrations"><ArrowLeft size={15} />Integrations</Link>
       <button type="button" className="studio-button" onClick={onRefresh} disabled={preview || busy || sending}><RefreshCw size={15} />Refresh status</button>
       {dashboard && <a className="studio-button primary" href={dashboard} target="_blank" rel="noopener noreferrer">Open Wabb <ArrowUpRight size={15} /></a>}
     </WorkspaceHeader>
+    <WhatsAppWebHandoff />
     {demo && <div className="wa-wabb-demo" role="status"><ShieldCheck size={17} /><strong>DEMO ONLY — No Wabb account connected. Sending is disabled.</strong></div>}
     <WorkspaceError error={error} retry={onRefresh} />
     <section className="wa-connection-strip studio-card">

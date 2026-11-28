@@ -115,6 +115,7 @@ app.use('/api', require('./saas/publicTokens').createPublicWorkspaceMiddleware({
 // Sign-in and Calendar each verify their own state, browser proof and scopes.
 const { createGoogleOAuthHandlers } = require('./utils/oauthState');
 const { scopedCalendarReturn, workspaceToken } = require('./saas/calendarConnection');
+const gmailRoutes = require('./routes/gmailRoutes');
 const googleOAuth = createGoogleOAuthHandlers({ User, onConnected: async (user, req) => {
     const { setupGoogleWebhook, pollGoogleCalendar } = require('./services/googleCalendarService');
     if (!require('./saas/tenantContext').currentWorkspace()) await setupGoogleWebhook(user);
@@ -122,17 +123,20 @@ const googleOAuth = createGoogleOAuthHandlers({ User, onConnected: async (user, 
 } });
 const commercialCalendar = process.env.SAAS_ENABLED === 'true';
 if (commercialCalendar) {
+    // Gmail returns use a one-time workspace state rather than a signed-in session.
+    app.get('/api/integrations/gmail/begin', gmailRoutes.oauth.begin);
+    app.get('/api/integrations/gmail/callback', gmailRoutes.oauth.callback);
     app.get('/api/auth/google/begin', scopedCalendarReturn(googleOAuth.begin, 'ticket'));
     const calendarCallback = scopedCalendarReturn(googleOAuth.callback, 'state');
     app.get('/api/saas/oauth/google/callback', (req, res, next) =>
         typeof req.query.state === 'string' && workspaceToken.test(req.query.state)
             ? calendarCallback(req, res) : next());
-    app.post('/api/calendar/connect', auth, requireAdmin, (req, res) => {
-        if (req.saas?.membership.role !== 'owner') return res.status(403).json({ message: 'Only the studio owner can connect its Google calendar.' });
-        return googleOAuth.start(req, res);
-    });
 }
 app.use('/api', archiveGate.middleware());
+if (commercialCalendar) app.post('/api/calendar/connect', auth, requireAdmin, (req, res) => {
+    if (req.saas?.membership.role !== 'owner') return res.status(403).json({ message: 'Only the studio owner can connect its Google calendar.' });
+    return googleOAuth.start(req, res);
+});
 // The personal website retains shared support modules without publishing SaaS APIs.
 if (process.env.SAAS_ENABLED === 'true') app.use('/api/saas', require('./saas/routes'));
 
@@ -166,7 +170,9 @@ readiness.initialize(() => {
     const { forEachWorkspace } = require('./saas/workers');
     require('node-cron').schedule('* * * * *',()=>forEachWorkspace(() => archiveGate.withShared(() => require('./services/invoiceDelivery').runInvoiceDeliveryJobs(), { integrations: true })).catch(()=>console.error('Invoice delivery worker failed.')));
     const settingsJobs = () => {
-        forEachWorkspace(workspace => workspace ? require('./saas/service').expireInvitations(workspace._id) : Promise.resolve()).catch(() => console.error('Studio invitation cleanup failed.'));
+        forEachWorkspace(workspace => workspace
+            ? archiveGate.withShared(() => require('./saas/service').expireInvitations(workspace._id))
+            : Promise.resolve()).catch(() => console.error('Studio invitation cleanup failed.'));
         forEachWorkspace(() => archiveGate.withShared(() => require('./services/studioRecovery').runBackupJobs())).catch(() => console.error('Studio backup job failed.'));
         forEachWorkspace(() => archiveGate.withShared(() => require('./services/studioAutomation').runStudioAutomation(), { integrations: true })).catch(() => console.error('Studio notification job failed.'));
     };
@@ -292,7 +298,7 @@ authRouter.post('/google/webhook', async (req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/integrations/assistants', require('./routes/studioAssistantRoutes'));
 app.use('/api/integrations/drive-backups', require('./routes/driveBackupRoutes'));
-app.use('/api/integrations/gmail', require('./routes/gmailRoutes'));
+app.use('/api/integrations/gmail', gmailRoutes);
 app.use('/api/integrations/whatsapp', require('./routes/whatsappRoutes'));
 app.use('/api/studio/security', require('./routes/studioArchiveRoutes'));
 app.use('/api/studio/security', require('./routes/studioSecurityRoutes'));

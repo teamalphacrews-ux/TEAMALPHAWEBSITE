@@ -25,6 +25,7 @@ const workspace = new Schema({
   setupStep: { type: Number, enum: [1, 2, 3, 4] }, setupCompletedAt: Date,
   // Reviewing an established studio never changes its operational access.
   setupReviewStep: { type: Number, enum: [1, 2, 3, 4] }, setupRevision: { type: Number, min: 0 },
+  resetRevision: { type: Number, default: 0, min: 0, validate: Number.isSafeInteger },
   subscriptionStatus: { type: String, enum: ['trialing', 'pending', 'active', 'past_due', 'cancelled', 'expired'], default: 'trialing' },
   trialEndsAt: { type: Date, required: true }, seatLimit: { type: Number, default: 5 },
   seatsReserved: { type: Number, default: 1, min: 0 },

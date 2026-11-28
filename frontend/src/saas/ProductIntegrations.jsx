@@ -43,7 +43,7 @@ export default function ProductIntegrations() {
           <h2 id="sos-integrations-title">Powerful AI<br />integrations & tools.</h2>
           <div className="sos-integrations-intro">
             <p>Share project context with clients, keep delivery links close, and see where manual work or planned setup still applies.</p>
-            <p className="sos-ai-availability">ChatGPT & Claude integrations. <strong>Coming soon.</strong></p>
+            <p className="sos-ai-availability">Draft with ChatGPT or Claude. <strong>Studio owner setup with your own API account.</strong></p>
           </div>
         </div>
 

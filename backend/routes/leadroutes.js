@@ -11,6 +11,9 @@ const auth = require('../middleware/auth');
 const requireAdmin = require('../middleware/requireAdmin');
 const { createLeadHandler } = require('../utils/createLead');
 const pipeline = require('../services/enquiryPipeline');
+const { identifier } = require('../utils/contactRecords');
+const { recoverableDelete } = require('../services/studioRecovery');
+const { withRecordDeletion } = require('../services/studioArchiveGate');
 
 const router = express.Router();
 
@@ -34,7 +37,7 @@ router.post('/', createLeadHandler({ Lead, User, Notification, bcrypt, allowedLe
 // Existing admin/workspace permissions above also apply to this mutation.
 router.post('/:id/project', async (req, res) => {
     try {
-        const id = require('../utils/contactRecords').identifier(req.params.id, 'Enquiry');
+        const id = identifier(req.params.id, 'Enquiry');
         res.json(await require('../services/enquiryProject').projectForEnquiry(id));
     } catch (error) {
         res.status(error.status || 503).json({ error: error.status ? error.message : 'The enquiry project could not be prepared. Please retry.' });
@@ -124,19 +127,43 @@ router.post('/:id/remind/:photographerName', async (req, res) => {
     }
 });
 
+async function assertEnquiryUnlinked({ row, session }) {
+    const id = row._id;
+    const related = [
+        [require('../models/StudioProject'), { leadId: id }],
+        [require('../models/Quotation'), { lead: id }],
+        [require('../models/Invoice'), { leadId: id }],
+        [require('../models/Event'), { lead: id }],
+        [Task, { lead: id }],
+        [require('../models/AssetRecord'), { lead: id }],
+        [require('../models/WhatsAppConversation'), { leadId: id }],
+        [User, { role: 'client', leadId: id }],
+    ];
+    const blocked = () => Object.assign(new Error('This enquiry has linked records. Set its status to Archived to keep them connected.'), { status: 409 });
+    if (row.studioProjectId || row.quotationId || row.cloudLink || row.galleryTag || row.cloudPassword || Number(row.depositAmount) > 0 || ['Deposit Paid', 'Paid'].includes(row.paymentStatus)) throw blocked();
+    for (const [Model, filter] of related) {
+        if (await Model.exists(filter).session(session)) throw blocked();
+    }
+}
+
 // DELETE Lead
 router.delete('/:id', async (req, res) => {
     try {
+        const id = identifier(req.params.id, 'Enquiry');
         await require('../services/studioSecurity').assertPermission(req.user.id, 'deletion');
-        const lead = await Lead.findById(req.params.id);
-        if (!lead) return res.status(404).json({ error: 'Enquiry not found' });
-        if (lead.studioProjectId) {
-            const archived = await Lead.findByIdAndUpdate(lead._id, { $set: { status: 'Archived' } }, { new: true });
-            await pipeline.syncFromEnquiry(archived, { status: 'Archived' });
-            return res.json({ archived: true });
-        }
-        await require('../services/studioRecovery').recoverableDelete({ Model: Lead, filter: { _id: req.params.id }, actorId: req.user.id });
-        res.json({ message: "Lead deleted successfully" });
+        const result = await withRecordDeletion(async () => {
+            const lead = await Lead.findById(id);
+            if (!lead) return null;
+            if (lead.studioProjectId) {
+                const archived = await Lead.findByIdAndUpdate(lead._id, { $set: { status: 'Archived' } }, { new: true });
+                await pipeline.syncFromEnquiry(archived, { status: 'Archived' });
+                return { archived: true };
+            }
+            const removed = await recoverableDelete({ Model: Lead, filter: { _id: id }, actorId: req.user.id, beforeDelete: assertEnquiryUnlinked });
+            return removed && { message: 'Enquiry moved to the Recovery bin.' };
+        });
+        if (!result) return res.status(404).json({ error: 'Enquiry not found' });
+        res.json(result);
     } catch (err) {
         res.status(err.status || 500).json({ error: err.status ? err.message : 'The enquiry could not be removed.' });
     }

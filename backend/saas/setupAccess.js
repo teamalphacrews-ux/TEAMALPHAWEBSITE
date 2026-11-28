@@ -2,6 +2,7 @@
 // already use the workspace and keep access even if their profile is sparse.
 const requiresSetup = workspace => workspace?.setupStep != null;
 function allowedDuringSetup(method, path, role) {
+  if (role === 'owner' && ['GET', 'POST'].includes(method) && path === '/api/saas/workspace/reset') return true;
   if (method === 'GET') return [
     '/api/auth/me', '/api/saas/config', '/api/saas/setup', '/api/saas/workspaces',
   ].includes(path);

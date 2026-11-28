@@ -37,7 +37,7 @@ test("project validation rejects impossible ranges and forged identifiers", () =
   assert.deepEqual(records.project({ status: "Booked" }, true), { status: "Booked" });
 });
 test("contact and project endpoints reject unauthenticated and client requests before storage", async () => {
-  for (const [method, path] of [["GET", "/contacts"], ["POST", "/contacts"], ["GET", "/contacts/" + contactId], ["PATCH", "/contacts/" + contactId], ["GET", "/studio-projects"], ["POST", "/studio-projects"], ["GET", "/studio-projects/" + projectId], ["PATCH", "/studio-projects/" + projectId], ["POST", "/studio-projects/" + projectId + "/notes"], ["POST", "/contact-documents"], ["PATCH", "/contact-documents/" + projectId]]) {
+  for (const [method, path] of [["GET", "/contacts"], ["POST", "/contacts"], ["GET", "/contacts/" + contactId], ["PATCH", "/contacts/" + contactId], ["DELETE", "/contacts/" + contactId], ["GET", "/studio-projects"], ["POST", "/studio-projects"], ["GET", "/studio-projects/" + projectId], ["PATCH", "/studio-projects/" + projectId], ["POST", "/studio-projects/" + projectId + "/notes"], ["POST", "/contact-documents"], ["PATCH", "/contact-documents/" + projectId]]) {
     assert.equal((await dispatch(method, path, {}, "client")).status, 403, method + " " + path);
     assert.equal((await dispatch(method, path, {}, null)).status, 401, method + " " + path);
   }
@@ -140,4 +140,77 @@ test('contact detail requires explicit links or a unique matching identity for s
   assert.equal((await dispatch('GET', '/contacts/' + contactId)).status, 200);
   assert.deepEqual(calls.Invoice, { contactId });
   assert.deepEqual(calls.Quotation, { contactId });
+});
+
+test('contact deletion checks direct and legacy links in recovery and leaves linked contacts intact', async t => {
+  const recovery = require('../services/studioRecovery');
+  const transaction = { name: 'test transaction' };
+  const address = 'sam+test@example.test';
+  const contact = { _id: contactId, firstName: 'Sam', lastName: 'Example', email: address };
+  let stored = contact, linkedModel, addressOwners = 1, deletes = 0;
+  const filters = {};
+  t.mock.method(Contact, 'countDocuments', async ({ email }, options) => {
+    assert.equal(options.session, transaction);
+    assert.ok(email.test(address.toUpperCase()));
+    assert.equal(email.test('samtest@example.test'), false);
+    return addressOwners;
+  });
+  const relatedModels = ['StudioProject', 'Lead', 'Quotation', 'Invoice', 'Event', 'ContactDocument', 'WhatsAppConversation'];
+  for (const name of relatedModels) {
+    t.mock.method(require('../models/' + name), 'exists', filter => ({
+      session: async session => {
+        assert.equal(session, transaction);
+        filters[name] = filter;
+        return name === linkedModel ? { _id: projectId } : null;
+      },
+    }));
+  }
+  t.mock.method(recovery, 'recoverableDelete', async ({ Model, filter, actorId, beforeDelete }) => {
+    assert.equal(Model, Contact);
+    assert.equal(String(filter._id), contactId);
+    assert.equal(String(actorId), adminUserId);
+    if (!stored) return null;
+    await beforeDelete({ row: stored, session: transaction });
+    deletes++;
+    const removed = stored;
+    stored = null;
+    return removed;
+  });
+
+  const path = '/contacts/' + contactId;
+  for (const name of relatedModels) {
+    linkedModel = name;
+    assert.deepEqual(await dispatch('DELETE', path), {
+      status: 409,
+      body: { error: 'This contact has linked records. Archive the contact to keep its history.' },
+    });
+    assert.equal(stored, contact);
+  }
+  assert.equal(deletes, 0);
+  assert.deepEqual(filters.StudioProject, { $or: [{ contactId }, { additionalClients: contactId }] });
+  for (const name of ['Lead', 'Event', 'ContactDocument', 'WhatsAppConversation']) {
+    assert.deepEqual(filters[name], { contactId });
+  }
+  for (const [name, emailKey, parentKey] of [['Quotation', 'email', 'lead'], ['Invoice', 'clientEmail', 'leadId']]) {
+    const [direct, legacy] = filters[name].$or;
+    assert.deepEqual(direct, { contactId });
+    assert.ok(legacy[emailKey].test(address));
+    assert.ok(legacy.clientName.test('Sam Example'));
+    assert.equal(legacy.clientName.test('Sam'), false);
+    assert.equal(legacy.contactId, null);
+    assert.equal(legacy.studioProjectId, null);
+    assert.equal(legacy[parentKey], null);
+  }
+  assert.equal(filters.Invoice.$or[1].sourceQuotation, null);
+
+  linkedModel = undefined;
+  addressOwners = 2;
+  assert.equal((await dispatch('DELETE', '/contacts/invalid')).status, 400);
+  assert.deepEqual(await dispatch('DELETE', path), { status: 200, body: { success: true } });
+  assert.deepEqual(filters.Quotation, { contactId });
+  assert.deepEqual(filters.Invoice, { contactId });
+  assert.equal(deletes, 1);
+  assert.equal(stored, null);
+  assert.equal((await dispatch('DELETE', path)).status, 404);
+  assert.equal(deletes, 1);
 });

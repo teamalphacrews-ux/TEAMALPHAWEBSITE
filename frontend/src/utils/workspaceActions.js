@@ -14,3 +14,8 @@ export function canWriteWorkspaceModule(user, module, now = Date.now()) {
   if (role === 'owner' || role === 'admin') return true;
   return role === 'staff' && ['calendar', 'production', 'crew', 'support'].includes(module);
 }
+
+export function canDeleteWorkspaceModule(user, module, now = Date.now()) {
+  return user?.role === 'admin' && canWriteWorkspaceModule(user, module, now) &&
+    (user.workspaceRole || user.workspace?.role) !== 'staff';
+}

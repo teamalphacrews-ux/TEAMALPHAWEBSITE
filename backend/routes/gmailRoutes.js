@@ -3,6 +3,7 @@ const auth = require('../middleware/auth');
 const requireAdmin = require('../middleware/requireAdmin');
 const { createGmailOAuthHandlers } = require('../utils/gmailOAuth');
 const { createGmailService, safeGmailError } = require('../services/gmailService');
+const { currentWorkspace } = require('../saas/tenantContext');
 
 function createGmailRouter({ User = require('../models/User'), Connection = require('../models/GmailConnection'),
   store = require('../models/GmailOAuthNonce'), env = process.env, authenticate = auth, authorize = requireAdmin,
@@ -13,6 +14,13 @@ function createGmailRouter({ User = require('../models/User'), Connection = requ
   router.get('/begin', oauth.begin);
   router.get('/callback', oauth.callback);
   router.use(authenticate, authorize);
+  if (env.SAAS_ENABLED === 'true') router.use((req, res, next) => {
+    const workspace = currentWorkspace();
+    if (!workspace || workspace._id !== String(req.saas?.workspace?._id) || !['owner', 'admin'].includes(req.saas?.membership?.role)) {
+      return res.status(403).json({ message: 'Sign in to your studio with an administrator account to use Gmail.' });
+    }
+    return next();
+  });
   router.get('/status', async (req, res) => {
     try { res.json(await service.status(req.user.id)); }
     catch { res.status(503).json({ message: 'Gmail connection status is unavailable. Please try again.' }); }
@@ -35,5 +43,7 @@ function createGmailRouter({ User = require('../models/User'), Connection = requ
   return router;
 }
 
-module.exports = createGmailRouter();
+const oauth = createGmailOAuthHandlers();
+module.exports = createGmailRouter({ oauth });
 module.exports.createGmailRouter = createGmailRouter;
+module.exports.oauth = oauth;

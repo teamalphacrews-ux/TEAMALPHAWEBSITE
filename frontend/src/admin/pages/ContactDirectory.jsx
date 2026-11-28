@@ -1,8 +1,9 @@
 import { Mail, Pencil, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ContactDeleteButton } from '../components/contacts/ContactRecordActions';
 import { recordDate } from '../components/operations/workspaceData';
 
-export default function ContactDirectory({ contacts, onEdit }) {
+export default function ContactDirectory({ contacts, onEdit, onDelete }) {
   return <div className="record-people" role="group" aria-label="Contact cards">{contacts.map((contact, index) => {
     const name = [contact.firstName, contact.lastName].filter(Boolean).join(' ') || 'Unnamed contact';
     const initials = (name.match(/[\p{L}\p{N}]+/gu) || []).slice(0, 2).map(part => part[0]).join('').toUpperCase();
@@ -18,7 +19,10 @@ export default function ContactDirectory({ contacts, onEdit }) {
         {contact.phone && <a href={'tel:' + contact.phone}><Phone size={14} />{contact.phone}</a>}
       </div>
       <footer><small>{contact.createdAt && 'Added ' + recordDate(contact.createdAt)}</small>
-        {onEdit && <button type="button" className="record-open" aria-label={'Edit ' + name} onClick={() => onEdit(contact)}><Pencil size={15} /></button>}
+        {(onEdit || onDelete) && <div className="contact-record-actions">
+          {onEdit && <button type="button" className="record-open" aria-label={'Edit ' + name} onClick={() => onEdit(contact)}><Pencil size={15} /></button>}
+          {onDelete && <ContactDeleteButton contact={contact} onDelete={onDelete} />}
+        </div>}
       </footer></article>;
   })}</div>;
 }

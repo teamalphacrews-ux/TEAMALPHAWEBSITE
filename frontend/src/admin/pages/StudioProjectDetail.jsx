@@ -1,6 +1,7 @@
 import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
+import { canDeleteWorkspaceModule } from '../../utils/workspaceActions';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import StudioSelect from '../components/common/StudioSelect';
 import { useId, useRef, useState } from "react";
@@ -49,6 +50,7 @@ import { useSectionArrival } from "./useSectionArrival";
 import { projectChecklistSummary } from "../components/projects/projectReadiness";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 import {ProjectOverview,ProjectOperations} from '../components/projects/ProjectOperations';
+import ProjectDeleteDialog, { ProjectDeleteButton } from "../components/projects/ProjectDeleteDialog";
 import {useOfflineDraft,OfflineDraftStatus} from '../../offline/OfflineDrafts';
 import {useStudioPreferences} from '../components/common/StudioPreferences';
 import {useStudioIdentity} from '../../utils/studioIdentity';
@@ -79,6 +81,7 @@ function StudioProjectWorkspace({id}){
     ]),
     [detail, contacts = []] = data;
   const [editing, setEditing] = useState(false),
+    [deleting, setDeleting] = useState(false),
     [document, setDocument] = useState(null),
     [note, setNote] = useState(""),
     [busy, setBusy] = useState(false),
@@ -232,7 +235,9 @@ function StudioProjectWorkspace({id}){
           contact={contact}
           projectId={id}
           onDocument={openDocument}
-        /></div>
+        />
+        {IS_COMMERCIAL_DEPLOYMENT && canDeleteWorkspaceModule(user, 'projects') && <ProjectDeleteButton project={project} iconOnly={false} disabled={busy} onDelete={() => setDeleting(true)} />}
+        </div>
       </div>
       <WorkspaceError error={error} retry={reload} />
       <div data-section-selector={IS_COMMERCIAL_DEPLOYMENT ? "line" : undefined} className="project-hub-tabs project-contact-detail-tabs" style={{ '--project-contact-tab-count': tabs.length }} role="tablist" aria-label="Project sections" onKeyDown={navigateTabs}>{tabs.map(([value,label])=><button type="button" key={value} role="tab" id={`${tabsId}-tab-${value}`} aria-controls={`${tabsId}-panel-${value}`} aria-selected={tab===value} tabIndex={tab===value?0:-1} onClick={()=>setTab(value)}>{label}</button>)}{IS_COMMERCIAL_DEPLOYMENT && <SectionSelectionIndicator selection={tab} />}</div>
@@ -389,6 +394,11 @@ function StudioProjectWorkspace({id}){
           </ReferenceSection>
         </aside>}
       </div>
+      {deleting && <ProjectDeleteDialog
+        project={project}
+        onClose={() => setDeleting(false)}
+        onDeleted={() => navigate('/admin/studio-projects', { replace: true })}
+      />}
       {editing && (
         <ProjectForm
           project={project}

@@ -1,7 +1,7 @@
 import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSearch';
 import { useAuth } from '../../context/AuthContext';
-import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
+import { canDeleteWorkspaceModule, canWriteWorkspaceModule } from '../../utils/workspaceActions';
 import { canAccessStudioPath, hasModuleAccess } from '../../utils/moduleAccess';
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -9,6 +9,7 @@ import { ArrowUpRight, CalendarDays, LayoutGrid, List, Plus, Search, X } from "l
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import { ContactForm, ProjectForm } from "../components/contacts/ContactWorkflowUI";
 import { CompactProjects } from "../components/contacts/CompactWorkspaceRecords";
+import ProjectDeleteDialog, { ProjectDeleteButton } from "../components/projects/ProjectDeleteDialog";
 import {
   useWorkspaceData,
   recordDate,
@@ -64,6 +65,7 @@ export default function StudioProjects() {
   const [query, setQuery] = useState(""),
     [filter, setFilter] = useState("All Projects"),
     [creating, setCreating] = useState(false),
+    [deleting, setDeleting] = useState(null),
     [view, setView] = useState(() => {
       if (!IS_COMMERCIAL_DEPLOYMENT) return 'list';
       try { const saved = localStorage.getItem(preferenceKey); return ['list', 'timeline'].includes(saved) ? saved : 'grid'; }
@@ -74,6 +76,7 @@ export default function StudioProjects() {
   const [params, setParams] = useSearchParams();
   const createRequested = IS_COMMERCIAL_DEPLOYMENT && params.get('new') === '1';
   const canCreate = hasModuleAccess(user, 'contacts') && (!IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'projects'));
+  const canDelete = IS_COMMERCIAL_DEPLOYMENT && canDeleteWorkspaceModule(user, 'projects');
   const showCreate = (creating || createRequested) && canCreate;
   const requestedClient = createRequested ? params.get('contact') : null;
   const closeCreate = () => {
@@ -149,8 +152,8 @@ export default function StudioProjects() {
       <WorkspaceError error={error} retry={reload} />
       {visible.length ? (
         <>
-        {(!IS_COMMERCIAL_DEPLOYMENT || view === 'list') && <CompactProjects projects={visible} />}
-        {IS_COMMERCIAL_DEPLOYMENT && view === 'grid' && <ProjectSlate projects={visible} progress={projectProgress} pinned={pinned} togglePin={togglePin} canReadClients={hasModuleAccess(user, 'contacts')} />}
+        {(!IS_COMMERCIAL_DEPLOYMENT || view === 'list') && <CompactProjects projects={visible} onDelete={canDelete ? setDeleting : undefined} />}
+        {IS_COMMERCIAL_DEPLOYMENT && view === 'grid' && <ProjectSlate projects={visible} progress={projectProgress} pinned={pinned} togglePin={togglePin} canReadClients={hasModuleAccess(user, 'contacts')} onDelete={canDelete ? setDeleting : undefined} />}
         {IS_COMMERCIAL_DEPLOYMENT && view === 'timeline' && <ProjectTimeline projects={visible} progress={projectProgress} />}
         {(!IS_COMMERCIAL_DEPLOYMENT || view === 'list') &&
         <div className="reference-table-scroll reference-desktop-records">
@@ -162,6 +165,7 @@ export default function StudioProjects() {
                 <th>Type</th>
                 <th>Project date</th>
                 <th>Status</th>
+                {canDelete && <th scope="col" className="sx-project-table-actions">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -196,6 +200,7 @@ export default function StudioProjects() {
                       {project.status}
                     </span>
                   </td>
+                  {canDelete && <td className="sx-project-table-actions"><ProjectDeleteButton project={project} onDelete={setDeleting} /></td>}
                 </tr>
               ))}
             </tbody>
@@ -221,6 +226,14 @@ export default function StudioProjects() {
           onSaved={project => navigate(`/admin/studio-projects/${project._id}`, { replace: createRequested })}
         />
       )}
+      {deleting && <ProjectDeleteDialog
+        project={deleting}
+        onClose={() => setDeleting(null)}
+        onDeleted={async () => {
+          await reload();
+          setDeleting(null);
+        }}
+      />}
     </div>
   );
 }

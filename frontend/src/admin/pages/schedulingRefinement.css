@@ -47,6 +47,12 @@
 .studio-app.studio-app.studio-personal-workspace .scheduling-crew .ops-title-button { min-height:44px; padding:4px 0; font-size:14px; line-height:1.5; text-align:left; }
 .studio-app.studio-app.studio-personal-workspace .scheduling-crew :is(.ops-person-cell small,.ops-crew-table td small,.ops-crew-table td .studio-muted) { font-size:12px; line-height:1.6; }
 .studio-app.studio-app.studio-personal-workspace .scheduling-crew .ops-assignments-button { min-height:44px; font-size:12px; }
+.scheduling-crew .ops-crew-row-actions { gap: 8px; }
+.scheduling-crew .ops-crew-row-actions > button { min-height: 44px; white-space: nowrap; }
+.scheduling-crew .ops-crew-row-actions [data-variant="icon"] { min-width: 44px; }
+.ops-crew-editor-delete { margin-block-start: 20px; padding-block-start: 16px; border-block-start: 1px solid var(--studio-border); }
+.ops-crew-delete-note { margin: 0; color: var(--studio-muted); line-height: 1.6; }
+.ops-error + .ops-crew-delete-note { margin-block-start: 12px; }
 .studio-app.studio-app.studio-personal-workspace .scheduling-crew .ops-schedule-card { padding:20px; }
 .studio-app.studio-app.studio-personal-workspace .scheduling-crew .ops-schedule-card h2 { font-size:18px; }
 .studio-app.studio-app.studio-personal-workspace .scheduling-crew .ops-schedule-card p { font-size:12px; line-height:1.6; }

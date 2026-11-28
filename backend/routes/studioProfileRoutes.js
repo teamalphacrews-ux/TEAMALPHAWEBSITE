@@ -12,12 +12,12 @@ router.get('/profile-images/:id', async (req, res) => {
     try {
       const workspace = await require('../saas/models').Workspace.findOne({ _id: prefix[1], state: 'active' });
       if (!workspace) return res.sendStatus(404);
-      return await require('../saas/tenantContext').runInWorkspace(workspace, async () => {
+      return await require('../saas/tenantContext').runInWorkspace(workspace, () => require('../services/studioArchiveGate').withShared(async () => {
         const image = await Image.findById(prefix[2]).select('+data');
         if (!image) return res.sendStatus(404);
-        res.set({ 'Content-Type': image.mimeType, 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; sandbox", 'Cache-Control': 'public, max-age=86400, immutable' });
+        res.set({ 'Content-Type': image.mimeType, 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; sandbox", 'Cache-Control': 'public, max-age=0, must-revalidate' });
         res.send(image.data);
-      });
+      }));
     } catch { return res.sendStatus(503); }
   }
   if (!/^[a-f\d]{24}$/i.test(req.params.id)) return res.sendStatus(404);

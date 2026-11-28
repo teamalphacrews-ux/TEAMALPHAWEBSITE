@@ -3,9 +3,10 @@ import { useWorkspaceModuleSearch } from '../components/common/WorkspaceModuleSe
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import { useAuth } from '../../context/AuthContext';
 import { hasModuleAccess } from '../../utils/moduleAccess';
-import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
+import { canDeleteWorkspaceModule, canWriteWorkspaceModule } from '../../utils/workspaceActions';
 import StudioSelect from '../components/common/StudioSelect';
 import StudioButton from '../components/common/StudioButton';
+import { OperationsError, OperationsModal } from '../components/operations/OperationsUI';
 import useReducedStudioMotion from '../components/operations/useReducedStudioMotion';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion as Motion, useIsPresent } from 'framer-motion';
@@ -22,13 +23,14 @@ import "./studioRecordDesk.css";
 import RecordViewSwitch from './RecordViewSwitch';
 import { safeStudioReturn } from '../../utils/studioNavigation';
 import { quotationStatus } from '../../utils/quotationStatus';
-import { enquiryProjectId, enquiryQuoteId, enquiryProjectDestination, enquiryQuoteDestination } from '../../utils/enquiryWorkflow';
+import { enquiryProjectId, enquiryQuoteId, enquiryProjectDestination, enquiryQuoteDestination, enquiryRemovalAction } from '../../utils/enquiryWorkflow';
 
 function EnquiryRowActions({ lead, onSelect, onDelete }) {
   const openButton = useRef(null);
   const archiveHadFocus = useRef(false);
-  const linkedProject = Boolean(lead.studioProjectId);
-  const actionLabel = linkedProject ? 'Archive enquiry' : 'Delete enquiry';
+  const action = enquiryRemovalAction(lead);
+  const archive = action === 'archive';
+  const actionLabel = archive ? 'Archive enquiry' : 'Delete enquiry';
   useLayoutEffect(() => {
     if (lead.status === 'Archived' && archiveHadFocus.current) {
       archiveHadFocus.current = false;
@@ -39,15 +41,14 @@ function EnquiryRowActions({ lead, onSelect, onDelete }) {
     <button ref={openButton} type="button" className="studio-icon-button" aria-label={`Open ${lead.name}`} onClick={event => { event.stopPropagation(); onSelect(lead); }}>
       <ArrowUpRight size={18} aria-hidden="true" /><span className="studio-phone-action-label">Open<span className="enquiry-action-object"> enquiry</span></span>
     </button>
-    {onDelete && !(linkedProject && lead.status === 'Archived') && <StudioButton
-      type="button" variant="outline" size="sm"
+    {onDelete && action && <StudioButton
+      type="button" variant={archive ? 'outline' : 'destructive'} size="sm"
       className="studio-crm-remove-enquiry"
-      data-action={linkedProject ? 'archive' : 'delete'}
+      data-action={archive ? 'archive' : 'delete'}
       aria-label={`${actionLabel} for ${lead.name}`}
-      loadingLabel={`${linkedProject ? 'Archiving' : 'Deleting'} enquiry for ${lead.name}`}
-      icon={linkedProject ? Archive : Trash2}
-      onClick={event => { event.stopPropagation(); archiveHadFocus.current = linkedProject && document.activeElement === event.currentTarget; return onDelete(lead); }}
-    ><span>{linkedProject ? 'Archive' : 'Delete'}<span className="enquiry-action-object"> enquiry</span></span></StudioButton>}
+      icon={archive ? Archive : Trash2}
+      onClick={event => { event.stopPropagation(); archiveHadFocus.current = archive && document.activeElement === event.currentTarget; onDelete(lead); }}
+    ><span>{archive ? 'Archive' : 'Delete'}<span className="enquiry-action-object"> enquiry</span></span></StudioButton>}
   </div>;
 }
 
@@ -171,6 +172,7 @@ export function EnquiriesView({ leads = [], loading = false, error = "", query =
 export default function CRM() {
   const { user } = useAuth();
   const canUpdate = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'enquiries');
+  const canDelete = canDeleteWorkspaceModule(user, 'enquiries');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [leads, setLeads] = useState([]);
@@ -181,6 +183,10 @@ export default function CRM() {
   const [workflowBusy, setWorkflowBusy] = useState('');
   const [workflowError, setWorkflowError] = useState('');
   const workflowInFlight = useRef(false);
+  const [removal, setRemoval] = useState(null);
+  const [removalError, setRemovalError] = useState('');
+  const [removing, setRemoving] = useState(false);
+  const removalInFlight = useRef(false);
   const requestedLeadId = searchParams.get('lead');
   const activeLead = requestedLeadId ? leads.find(lead => lead._id === requestedLeadId) || (selectedLead?._id === requestedLeadId ? selectedLead : null) : null;
   const returnTo = searchParams.get('returnTo');
@@ -215,18 +221,49 @@ export default function CRM() {
     setSearchParams(next, { replace: true });
   };
   const closeLeadForm = () => { setShowLeadForm(false); if (searchParams.has("new")) { const next = new URLSearchParams(searchParams); next.delete("new"); setSearchParams(next, { replace: true }); } };
-  const deleteLead = async (lead) => {
-    if (lead.studioProjectId) {
-      if (!window.confirm(`Archive the enquiry for ${lead.name}? The linked project and documents will be retained.`)) return;
-      try {
-        const { data } = await axios.patch(`${studioApi}/api/leads/${lead._id}`, { status:"Archived" }, studioAuth());
-        updateLead(data); toast.success("Enquiry archived");
-      } catch { toast.error("Couldn’t archive the enquiry"); }
-      return;
+  const reviewRemoval = lead => {
+    if (!canDelete || removalInFlight.current) return;
+    const action = enquiryRemovalAction(lead);
+    if (!action) return;
+    setRemoval({ lead, archive: action === 'archive' });
+    setRemovalError('');
+  };
+  const closeRemoval = () => {
+    if (removalInFlight.current) return;
+    setRemoval(null);
+    setRemovalError('');
+  };
+  const confirmRemoval = async () => {
+    if (!canDelete || !removal || removalInFlight.current) return;
+    const { lead, archive } = removal;
+    const path = `${studioApi}/api/leads/${encodeURIComponent(lead._id)}`;
+    removalInFlight.current = true;
+    setRemoving(true);
+    setRemovalError('');
+    try {
+      if (archive) {
+        const { data } = await axios.patch(path, { status: 'Archived' }, studioAuth());
+        updateLead(data);
+        toast.success('Enquiry archived');
+      } else {
+        const { data } = await axios.delete(path, studioAuth());
+        if (data?.archived) {
+          updateLead({ _id: lead._id, status: 'Archived' });
+          toast.success('Linked enquiry archived');
+        } else {
+          setLeads(previous => previous.filter(item => item._id !== lead._id));
+          toast.success('Enquiry moved to the Recovery bin');
+        }
+      }
+      if (lead._id === requestedLeadId) closeLead();
+      setRemoval(null);
+    } catch (failure) {
+      setRemovalError(failure.response?.data?.error || failure.response?.data?.msg ||
+        (archive ? 'The enquiry could not be archived. Try again.' : 'The enquiry could not be deleted. Try again.'));
+    } finally {
+      removalInFlight.current = false;
+      setRemoving(false);
     }
-    if (!window.confirm(`Permanently delete the enquiry for ${lead.name}? This cannot be undone.`)) return;
-    try { await axios.delete(`${studioApi}/api/leads/${lead._id}`, studioAuth()); setLeads((previous) => previous.filter((item) => item._id !== lead._id)); toast.success("Enquiry deleted"); }
-    catch { toast.error("Couldn’t delete the enquiry"); }
   };
   const openInvoice = lead => navigate(invoiceDestination(invoices, lead));
   const continueEnquiry = async (lead, action) => {
@@ -267,8 +304,20 @@ export default function CRM() {
   };
   return <div className="studio-crm">
     {requestedLeadId && !loading && !error && !activeLead && <div className="studio-error" role="status"><span>This enquiry is unavailable or has been removed.</span><Link className="studio-button small" to={safeStudioReturn(returnTo)}>Back to overview</Link></div>}
-    <EnquiriesView leads={leads} loading={loading} error={error} query={searchQuery} onQuery={setSearchQuery} status={filterStatus} onStatus={setFilterStatus} sort={sortBy} onSort={setSortBy} onSelect={selectLead} onCreate={canUpdate ? () => setShowLeadForm(true) : undefined} onDelete={canUpdate ? deleteLead : undefined} onRefresh={() => { setLoading(true); setError(""); fetchLeads(); }} />
+    <EnquiriesView leads={leads} loading={loading} error={error} query={searchQuery} onQuery={setSearchQuery} status={filterStatus} onStatus={setFilterStatus} sort={sortBy} onSort={setSortBy} onSelect={selectLead} onCreate={canUpdate ? () => setShowLeadForm(true) : undefined} onDelete={canDelete ? reviewRemoval : undefined} onRefresh={() => { setLoading(true); setError(""); fetchLeads(); }} />
     {canUpdate && showLeadForm && <StudioLeadForm onClose={closeLeadForm} onSaved={createLead} />}
-    {activeLead && <StudioLeadDetails key={activeLead._id} lead={activeLead} onClose={closeLead} onUpdate={updateLead} onGenerateInvoice={hasModuleAccess(user, 'invoices') ? openInvoice : null} existingInvoice={invoiceForLead(invoices, activeLead)} onOpenProject={hasModuleAccess(user, 'projects') ? lead => continueEnquiry(lead, 'project') : null} onPrepareQuote={hasModuleAccess(user, 'quotations') && (hasModuleAccess(user, 'projects') || (IS_COMMERCIAL_DEPLOYMENT && enquiryQuoteId(activeLead))) ? lead => continueEnquiry(lead, 'quote') : null} workflowBusy={workflowBusy} workflowError={workflowError} />}
+    {activeLead && <StudioLeadDetails key={activeLead._id} lead={activeLead} onClose={closeLead} onUpdate={updateLead} onRemove={canDelete ? reviewRemoval : undefined} onGenerateInvoice={hasModuleAccess(user, 'invoices') ? openInvoice : null} existingInvoice={invoiceForLead(invoices, activeLead)} onOpenProject={hasModuleAccess(user, 'projects') ? lead => continueEnquiry(lead, 'project') : null} onPrepareQuote={hasModuleAccess(user, 'quotations') && (hasModuleAccess(user, 'projects') || (IS_COMMERCIAL_DEPLOYMENT && enquiryQuoteId(activeLead))) ? lead => continueEnquiry(lead, 'quote') : null} workflowBusy={workflowBusy} workflowError={workflowError} />}
+    {removal && <OperationsModal className="studio-enquiry-remove-overlay"
+      title={removal.archive ? 'Archive enquiry' : 'Delete enquiry'}
+      description={removal.lead.name} onClose={closeRemoval} busy={removing}
+      footer={<>
+        <StudioButton type="button" disabled={removing} onClick={closeRemoval}>Cancel</StudioButton>
+        <StudioButton type="button" variant={removal.archive ? 'primary' : 'destructive'} loading={removing}
+          loadingLabel={removal.archive ? 'Archiving enquiry' : 'Deleting enquiry'}
+          disabled={!canDelete} onClick={confirmRemoval}>{removal.archive ? 'Archive enquiry' : 'Delete enquiry'}</StudioButton>
+      </>}>
+      <p className="studio-muted">{removal.archive ? 'The enquiry will be archived. Its linked records will be kept.' : 'This enquiry will move to the Recovery bin. The studio owner can restore it from Settings → Data.'}</p>
+      {removalError && <OperationsError>{removalError}</OperationsError>}
+    </OperationsModal>}
   </div>;
 }

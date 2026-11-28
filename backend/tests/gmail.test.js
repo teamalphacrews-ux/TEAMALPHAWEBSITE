@@ -4,6 +4,7 @@ const { google } = require('googleapis');
 const { createOAuthStateService } = require('../utils/oauthState');
 const { createGmailOAuthHandlers } = require('../utils/gmailOAuth');
 const { GMAIL_SCOPE, gmailConfiguration, gmailSetupChecks, sealTokens, openTokens, listOptions, messageDetail, createGmailService, safeGmailError } = require('../services/gmailService');
+const { currentWorkspace, runInWorkspace, workspaceDatabase } = require('../saas/tenantContext');
 
 const id = '507f1f77bcf86cd799439011', other = '507f1f77bcf86cd799439012';
 const env = { NODE_ENV: 'production', GOOGLE_CLIENT_ID: 'test-id', GOOGLE_CLIENT_SECRET: 'private-client-secret', GMAIL_REDIRECT_URI: 'https://api.example.test/api/integrations/gmail/callback', FRONTEND_URL: 'https://studio.example.test', VAULT_SECRET: '12345678901234567890123456789012' };
@@ -53,12 +54,55 @@ function oauthFixture(extra = {}) {
     logger: { warn: (...args) => f.logs.push(args) }, ...extra });
   return { ...f, handlers, exchanges, profiles };
 }
-async function opened(f) {
-  const start = response(); await f.handlers.start({ user: identity }, start);
+async function opened(f, workspace = null) {
+  const start = response(); await runInWorkspace(workspace, () => f.handlers.start({ user: identity }, start));
   const beginUrl = new URL(start.body.url), begin = response();
   await f.handlers.begin({ query: { ticket: beginUrl.searchParams.get('ticket') } }, begin);
   const state = new URL(begin.location).searchParams.get('state');
   return { start, begin, request: { query: { state, code: 'private-authorization-code' }, headers: { cookie: begin.cookies[0].name + '=' + begin.cookies[0].value } } };
+}
+
+const commercialEnv = {
+  ...env, SAAS_ENABLED: 'true', API_PUBLIC_URL: 'https://api.example.test',
+  SAAS_GOOGLE_CLIENT_ID: 'studio-oauth-client', SAAS_GOOGLE_CLIENT_SECRET: 'studio-oauth-secret',
+};
+function commercialFixture(extra = {}) {
+  const workspaces = ['507f1f77bcf86cd7994390a1', '507f1f77bcf86cd7994390b1'].map(_id => ({
+    _id, databaseName: workspaceDatabase(_id), state: 'active', subscriptionStatus: 'active',
+  }));
+  const tenants = new Map(workspaces.map(workspace => {
+    const store = fixture();
+    store.admin.moduleAccess = ['email'];
+    return [workspace._id, store];
+  }));
+  const memberships = new Map(workspaces.map(workspace => [workspace._id, {
+    workspaceId: workspace._id, localUserId: id, accountId: workspace._id, role: 'admin', state: 'active',
+  }]));
+  const accounts = new Map(workspaces.map(workspace => [workspace._id, { _id: workspace._id, state: 'active' }]));
+  const workspaceModels = {
+    Workspace: { findOne: async filter => workspaces.find(workspace => workspace._id === filter._id && workspace.state === filter.state) || null },
+    Membership: { findOne: async filter => {
+      const member = memberships.get(filter.workspaceId);
+      return member && member.localUserId === filter.localUserId && member.state === filter.state && filter.role.$in.includes(member.role) ? member : null;
+    } },
+    Account: { exists: async filter => accounts.get(filter._id)?.state === filter.state },
+  };
+  const model = (field, methods) => Object.fromEntries(methods.map(method => [method, (...args) => {
+    const tenant = tenants.get(currentWorkspace()?._id);
+    assert.ok(tenant, 'Gmail must never access a personal or unscoped store');
+    return tenant[field][method](...args);
+  }]));
+  const deps = {
+    User: model('User', ['findOne']),
+    Connection: model('Connection', ['findOne', 'findOneAndUpdate', 'updateOne']),
+    store: model('store', ['create', 'findOneAndDelete']),
+  };
+  const f = oauthFixture({
+    ...deps, env: commercialEnv, workspaceModels,
+    getProfile: async () => ({ emailAddress: currentWorkspace()._id + '@example.test' }),
+    ...extra,
+  });
+  return { ...f, ...deps, workspaces, tenants, memberships, accounts };
 }
 
 test('Gmail configuration is independent from Calendar callback and requires encryption', () => {
@@ -85,6 +129,86 @@ test('Gmail setup diagnostics show readiness without exposing credentials', () =
   assert.equal(incomplete.find(check => check.id === 'callback').ready, false);
   assert.equal(incomplete.find(check => check.id === 'encryption').ready, false);
   assert.doesNotMatch(JSON.stringify(incomplete), /private-client-secret|12345678901234567890123456789012|test-id/);
+});
+
+test('commercial Gmail uses the commercial Google identity or an explicitly configured Gmail client', () => {
+  assert.equal(gmailConfiguration(commercialEnv).clientId, 'studio-oauth-client');
+  assert.equal(gmailConfiguration({ ...commercialEnv, GMAIL_CLIENT_ID: 'gmail-id', GMAIL_CLIENT_SECRET: 'gmail-secret' }).clientId, 'gmail-id');
+  const personalOnly = { ...commercialEnv, SAAS_GOOGLE_CLIENT_ID: '', SAAS_GOOGLE_CLIENT_SECRET: '' };
+  assert.throws(() => gmailConfiguration(personalOnly));
+  assert.equal(gmailSetupChecks(personalOnly).find(check => check.id === 'oauth').ready, false);
+  const wrongOrigin = { ...commercialEnv, GMAIL_REDIRECT_URI: 'https://personal.example.test/api/integrations/gmail/callback' };
+  assert.throws(() => gmailConfiguration(wrongOrigin));
+  assert.equal(gmailSetupChecks(wrongOrigin).find(check => check.id === 'callback').ready, false);
+});
+
+test('commercial Gmail consent is tenant- and browser-bound and supports Email-only admins', async () => {
+  const f = commercialFixture();
+  const [a, b] = f.workspaces;
+  const first = await opened(f, a);
+  const second = await opened(f, b);
+  assert.match(first.start.body.url, new RegExp('ticket=gmail\\.' + a._id + '\\.[a-f0-9]{64}$'));
+  assert.match(second.request.query.state, new RegExp('^gmail\\.' + b._id + '\\.[a-f0-9]{64}$'));
+  assert.notEqual(first.begin.cookies[0].name, second.begin.cookies[0].name);
+  for (const state of [
+    first.request.query.state.replace(a._id, b._id),
+    first.request.query.state.split('.').at(-1),
+    first.request.query.state.replace(/^gmail\./, 'cal.'),
+  ]) {
+    const rejected = response();
+    await f.handlers.callback({ ...first.request, query: { ...first.request.query, state } }, rejected);
+    assert.match(rejected.location, /step=state/);
+  }
+  const wrongBrowser = response();
+  await f.handlers.callback({ ...first.request, headers: second.request.headers }, wrongBrowser);
+  assert.match(wrongBrowser.location, /step=state/);
+  assert.equal(f.exchanges.length, 0);
+  for (const [flow, workspace] of [[first, a], [second, b]]) {
+    const result = response();
+    await f.handlers.callback(flow.request, result);
+    assert.match(result.location, /gmail=connected/);
+    assert.equal(f.tenants.get(workspace._id).connections.get(id).email, workspace._id + '@example.test');
+  }
+  const replay = response();
+  await f.handlers.callback(first.request, replay);
+  assert.match(replay.location, /step=state/);
+  assert.equal(f.exchanges.length, 2);
+  const envelope = f.tenants.get(a._id).connections.get(id).tokenEnvelope;
+  assert.equal(runInWorkspace(a, () => openTokens(envelope, id, commercialEnv).access_token), credentials.access_token);
+  assert.throws(() => runInWorkspace(b, () => openTokens(envelope, id, commercialEnv)));
+  assert.throws(() => openTokens(envelope, id, commercialEnv));
+});
+
+test('commercial Gmail rechecks local module access, workspace membership and account state before writing', async () => {
+  const f = commercialFixture({
+    getProfile: async () => {
+      f.accounts.get(currentWorkspace()._id).state = 'disabled';
+      return { emailAddress: 'fixture@example.test' };
+    },
+  });
+  const [a] = f.workspaces;
+  const unscoped = response();
+  await f.handlers.start({ user: identity }, unscoped);
+  assert.equal(unscoped.statusCode, 403);
+  const expired = await opened(f, a), revoked = response();
+  f.memberships.get(a._id).state = 'removed';
+  await f.handlers.callback(expired.request, revoked);
+  assert.match(revoked.location, /step=state/);
+  assert.equal(f.exchanges.length, 0);
+
+  f.memberships.get(a._id).state = 'active';
+  const roleChanged = await opened(f, a), denied = response();
+  f.tenants.get(a._id).admin.moduleAccess = ['calendar'];
+  await f.handlers.callback(roleChanged.request, denied);
+  assert.match(denied.location, /step=state/);
+  assert.equal(f.exchanges.length, 0);
+
+  f.tenants.get(a._id).admin.moduleAccess = ['email'];
+  const inFlight = await opened(f, a), inactive = response();
+  await f.handlers.callback(inFlight.request, inactive);
+  assert.match(inactive.location, /step=account/);
+  assert.equal(f.exchanges.length, 1);
+  assert.equal(f.tenants.get(a._id).connections.size, 0);
 });
 
 test('expired Gmail access is reported as reconnect needed while retaining account identity', async () => {

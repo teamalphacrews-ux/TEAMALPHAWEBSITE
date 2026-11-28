@@ -6,8 +6,10 @@ export const gmailRequest = async (method, path, { params, signal } = {}) => (aw
   headers: { 'x-auth-token': localStorage.getItem('token') || '' }, params, signal,
 })).data;
 
-export const gmailError = error => typeof error?.response?.data?.message === 'string'
-  ? error.response.data.message : 'Email could not be loaded. Please try again.';
+export const gmailError = error => {
+  const message = error?.response?.data?.message || error?.response?.data?.msg;
+  return typeof message === 'string' ? message : 'Email could not be loaded. Please try again.';
+};
 
 export function gmailHandoff(result, apiBase = API_BASE_URL, pageOrigin = window.location.origin) {
   const failure = () => new Error('Gmail connection could not be opened. Please try again.');
@@ -18,6 +20,6 @@ export function gmailHandoff(result, apiBase = API_BASE_URL, pageOrigin = window
   const localProxy = local(target) && local(api) && local(page);
   if ((!localProxy && target.origin !== api.origin) || target.pathname !== '/api/integrations/gmail/begin' ||
     target.username || target.password || target.hash || (target.protocol !== 'https:' && !(target.protocol === 'http:' && local(target))) ||
-    [...target.searchParams.keys()].length !== 1 || !/^[a-f0-9]{64}$/.test(target.searchParams.get('ticket') || '')) throw failure();
+    [...target.searchParams.keys()].length !== 1 || !/^(?:gmail\.[a-f0-9]{24}\.)?[a-f0-9]{64}$/.test(target.searchParams.get('ticket') || '')) throw failure();
   return target.href;
 }

@@ -3,9 +3,11 @@ const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { AsyncResource } = require('node:async_hooks');
 const { createArchiveGate, EXCLUSIVE_LEASE_MS } = require('../services/studioArchiveGate');
+const { currentWorkspace, runInWorkspace } = require('../saas/tenantContext');
 
-function fixture({ paused = false, workspace = null } = {}) {
-  let time = 1_000_000, sequence = 0, state;
+function fixture({ paused = false, workspace = () => null, enableTenants = () => false } = {}) {
+  let time = 1_000_000, sequence = 0;
+  const states = new Map();
   const timers = [], calls = [];
   const clone = value => value == null ? value : structuredClone(value);
   const matches = (filter, row) => {
@@ -31,7 +33,7 @@ function fixture({ paused = false, workspace = null } = {}) {
     }
     return true;
   };
-  function apply(update, filter) {
+  function apply(state, update, filter) {
     if (update.$push?.readers) state.readers.push(clone(update.$push.readers));
     if (update.$pull?.readers) state.readers = state.readers.filter(reader => !matches(update.$pull.readers, reader));
     for (const [key, value] of Object.entries(update.$set || {})) {
@@ -48,22 +50,29 @@ function fixture({ paused = false, workspace = null } = {}) {
     findOneAndUpdate(filter, update, options = {}) {
       return q(() => {
         calls.push(['findOneAndUpdate', filter, update]);
-        if (!state && options.upsert) state = { _id: 'legacy', ...clone(update.$setOnInsert), integrationsPaused: paused };
+        if (!states.has(filter._id) && options.upsert) states.set(filter._id, { _id: filter._id, ...clone(update.$setOnInsert), integrationsPaused: paused });
+        const state = states.get(filter._id);
         if (!matches(filter, state)) return null;
-        apply(update, filter); return clone(state);
+        apply(state, update, filter); return clone(state);
       });
     },
-    findById() { return q(() => clone(state)); },
-    findOne(filter) { return q(() => matches(filter, state) ? clone(state) : null); },
+    findById(id) { return q(() => clone(states.get(id))); },
+    findOne(filter) {
+      return q(() => {
+        const state = states.get(filter._id);
+        return matches(filter, state) ? clone(state) : null;
+      });
+    },
     async updateOne(filter, update) {
       calls.push(['updateOne', filter, update]);
+      const state = states.get(filter._id);
       if (!matches(filter, state)) return { matchedCount: 0, modifiedCount: 0 };
-      apply(update, filter); return { matchedCount: 1, modifiedCount: 1 };
+      apply(state, update, filter); return { matchedCount: 1, modifiedCount: 1 };
     },
   };
   const gate = createArchiveGate({ State, now: () => time, randomId: () => 'lease-' + (++sequence),
-    workspace: () => workspace, setTimer: callback => { timers.push(callback); return { unref() {} }; }, clearTimer() {} });
-  return { gate, State, calls, timers, get state() { return state; }, advance(ms) { time += ms; } };
+    workspace, enableTenants, setTimer: callback => { timers.push(callback); return { unref() {} }; }, clearTimer() {} });
+  return { gate, State, calls, timers, get state() { return states.get('legacy'); }, advance(ms) { time += ms; } };
 }
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 
@@ -143,11 +152,36 @@ test('a stale exclusive owner cannot clear a replacement lease or commit after e
 });
 
 test('tenant jobs bypass the personal gate and cannot acquire personal exclusive maintenance', async () => {
-  const f = fixture({ workspace: { _id: 'a'.repeat(24) } });
+  const f = fixture({ workspace: () => ({ _id: 'a'.repeat(24) }) });
   assert.equal(await f.gate.withShared(() => 'tenant'), 'tenant');
   await f.gate.assertWrite({ modelName: 'Invoice' });
   await assert.rejects(f.gate.withExclusive(() => {}), error => error.status === 403);
   assert.equal(f.calls.length, 0);
+});
+
+test('commercial leases fence an old workspace snapshot and remain independent across studios', async () => {
+  const f = fixture({ workspace: currentWorkspace, enableTenants: () => true });
+  const firstId = 'a'.repeat(24), secondId = 'b'.repeat(24);
+  const first = { _id: firstId, databaseName: 'studio_' + firstId, resetRevision: 0 };
+  const second = { _id: secondId, databaseName: 'studio_' + secondId, resetRevision: 0 };
+  await runInWorkspace(first, () => f.gate.withShared(async lease => {
+    await runInWorkspace(second, () => f.gate.withExclusive(async secondLease => {
+      assert.equal(secondLease.key, second.databaseName);
+      await f.gate.assertExclusive();
+    }));
+    assert.equal(lease.key, first.databaseName);
+    await f.gate.assertWrite({ modelName: 'Task' });
+    await assert.rejects(f.gate.withExclusive(() => assert.fail('Shared studio cannot reset')), error => error.status === 409);
+  }));
+  await runInWorkspace(first, () => f.gate.withExclusive(async lease => {
+    await f.gate.assertExclusive();
+    await f.State.updateOne({ _id: lease.key, maintenanceToken: lease.token }, { $inc: { dataVersion: 1 } });
+  }));
+  await assert.rejects(runInWorkspace(first, () => f.gate.withShared(() => assert.fail('Old studio must reload'))),
+    error => error.code === 'WORKSPACE_GENERATION_CHANGED');
+  await runInWorkspace({ ...first, resetRevision: 1 }, () => f.gate.withShared(async lease => assert.equal(lease.dataVersion, 1)));
+  await runInWorkspace(second, () => f.gate.withShared(async lease => assert.equal(lease.dataVersion, 0)));
+  assert.equal(f.state, undefined);
 });
 
 test('paused integrations skip provider workers without running their callbacks', async () => {

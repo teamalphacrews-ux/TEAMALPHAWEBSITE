@@ -80,14 +80,19 @@ function store(seed = []) {
 function fixture({ environment = env, account, member = false, verifyFailure = false } = {}) {
   let clock = time, sequence = 0, provisions = 0, sessions = 0;
   const models = { OAuthFlow: store(), Account: store(account ? [account] : []), Membership: store(member ? [{ _id: 'member-1', accountId: account._id, workspaceId: 'workspace-1', state: 'active', role: 'owner' }] : []), Workspace: store(member ? [{ _id: 'workspace-1', state: 'active' }] : []) };
+  const authenticatedAt = [];
   const service = {
     text(value, field) { if (typeof value !== 'string' || !value.trim()) throw Object.assign(new Error('Enter ' + field), { status: 400 }); return value.trim(); },
     async provisionWorkspace(person, name) { provisions++; await Promise.resolve(); const workspace = await models.Workspace.create({ name }); const membership = await models.Membership.create({ accountId: person._id, workspaceId: workspace._id, role: 'owner' }); return { workspace, membership }; },
-    async issueSession(person, workspace) { sessions++; return { token: 'test-session', user: { role: 'admin', email: person.email, workspace: { id: workspace._id } } }; },
+    async issueSession(person, workspace, _membership, _req, proof) {
+      sessions++;
+      authenticatedAt.push(proof?.accountAuthenticatedAt);
+      return { token: 'test-session', user: { role: 'admin', email: person.email, workspace: { id: workspace._id } } };
+    },
   };
   const calls = [];
   const auth = createSocialAuth({ models, service, env: environment, now: () => clock, tokenFactory: () => (++sequence).toString(16).padStart(64, '0'), fetchImpl: async (url, options) => { calls.push({ url, options }); return jsonResponse({ id_token: 'provider-token-never-stored', access_token: 'not-retained', refresh_token: 'not-retained' }); }, verifyIdToken: async (_provider, _token, verification) => { assert.match(verification.nonceHash, /^[a-f\d]{64}$/); if (verifyFailure) throw Object.assign(new Error('Identity verification failed.'), { status: 401 }); return { subject: 'provider-person-1', email: 'owner@example.com', firstName: 'Asha', lastName: '' }; } });
-  return { auth, models, calls, service, advance: ms => { clock += ms; }, counts: () => ({ provisions, sessions }) };
+  return { auth, models, calls, service, authenticatedAt, advance: ms => { clock += ms; }, counts: () => ({ provisions, sessions }) };
 }
 async function ready(f) {
   const started = await f.auth.start('google', 'signup');
@@ -126,12 +131,13 @@ test('private Google login provisions one first studio for the configured verifi
   assert.equal(setup.needsWorkspace, true);
   assert.equal(setup.profile.email, testerEmail);
   assert.deepEqual(f.counts(), { provisions: 0, sessions: 0 });
-  const first = await f.auth.complete({ ...body, studioName: 'Private Studio' }, {});
+  const first = await f.auth.complete({ ...body, studioName: 'Private Studio', accountAuthenticatedAt: time + 3600000 }, {});
   assert.equal(first.user.email, testerEmail);
   assert.equal(f.models.Membership.rows[0].role, 'owner');
   const repeat = await f.auth.complete(await f.authorize(), {});
   assert.equal(repeat.user.workspace.id, first.user.workspace.id);
   assert.deepEqual(f.counts(), { provisions: 1, sessions: 2 });
+  assert.deepEqual(f.authenticatedAt, [time, time]);
 });
 test('closed registration checks the exact Google-verified Gmail and rejects unrelated sign-in methods', async () => {
   const appleKey = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' }).privateKey.export({ type: 'pkcs8', format: 'pem' });

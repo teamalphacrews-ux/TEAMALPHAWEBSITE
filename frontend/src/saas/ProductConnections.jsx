@@ -11,8 +11,8 @@ import './productConnections.css';
 const connections = [
   { id: 'email', icon: Mail, image: gmailLogo, label: 'Email', status: 'Setup planned', x: 12.5, y: 0 },
   { id: 'whatsapp', icon: MessageCircle, image: whatsappLogo, label: 'WhatsApp', status: 'Manual sharing', x: 37.5, y: 0 },
-  { id: 'chatgpt', image: chatgptLogo, label: 'ChatGPT', status: 'Coming soon', x: 62.5, y: 0 },
-  { id: 'claude', image: claudeLogo, label: 'Claude', status: 'Coming soon', x: 87.5, y: 0 },
+  { id: 'chatgpt', image: chatgptLogo, label: 'ChatGPT', status: 'Owner connects', x: 62.5, y: 0 },
+  { id: 'claude', image: claudeLogo, label: 'Claude', status: 'Owner connects', x: 87.5, y: 0 },
   { id: 'calendar', icon: CalendarDays, image: calendarLogo, label: 'Calendar', status: 'Owner connects', x: 18, y: 74 },
   { id: 'smart-link', icon: Link2, label: 'Client Smart Link', status: 'Project sharing', x: 50, y: 74 },
   { id: 'payments', icon: CreditCard, label: 'Payment Gateway', status: 'Setup pending', x: 82, y: 74 },

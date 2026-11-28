@@ -7,14 +7,14 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { X, CalendarDays, MapPin, Mail, Phone, ArrowUpRight, Pencil, Check, Plus, Trash2, Circle, CheckCircle2, Users, Wallet, FolderOpen, FileText, Loader2 } from "lucide-react";
+import { X, CalendarDays, MapPin, Mail, Phone, ArrowUpRight, Pencil, Check, Plus, Archive, Trash2, Circle, CheckCircle2, Users, Wallet, FolderOpen, FileText, Loader2 } from "lucide-react";
 import StudioLeadForm from "./StudioLeadForm";
 import StudioButton from '../common/StudioButton';
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
 import { studioDayKey } from '../../../utils/studioTime';
 import { useStudioPreferences } from '../common/StudioPreferences';
 import { canWriteWorkspaceModule } from '../../../utils/workspaceActions';
-import { enquiryNextStep, enquiryProjectId, enquiryQuoteId } from '../../../utils/enquiryWorkflow';
+import { enquiryNextStep, enquiryProjectId, enquiryQuoteId, enquiryRemovalAction } from '../../../utils/enquiryWorkflow';
 import useStudioDialog from "./useStudioDialog";
 import { studioApi, studioAuth, initials, statusClass, leadStatusLabel, displayDate, dateInput, money, paidAmount, remainingAmount, populatedTasks, mergeLead } from "./leadUtils";
 
@@ -74,7 +74,7 @@ function TaskWorkspace({ lead, onChange, canCreate, canUpdate, canDelete }) {
   </section>;
 }
 
-export default function StudioLeadDetails({ lead: initialLead, onClose, onUpdate, onGenerateInvoice, existingInvoice, isProject = false, onOpenProject, onPrepareQuote, workflowBusy = '', workflowError = '' }) {
+export default function StudioLeadDetails({ lead: initialLead, onClose, onUpdate, onRemove, onGenerateInvoice, existingInvoice, isProject = false, onOpenProject, onPrepareQuote, workflowBusy = '', workflowError = '' }) {
   const { user } = useAuth();
   const canUpdate = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'enquiries');
   const canUpdateTasks = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'production');
@@ -123,6 +123,8 @@ export default function StudioLeadDetails({ lead: initialLead, onClose, onUpdate
   const progress = tasks.length ? Math.round(completed / tasks.length * 100) : 0;
   const safeCloudLink = /^https?:\/\//i.test(lead.cloudLink || "") ? lead.cloudLink : null;
 
+  const removalAction = onRemove ? enquiryRemovalAction(lead) : '';
+  const removalLabel = removalAction === 'archive' ? 'Archive enquiry' : 'Delete enquiry';
   const guided = IS_COMMERCIAL_DEPLOYMENT && !isProject;
   const canCreateProject = canUpdate && (!guided || canWriteWorkspaceModule(user, 'projects'));
   const canProject = Boolean(onOpenProject) && hasModuleAccess(user, 'projects') &&
@@ -156,6 +158,11 @@ export default function StudioLeadDetails({ lead: initialLead, onClose, onUpdate
         </div>
         <div className={isProject ? "studio-crm-detail-actions" : "studio-crm-enquiry-actions"}>
           {canUpdate && <button type="button" className="studio-button small studio-crm-edit-details" aria-label="Edit details" disabled={saving || Boolean(workflowBusy)} onClick={() => setEditing(true)}><Pencil size={16} aria-hidden="true" /><span>Edit details</span></button>}
+          {removalAction && <StudioButton type="button" size="sm" variant={removalAction === 'archive' ? 'outline' : 'destructive'}
+            className="studio-crm-detail-remove" icon={removalAction === 'archive' ? Archive : Trash2} aria-label={removalLabel}
+            title={removalLabel} disabled={saving || Boolean(workflowBusy)} onClick={() => onRemove(lead)}>
+            <span className="studio-crm-detail-remove-label">{removalLabel}</span>
+          </StudioButton>}
           <button type="button" className="studio-icon-button studio-crm-close-details" aria-label="Close details" disabled={saving || Boolean(workflowBusy)} onClick={onClose}><X size={20} aria-hidden="true" /></button>
         </div>
       </header>

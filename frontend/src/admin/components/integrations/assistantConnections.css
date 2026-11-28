@@ -23,6 +23,16 @@
 .assistant-setup p{margin:0 0 10px}.assistant-setup ul{margin:0 0 12px;padding-left:20px}
 .assistant-setup code{font-size:12px;overflow-wrap:anywhere;color:var(--studio-text)}
 .assistant-setup a{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--studio-text);text-decoration:underline;text-underline-offset:3px}
+.assistant-connection-copy{margin:0;color:var(--studio-muted);font-size:13px;line-height:1.6;max-width:70ch}
+.assistant-model{display:block;margin-top:4px;color:var(--studio-muted);font-size:12px;overflow-wrap:anywhere}
+.assistant-provider-actions[data-api-setup]{flex-wrap:wrap;gap:8px}
+.assistant-provider-actions[data-api-setup]>.studio-button{margin-inline:0}
+.assistant-credential-form{display:grid;gap:16px;min-width:0}
+.assistant-credential-form .studio-input{width:100%;min-width:0;min-height:44px;font-size:16px}
+.assistant-credential-form .studio-field small{color:var(--studio-muted);font-size:12px;line-height:1.5}
+.assistant-credential-form .assistant-provider-docs{display:inline-flex;align-items:center;gap:8px;min-height:44px;justify-self:start;color:var(--studio-text);text-decoration:underline;text-underline-offset:3px}
+.assistant-credential-form .assistant-provider-docs svg{flex:none}
+.connections-notice+.assistant-credential-form{margin-top:16px}
 .assistant-draft-workspace{border:1px solid var(--studio-border);border-radius:16px;background:var(--studio-surface);padding:24px}
 .assistant-draft-intro{display:flex;gap:12px;align-items:start;margin-bottom:20px}.assistant-draft-intro>svg{margin-top:2px;flex-shrink:0;color:var(--studio-muted)}
 .assistant-draft-form{display:grid;gap:18px}

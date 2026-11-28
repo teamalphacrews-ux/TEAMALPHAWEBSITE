@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { currentWorkspace, runInWorkspace, workspaceDatabase } = require('../saas/tenantContext');
 const { createStudioAssistantService, draftInput, gatewayUrl, MAX_RESPONSE_BYTES } = require('../services/studioAssistantService');
 const env = { NODE_ENV: 'test', OPENAI_API_KEY: 'private-openai-key', OPENAI_MODEL: 'configured-openai-model', ANTHROPIC_API_KEY: 'private-claude-key', ANTHROPIC_MODEL: 'configured-claude-model', OPENCLAW_GATEWAY_URL: 'https://assistant.internal', OPENCLAW_GATEWAY_TOKEN: 'private-gateway-token', OPENCLAW_PRIVATE_GATEWAY_CONFIRMED: 'true' };
 const input = { task: 'reply', context: 'A client asks when their album selections are needed. No deadline has been agreed.', tone: 'professional', consent: true };
@@ -109,10 +110,238 @@ test('router requires authentication, fresh owner authorization and personal wor
   assert.equal((await fetch(base + '/status')).status, 401);
   assert.equal((await request('/status', { headers: { 'x-role': 'client' } })).status, 403);
   owner = false; assert.equal((await request('/status')).status, 403); owner = true;
-  workspace = { _id: id }; assert.equal((await request('/status')).status, 409); workspace = null;
+  workspace = { _id: id }; assert.equal((await request('/status')).status, 403); workspace = null;
   const status = await request('/status'); assert.equal(status.status, 200); assert.equal(status.headers.get('cache-control'), 'no-store');
   assert.equal((await request('/openai/test', { method: 'POST', body: JSON.stringify({ apiKey: 'browser-secret' }) })).status, 400);
   assert.equal((await request('/status?userId=other')).status, 400);
   paused = true; const denied = await request('/openai/draft', { method: 'POST', body: JSON.stringify(input) }); assert.equal(denied.status, 409); assert.equal((await denied.json()).code, 'ASSISTANT_PAUSED'); assert.equal(calls.length, 0);
   paused = false; assert.equal((await request('/openai/draft', { method: 'POST', body: JSON.stringify(input) })).status, 200); assert.equal(calls[0][2], id);
+});
+
+
+const studio = value => ({ _id: value, databaseName: workspaceDatabase(value) });
+const firstStudio = studio('0123456789abcdef01234567'), secondStudio = studio('9876543210fedcba98765432');
+const openaiSettings = { apiKey: 'sample-studio-one-openai-key', model: 'studio-one-openai-model' };
+const claudeSettings = { apiKey: 'sample-studio-two-claude-key', model: 'studio-two-claude-model' };
+const commercialEnv = { ...env, SAAS_ENABLED: 'true', VAULT_SECRET: '0123456789abcdef0123456789abcdef' };
+
+function tenantFixture(settings = {}) {
+  const databases = new Map();
+  const records = scope => {
+    assert.ok(scope?.databaseName, 'A scoped database must be selected');
+    if (!databases.has(scope.databaseName)) databases.set(scope.databaseName, new Map());
+    return databases.get(scope.databaseName);
+  };
+  const Connection = {
+    find() {
+      const rows = [...records(currentWorkspace()).values()];
+      return { select(fields) {
+        assert.equal(fields, '_id model');
+        return { lean: async () => rows.map(({ _id, model }) => ({ _id, model })) };
+      } };
+    },
+    findById(provider) {
+      const row = records(currentWorkspace()).get(provider);
+      return { select(fields) {
+        assert.equal(fields, 'model +keyEnvelope');
+        return { lean: async () => row };
+      } };
+    },
+    async updateOne({ _id }, { $set }, options) {
+      assert.deepEqual(options, { upsert: true, runValidators: true });
+      records(currentWorkspace()).set(_id, { _id, ...$set });
+    },
+    async deleteOne({ _id }) { records(currentWorkspace()).delete(_id); },
+  };
+  return { ...fixture({ env: { ...commercialEnv }, Connection, ...settings }), records };
+}
+
+test('commercial credentials are encrypted per studio, and configuration never falls back to personal provider keys', async () => {
+  const { service, calls, records } = tenantFixture();
+  await runInWorkspace(firstStudio, async () => {
+    const status = await service.status();
+    assert.equal(status.connectionStorageAvailable, true);
+    assert.deepEqual(status.providers.map(row => [row.id, row.configured]), [['openai', false], ['claude', false]]);
+    await assert.rejects(service.test('openai', id), { code: 'ASSISTANT_CONFIGURATION' });
+    const saved = await service.saveConnection('openai', openaiSettings);
+    assert.deepEqual(Object.keys(saved), ['id', 'name', 'configured', 'model', 'draftSupported', 'setupMessage']);
+    assert.equal(saved.configured, true);
+    assert.equal(saved.model, openaiSettings.model);
+    assert.doesNotMatch(JSON.stringify(saved), /sample-studio-one-openai-key|keyEnvelope/);
+    assert.doesNotMatch(JSON.stringify(await service.status()), /sample-studio-one-openai-key|keyEnvelope|private-openai-key/);
+    assert.match(records(firstStudio).get('openai').keyEnvelope, /^v1\./);
+    assert.ok(!JSON.stringify(records(firstStudio).get('openai')).includes(openaiSettings.apiKey));
+    assert.equal(calls.length, 0);
+  });
+  await runInWorkspace(secondStudio, async () => {
+    assert.equal((await service.status()).providers.find(row => row.id === 'openai').configured, false);
+    await assert.rejects(service.draft('openai', input, id), { code: 'ASSISTANT_CONFIGURATION' });
+    await service.saveConnection('claude', claudeSettings);
+    await service.draft('claude', input, id);
+    assert.equal(calls[0].options.headers['x-api-key'], claudeSettings.apiKey);
+    assert.equal(JSON.parse(calls[0].options.body).model, claudeSettings.model);
+  });
+  await runInWorkspace(firstStudio, async () => {
+    const result = await service.draft('openai', input, id);
+    assert.equal(calls[1].options.headers.Authorization, 'Bearer ' + openaiSettings.apiKey);
+    assert.equal(result.model, openaiSettings.model);
+    assert.doesNotMatch(JSON.stringify(result), /sample-studio-one-openai-key|keyEnvelope/);
+    const previous = records(firstStudio).get('openai').keyEnvelope;
+    await service.saveConnection('openai', { ...openaiSettings, apiKey: 'example-replacement-key' });
+    assert.notEqual(records(firstStudio).get('openai').keyEnvelope, previous);
+    assert.equal((await service.disconnect('openai')).configured, false);
+    assert.equal((await service.disconnect('openai')).configured, false);
+    await assert.rejects(service.draft('openai', input, id), { code: 'ASSISTANT_CONFIGURATION' });
+  });
+  assert.ok(records(secondStudio).has('claude'));
+  assert.equal(calls.length, 2);
+});
+
+test('commercial encrypted credentials cannot be moved between studios, providers or models', async () => {
+  const { service, calls, records } = tenantFixture();
+  await runInWorkspace(firstStudio, () => service.saveConnection('openai', openaiSettings));
+  const original = records(firstStudio).get('openai');
+  records(secondStudio).set('openai', original);
+  await assert.rejects(runInWorkspace(secondStudio, () => service.test('openai', id)), { code: 'ASSISTANT_RECONNECT' });
+  records(firstStudio).set('claude', { ...original, _id: 'claude' });
+  await assert.rejects(runInWorkspace(firstStudio, () => service.test('claude', id)), { code: 'ASSISTANT_RECONNECT' });
+  records(firstStudio).set('openai', { ...original, model: 'other-model' });
+  await assert.rejects(runInWorkspace(firstStudio, () => service.test('openai', id)), { code: 'ASSISTANT_RECONNECT' });
+  assert.equal(calls.length, 0);
+});
+
+test('commercial connection setup fails closed without workspace context or explicit vault configuration', async () => {
+  const configuration = { ...commercialEnv };
+  const { service, calls } = tenantFixture({ env: configuration });
+  assert.throws(() => service.status(), { code: 'ASSISTANT_WORKSPACE' });
+  await assert.rejects(service.saveConnection('openai', openaiSettings), { code: 'ASSISTANT_WORKSPACE' });
+  await assert.rejects(service.test('openai', id), { code: 'ASSISTANT_WORKSPACE' });
+  await runInWorkspace(firstStudio, async () => {
+    await service.saveConnection('openai', openaiSettings);
+    delete configuration.VAULT_SECRET;
+    const status = await service.status();
+    assert.equal(status.connectionStorageAvailable, false);
+    assert.ok(status.providers.every(row => !row.configured));
+    await assert.rejects(service.saveConnection('claude', claudeSettings), { code: 'ASSISTANT_STORAGE' });
+    await assert.rejects(service.test('openai', id), { code: 'ASSISTANT_STORAGE' });
+    assert.equal((await service.disconnect('openai')).model, null);
+  });
+  const legacy = fixture().service;
+  await assert.rejects(legacy.saveConnection('openai', openaiSettings), { code: 'ASSISTANT_WORKSPACE' });
+  await assert.rejects(legacy.disconnect('openai'), { code: 'ASSISTANT_WORKSPACE' });
+  assert.equal(calls.length, 0);
+});
+
+test('commercial assistants reject OpenClaw, malformed settings, preview actions and non-consensual drafts', async () => {
+  const { service, calls } = tenantFixture();
+  await runInWorkspace(firstStudio, async () => {
+    for (const command of [
+      () => service.saveConnection('openclaw', openaiSettings),
+      () => service.disconnect('openclaw'),
+      () => service.test('openclaw', id),
+      () => service.draft('openclaw', input, id),
+    ]) await assert.rejects(command, { code: 'ASSISTANT_PROVIDER' });
+    for (const values of [
+      { apiKey: 'spaces present', model: 'valid-model' },
+      { ...openaiSettings, model: '' },
+      { ...openaiSettings, model: '<key>' },
+      { ...openaiSettings, model: openaiSettings.apiKey },
+      { ...openaiSettings, workspaceId: secondStudio._id },
+      { ...openaiSettings, baseUrl: 'https://assistant.invalid' },
+    ]) await assert.rejects(service.saveConnection('openai', values), { code: 'ASSISTANT_INPUT' });
+    await service.saveConnection('openai', openaiSettings);
+    await assert.rejects(service.draft('openai', { ...input, consent: false }, id), { code: 'ASSISTANT_INPUT' });
+  });
+  const preview = tenantFixture({ preview: () => true });
+  await runInWorkspace(firstStudio, async () => {
+    await assert.rejects(preview.service.saveConnection('openai', openaiSettings), { code: 'ASSISTANT_PREVIEW' });
+    await assert.rejects(preview.service.disconnect('openai'), { code: 'ASSISTANT_PREVIEW' });
+    await assert.rejects(preview.service.draft('openai', input, id), { code: 'ASSISTANT_PREVIEW' });
+  });
+  assert.equal(calls.length, 0);
+  assert.equal(preview.calls.length, 0);
+});
+
+test('the shared assistant limiter separates the same local owner ID across studios', async () => {
+  let finish, active = 0, bothReady;
+  const pending = new Promise(resolve => { finish = resolve; });
+  const ready = new Promise(resolve => { bothReady = resolve; });
+  const { service } = tenantFixture({ fetchImpl: async () => {
+    if (++active === 2) bothReady();
+    await pending;
+    return json(openai('Ready'));
+  } });
+  await runInWorkspace(firstStudio, () => service.saveConnection('openai', openaiSettings));
+  await runInWorkspace(secondStudio, () => service.saveConnection('openai', openaiSettings));
+  const first = runInWorkspace(firstStudio, () => service.test('openai', id));
+  const second = runInWorkspace(secondStudio, () => service.test('openai', id));
+  try {
+    await ready;
+    await assert.rejects(runInWorkspace(firstStudio, () => service.test('openai', id)), { code: 'ASSISTANT_BUSY' });
+  } finally { finish(); await Promise.all([first, second]); }
+});
+
+test('a commercial owner request requires the same verified workspace and passes the archive gate for connection writes', async t => {
+  const express = require('express'), { createStudioAssistantRouter } = require('../routes/studioAssistantRoutes');
+  const { service, calls, records } = tenantFixture();
+  const app = express();
+  let gated = 0, paused = false, personalOwnerChecks = 0;
+  app.use(express.json());
+  app.use((req, _res, next) => {
+    const membership = req.header('x-workspace-role');
+    if (membership) {
+      req.workspaceRole = membership;
+      req.saas = { workspace: req.header('x-wrong-scope') ? secondStudio : firstStudio, membership: { role: membership } };
+    }
+    runInWorkspace(req.header('x-no-scope') ? null : firstStudio, next);
+  });
+  app.use(createStudioAssistantRouter({
+    env: commercialEnv, service,
+    authenticate: (req, res, next) => {
+      if (!req.header('x-actor')) return res.status(401).json({ error: 'Sign in' });
+      req.user = { id, role: 'admin' }; next();
+    },
+    isOwner: () => { personalOwnerChecks++; return true; },
+    archiveGate: { withShared: async (run, options) => {
+      gated++;
+      assert.deepEqual(options, { integrations: true, rejectPaused: true });
+      if (paused) throw Object.assign(new Error('internal detail'), { code: 'WORKSPACE_INTEGRATIONS_PAUSED' });
+      return run();
+    } },
+  }));
+  const server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const base = 'http://127.0.0.1:' + server.address().port;
+  const request = (path, method, settings, headers) => fetch(base + path, {
+    method, body: settings === undefined ? undefined : JSON.stringify(settings),
+    headers: { 'x-actor': id, 'x-workspace-role': 'owner', 'content-type': 'application/json', ...headers },
+  });
+  assert.equal((await fetch(base + '/status')).status, 401);
+  for (const headers of [
+    { 'x-workspace-role': 'staff' },
+    { 'x-workspace-role': 'admin' },
+    { 'x-workspace-role': '' },
+    { 'x-wrong-scope': '1' },
+    { 'x-no-scope': '1' },
+  ]) {
+    assert.equal((await request('/status', 'GET', undefined, headers)).status, 403);
+    assert.equal((await request('/openai/connection', 'POST', openaiSettings, headers)).status, 403);
+  }
+  assert.equal(personalOwnerChecks, 0);
+  assert.equal(gated, 0);
+  assert.equal((await request('/openai/connection?studio=other', 'POST', openaiSettings)).status, 400);
+  assert.equal((await request('/openai/connection', 'DELETE', { workspaceId: secondStudio._id })).status, 400);
+  paused = true;
+  assert.equal((await request('/openai/connection', 'POST', openaiSettings)).status, 409);
+  assert.equal(records(firstStudio).size, 0);
+  paused = false;
+  const saved = await request('/openai/connection', 'POST', openaiSettings);
+  assert.equal(saved.status, 200);
+  assert.equal(saved.headers.get('cache-control'), 'no-store');
+  assert.equal((await saved.json()).configured, true);
+  assert.doesNotMatch(await (await request('/status', 'GET')).text(), /sample-studio-one-openai-key|keyEnvelope/);
+  assert.equal((await request('/openai/connection', 'DELETE')).status, 200);
+  assert.equal(records(firstStudio).size, 0);
+  assert.equal(gated, 3);
+  assert.equal(calls.length, 0);
 });

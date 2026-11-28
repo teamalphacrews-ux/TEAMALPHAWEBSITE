@@ -1,4 +1,5 @@
 const crypto = require('node:crypto');
+const { requiresSetup } = require('./setupAccess');
 
 const LEGACY_SHARE_TOKEN = /^[a-f0-9]{64}$/;
 const WORKSPACE_SHARE_TOKEN = /^([a-f0-9]{24})\.([a-f0-9]{64})$/;
@@ -47,7 +48,8 @@ function createPublicWorkspaceMiddleware({
     try {
       const Registry = Workspace || require('mongoose').connection.model('SaaSWorkspace');
       const workspace = await Registry.findOne({ _id: id, state: 'active' });
-      if (!workspace || workspace.state !== 'active' || String(workspace._id) !== id || workspace.databaseName !== `studio_${id}`) return unavailable();
+      if (!workspace || workspace.state !== 'active' || requiresSetup(workspace) ||
+          String(workspace._id) !== id || workspace.databaseName !== 'studio_' + id) return unavailable();
       req.workspace = workspace;
       return runInWorkspace(workspace, next);
     } catch {

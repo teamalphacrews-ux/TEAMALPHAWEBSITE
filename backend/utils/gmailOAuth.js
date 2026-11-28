@@ -1,13 +1,38 @@
 const { google } = require('googleapis');
 const { createOAuthStateService, browserCookie } = require('./oauthState');
 const { GMAIL_SCOPE, gmailConfiguration, sealTokens, openTokens, createGmailService, publicError } = require('../services/gmailService');
+const { hasModule } = require('./moduleAccess');
+const { currentWorkspace, runInWorkspace } = require('../saas/tenantContext');
+const { accessStatus } = require('../saas/plans');
+const { requiresSetup } = require('../saas/setupAccess');
+const archiveGate = require('../services/studioArchiveGate');
+
+const workspaceToken = /^gmail\.([a-f0-9]{24})\.([a-f0-9]{64})$/;
+const allowedWorkspace = workspace => workspace && !requiresSetup(workspace) && ['active', 'trialing'].includes(accessStatus(workspace));
+
+function returnToken(nonce) {
+  const workspace = currentWorkspace();
+  return workspace ? 'gmail.' + workspace._id + '.' + nonce : nonce;
+}
 
 function createGmailOAuthHandlers({
   User = require('../models/User'), Connection = require('../models/GmailConnection'),
   store = require('../models/GmailOAuthNonce'), env = process.env, now, randomBytes,
-  makeClient, getProfile, logger = console,
+  makeClient, getProfile, logger = console, workspaceModels = require('../saas/models'),
 } = {}) {
-  const state = createOAuthStateService({ User, store, ...(now ? { now } : {}), ...(randomBytes ? { randomBytes } : {}) });
+  const commercial = env.SAAS_ENABLED === 'true';
+  const findWorkspace = id => workspaceModels.Workspace.findOne({ _id: id, state: 'active' });
+  async function authorizedMember(userId) {
+    if (!commercial) return true;
+    const workspace = currentWorkspace();
+    if (!allowedWorkspace(workspace)) return false;
+    const [active, membership] = await Promise.all([
+      findWorkspace(workspace._id),
+      workspaceModels.Membership.findOne({ workspaceId: workspace._id, localUserId: userId, role: { $in: ['owner', 'admin'] }, state: 'active' }),
+    ]);
+    return Boolean(allowedWorkspace(active) && membership && await workspaceModels.Account.exists({ _id: membership.accountId, state: 'active' }));
+  }
+  const state = createOAuthStateService({ User, store, moduleId: 'email', authorize: authorizedMember, now, randomBytes });
   const service = createGmailService({ Connection, env });
   const client = config => makeClient ? makeClient(config) : service.oauthClient(config);
   const prepare = res => { res.set('Cache-Control', 'no-store'); res.set('Referrer-Policy', 'no-referrer'); };
@@ -24,37 +49,53 @@ function createGmailOAuthHandlers({
     logger.warn('Gmail authorization failed', { stage, providerCode: allowed.includes(candidate) ? candidate : 'unavailable',
       status: [400, 401, 403, 404, 429, 500, 502, 503].includes(Number(error?.response?.status || error?.status)) ? Number(error?.response?.status || error?.status) : null });
   };
+  function scopedReturn(parameter, stage, handle) {
+    return async (req, res) => {
+      prepare(res);
+      const input = req.query?.[parameter];
+      if (!commercial) return handle(req, res, input);
+      const match = typeof input === 'string' && workspaceToken.exec(input);
+      if (!match) return failure(res, stage);
+      try {
+        const workspace = await findWorkspace(match[1]);
+        if (!allowedWorkspace(workspace) || String(workspace._id) !== match[1]) return failure(res, stage);
+        return await runInWorkspace(workspace, () => archiveGate.withShared(() => handle(req, res, match[2]), { integrations: true, rejectPaused: true }));
+      } catch (error) {
+        diagnose(stage, error);
+        return failure(res, stage);
+      }
+    };
+  }
   return {
     start: async (req, res) => {
       prepare(res);
       try {
+        if (commercial && !currentWorkspace()) throw publicError('Open your studio before connecting Gmail.', 403);
         const config = gmailConfiguration(env);
         const ticket = await state.issue(req.user);
-        res.json({ url: config.beginUrl + '?ticket=' + ticket });
+        res.json({ url: config.beginUrl + '?ticket=' + returnToken(ticket) });
       } catch (error) {
         res.status(error.status || 503).json({ message: error.status === 403
           ? 'Sign in with a saved studio administrator account to connect Gmail.'
           : 'Gmail setup is incomplete. Configure its Google client, callback and token encryption on the backend.' });
       }
     },
-    begin: async (req, res) => {
-      prepare(res);
+    begin: scopedReturn('ticket', 'begin', async (_req, res, ticket) => {
       try {
         const config = gmailConfiguration(env);
-        const flow = await state.begin(req.query?.ticket);
+        const flow = await state.begin(ticket);
         const url = client(config).generateAuthUrl({ access_type: 'offline', prompt: 'consent', scope: [GMAIL_SCOPE],
-          state: flow.state, code_challenge_method: 'S256', code_challenge: flow.codeChallenge });
+          state: returnToken(flow.state), code_challenge_method: 'S256', code_challenge: flow.codeChallenge });
         res.cookie(config.cookieName, flow.browser, config.cookie);
         res.redirect(url);
       } catch (error) { diagnose('begin', error); failure(res, 'begin'); }
-    },
-    callback: async (req, res) => {
-      prepare(res);
+    }),
+    callback: scopedReturn('state', 'state', async (req, res, nonce) => {
       let step = 'configuration';
       try {
         const config = gmailConfiguration(env);
         step = 'state';
-        const flow = await state.consume(req.query?.state, browserCookie(req, config.cookieName));
+        const flow = await state.consume(nonce, browserCookie(req, config.cookieName));
         const clearOptions = { ...config.cookie }; delete clearOptions.maxAge;
         res.clearCookie(config.cookieName, clearOptions);
         if (req.query?.error || typeof req.query?.code !== 'string' || !req.query.code || req.query.code.length > 4096) throw publicError('Authorization was not completed.', 400);
@@ -72,7 +113,7 @@ function createGmailOAuthHandlers({
         if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw publicError('Google could not identify this mailbox.', 400);
         step = 'account';
         const currentUser = await User.findOne({ _id: flow.userId, role: 'admin' });
-        if (!currentUser || !require('./moduleAccess').hasModule(currentUser, 'email')) throw publicError('Administrator access is required.', 403);
+        if (!currentUser || currentUser.accountDisabled || !hasModule(currentUser, 'email') || !(await authorizedMember(flow.userId))) throw publicError('Administrator access is required.', 403);
         let refresh = typeof tokens.refresh_token === 'string' ? tokens.refresh_token : '';
         const filter = { userId: flow.userId };
         if (!refresh) {
@@ -90,7 +131,7 @@ function createGmailOAuthHandlers({
         if (!user) throw publicError('Please start Gmail connection again.', 409);
         res.redirect(config.frontendOrigin + '/admin/email?gmail=connected');
       } catch (error) { diagnose(step, error); failure(res, step); }
-    },
+    }),
   };
 }
 

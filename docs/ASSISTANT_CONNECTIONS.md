@@ -1,10 +1,19 @@
 # Studio OS assistant connections
 
-The personal Studio OS installation provides owner-only, manually requested text drafting for OpenAI and Claude. Staff must review and copy a draft themselves. No client message is sent, quotation issued, payment recorded, business record fetched or workspace record changed by these endpoints.
+Studio OS provides owner-only, manually requested text drafting for OpenAI and Claude. The owner reviews and copies each draft. A draft does not send a client message, issue a quotation, record a payment or change a business record.
 
 Google Drive continues to use the existing encrypted workspace-backup connection. Its consent grants `drive.file` access for archive files created by this integration. The Connections page can open the existing Backups & recovery workflow; this is not a general Drive file browser.
 
-## Private backend configuration
+## Commercial workspace setup
+
+1. Sign in as the workspace owner and open **Integrations**.
+2. In the ChatGPT or Claude card, enter an API key privately and the model ID from that provider’s API account. Save the connection.
+3. Use **Test connection** to send a small test prompt. The provider can bill for this request. A saved key shows **Configured**. A successful test shows **Verified this session**.
+4. Enter a draft prompt and review the provider-sharing consent before generating. Review the output before copying it to a client message or document.
+
+The commercial backend needs its existing `VAULT_SECRET` to encrypt and decrypt each workspace’s provider key. Keep the configured key stable. Owners can replace or disconnect their own provider settings. A consumer ChatGPT or Claude subscription does not supply an API key or API balance.
+
+## Personal installation configuration
 
 Set these values in the backend host's private environment settings. Never put credentials in chat, frontend `VITE_*` values, source files or Studio profile fields. An OpenAI/Claude API account and provider billing are separate from a consumer chat subscription.
 
@@ -22,9 +31,10 @@ The OpenClaw test only requests `GET /v1/models` and accepts a supported nonempt
 
 ## API and privacy
 
-All endpoints require authenticated administrator access, a fresh studio-owner check, and the personal-installation context. Commercial workspace requests fail closed; they never inherit Team Alpha's environment credentials.
+All endpoints require an authenticated studio owner. Commercial requests use the current workspace’s encrypted credentials. Personal requests use the server environment settings. The OpenClaw connection check is available in personal installations.
 
 * `GET /api/integrations/assistants/status` returns public configuration status, model identifiers, task names and setup guidance. It performs no provider request.
+* `POST /api/integrations/assistants/:provider/connection` saves `{apiKey, model}` for the signed-in commercial workspace. `DELETE` removes that workspace’s saved connection. Both return the provider status without the API key and perform no inference.
 * `POST /api/integrations/assistants/:provider/test` accepts an empty body.
 * `POST /api/integrations/assistants/:provider/draft` accepts only `{task, context, tone, consent:true}`. Tasks are `reply`, `quotation`, `project-update`; tones are `warm`, `professional`, `concise`. Context is manually entered and limited to 12,000 characters.
 

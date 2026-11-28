@@ -1,4 +1,5 @@
 import { canAccessStudioPath } from '../../../utils/moduleAccess';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../../saas/release';
 import StudioButton from '../common/StudioButton';
 import StudioSelect from '../common/StudioSelect';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -173,7 +174,7 @@ export default function SettingsEditor({ tab, values, change, changeNested, begi
   return <><div className="settings-connection-grid">{[
     ['/admin/integrations#assistants', 'ChatGPT', 'Draft client replies, quotation wording and project updates with the OpenAI API.', null, null, 'openai'],
     ['/admin/integrations#assistants', 'Claude', 'Write and review studio messages with the Anthropic API.', null, null, 'claude'],
-    ['/admin/integrations#assistants', 'OpenClaw', 'Check your private assistant gateway. Drafting requires a restricted agent.', null, null, 'openclaw'],
+    ...(!IS_COMMERCIAL_DEPLOYMENT && !user?.workspace ? [['/admin/integrations#assistants', 'OpenClaw', 'Check your private assistant gateway. Drafting requires a restricted agent.', null, null, 'openclaw']] : []),
     ['/admin/integrations#drive', 'Google Drive', 'Connect your own Drive for encrypted studio recovery copies.', null, null, 'drive'],
     ['/admin/email', 'Gmail & Email', 'Review Gmail setup and open your mailbox once connected.', null, null, 'gmail'],
     ['/admin/whatsapp', 'WhatsApp Business', 'Open manual client sharing and your existing WhatsApp workspace.', null, null, 'whatsapp-business'],

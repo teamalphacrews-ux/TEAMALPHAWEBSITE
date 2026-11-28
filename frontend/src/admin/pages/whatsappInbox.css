@@ -11,6 +11,20 @@
 .wa-connection-strip p { font-size: 12px; line-height: 1.8; color: var(--studio-muted); margin: 5px 0 0; overflow-wrap: anywhere; }
 .wa-connection-strip .studio-badge { flex-shrink: 0; white-space: nowrap; }
 .wa-connection-strip .studio-button { flex-shrink: 0; }
+.studio-whatsapp-page .wa-web-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-block-end: 16px;
+  padding: clamp(16px, 2vw, 24px);
+}
+.wa-web-entry > div { flex: 1 1 280px; min-width: 0; }
+.wa-web-entry h2 { margin: 0 0 6px; font-size: 18px; }
+.wa-web-entry p { max-width: 70ch; margin: 0; color: var(--studio-muted); font-size: 13px; line-height: 1.55; }
+.wa-web-entry p + p { margin-block-start: 6px; }
+.wa-web-entry .studio-button { min-height: 44px; max-width: 100%; }
 .studio-whatsapp-page .wa-setup { border: 1px solid var(--studio-border); box-shadow: none; padding: 29px 30px; }
 .wa-setup-heading { display: flex; align-items: center; gap: 15px; margin-bottom: 29px; }
 .wa-setup-heading h2 { color: var(--studio-text); font-family: inherit; font-size: 19px; font-weight: 550; letter-spacing: -.035em; line-height: 1.4; margin: 0 0 5px; }

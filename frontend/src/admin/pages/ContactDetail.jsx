@@ -1,9 +1,10 @@
 import WorkspaceMotionTitle from '../components/common/WorkspaceMotionTitle';
 import { useAuth } from '../../context/AuthContext';
-import { canWriteWorkspaceModule } from '../../utils/workspaceActions';
+import { canDeleteWorkspaceModule, canWriteWorkspaceModule } from '../../utils/workspaceActions';
 import { hasModuleAccess } from '../../utils/moduleAccess';
 import { useId, useState } from "react";
 import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
+import { ContactDeleteButton, ContactDeleteDialog } from '../components/contacts/ContactRecordActions';
 import { clientNextAction } from '../components/contacts/clientNextAction';
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Pencil } from "lucide-react";
@@ -47,6 +48,7 @@ function ContactRecord({ id }) {
   const tabs = ['Overview', 'Documents', ...(hasModuleAccess(user, 'finance') && hasModuleAccess(user, 'invoices') ? ['Payments'] : []), ...(hasModuleAccess(user, 'calendar') ? ['Sessions'] : [])];
   const navigate = useNavigate();
   const canEditContact = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'contacts');
+  const canDeleteContact = IS_COMMERCIAL_DEPLOYMENT && canDeleteWorkspaceModule(user, 'contacts');
   const canStartProject = hasModuleAccess(user, 'projects') && (!IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'projects'));
   const canSchedule = !IS_COMMERCIAL_DEPLOYMENT || canWriteWorkspaceModule(user, 'calendar');
   const { data, loading, error, reload } = useWorkspaceData([
@@ -56,6 +58,7 @@ function ContactRecord({ id }) {
     [detail, contacts = []] = data;
   const [requestedTab, setTab] = useState("Overview"),
     [editing, setEditing] = useState(false),
+    [deleting, setDeleting] = useState(false),
     [newProject, setNewProject] = useState(false),
     [document, setDocument] = useState(null),
     [busy, setBusy] = useState(false);
@@ -178,6 +181,7 @@ function ContactRecord({ id }) {
             onDocument={openDocument}
           />
         )}
+        {canDeleteContact && <ContactDeleteButton contact={contact} detail onDelete={() => setDeleting(true)} />}
         </div>
       </div>
       <WorkspaceError error={error} retry={reload} />
@@ -335,6 +339,11 @@ function ContactRecord({ id }) {
           </ReferenceSection>
         </aside>
       </div>
+      {deleting && canDeleteContact && <ContactDeleteDialog
+        contact={contact}
+        onClose={() => setDeleting(false)}
+        onDeleted={() => navigate('/admin/contacts', { replace: true })}
+      />}
       {editing && canEditContact && (
         <ContactForm
           record={contact}

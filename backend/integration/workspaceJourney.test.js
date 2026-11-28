@@ -10,7 +10,7 @@ const { randomBytes } = require('node:crypto');
 const { spawn, fork } = require('node:child_process');
 const { once } = require('node:events');
 const { setTimeout: delay } = require('node:timers/promises');
-const { MongoClient } = require('mongoose').mongo;
+const { MongoClient, ObjectId } = require('mongoose').mongo;
 
 async function unusedPort() {
   const server = net.createServer().listen(0, '127.0.0.1');
@@ -32,7 +32,7 @@ test('commercial enquiry, project, task, quote, payment and recovery survive app
 }, async t => {
   const dir = await mkdtemp(path.join(tmpdir(), 'studio-journey-'));
   const port = await unusedPort();
-  const credentials = { JWT_SECRET: randomBytes(32).toString('hex'), BACKUP_SECRET: randomBytes(32).toString('hex') };
+  const credentials = { JWT_SECRET: randomBytes(32).toString('hex'), BACKUP_SECRET: randomBytes(32).toString('hex'), VAULT_SECRET: randomBytes(32).toString('base64') };
   const db = new MongoClient('mongodb://127.0.0.1:' + port + '/?directConnection=true', { serverSelectionTimeoutMS: 15000 });
   let mongo, service, origin;
   t.after(async () => {
@@ -54,9 +54,10 @@ test('commercial enquiry, project, task, quote, payment and recovery survive app
     }
     assert.fail('disposable replica set did not elect a primary');
   }
-  async function startApp() {
+  async function startApp({ writeFence = true } = {}) {
     service = fork(path.join(__dirname, 'workspaceJourneyServer.js'), [String(port)], { execArgv: [], env: {
       NODE_ENV: 'test', SAAS_ENABLED: 'true', SAAS_SIGNUP_ENABLED: 'true', ...credentials,
+      STUDIO_JOURNEY_WRITE_FENCE: String(writeFence),
       FRONTEND_URL: 'http://127.0.0.1', PUBLIC_FRONTEND_URL: 'http://127.0.0.1',
     }, stdio: ['ignore', 'ignore', 'inherit', 'ipc'] });
     const listenPort = await new Promise((resolve, reject) => {
@@ -77,17 +78,22 @@ test('commercial enquiry, project, task, quote, payment and recovery survive app
     return data;
   };
   async function signUp(name) {
+    const password = randomBytes(20).toString('hex');
     const auth = await request('POST', '/saas/signup', null, { firstName: name, lastName: 'Test', studioName: name,
-      email: name.toLowerCase() + '@example.test', password: randomBytes(20).toString('hex') }, 201);
+      email: name.toLowerCase() + '@example.test', password }, 201);
     const { token } = auth;
     await request('GET', '/leads', token, null, 409);
     for (const step of [1, 2]) await request('PATCH', '/saas/setup', token, { step, details: {} });
     await request('POST', '/saas/setup/complete', token, { details: {} });
-    return auth;
+    return { ...auth, password };
   }
   await startMongo(true);
-  await startApp();
+  // The legacy gallery journey uses its existing route-level fixtures. The
+  // commercial reset journey runs with the model fence installed as in production.
+  await startApp({ writeFence: false });
   await require('./legacyGalleryJourney')(t, port, credentials.JWT_SECRET, request);
+  await stop(service);
+  await startApp();
   const a = await signUp('North'), b = await signUp('South');
   const token = a.token, tenantDB = db.db('studio_' + a.user.workspace.id);
   const invitation = await request('POST', '/saas/invitations', token, { email: 'editor@example.test', role: 'staff' }, 201);
@@ -106,6 +112,35 @@ test('commercial enquiry, project, task, quote, payment and recovery survive app
     await request('PATCH', preferencesPath, token, { colorTheme: '#ff0000' }, 400);
     const system = await request('PATCH', preferencesPath, token, { theme: 'system' });
     assert.equal(system.preferences.colorTheme, 'rosso-corsa');
+  });
+  await t.test('assistant credentials and Gmail readiness stay scoped to each commercial studio', async () => {
+    const assistants = '/integrations/assistants';
+    const status = async current => (await request('GET', assistants + '/status', current)).providers;
+    const openai = rows => rows.find(row => row.id === 'openai');
+    assert.deepEqual((await status(token)).map(row => row.id).sort(), ['claude', 'openai']);
+    assert.equal((await request('GET', '/integrations/gmail/status', token)).connected, false);
+    await request('GET', '/integrations/gmail/status', editor.token, null, 403);
+    await request('GET', assistants + '/status', editor.token, null, 403);
+    await request('GET', '/integrations/whatsapp/status', token, null, 409);
+    const setup = async (current, model) => {
+      const apiKey = 'fixture-key-for-' + model;
+      const saved = await request('POST', assistants + '/openai/connection', current, { model, apiKey });
+      assert.equal(saved.configured, true);
+      assert.equal(JSON.stringify(saved).includes(apiKey), false);
+    };
+    await setup(token, 'north-model');
+    assert.equal(openai(await status(b.token)).configured, false);
+    await setup(b.token, 'south-model');
+    assert.equal(openai(await status(token)).model, 'north-model');
+    assert.equal(openai(await status(b.token)).model, 'south-model');
+    const draft = { task: 'reply', tone: 'professional', context: 'Confirm the sample project is ready for review.', consent: true };
+    for (const [current, model] of [[token, 'north-model'], [b.token, 'south-model']]) {
+      const result = await request('POST', assistants + '/openai/draft', current, draft);
+      assert.equal(result.draft, 'A local draft from ' + model);
+    }
+    await request('DELETE', assistants + '/openai/connection', token);
+    assert.equal(openai(await status(token)).configured, false);
+    assert.equal(openai(await status(b.token)).configured, true);
   });
   const booking = { title: 'Practice', start: '2028-02-29T08:00:00Z', end: '2028-02-29T09:00:00Z', teamMembers: ['Sample Crew'] };
   const reserve = values => fetch(origin + '/api/calendar', { method: 'POST',
@@ -243,5 +278,160 @@ test('commercial enquiry, project, task, quote, payment and recovery survive app
     assert.equal((await read('pending-payments', 'bookings'))[0].pending, 181.36);
     assert.equal((await read('overview', 'ledger', year - 1)).annualSales, 900);
     assert.equal((await read('overview', 'invoices', year, b.token)).annualSales, 0);
+  });
+  await t.test('contact, enquiry, project and crew deletion use tenant recovery and preserve linked records', async () => {
+    const recovery = '/studio/security/recovery';
+    const restore = async (model, recordId) => {
+      const records = await request('GET', recovery, token);
+      const item = records.find(record => record.model === model && record.recordId === recordId);
+      assert.ok(item, model + ' in Recovery bin');
+      await request('POST', recovery + '/' + item._id + '/restore', token, { confirmation: 'RESTORE RECORD' });
+    };
+
+    const contact = await request('POST', '/contacts', token, { firstName: 'Temporary', lastName: 'Client', email: 'temporary@example.test' }, 201);
+    const contactPath = '/contacts/' + contact._id;
+    const project = await request('POST', '/studio-projects', token, { name: 'Temporary project', contactId: contact._id }, 201);
+    const projectPath = '/studio-projects/' + project._id;
+    const enquiryPath = '/leads/' + project.leadId;
+    await request('DELETE', contactPath, token, null, 409);
+    await request('DELETE', projectPath, editor.token, null, 403);
+    await request('DELETE', projectPath, token);
+    await request('GET', projectPath, token, null, 404);
+    assert.ok(!(await tenantDB.collection('leads').findOne({ _id: new ObjectId(project.leadId) })).studioProjectId);
+    await restore('StudioProject', project._id);
+    assert.equal((await request('GET', projectPath, token)).project._id, project._id);
+    assert.equal(String((await tenantDB.collection('leads').findOne({ _id: new ObjectId(project.leadId) })).studioProjectId), project._id);
+    await request('DELETE', projectPath, token);
+
+    const work = await request('POST', enquiryPath + '/tasks', token, { title: 'Keep linked task' });
+    await request('DELETE', enquiryPath, token, null, 409);
+    await request('DELETE', '/tasks/' + work._id, token);
+    await request('DELETE', enquiryPath, token);
+    await restore('Lead', project.leadId);
+    assert.ok((await request('GET', '/leads', token)).some(row => row._id === project.leadId));
+    await request('DELETE', enquiryPath, token);
+    await request('DELETE', contactPath, b.token, null, 404);
+    await request('DELETE', contactPath, token);
+    await request('GET', contactPath, token, null, 404);
+    await restore('StudioContact', contact._id);
+    assert.equal((await request('GET', contactPath, token)).contact.email, contact.email);
+    await request('DELETE', contactPath, token);
+
+    const crew = await request('POST', '/photographers', token, { name: 'Temporary Crew', email: 'temporary-crew@example.test', specialty: 'LEAD PHOTOGRAPHER' }, 201);
+    const crewPath = '/photographers/' + crew._id;
+    const sessionPath = '/calendar/' + secondSlot._id;
+    await request('PATCH', sessionPath, token, { teamMembers: ['Temporary Crew'] });
+    await request('DELETE', crewPath, token, null, 409);
+    await request('DELETE', crewPath, editor.token, null, 403);
+    await request('PATCH', sessionPath, token, { teamMembers: ['Sample Crew'] });
+    await request('DELETE', crewPath, token);
+    await restore('Photographer', crew._id);
+    assert.ok((await request('GET', '/photographers', token)).some(row => row._id === crew._id));
+    await request('DELETE', crewPath, token);
+  });
+  await t.test('contact deletion cannot race a project creation referencing that contact', async () => {
+    const contact = await request('POST', '/contacts', token, { firstName: 'Concurrent', email: 'concurrent@example.test' }, 201);
+    const contactPath = '/contacts/' + contact._id;
+    const paused = once(service, 'message');
+    const creating = fetch(origin + '/api/studio-projects', {
+      method: 'POST',
+      headers: { 'x-auth-token': token, 'Content-Type': 'application/json', 'x-journey-pause': 'project-create' },
+      body: JSON.stringify({ name: 'Concurrent project', contactId: contact._id }),
+    });
+    try {
+      const [signal] = await Promise.race([paused, creating.then(() => assert.fail('Project creation did not pause'))]);
+      assert.equal(signal, 'project-create-ready');
+      const busy = await request('DELETE', contactPath, token, null, 409);
+      assert.match(busy.error, /studio work is still running/i);
+      assert.equal((await request('GET', contactPath, token)).contact._id, contact._id);
+    } finally {
+      service.send('continue');
+    }
+    const created = await creating;
+    assert.equal(created.status, 201);
+    const project = await created.json();
+    const linked = await request('DELETE', contactPath, token, null, 409);
+    assert.match(linked.error, /linked records/i);
+    assert.equal((await request('GET', '/studio-projects/' + project._id, token)).project._id, project._id);
+    await request('DELETE', '/studio-projects/' + project._id, token);
+    await request('DELETE', '/leads/' + project.leadId, token);
+    await request('DELETE', contactPath, token);
+  });
+  await t.test('Start fresh deletes only the active studio and requires the owner to complete setup again', async () => {
+    const resetPath = '/saas/workspace/reset';
+    const registry = db.db('audit_registry');
+    const ownerAccount = { email: a.user.email, password: a.password };
+    const otherOwnerSession = await request('POST', '/saas/login', null, ownerAccount);
+    const pending = await request('POST', '/saas/invitations', token, { email: 'pending@example.test', role: 'admin' }, 201);
+    const pendingCode = new URL(pending.acceptUrl).pathname.split('/').pop();
+    const before = await request('GET', '/saas/workspace', token);
+    assert.equal(before.seats.used, 2);
+    assert.equal(before.seats.reserved, 1);
+    await request('POST', '/integrations/assistants/openai/connection', token, { apiKey: 'fixture-key-for-north-model', model: 'north-model' });
+
+    await request('GET', resetPath, editor.token, null, 403);
+    const readiness = await request('GET', resetPath, token);
+    assert.equal(readiness.eligible, true);
+    assert.equal(readiness.requiresPassword, true);
+    const confirmation = { revision: readiness.revision, confirmation: 'DELETE WORKSPACE DATA', password: a.password };
+
+    await request('POST', resetPath, editor.token, confirmation, 403);
+    await request('POST', resetPath, token, { ...confirmation, confirmation: 'DELETE' }, 400);
+    const invalidPassword = await request('POST', resetPath, token, { ...confirmation, password: 'incorrect-local-password' }, 401);
+    assert.equal(invalidPassword.code, 'WORKSPACE_RESET_PASSWORD_INVALID');
+    assert.equal((await request('GET', '/leads', token)).length, 1);
+    assert.equal((await request('GET', publicPath)).status, 'Accepted');
+
+    const backupTeamAccount = await registry.collection('saasaccounts').findOne({ email: 'editor@example.test' });
+    assert.ok(backupTeamAccount);
+    // Force the default profile insert to fail after deletions have begun.
+    await tenantDB.command({ collMod: 'studioconfigs', validator: { studioName: { $ne: before.workspace.name } } });
+    try {
+      await request('POST', resetPath, token, confirmation, 503);
+      assert.equal((await request('GET', resetPath, token)).revision, readiness.revision);
+      assert.equal((await request('GET', '/leads', token)).length, 1);
+      assert.equal((await request('GET', publicPath)).status, 'Accepted');
+      assert.equal((await request('GET', '/saas/workspace', token)).seats.used, 2);
+    } finally {
+      await tenantDB.command({ collMod: 'studioconfigs', validator: {} });
+    }
+    const result = await request('POST', resetPath, token, confirmation);
+    assert.equal(result.setupRequired, true);
+    const setup = await request('GET', '/saas/setup', token);
+    assert.equal(setup.step, 1);
+    assert.equal(setup.workspace.setupRequired, true);
+    assert.equal(setup.details.email, a.user.email);
+    assert.equal(setup.workspace.id, a.user.workspace.id);
+    assert.equal(setup.workspace.planId, before.workspace.planId);
+    assert.equal(setup.workspace.subscriptionStatus, before.workspace.subscriptionStatus);
+
+    for (const name of ['leads', 'studioprojects', 'studiocontacts', 'tasks', 'invoices', 'notifications', 'recoveryrecords', 'studioassistantconnections']) {
+      assert.equal(await tenantDB.collection(name).countDocuments(), 0, name);
+    }
+    assert.ok(await registry.collection('saasaccounts').findOne({ _id: backupTeamAccount._id }));
+    await request('GET', '/leads', token, null, 409);
+    await request('GET', '/saas/setup', otherOwnerSession.token, null, 401);
+    await request('GET', '/leads', editor.token, null, 401);
+    await request('GET', '/saas/invitations/' + pendingCode, null, null, 404);
+    await request('GET', publicPath, null, null, 404);
+    assert.equal((await request('GET', '/calendar', b.token)).length, 1);
+    const secondAssistant = (await request('GET', '/integrations/assistants/status', b.token)).providers;
+    assert.equal(secondAssistant.find(provider => provider.id === 'openai').model, 'south-model');
+
+    for (const step of [1, 2]) await request('PATCH', '/saas/setup', token, { step, details: {}, revision: setup.revision });
+    await request('POST', '/saas/setup/complete', token, { details: {}, revision: setup.revision });
+    assert.deepEqual(await request('GET', '/leads', token), []);
+    assert.deepEqual(await request('GET', '/calendar', token), []);
+    assert.equal((await request('GET', preferencesPath, token)).preferences.colorTheme, 'default');
+    const after = await request('GET', '/saas/workspace', token);
+    assert.equal(after.seats.used, 1);
+    assert.equal(after.seats.reserved, 0);
+    const newLead = await request('POST', '/leads', token, { name: 'New Sample Client', email: 'new@example.test', eventType: 'Wedding' });
+    const staleReset = await request('POST', resetPath, token, confirmation, 409);
+    assert.equal(staleReset.code, 'WORKSPACE_RESET_STALE');
+    assert.deepEqual((await request('GET', '/leads', token)).map(lead => lead._id), [newLead._id]);
+    const login = await request('POST', '/saas/login', null, ownerAccount);
+    assert.equal(login.user.id, a.user.id);
+    assert.ok(login.user.workspaceDataVersion > 0);
   });
 });

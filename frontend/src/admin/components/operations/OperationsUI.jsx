@@ -5,7 +5,7 @@ import { AlertCircle, ArrowUpRight, Loader2, X } from "lucide-react";
 import { isolateDialogBackground, lockDialogScroll } from '../studio/studioDialogIsolation';
 import StudioPortalSurface from '../common/StudioPortalSurface';
 
-export function OperationsModal({ title, description, onClose, children, footer, busy = false }) {
+export function OperationsModal({ title, description, onClose, children, footer, busy = false, className = "" }) {
   const dialogId = useId();
   const panelRef = useRef(null);
   const closeRef = useRef(onClose);
@@ -40,7 +40,7 @@ export function OperationsModal({ title, description, onClose, children, footer,
     };
   }, []);
   return createPortal(
-    <StudioPortalSurface className="studio-ops studio-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
+    <StudioPortalSurface className={`studio-ops studio-modal-overlay ${className}`} onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
       <section className="studio-modal ops-modal" role="dialog" aria-modal="true" aria-labelledby={`${dialogId}-title`} aria-describedby={description ? `${dialogId}-description` : undefined} aria-busy={busy} tabIndex={-1} ref={panelRef}>
         <div className="studio-modal-header">
           <div><h2 id={`${dialogId}-title`}>{title}</h2>{description && <p id={`${dialogId}-description`} className="studio-muted">{description}</p>}</div>

@@ -393,6 +393,8 @@
   margin: 0;
   align-self: center;
 }
+.studio-modal-overlay.studio-enquiry-remove-overlay { z-index: 10001; }
+.studio-enquiry-remove-overlay .studio-modal-header p { overflow-wrap: anywhere; }
 .studio-crm-enquiry-detail .studio-crm-enquiry-actions {
   display: flex;
   align-items: center;
@@ -500,12 +502,12 @@ html body.studio-commercial-workspace > .studio-crm-overlay.studio-crm-enquiry-o
     gap: 8px;
   }
   .studio-crm-enquiry-detail .studio-crm-detail-identity > .studio-crm-avatar { display: none; }
-  .studio-crm-enquiry-detail .studio-crm-enquiry-actions .studio-crm-edit-details {
+  .studio-crm-enquiry-detail .studio-crm-enquiry-actions :is(.studio-crm-edit-details, .studio-crm-detail-remove) {
     width: 44px;
     min-width: 44px;
     padding: 0;
   }
-  .studio-crm-enquiry-detail .studio-crm-edit-details > span { display: none; }
+  .studio-crm-enquiry-detail :is(.studio-crm-edit-details > span, .studio-crm-detail-remove-label) { display: none; }
   .studio-crm-overlay.studio-crm-enquiry-overlay > .studio-crm-enquiry-detail .studio-crm-detail-tabs button {
     flex: 1 1 0;
     min-width: 0;
@@ -598,5 +600,22 @@ html body.studio-commercial-workspace > .studio-crm-overlay.studio-crm-enquiry-o
     grid-column: 2;
     grid-row: 1 / span 2;
     align-self: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .studio-crm-overlay.studio-crm-enquiry-overlay > .studio-crm-enquiry-detail .studio-crm-detail-header:has(.studio-crm-detail-remove) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .studio-crm-enquiry-detail .studio-crm-enquiry-actions:has(.studio-crm-detail-remove) {
+    flex-wrap: wrap;
+  }
+  .studio-crm-enquiry-detail .studio-crm-enquiry-actions .studio-crm-detail-remove {
+    width: auto;
+    padding-inline: 12px;
+  }
+  .studio-crm-enquiry-detail .studio-crm-detail-remove .studio-crm-detail-remove-label { display: inline; }
+  .studio-crm-enquiry-detail .studio-crm-enquiry-actions:has(.studio-crm-detail-remove) .studio-crm-close-details {
+    margin-inline-start: auto;
   }
 }
