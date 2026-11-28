@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const { google } = require('googleapis');
 const { createOAuthStateService } = require('../utils/oauthState');
 const { createGmailOAuthHandlers } = require('../utils/gmailOAuth');
+const { createGoogleCallbackDispatcher } = require('../saas/googleOAuthCallbacks');
 const { GMAIL_SCOPE, gmailConfiguration, gmailSetupChecks, sealTokens, openTokens, listOptions, messageDetail, createGmailService, safeGmailError } = require('../services/gmailService');
 const { currentWorkspace, runInWorkspace, workspaceDatabase } = require('../saas/tenantContext');
 
@@ -65,6 +66,11 @@ async function opened(f, workspace = null) {
 const commercialEnv = {
   ...env, SAAS_ENABLED: 'true', API_PUBLIC_URL: 'https://api.example.test',
   SAAS_GOOGLE_CLIENT_ID: 'studio-oauth-client', SAAS_GOOGLE_CLIENT_SECRET: 'studio-oauth-secret',
+};
+const sharedCommercialEnv = {
+  ...commercialEnv, GMAIL_REDIRECT_URI: undefined,
+  SAAS_GOOGLE_CLIENT_ID: 'studio-fixture.apps.googleusercontent.com',
+  SAAS_GOOGLE_REDIRECT_URI: 'https://api.example.test/api/saas/oauth/google/callback',
 };
 function commercialFixture(extra = {}) {
   const workspaces = ['507f1f77bcf86cd7994390a1', '507f1f77bcf86cd7994390b1'].map(_id => ({
@@ -140,6 +146,70 @@ test('commercial Gmail uses the commercial Google identity or an explicitly conf
   const wrongOrigin = { ...commercialEnv, GMAIL_REDIRECT_URI: 'https://personal.example.test/api/integrations/gmail/callback' };
   assert.throws(() => gmailConfiguration(wrongOrigin));
   assert.equal(gmailSetupChecks(wrongOrigin).find(check => check.id === 'callback').ready, false);
+});
+
+test('commercial Gmail reuses the validated Google sign-in return address only without Gmail overrides', () => {
+  const config = gmailConfiguration(sharedCommercialEnv);
+  assert.equal(config.clientId, sharedCommercialEnv.SAAS_GOOGLE_CLIENT_ID);
+  assert.equal(config.redirectUri, sharedCommercialEnv.SAAS_GOOGLE_REDIRECT_URI);
+  assert.equal(config.beginUrl, 'https://api.example.test/api/integrations/gmail/begin');
+  assert.ok(gmailSetupChecks(sharedCommercialEnv).every(check => check.ready));
+  for (const update of [
+    { API_PUBLIC_URL: 'https://other-api.example.test' },
+    { SAAS_GOOGLE_CLIENT_ID: 'invalid-google-client-id' },
+    { SAAS_GOOGLE_REDIRECT_URI: 'https://api.example.test/unknown' },
+    { SAAS_GOOGLE_REDIRECT_URI: sharedCommercialEnv.SAAS_GOOGLE_REDIRECT_URI + '?extra=1' },
+    { GMAIL_CLIENT_ID: 'dedicated-id', GMAIL_CLIENT_SECRET: 'dedicated-secret' },
+    { GMAIL_REDIRECT_URI: sharedCommercialEnv.SAAS_GOOGLE_REDIRECT_URI },
+  ]) {
+    const invalid = { ...sharedCommercialEnv, ...update };
+    assert.throws(() => gmailConfiguration(invalid), { code: 'GMAIL_CONFIGURATION' });
+    assert.equal(gmailSetupChecks(invalid).find(check => check.id === 'callback').ready, false);
+  }
+  const dedicated = { ...sharedCommercialEnv, GMAIL_REDIRECT_URI: env.GMAIL_REDIRECT_URI };
+  assert.equal(gmailConfiguration(dedicated).redirectUri, env.GMAIL_REDIRECT_URI);
+});
+
+test('the shared Google callback routes each exact state format to only its own flow', async () => {
+  const f = commercialFixture({ env: sharedCommercialEnv });
+  const flow = await opened(f, f.workspaces[0]);
+  const state = flow.request.query.state;
+  assert.equal(new URL(flow.begin.location).searchParams.get('redirect_uri'), sharedCommercialEnv.SAAS_GOOGLE_REDIRECT_URI);
+
+  const dedicated = response();
+  await f.handlers.callback(flow.request, dedicated);
+  assert.match(dedicated.location, /step=configuration/);
+  assert.equal(f.exchanges.length, 0);
+
+  const counts = { gmail: 0, calendar: 0, signIn: 0 };
+  const dispatch = createGoogleCallbackDispatcher({
+    gmail: (req, res) => { counts.gmail++; return f.handlers.sharedGoogleCallback(req, res); },
+    calendar: () => { counts.calendar++; },
+  });
+  const signIn = () => { counts.signIn++; };
+  for (const rejected of [state.substring(5), state + ' ', [state], 'a'.repeat(64), undefined]) {
+    await dispatch({ ...flow.request, query: { state: rejected } }, response(), signIn);
+  }
+  await dispatch({ query: { state: state.replace(/^gmail\./, 'cal.') } }, response(), signIn);
+  assert.deepEqual(counts, { gmail: 0, calendar: 1, signIn: 5 });
+
+  const shared = response();
+  await dispatch(flow.request, shared, signIn);
+  assert.match(shared.location, /gmail=connected/);
+  assert.deepEqual(counts, { gmail: 1, calendar: 1, signIn: 5 });
+  assert.equal(f.exchanges.length, 1);
+  assert.equal(f.exchanges[0].redirect_uri, sharedCommercialEnv.SAAS_GOOGLE_REDIRECT_URI);
+  assert.ok(f.exchanges[0].codeVerifier);
+
+  const existing = commercialFixture();
+  const explicit = await opened(existing, existing.workspaces[0]);
+  const wrong = response();
+  await existing.handlers.sharedGoogleCallback(explicit.request, wrong);
+  assert.match(wrong.location, /step=configuration/);
+  assert.equal(existing.exchanges.length, 0);
+  const right = response();
+  await existing.handlers.callback(explicit.request, right);
+  assert.match(right.location, /gmail=connected/);
 });
 
 test('commercial Gmail consent is tenant- and browser-bound and supports Email-only admins', async () => {

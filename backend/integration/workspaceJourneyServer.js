@@ -8,6 +8,16 @@ const app = express();
 app.use(express.json());
 app.use('/api', require('../saas/access').createWorkspaceMiddleware());
 app.use('/api', require('../saas/publicTokens').createPublicWorkspaceMiddleware());
+const gmailRoutes = require('../routes/gmailRoutes');
+const { createGoogleCallbackDispatcher } = require('../saas/googleOAuthCallbacks');
+const { createGoogleOAuthHandlers } = require('../utils/oauthState');
+const { scopedCalendarReturn } = require('../saas/calendarConnection');
+app.get('/api/integrations/gmail/begin', gmailRoutes.oauth.begin);
+app.get('/api/integrations/gmail/callback', gmailRoutes.oauth.callback);
+app.get('/api/saas/oauth/google/callback', createGoogleCallbackDispatcher({
+  gmail: gmailRoutes.oauth.sharedGoogleCallback,
+  calendar: scopedCalendarReturn(createGoogleOAuthHandlers().callback, 'state'),
+}));
 app.use('/api', archiveGate.middleware());
 app.use('/api/studio-projects', async (req, _res, next) => {
   if (req.method === 'POST' && req.get('x-journey-pause') === 'project-create') {
@@ -29,7 +39,7 @@ const testAssistant = createStudioAssistantService({ fetchImpl: async (url, opti
   return Response.json({ output: [{ type: 'message', content: [{ type: 'output_text', text: 'A local draft from ' + model }] }] });
 } });
 app.use('/api/integrations/assistants', createStudioAssistantRouter({ service: testAssistant }));
-app.use('/api/integrations/gmail', require('../routes/gmailRoutes'));
+app.use('/api/integrations/gmail', gmailRoutes);
 app.use('/api/leads', require('../routes/leadroutes'));
 app.use('/api/calendar', (req, _res, next) => { req.io = { to: () => ({ emit() {} }) }; next(); }, require('../routes/calendarRoutes'));
 app.use('/api/tasks', require('../routes/taskRoutes'));

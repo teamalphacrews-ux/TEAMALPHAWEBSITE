@@ -1,13 +1,13 @@
 const { google } = require('googleapis');
 const { createOAuthStateService, browserCookie } = require('./oauthState');
-const { GMAIL_SCOPE, gmailConfiguration, sealTokens, openTokens, createGmailService, publicError } = require('../services/gmailService');
+const { GMAIL_SCOPE, GMAIL_CALLBACK_PATH, SHARED_GOOGLE_CALLBACK_PATH, gmailConfiguration, sealTokens, openTokens, createGmailService, publicError } = require('../services/gmailService');
 const { hasModule } = require('./moduleAccess');
 const { currentWorkspace, runInWorkspace } = require('../saas/tenantContext');
 const { accessStatus } = require('../saas/plans');
 const { requiresSetup } = require('../saas/setupAccess');
 const archiveGate = require('../services/studioArchiveGate');
 
-const workspaceToken = /^gmail\.([a-f0-9]{24})\.([a-f0-9]{64})$/;
+const gmailWorkspaceToken = /^gmail\.([a-f0-9]{24})\.([a-f0-9]{64})$/;
 const allowedWorkspace = workspace => workspace && !requiresSetup(workspace) && ['active', 'trialing'].includes(accessStatus(workspace));
 
 function returnToken(nonce) {
@@ -54,7 +54,7 @@ function createGmailOAuthHandlers({
       prepare(res);
       const input = req.query?.[parameter];
       if (!commercial) return handle(req, res, input);
-      const match = typeof input === 'string' && workspaceToken.exec(input);
+      const match = typeof input === 'string' && gmailWorkspaceToken.exec(input);
       if (!match) return failure(res, stage);
       try {
         const workspace = await findWorkspace(match[1]);
@@ -66,7 +66,7 @@ function createGmailOAuthHandlers({
       }
     };
   }
-  return {
+  const handlers = {
     start: async (req, res) => {
       prepare(res);
       try {
@@ -90,10 +90,13 @@ function createGmailOAuthHandlers({
         res.redirect(url);
       } catch (error) { diagnose('begin', error); failure(res, 'begin'); }
     }),
-    callback: scopedReturn('state', 'state', async (req, res, nonce) => {
+  };
+  const callbackAt = path =>
+    scopedReturn('state', 'state', async (req, res, nonce) => {
       let step = 'configuration';
       try {
         const config = gmailConfiguration(env);
+        if (new URL(config.redirectUri).pathname !== path) throw publicError('Gmail returned to an unexpected callback.', 400);
         step = 'state';
         const flow = await state.consume(nonce, browserCookie(req, config.cookieName));
         const clearOptions = { ...config.cookie }; delete clearOptions.maxAge;
@@ -131,8 +134,8 @@ function createGmailOAuthHandlers({
         if (!user) throw publicError('Please start Gmail connection again.', 409);
         res.redirect(config.frontendOrigin + '/admin/email?gmail=connected');
       } catch (error) { diagnose(step, error); failure(res, step); }
-    }),
-  };
+    });
+  return { ...handlers, callback: callbackAt(GMAIL_CALLBACK_PATH), sharedGoogleCallback: callbackAt(SHARED_GOOGLE_CALLBACK_PATH) };
 }
 
-module.exports = { createGmailOAuthHandlers };
+module.exports = { createGmailOAuthHandlers, gmailWorkspaceToken };

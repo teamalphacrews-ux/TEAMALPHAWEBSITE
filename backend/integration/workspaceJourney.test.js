@@ -59,6 +59,10 @@ test('commercial enquiry, project, task, quote, payment and recovery survive app
       NODE_ENV: 'test', SAAS_ENABLED: 'true', SAAS_SIGNUP_ENABLED: 'true', ...credentials,
       STUDIO_JOURNEY_WRITE_FENCE: String(writeFence),
       FRONTEND_URL: 'http://127.0.0.1', PUBLIC_FRONTEND_URL: 'http://127.0.0.1',
+      API_PUBLIC_URL: 'http://127.0.0.1',
+      SAAS_GOOGLE_CLIENT_ID: 'fixture.apps.googleusercontent.com',
+      SAAS_GOOGLE_CLIENT_SECRET: 'local-fixture-only',
+      SAAS_GOOGLE_REDIRECT_URI: 'http://127.0.0.1/api/saas/oauth/google/callback',
     }, stdio: ['ignore', 'ignore', 'inherit', 'ipc'] });
     const listenPort = await new Promise((resolve, reject) => {
       const failed = () => reject(new Error('HTTP fixture exited during startup'));
@@ -141,6 +145,39 @@ test('commercial enquiry, project, task, quote, payment and recovery survive app
     await request('DELETE', assistants + '/openai/connection', token);
     assert.equal(openai(await status(token)).configured, false);
     assert.equal(openai(await status(b.token)).configured, true);
+  });
+  await t.test('Gmail uses the existing Google callback with separate scoped browser proof', async () => {
+    const gmail = '/integrations/gmail';
+    const readiness = await request('GET', gmail + '/status', token);
+    assert.equal(readiness.configured, true);
+    assert.equal(readiness.connected, false);
+    const { url } = await request('POST', gmail + '/connect', token, {});
+    const begin = new URL(url);
+    assert.equal(begin.pathname, '/api/integrations/gmail/begin');
+    assert.match(begin.searchParams.get('ticket'), new RegExp('^gmail\\.' + a.user.workspace.id + '\\.[a-f0-9]{64}$'));
+
+    // The provider URL is inspected only. The fixture sends no request to Google.
+    const begun = await fetch(origin + begin.pathname + begin.search, { redirect: 'manual' });
+    assert.equal(begun.status, 302);
+    const destination = new URL(begun.headers.get('location'));
+    assert.equal(destination.origin, 'https://accounts.google.com');
+    assert.equal(destination.searchParams.get('redirect_uri'), 'http://127.0.0.1/api/saas/oauth/google/callback');
+    assert.equal(destination.searchParams.get('scope'), 'https://www.googleapis.com/auth/gmail.readonly');
+    assert.equal(destination.searchParams.get('code_challenge_method'), 'S256');
+    const cookie = begun.headers.getSetCookie()[0].split(';')[0];
+    assert.ok(cookie.startsWith('sx_gmail_oauth_' + a.user.workspace.id + '='));
+    const params = new URLSearchParams({ state: destination.searchParams.get('state'), error: 'access_denied' });
+    const urlFor = path => origin + path + '?' + params;
+    const noProof = await fetch(urlFor('/api/saas/oauth/google/callback'), { redirect: 'manual' });
+    assert.equal(noProof.status, 302);
+    assert.equal(noProof.headers.get('location'), 'http://127.0.0.1/admin/email?gmail=error&step=state');
+    assert.equal(noProof.headers.getSetCookie().length, 0);
+    const cancelled = await fetch(urlFor('/api/saas/oauth/google/callback'), { headers: { Cookie: cookie }, redirect: 'manual' });
+    assert.equal(cancelled.status, 302);
+    assert.equal(cancelled.headers.get('location'), 'http://127.0.0.1/admin/email?gmail=error&step=state');
+    assert.ok(cancelled.headers.getSetCookie().some(value => value.startsWith(cookie.split('=')[0] + '=;')));
+    assert.equal((await request('GET', gmail + '/status', token)).hasConnection, false);
+    assert.equal((await request('GET', gmail + '/status', b.token)).hasConnection, false);
   });
   const booking = { title: 'Practice', start: '2028-02-29T08:00:00Z', end: '2028-02-29T09:00:00Z', teamMembers: ['Sample Crew'] };
   const reserve = values => fetch(origin + '/api/calendar', { method: 'POST',

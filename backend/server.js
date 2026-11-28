@@ -111,10 +111,11 @@ app.get('/api/health', readiness.health);
 app.use('/api', readiness.requireReady);
 app.use('/api', require('./saas/access').createWorkspaceMiddleware({ onWorkspace: workspaceRealtime.ensureWorkspace }));
 app.use('/api', require('./saas/publicTokens').createPublicWorkspaceMiddleware({ Workspace: require('./saas/models').Workspace }));
-// Calendar shares the commercial OAuth client's registered return address.
-// Sign-in and Calendar each verify their own state, browser proof and scopes.
+// Sign-in, Calendar and Gmail can share the commercial OAuth client's return
+// address. Each flow verifies its own state, browser proof and scopes.
 const { createGoogleOAuthHandlers } = require('./utils/oauthState');
-const { scopedCalendarReturn, workspaceToken } = require('./saas/calendarConnection');
+const { scopedCalendarReturn } = require('./saas/calendarConnection');
+const { createGoogleCallbackDispatcher } = require('./saas/googleOAuthCallbacks');
 const gmailRoutes = require('./routes/gmailRoutes');
 const googleOAuth = createGoogleOAuthHandlers({ User, onConnected: async (user, req) => {
     const { setupGoogleWebhook, pollGoogleCalendar } = require('./services/googleCalendarService');
@@ -127,10 +128,10 @@ if (commercialCalendar) {
     app.get('/api/integrations/gmail/begin', gmailRoutes.oauth.begin);
     app.get('/api/integrations/gmail/callback', gmailRoutes.oauth.callback);
     app.get('/api/auth/google/begin', scopedCalendarReturn(googleOAuth.begin, 'ticket'));
-    const calendarCallback = scopedCalendarReturn(googleOAuth.callback, 'state');
-    app.get('/api/saas/oauth/google/callback', (req, res, next) =>
-        typeof req.query.state === 'string' && workspaceToken.test(req.query.state)
-            ? calendarCallback(req, res) : next());
+    app.get('/api/saas/oauth/google/callback', createGoogleCallbackDispatcher({
+        gmail: gmailRoutes.oauth.sharedGoogleCallback,
+        calendar: scopedCalendarReturn(googleOAuth.callback, 'state'),
+    }));
 }
 app.use('/api', archiveGate.middleware());
 if (commercialCalendar) app.post('/api/calendar/connect', auth, requireAdmin, (req, res) => {

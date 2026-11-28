@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, ArrowUpRight, Check, CheckCheck, ChevronLeft, Copy, FileText, Link2, LockKeyhole, MessageCircle, Plus, RefreshCw, Search, Send, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { IS_COMMERCIAL_DEPLOYMENT } from '../../saas/release';
 import { useStudioIdentity } from '../../utils/studioIdentity';
 import { studioTimezone } from '../../utils/studioTime';
 import { recordDestination } from '../../utils/studioNavigation';
@@ -28,6 +29,16 @@ const safeWebhook = value => { try { const u = new URL(value); return !u.usernam
 
 export default function WhatsAppInbox() {
   const { user } = useAuth();
+  if (IS_COMMERCIAL_DEPLOYMENT || user?.workspace) return <div className="studio-whatsapp-page">
+    <WorkspaceHeader title="WhatsApp" description="Open your WhatsApp chats in your browser.">
+      <Link className="studio-button" to="/admin/integrations"><ArrowLeft size={15} aria-hidden="true" />Integrations</Link>
+    </WorkspaceHeader>
+    <WhatsAppWebHandoff webOnly />
+  </div>;
+  return <ProviderWhatsAppInbox user={user} />;
+}
+
+function ProviderWhatsAppInbox({ user }) {
   const [params, setParams] = useSearchParams();
   const selected = /^[a-f\d]{24}$/i.test(params.get('conversation') || '') ? params.get('conversation') : '';
   const { identity } = useStudioIdentity();

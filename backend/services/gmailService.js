@@ -2,8 +2,11 @@ const crypto = require('node:crypto');
 const { google } = require('googleapis');
 const { vaultKey } = require('../utils/vaultCrypto');
 const { currentWorkspace } = require('../saas/tenantContext');
+const { providerConfig } = require('../saas/socialAuth');
 
 const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
+const GMAIL_CALLBACK_PATH = '/api/integrations/gmail/callback';
+const SHARED_GOOGLE_CALLBACK_PATH = '/api/saas/oauth/google/callback';
 const MESSAGE_ID = /^[a-f0-9]{1,64}$/i;
 const BODY_LIMIT = 100000;
 const publicError = (message, status = 502, code = 'GMAIL_UNAVAILABLE') => Object.assign(new Error(message), { status, code });
@@ -12,6 +15,13 @@ function gmailClient(env) {
   if (env.GMAIL_CLIENT_ID || env.GMAIL_CLIENT_SECRET) return { clientId: env.GMAIL_CLIENT_ID, clientSecret: env.GMAIL_CLIENT_SECRET };
   if (env.SAAS_ENABLED === 'true') return { clientId: env.SAAS_GOOGLE_CLIENT_ID, clientSecret: env.SAAS_GOOGLE_CLIENT_SECRET };
   return { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET };
+}
+
+function gmailCallbackSettings(env) {
+  if (env.SAAS_ENABLED === 'true' && !env.GMAIL_REDIRECT_URI && !env.GMAIL_CLIENT_ID && !env.GMAIL_CLIENT_SECRET) {
+    return { path: SHARED_GOOGLE_CALLBACK_PATH, uri: providerConfig('google', env)?.redirectUri };
+  }
+  return { path: GMAIL_CALLBACK_PATH, uri: env.GMAIL_REDIRECT_URI };
 }
 
 function matchesCommercialApi(url, env) {
@@ -30,9 +40,10 @@ function gmailConfiguration(env = process.env) {
     if (url.username || url.password || (url.protocol !== 'https:' && !(local && url.protocol === 'http:'))) throw publicError('Gmail requires secure backend and website addresses.', 503, 'GMAIL_CONFIGURATION');
     return url;
   };
-  const redirect = parse(env.GMAIL_REDIRECT_URI);
+  const callback = gmailCallbackSettings(env);
+  const redirect = parse(callback.uri);
   const frontend = parse(env.FRONTEND_URL);
-  if (redirect.pathname !== '/api/integrations/gmail/callback' || redirect.search || redirect.hash || !matchesCommercialApi(redirect, env)) throw publicError('Configure the Gmail callback at this API’s /api/integrations/gmail/callback address.', 503, 'GMAIL_CONFIGURATION');
+  if (redirect.pathname !== callback.path || redirect.search || redirect.hash || !matchesCommercialApi(redirect, env)) throw publicError('Use this API’s validated Google callback or register its dedicated Gmail callback.', 503, 'GMAIL_CONFIGURATION');
   vaultKey(env);
   const secure = redirect.protocol === 'https:';
   const workspace = currentWorkspace();
@@ -44,20 +55,21 @@ function gmailConfiguration(env = process.env) {
 
 function gmailSetupChecks(env = process.env) {
   const { clientId, clientSecret } = gmailClient(env);
-  const secureAddress = (value, callback = false) => {
+  const callback = gmailCallbackSettings(env);
+  const secureAddress = (value, callbackPath) => {
     try {
       const url = new URL(value);
       const local = env.NODE_ENV !== 'production' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
       return !url.username && !url.password && !url.search && !url.hash &&
         (url.protocol === 'https:' || (local && url.protocol === 'http:')) &&
-        (!callback || (url.pathname === '/api/integrations/gmail/callback' && matchesCommercialApi(url, env)));
+        (!callbackPath || (url.pathname === callbackPath && matchesCommercialApi(url, env)));
     } catch { return false; }
   };
   let encryptionReady = false;
   try { vaultKey(env); encryptionReady = true; } catch { /* Return readiness only, never credentials. */ }
   return [
     { id: 'oauth', label: 'Google app credentials', ready: Boolean(clientId && clientSecret), help: 'Save a complete Google OAuth client in the backend’s private settings.' },
-    { id: 'callback', label: 'Gmail return address', ready: secureAddress(env.GMAIL_REDIRECT_URI, true), help: 'Register the backend’s /api/integrations/gmail/callback address in Google Cloud and in its private settings.' },
+    { id: 'callback', label: 'Gmail return address', ready: secureAddress(callback.uri, callback.path), help: 'Verify the studio’s registered Google return address or configure its dedicated Gmail callback in Google Cloud and on the backend.' },
     { id: 'website', label: 'Secure studio website', ready: secureAddress(env.FRONTEND_URL), help: 'Use the current HTTPS Studio OS address for the return to your workspace.' },
     { id: 'encryption', label: 'Private connection storage', ready: encryptionReady, help: 'The backend needs its existing vault key to protect saved Google connections. Keep that key unchanged.' },
   ];
@@ -211,4 +223,4 @@ function createGmailService({ Connection = require('../models/GmailConnection'),
   return { status, list, detail, connectionFor, oauthClient };
 }
 
-module.exports = { GMAIL_SCOPE, gmailConfiguration, gmailSetupChecks, sealTokens, openTokens, safeGmailError, listOptions, messageSummary, messageDetail, createGmailService, publicError };
+module.exports = { GMAIL_SCOPE, GMAIL_CALLBACK_PATH, SHARED_GOOGLE_CALLBACK_PATH, gmailConfiguration, gmailSetupChecks, sealTokens, openTokens, safeGmailError, listOptions, messageSummary, messageDetail, createGmailService, publicError };
