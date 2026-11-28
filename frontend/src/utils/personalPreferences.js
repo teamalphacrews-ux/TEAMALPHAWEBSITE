@@ -1,4 +1,5 @@
 import { normalizeSidebarOrder } from './sidebarOrder.js';
+import { STUDIO_COLOR_THEMES } from './studioColorThemes.js';
 
 export const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English', nativeName: 'English', locale: 'en-IN' },
@@ -38,6 +39,7 @@ export function isValidPreferenceTimezone(value) {
   try { new Intl.DateTimeFormat('en', { timeZone: value }).format(); return true; } catch { return false; }
 }
 export const defaultPersonalPreferences = () => ({
+  colorTheme: 'default',
   sidebarSort: 'default', sidebarOrder: [], mobileTab: 'projects', overviewMode: 'today', textSize: 'compact', showInspiration: true, showActivityStreak: false,
   language: 'en', region: 'IN', timezone: 'studio', dateFormat: 'day-first', timeFormat: '12h', numberFormat: 'indian',
   notificationBadges: true, notificationToasts: true, notificationSound: false, notificationVolume: 50, notificationTone: 'chime',
@@ -46,6 +48,7 @@ export const defaultPersonalPreferences = () => ({
 export function normalizePersonalPreferences(value) {
   const base = defaultPersonalPreferences();
   const supplied = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  if (STUDIO_COLOR_THEMES.some(({ value: id }) => id === supplied.colorTheme)) base.colorTheme = supplied.colorTheme;
   for (const [key, options] of Object.entries({ sidebarSort: ['default','alphabetical','custom'], mobileTab: ['projects','finance'], overviewMode: ['today','insights'], textSize: ['compact','comfortable'], language: LANGUAGE_OPTIONS.map(option => option.value), region: REGION_OPTIONS.map(option => option.value), dateFormat: ['day-first', 'month-first', 'iso'], timeFormat: ['12h', '24h'], numberFormat: ['indian', 'international'], notificationTone: ['chime', 'soft', 'bell'] })) if (options.includes(supplied[key])) base[key] = supplied[key];
   base.sidebarOrder = normalizeSidebarOrder(supplied.sidebarOrder);
   if (isValidPreferenceTimezone(supplied.timezone)) base.timezone = supplied.timezone;

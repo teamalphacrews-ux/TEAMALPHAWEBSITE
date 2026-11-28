@@ -1,36 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2 } from 'lucide-react';
 import { TEAM_ALPHA_LOGO } from '../../utils/branding';
 
-const LoadingScreen = ({ isLoading, total = 0, current = 0 }) => {
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [shouldRender, setShouldRender] = useState(isLoading);
-
-  // High-precision progress calculation
-  const progress = total > 0 ? Math.floor((current / total) * 100) : 0;
-
+function CompleteLoadingScreen({ total, current }) {
+  const [open, setOpen] = useState(true);
   useEffect(() => {
-    if (!isLoading && total > 0 && current >= total) {
-      setShowSuccess(true);
-      const timer = setTimeout(() => {
-        setShouldRender(false);
-      }, 1500); 
-      return () => clearTimeout(timer);
-    } else if (isLoading) {
-      setShouldRender(true);
-      setShowSuccess(false);
-    } else if (!isLoading && (total === 0 || current >= total)) {
-      // Immediate hide if nothing to load or already done
-      setShouldRender(false);
-    }
-  }, [isLoading, current, total]);
-
-  if (!shouldRender) return null;
+    const timer = setTimeout(() => setOpen(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <AnimatePresence>
-      <motion.div
+      {open && <LoadingScreenContent showSuccess total={total} current={current} />}
+    </AnimatePresence>
+  );
+}
+
+function LoadingScreenContent({ total, current, showSuccess = false }) {
+  const progress = total > 0 ? Math.floor((current / total) * 100) : 0;
+  return (
+      <Motion.div
         initial={{ opacity: 1 }}
         exit={{ opacity: 0, scale: 1.1 }}
         transition={{ duration: 0.8, ease: [0.43, 0.13, 0.23, 0.96] }}
@@ -40,7 +30,7 @@ const LoadingScreen = ({ isLoading, total = 0, current = 0 }) => {
           {/* Main Animation Container */}
           <div className="relative w-40 h-40 flex items-center justify-center">
             {/* Spinning Aperture Blades (Cute Photography Theme) */}
-            <motion.div
+            <Motion.div
               animate={showSuccess ? { rotate: 360, scale: 0.8, opacity: 0 } : { rotate: 360 }}
               transition={showSuccess ? { duration: 0.5 } : { repeat: Infinity, duration: 4, ease: "linear" }}
               className="absolute inset-0"
@@ -53,10 +43,10 @@ const LoadingScreen = ({ isLoading, total = 0, current = 0 }) => {
                 />
               ))}
               <div className="absolute inset-4 rounded-full border-4 border-dashed border-slate-200" />
-            </motion.div>
+            </Motion.div>
 
             {/* Central Icon */}
-            <motion.div
+            <Motion.div
               initial={{ scale: 0.8 }}
               animate={showSuccess ? { scale: 1.2, color: "#10b981" } : { scale: [0.9, 1.1, 0.9] }}
               transition={showSuccess ? { type: "spring", stiffness: 300 } : { repeat: Infinity, duration: 2 }}
@@ -67,11 +57,11 @@ const LoadingScreen = ({ isLoading, total = 0, current = 0 }) => {
               ) : (
                 <img src={TEAM_ALPHA_LOGO} alt="Team Alpha" width="64" height="64" className="h-16 w-16 object-contain" />
               )}
-            </motion.div>
+            </Motion.div>
           </div>
 
           {/* Text Feedback */}
-          <motion.div 
+          <Motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-12 text-center"
@@ -83,7 +73,7 @@ const LoadingScreen = ({ isLoading, total = 0, current = 0 }) => {
             {!showSuccess && (
               <div className="mt-4 flex flex-col items-center gap-2">
                 <div className="w-48 h-1 bg-slate-100 rounded-full overflow-hidden">
-                  <motion.div 
+                  <Motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progress}%` }}
                     className="h-full bg-gradient-to-r from-[#cfe8d5] to-[#d9cdeb]"
@@ -94,16 +84,19 @@ const LoadingScreen = ({ isLoading, total = 0, current = 0 }) => {
                 </span>
               </div>
             )}
-          </motion.div>
+          </Motion.div>
         </div>
 
         {/* Decorative elements */}
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2">
            <p className="text-[9px] uppercase tracking-[0.5em] font-bold text-slate-300">Team Alpha Cinema</p>
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </Motion.div>
   );
-};
+}
 
-export default LoadingScreen;
+export default function LoadingScreen({ isLoading, total = 0, current = 0 }) {
+  if (isLoading) return <LoadingScreenContent total={total} current={current} />;
+  if (total > 0 && current >= total) return <CompleteLoadingScreen total={total} current={current} />;
+  return null;
+}

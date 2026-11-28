@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { createElement, useState, useRef } from "react";
 import { Phone, Mail, Calendar, Clock, CheckCircle, MessageCircle, AlertCircle, CalendarPlus } from "lucide-react";
 import { format, addDays } from "date-fns";
 import axios from "axios";
@@ -22,10 +22,10 @@ export default function FollowUpList({ lead, onUpdate }) {
     }
 
     try {
-      const response = await axios.patch(`${import.meta.env.VITE_API_URL || ""}/api/leads/${lead._id}`, {
+      const response = await axios.patch(`${API}/api/leads/${lead._id}`, {
         status: 'Follow-up',
         followUpDate: nextDate
-      });
+      }, authHeader);
 
       if (onUpdate) onUpdate(response.data);
       toast.success(`Follow-up scheduled for ${format(nextDate, 'MMM dd')}`);
@@ -48,12 +48,12 @@ export default function FollowUpList({ lead, onUpdate }) {
 
     setLoading(true);
     try {
-      const response = await axios.patch(`${import.meta.env.VITE_API_URL || ""}/api/leads/${lead._id}`, {
+      const response = await axios.patch(`${API}/api/leads/${lead._id}`, {
         followUpDate: null,
-      });
+      }, authHeader);
       if (onUpdate) onUpdate(response.data);
       toast.success("Follow-up marked as completed");
-    } catch (err) {
+    } catch {
       toast.error("Error updating status");
     } finally {
       setLoading(false);
@@ -69,7 +69,10 @@ export default function FollowUpList({ lead, onUpdate }) {
   const renderContactButton = ({ type, isActive, icon: Icon, label, onClick, href, target }) => {
     const content = (
       <>
-        <Icon size={18} className={isActive ? (type === 'whatsapp' ? "text-[#25D366] group-hover:scale-110 transition-transform" : "text-charcoal group-hover:text-gold transition-colors") : ""} />
+        {createElement(Icon, {
+          size: 18,
+          className: isActive ? (type === 'whatsapp' ? "text-[#25D366] group-hover:scale-110 transition-transform" : "text-charcoal group-hover:text-gold transition-colors") : "",
+        })}
         <span className="text-[10px] uppercase tracking-wider mt-1">{label}</span>
       </>
     );
@@ -172,7 +175,7 @@ export default function FollowUpList({ lead, onUpdate }) {
                     if (dateInputRef.current) {
                       try {
                         dateInputRef.current.showPicker();
-                      } catch (e) {
+                      } catch {
                         dateInputRef.current.focus();
                         dateInputRef.current.click();
                       }

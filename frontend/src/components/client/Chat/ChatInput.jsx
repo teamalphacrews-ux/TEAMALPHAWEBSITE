@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Smile, Paperclip, X, Image as ImageIcon, FileText, Reply, Sparkles } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import EmojiPicker from 'emoji-picker-react';
 import ReplyPreview from './ReplyPreview';
 
@@ -70,7 +70,7 @@ export default function ChatInput({
             </button>
             <AnimatePresence>
                 {showEmojiPicker && (
-                    <motion.div 
+                    <Motion.div
                         initial={{ opacity: 0, scale: 0.9, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 10 }}
@@ -84,7 +84,7 @@ export default function ChatInput({
                           skinTonesDisabled
                           previewConfig={{ showPreview: false }}
                         />
-                    </motion.div>
+                    </Motion.div>
                 )}
             </AnimatePresence>
           </div>

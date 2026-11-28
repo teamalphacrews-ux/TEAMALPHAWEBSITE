@@ -10,6 +10,8 @@ const env = Object.freeze({ RAZORPAY_KEY_ID: 'rzp_test_only', RAZORPAY_KEY_SECRE
 const workspace = () => ({ _id: workspaceId, pendingSubscriptionId: subscriptionId, pendingPlanId: 'studio', planId: 'starter', subscriptionStatus: 'trialing', seatsReserved: 3 });
 const providerSubscription = () => ({ id: subscriptionId, plan_id: providerPlanId, notes: { workspaceId }, status: 'active' });
 const providerPlan = () => ({ id: providerPlanId, period: 'monthly', interval: 1, item: { currency: 'INR', amount: 250000 } });
+const pendingCheckoutFields = { pendingSubscriptionId: 1, pendingPlanId: 1, pendingRazorpayPlanId: 1,
+  pendingRazorpayPlanAmountPaise: 1, checkoutState: 1, checkoutRequestedAt: 1 };
 
 function fixture(t, options = {}) {
   const state = { fetches: [], leases: [], updates: [], leaseToken: null };
@@ -45,7 +47,7 @@ function fixture(t, options = {}) {
       return { matchedCount: update.$set && options.staleLease ? 0 : 1 };
     },
   } };
-  return { row, state, models, refresh: (id = subscriptionId) => refreshSubscription(row, id, { models, env }) };
+  return { row, state, models, refresh: (id = subscriptionId) => refreshSubscription(row, id, { models, env: options.env || env }) };
 }
 
 function assertReleased(state) {
@@ -63,8 +65,9 @@ test('verified active monthly subscription activates the exact workspace and cle
   const activation = state.updates[0];
   assert.deepEqual(activation.filter, { _id: workspaceId, billingSyncToken: state.leaseToken, seatsReserved: { $lte: 15 }, pendingSubscriptionId: subscriptionId });
   assert.deepEqual(activation.update, {
-    $set: { planId: 'studio', seatLimit: 15, razorpaySubscriptionId: subscriptionId, razorpayPlanId: providerPlanId, subscriptionStatus: 'active' },
-    $unset: { pendingSubscriptionId: 1, pendingPlanId: 1, checkoutState: 1, checkoutRequestedAt: 1 },
+    $set: { planId: 'studio', seatLimit: 15, razorpaySubscriptionId: subscriptionId, razorpayPlanId: providerPlanId,
+      razorpayPlanAmountPaise: 250000, subscriptionStatus: 'active' },
+    $unset: pendingCheckoutFields,
   });
   assertReleased(state);
 });
@@ -74,6 +77,50 @@ test('refreshing the current active subscription preserves a different pending c
   await refresh();
   assert.equal(state.updates[0].update.$set.razorpaySubscriptionId, subscriptionId);
   assert.equal(state.updates[0].update.$unset, undefined);
+  assertReleased(state);
+});
+
+const rotatedCatalog = { ...env, RAZORPAY_STUDIO_PLAN_ID: 'plan_Replacement', SAAS_STUDIO_MONTHLY_INR: '3000' };
+
+test('catalog rotation preserves an established subscription on its verified immutable plan', async t => {
+  const { refresh, state } = fixture(t, { env: rotatedCatalog, workspace: {
+    planId: 'studio', razorpaySubscriptionId: subscriptionId, razorpayPlanId: providerPlanId,
+    pendingSubscriptionId: undefined,
+  } });
+  await refresh();
+  assert.deepEqual(state.fetches.map(call => call.url), [
+    'https://api.razorpay.com/v1/subscriptions/' + subscriptionId,
+    'https://api.razorpay.com/v1/plans/' + providerPlanId,
+  ]);
+  assert.equal(state.updates[0].update.$set.razorpayPlanAmountPaise, 250000);
+});
+
+test('catalog rotation preserves the approved price when a pending checkout activates', async t => {
+  const { refresh, state } = fixture(t, { env: rotatedCatalog, workspace: {
+    pendingRazorpayPlanId: providerPlanId, pendingRazorpayPlanAmountPaise: 250000,
+  } });
+  await refresh();
+  assert.equal(state.updates[0].update.$set.razorpayPlanId, providerPlanId);
+  assert.equal(state.updates[0].update.$set.razorpayPlanAmountPaise, 250000);
+  assert.deepEqual(state.updates[0].update.$unset, pendingCheckoutFields);
+});
+
+test('an existing checkout cannot activate on a different amount after catalog rotation', async t => {
+  const { refresh, state } = fixture(t, { env: rotatedCatalog, workspace: {
+    pendingRazorpayPlanId: providerPlanId, pendingRazorpayPlanAmountPaise: 250000,
+  }, plan: { ...providerPlan(), item: { currency: 'INR', amount: 300000 } } });
+  await assert.rejects(refresh(), { status: 503 });
+  assert.equal(state.updates.some(call => call.update.$set), false);
+  assertReleased(state);
+});
+
+test('an established subscription cannot switch to another provider plan after catalog rotation', async t => {
+  const { refresh, state } = fixture(t, { env: rotatedCatalog, workspace: {
+    planId: 'studio', razorpaySubscriptionId: subscriptionId, razorpayPlanId: providerPlanId,
+    pendingSubscriptionId: undefined,
+  }, subscription: { ...providerSubscription(), plan_id: 'plan_Replacement' } });
+  await assert.rejects(refresh(), { status: 403 });
+  assert.equal(state.updates.some(call => call.update.$set), false);
   assertReleased(state);
 });
 
@@ -175,9 +222,7 @@ for (const status of ['expired', 'completed', 'cancelled']) {
     });
     assert.deepEqual(await refresh(), { status: 'verified', subscriptionStatus: 'trialing' });
     assert.equal(state.updates[0].filter.pendingSubscriptionId, subscriptionId);
-    assert.deepEqual(state.updates[0].update, { $unset: {
-      pendingSubscriptionId: 1, pendingPlanId: 1, checkoutState: 1, checkoutRequestedAt: 1,
-    } });
+    assert.deepEqual(state.updates[0].update, { $unset: pendingCheckoutFields });
     assertReleased(state);
   });
 }

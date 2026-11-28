@@ -130,9 +130,6 @@
 .document-design-content { display: grid; gap: 18px; min-width: 0; color: var(--studio-text); }
 .document-design-content > p { margin: 0; color: var(--studio-muted); font-size: 13px; line-height: 1.7; }
 .document-design-content .qw-field { margin: 0; }
-.document-design-content .qw-cover-grid { margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.document-design-content .qw-cover-grid button { border-radius: 10px; overflow: hidden; padding: 3px; }
-.document-design-content .qw-cover-grid img { aspect-ratio: 1.4; width: 100%; height: auto; object-fit: cover; display: block; border-radius: 6px; }
 .document-design-content input[type=color] { height: 46px; width: 100%; border: 1px solid var(--studio-border); background: var(--studio-surface); padding: 6px; border-radius: 10px; }
 .studio-app.studio-app.studio-personal-workspace :is(.qw-item-tools, .invoice-item-actions) {
   display: flex;
@@ -183,7 +180,6 @@
   .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-description { grid-column: 1; padding: 0; }
   .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-quote-metadata { grid-column: 1 / -1; margin: 0; gap: 12px 20px; }
   .studio-app.studio-app.studio-personal-workspace .qw-list-panel .qw-list-status-filter { align-items: center; }
-  .document-design-content .qw-cover-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* Keep item tools in flow and give grouped copy a single focus boundary. */

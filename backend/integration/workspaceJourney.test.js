@@ -95,6 +95,18 @@ test('commercial enquiry, project, task, quote, payment and recovery survive app
   const editor = await request('POST', '/saas/invitations/' + inviteCode + '/accept', null, {
     firstName: 'Sample', lastName: 'Editor', password: randomBytes(20).toString('hex'),
   });
+  const preferencesPath = '/studio/preferences';
+  await t.test('workspace palette stays private to each account and separate from display mode', async () => {
+    const saved = await request('PATCH', preferencesPath, token, { colorTheme: 'rosso-corsa', theme: 'dark' });
+    assert.equal(saved.preferences.colorTheme, 'rosso-corsa');
+    assert.equal(saved.preferences.theme, 'dark');
+    for (const otherToken of [b.token, editor.token]) {
+      assert.equal((await request('GET', preferencesPath, otherToken)).preferences.colorTheme, 'default');
+    }
+    await request('PATCH', preferencesPath, token, { colorTheme: '#ff0000' }, 400);
+    const system = await request('PATCH', preferencesPath, token, { theme: 'system' });
+    assert.equal(system.preferences.colorTheme, 'rosso-corsa');
+  });
   const booking = { title: 'Practice', start: '2028-02-29T08:00:00Z', end: '2028-02-29T09:00:00Z', teamMembers: ['Sample Crew'] };
   const reserve = values => fetch(origin + '/api/calendar', { method: 'POST',
     headers: { 'x-auth-token': token, 'Content-Type': 'application/json' }, body: JSON.stringify(values),
@@ -173,6 +185,9 @@ test('commercial enquiry, project, task, quote, payment and recovery survive app
   await stop(mongo, 'SIGTERM');
   await startMongo(false);
   await startApp();
+  const restoredPreferences = (await request('GET', preferencesPath, token)).preferences;
+  assert.equal(restoredPreferences.colorTheme, 'rosso-corsa');
+  assert.equal(restoredPreferences.theme, 'system');
   const saved = await request('GET', '/invoices/' + invoice._id, token);
   assert.ok(saved.documentNumber || saved.invoiceNumber);
   assert.equal(saved.documentNumber || saved.invoiceNumber, invoice.documentNumber || invoice.invoiceNumber);
@@ -194,4 +209,39 @@ test('commercial enquiry, project, task, quote, payment and recovery survive app
   assert.equal(paidRows[0].invoice._id, invoice._id);
   assert.equal(paidRows[0].paymentStatus, 'Paid');
   assert.equal(paidRows[0].balance, 0);
+  await t.test('finance reports overlapping booking, invoice and ledger receipts separately', async () => {
+    const recordedDate = new Date(paid.invoiceDate);
+    const year = recordedDate.getUTCFullYear();
+    const leadRecord = await rawLead();
+    await tenantDB.collection('leads').updateOne({ _id: leadRecord._id }, {
+      $set: { paymentStatus: 'Deposit Paid', totalAmount: 500, depositAmount: paid.total, createdAt: recordedDate },
+    });
+    const ledger = (amount, date, type, status) => request('POST', '/studio/ledger', token, {
+      title: 'Sample transaction', category: type, amount, date, type, status,
+    }, 201);
+    const today = recordedDate.toISOString().slice(0, 10);
+    const lastYear = (year - 1) + '-12-31';
+    await ledger(paid.total, today, 'income', 'Received');
+    await ledger(10.01, today, 'expense', 'Paid');
+    await ledger(100, today, 'expense', 'Pending');
+    await ledger(900, lastYear, 'income', 'Received');
+    const read = (route, source, requestedYear = year, session = token) =>
+      request('GET', '/finance/' + route + '?source=' + source + '&year=' + requestedYear, session);
+    for (const source of ['invoices', 'bookings', 'ledger']) {
+      const yearly = await read('overview', source);
+      assert.equal(yearly.annualSales, 318.64);
+      assert.equal(yearly.expenses, 10.01);
+      assert.equal(yearly.annualProfit, source === 'ledger' ? 308.63 : null);
+      const thisMonth = (await read('monthly-performance', source))[recordedDate.getUTCMonth()];
+      assert.equal(thisMonth.revenue, 318.64);
+      assert.equal(thisMonth.cashFlow, source === 'ledger' ? 308.63 : null);
+      const income = (await read('transactions', source)).filter(row => row.type === 'income');
+      assert.equal(income.length, 1);
+      assert.equal(income[0].amount, 318.64);
+    }
+    assert.equal((await read('pending-payments', 'invoices')).length, 0);
+    assert.equal((await read('pending-payments', 'bookings'))[0].pending, 181.36);
+    assert.equal((await read('overview', 'ledger', year - 1)).annualSales, 900);
+    assert.equal((await read('overview', 'invoices', year, b.token)).annualSales, 0);
+  });
 });

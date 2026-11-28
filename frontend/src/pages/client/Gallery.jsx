@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Download, X, Maximize2, Play, Image as ImageIcon, Sparkles, Filter, Camera, Lock, ArrowRight, Loader2, Calendar, ChevronRight, ArrowLeft, Search, Box } from "lucide-react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence } from "framer-motion";
 import Masonry from "react-masonry-css";
 import LoadingScreen from "../../components/common/LoadingScreen";
+
+async function loadGalleryEvents(galleryId, token, signal) {
+  const response = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/drive-gallery/${galleryId}/events`, {
+    headers: { 'x-auth-token': token },
+    signal,
+  });
+  if (!response.ok) throw new Error("Could not load gallery events.");
+  const events = await response.json();
+  return Array.isArray(events) ? events : [];
+}
 
 export default function Gallery() {
   const [user, setUser] = useState(null);
@@ -13,7 +23,6 @@ export default function Gallery() {
   const [password, setPassword] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
-  const [galleryId, setGalleryId] = useState(null);
 
   // Views ('events' or 'masonry')
   const [view, setView] = useState("events");
@@ -32,50 +41,45 @@ export default function Gallery() {
   const [imagesLoaded, setImagesLoaded] = useState(0);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
     const fetchUserAndInit = async () => {
-      setLoadingEvents(true);
       try {
         const token = localStorage.getItem('token');
-        if (token) {
-          const userRes = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/me`, {
-            headers: { 'x-auth-token': token }
-          });
-          if (userRes.ok) {
-            const userData = await userRes.json();
-            setUser(userData);
-            
-            // Check if this gallery is already unlocked for this session
-            const storedId = localStorage.getItem(`gallery_id_${userData._id}`);
-            const isUnlocked = localStorage.getItem(`gallery_unlocked_${userData._id}`);
-            
-            if (isUnlocked === 'true' && storedId) {
-              setGalleryId(storedId);
-              setIsLocked(false);
-              await fetchEvents(storedId);
-            }
-          }
+        if (!token) return;
+        const userRes = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/me`, {
+          headers: { 'x-auth-token': token },
+          signal,
+        });
+        if (!userRes.ok) return;
+        const userData = await userRes.json();
+        if (signal.aborted) return;
+        setUser(userData);
+
+        const storedId = localStorage.getItem(`gallery_id_${userData._id}`);
+        const isUnlocked = localStorage.getItem(`gallery_unlocked_${userData._id}`);
+        if (isUnlocked === 'true' && storedId) {
+          const restoredEvents = await loadGalleryEvents(storedId, token, signal);
+          if (signal.aborted) return;
+          setEvents(restoredEvents);
+          setIsLocked(false);
         }
-        if (!localStorage.getItem('token')) setLoadingEvents(false);
-      } catch (err) {
-        console.error("Failed to initialize gallery:", err);
-        setLoadingEvents(false);
+      } catch {
+        if (!signal.aborted) setError("Could not load the gallery. Try your access code again.");
+      } finally {
+        if (!signal.aborted) setLoadingEvents(false);
       }
     };
 
-    fetchUserAndInit();
+    void fetchUserAndInit();
+    return () => controller.abort();
   }, []);
 
   const fetchEvents = async (cid) => {
     setLoadingEvents(true);
     try {
       const token = localStorage.getItem('token');
-      const eventsRes = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/drive-gallery/${cid}/events`, {
-        headers: { 'x-auth-token': token }
-      });
-      const eventsData = await eventsRes.json();
-      setEvents(eventsData || []);
-    } catch (err) {
-      console.error("Failed to fetch gallery events:", err);
+      setEvents(await loadGalleryEvents(cid, token));
     } finally {
       setLoadingEvents(false);
     }
@@ -102,15 +106,14 @@ export default function Gallery() {
       const data = await res.json();
       
       if (res.ok) {
+        await fetchEvents(data.id);
         setIsLocked(false);
-        setGalleryId(data.id);
         localStorage.setItem(`gallery_unlocked_${user?._id}`, 'true');
         localStorage.setItem(`gallery_id_${user?._id}`, data.id);
-        await fetchEvents(data.id);
       } else {
         setError(data.error || "Incorrect access code.");
       }
-    } catch (err) {
+    } catch {
       setError("Authorization failed. Please try again.");
     } finally {
       setVerifying(false);
@@ -130,8 +133,9 @@ export default function Gallery() {
         const filesRes = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/drive-gallery/files/${event._id}`, {
             headers: { 'x-auth-token': token }
         });
+        if (!filesRes.ok) throw new Error("Could not load gallery files.");
         const filesData = await filesRes.json();
-        setFiles(filesData || []);
+        setFiles(Array.isArray(filesData) ? filesData : []);
     } catch (err) {
         console.error("Failed to fetch files for event", err);
     } finally {
@@ -272,7 +276,7 @@ export default function Gallery() {
             ) : events.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
                 {events.map((event, idx) => (
-                  <motion.div
+                  <Motion.div
                     layout
                     key={event._id}
                     initial={{ opacity: 0, y: 30 }}
@@ -292,7 +296,7 @@ export default function Gallery() {
                     />
 
                     {/* Full Image Background */}
-                    <motion.img 
+                    <Motion.img
                       src={event.thumbnail || `https://source.unsplash.com/random/800x1200/?wedding,event`} 
                       alt={event.name}
                       whileHover={{ scale: 1.15 }}
@@ -305,7 +309,7 @@ export default function Gallery() {
 
                     {/* Dynamic Text Content Overlay */}
                     <div className="absolute inset-0 p-8 flex flex-col justify-end z-30 pointer-events-none text-left">
-                      <motion.div 
+                      <Motion.div
                         initial={false}
                         className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-1.5 w-fit mb-4 group-hover:bg-luxury-gold/20 group-hover:border-luxury-gold/40 transition-all duration-500"
                       >
@@ -313,7 +317,7 @@ export default function Gallery() {
                           <ImageIcon size={10} className="mb-0.5" />
                           Event Folder
                         </span>
-                      </motion.div>
+                      </Motion.div>
 
                       <h3 className="text-3xl font-bold text-white tracking-tight mb-2 group-hover:text-luxury-gold transition-colors duration-500">
                         {event.name}
@@ -328,7 +332,7 @@ export default function Gallery() {
                         <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-500" />
                       </div>
                     </div>
-                  </motion.div>
+                  </Motion.div>
                 ))}
               </div>
             ) : (
@@ -429,7 +433,7 @@ export default function Gallery() {
                 columnClassName="my-masonry-grid_column"
               >
                 {filteredFiles.map((file, idx) => (
-                  <motion.div
+                  <Motion.div
                     layoutId={file.id}
                     key={file.id}
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -444,7 +448,7 @@ export default function Gallery() {
                     className="relative group cursor-pointer overflow-hidden transition-all duration-500 rounded-2xl glass-card !p-0 shadow-lg"
                   >
                     <div className="w-full h-full relative overflow-hidden rounded-2xl">
-                        <motion.img 
+                        <Motion.img
                           src={`${import.meta.env.VITE_API_URL || ""}/api/drive-gallery/proxy/${file.id}?thumbnail=true`} 
                           alt={file.name} 
                           loading="eager" 
@@ -473,7 +477,7 @@ export default function Gallery() {
                           </div>
                         </div>
                     </div>
-                  </motion.div>
+                  </Motion.div>
                 ))}
               </Masonry>
             ) : (

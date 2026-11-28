@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Pause, Play } from 'lucide-react';
 import useReducedStudioMotion from '../operations/useReducedStudioMotion';
 
@@ -9,28 +9,26 @@ function readPaused() {
   catch { return false; }
 }
 
+function subscribeToVisibility(callback) {
+  document.addEventListener('visibilitychange', callback);
+  return () => document.removeEventListener('visibilitychange', callback);
+}
+
+const documentIsVisible = () => !document.hidden;
+const serverDocumentIsVisible = () => false;
+
 export default function OverviewFluidBackdrop() {
   const backdrop = useRef(null);
   const reduced = useReducedStudioMotion();
   const [paused, setPaused] = useState(readPaused);
-  const [inView, setInView] = useState(false);
-  const [pageVisible, setPageVisible] = useState(() => typeof document !== 'undefined' && !document.hidden);
+  const [inView, setInView] = useState(() => typeof IntersectionObserver !== 'function');
+  const pageVisible = useSyncExternalStore(subscribeToVisibility, documentIsVisible, serverDocumentIsVisible);
 
   useEffect(() => {
-    const updateVisibility = () => setPageVisible(!document.hidden);
-    document.addEventListener('visibilitychange', updateVisibility);
-    updateVisibility();
-    let observer;
-    if (typeof IntersectionObserver === 'function') {
-      observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
-      observer.observe(backdrop.current);
-    } else {
-      setInView(true);
-    }
-    return () => {
-      document.removeEventListener('visibilitychange', updateVisibility);
-      observer?.disconnect();
-    };
+    if (typeof IntersectionObserver !== 'function') return;
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
+    observer.observe(backdrop.current);
+    return () => observer.disconnect();
   }, []);
 
   function toggleMotion() {

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { LANGUAGE_OPTIONS, REGION_OPTIONS, defaultPersonalPreferences, normalizePersonalPreferences, isValidPreferenceTimezone } from '../src/utils/personalPreferences.js';
 import { normalizeOverviewPreferences, defaultOverviewPreferences } from '../src/utils/overviewPreferences.js';
+import { STUDIO_COLOR_THEMES } from '../src/utils/studioColorThemes.js';
 const backend = createRequire(import.meta.url)('../../backend/utils/studioPreferences');
 
 test('English plus ten Indian languages and regional choices match the backend contract', () => {
@@ -19,6 +20,20 @@ test('older caches add safe defaults without losing existing theme, visibility o
   const updated = normalizeOverviewPreferences(old);
   assert.equal(updated.theme, 'dark'); assert.deepEqual(updated.visibleCards, []); assert.deepEqual(updated.cardOrder, old.cardOrder);
   for (const [key, value] of Object.entries(defaultPersonalPreferences())) assert.deepEqual(updated[key], value);
+});
+
+test('workspace palettes round-trip independently of light, dark and device appearance', () => {
+  assert.equal(STUDIO_COLOR_THEMES.length, 6);
+  assert.equal(new Set(STUDIO_COLOR_THEMES.map(({ value }) => value)).size, 6);
+  for (const { value: colorTheme } of STUDIO_COLOR_THEMES) {
+    for (const theme of ['light', 'dark', 'system']) {
+      const patch = backend.parsePreferences({ colorTheme, theme });
+      assert.deepEqual(patch, { colorTheme, theme });
+      assert.equal(normalizeOverviewPreferences(patch).colorTheme, colorTheme);
+      assert.equal(normalizeOverviewPreferences(patch).theme, theme);
+    }
+  }
+  assert.equal(normalizeOverviewPreferences({ colorTheme: '#ff0000' }).colorTheme, 'default');
 });
 
 test('saved language, silence and empty category choices survive JSON storage and normalization', () => {

@@ -14,9 +14,14 @@ export default function LeadDetails({ user, lead: initialLead, existingInvoice, 
     const [teamMembers, setTeamMembers] = useState(initialLead.people || []);
     const [allPhotographers, setAllPhotographers] = useState([]);
     const [selectedPhotographer, setSelectedPhotographer] = useState("");
-    const [showAddMember, setShowAddMember] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [selectedPhotographerProfile, setSelectedPhotographerProfile] = useState(null);
+    const [selectedPhotographerProfile, setSelectedPhotographerProfile] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('lastDeployedPhotographer'));
+        } catch {
+            return null;
+        }
+    });
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState({ ...initialLead });
     const [showFullLog, setShowFullLog] = useState(false);
@@ -30,7 +35,7 @@ export default function LeadDetails({ user, lead: initialLead, existingInvoice, 
             const response = await axios.patch(`${import.meta.env.VITE_API_URL || ""}/api/leads/${lead._id}`, { notes }, authHeader);
             setLead(response.data);
             toast.success("Notes updated");
-        } catch (e) { toast.error("Failed to save notes"); }
+        } catch { toast.error("Failed to save notes"); }
     };
 
     const handleSaveLead = async () => {
@@ -50,31 +55,15 @@ export default function LeadDetails({ user, lead: initialLead, existingInvoice, 
     };
 
     useEffect(() => {
-        fetchPhotographers();
-        
-        // PERSISTENCE: Restore last selected photographer profile on mount
-        const lastSelected = localStorage.getItem('lastDeployedPhotographer');
-        if (lastSelected) {
-            try {
-                const parsed = JSON.parse(lastSelected);
-                // We'll set it only if it's not already set by clicking a team member
-                if (!selectedPhotographerProfile) {
-                    setSelectedPhotographerProfile(parsed);
-                }
-            } catch (e) {
-                console.error("Failed to restore photographer selection", e);
-            }
-        }
-    }, []);
-
-    const fetchPhotographers = async () => {
-        try {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/photographers`, authHeader);
-            setAllPhotographers(response.data);
-        } catch (err) {
-            console.error("Failed to fetch photographers", err);
-        }
-    };
+        const controller = new AbortController();
+        axios.get(`${import.meta.env.VITE_API_URL || ""}/api/photographers`, {
+            headers: token ? { 'x-auth-token': token } : {},
+            signal: controller.signal,
+        }).then(({ data }) => setAllPhotographers(data)).catch(err => {
+            if (!controller.signal.aborted) console.error("Failed to fetch photographers", err);
+        });
+        return () => controller.abort();
+    }, [token]);
 
     const addMember = async (photographerObj) => {
         const targetPhotographer = photographerObj || allPhotographers.find(p => p.name === selectedPhotographer);

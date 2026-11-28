@@ -164,3 +164,107 @@ html[data-studio-appearance=dark] .studio-app.studio-app.studio-personal-workspa
   .studio-app.studio-app.studio-personal-workspace .qw-quote-editor :is(.qw-secondary-settings, .qw-editor-notes) > summary > svg { transition: none; }
 }
 .studio-app.studio-app.studio-personal-workspace[data-studio-motion="reduced"] .qw-quote-editor :is(.qw-secondary-settings, .qw-editor-notes) > summary > svg { transition: none; }
+.qw-cover-picker,
+.qw-cover-choices {
+  display: grid;
+  gap: 20px;
+}
+
+.qw-cover-picker-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+
+.qw-cover-picker-heading h3,
+.qw-cover-group h4 {
+  margin: 0;
+  color: var(--studio-text);
+  font: inherit;
+  font-weight: 650;
+}
+
+.qw-cover-group h4 {
+  margin-bottom: 10px;
+  font-size: 0.875rem;
+}
+
+.qw-cover-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 7rem), 1fr));
+  gap: 10px;
+}
+
+.qw-cover-option {
+  display: flex;
+  position: relative;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.qw-cover-option-tile {
+  width: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border: 1px solid var(--studio-border);
+  border-radius: 12px;
+  padding: 4px;
+  background: var(--studio-surface);
+}
+
+.qw-cover-option img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  object-fit: cover;
+  background: var(--studio-hover);
+  border-radius: 8px;
+}
+
+.qw-cover-option-caption {
+  min-width: 0;
+  padding: 7px 5px 5px;
+  color: var(--studio-text);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.qw-cover-option:hover .qw-cover-option-tile,
+.qw-cover-option input:checked + .qw-cover-option-tile {
+  border-color: var(--studio-focus, #245bd8);
+}
+
+.qw-cover-option input:checked + .qw-cover-option-tile {
+  box-shadow: inset 0 0 0 1px var(--studio-focus, #245bd8);
+}
+
+.qw-cover-option input:focus-visible + .qw-cover-option-tile {
+  outline: 2px solid var(--studio-focus, #245bd8);
+  outline-offset: 2px;
+}
+
+.qw-cover-option-check {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  color: #152c29;
+}
+
+.document-design-content .qw-cover-preview {
+  display: block;
+  width: 100%;
+  margin: 0;
+  max-height: 240px;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  border-radius: 12px;
+}

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Search, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence } from "framer-motion";
 
 export default function ChatSearchBar({ onSearch, placeholder = "Search messages..." }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -8,11 +8,11 @@ export default function ChatSearchBar({ onSearch, placeholder = "Search messages
     const inputRef = useRef(null);
     const containerRef = useRef(null);
 
-    const closeSearch = () => {
+    const closeSearch = useCallback(() => {
         setIsOpen(false);
         setQuery("");
         onSearch("");
-    };
+    }, [onSearch]);
 
     // ESC key support
     useEffect(() => {
@@ -23,7 +23,7 @@ export default function ChatSearchBar({ onSearch, placeholder = "Search messages
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOpen]);
+    }, [isOpen, closeSearch]);
 
     // Click outside detection
     useEffect(() => {
@@ -34,7 +34,7 @@ export default function ChatSearchBar({ onSearch, placeholder = "Search messages
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [isOpen]);
+    }, [isOpen, closeSearch]);
 
     useEffect(() => {
         if (isOpen && inputRef.current) {
@@ -51,7 +51,7 @@ export default function ChatSearchBar({ onSearch, placeholder = "Search messages
         <div ref={containerRef} className="flex items-center justify-end relative h-10">
             <AnimatePresence initial={false}>
                 {!isOpen ? (
-                    <motion.button
+                    <Motion.button
                         key="search-btn"
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -60,9 +60,9 @@ export default function ChatSearchBar({ onSearch, placeholder = "Search messages
                         className="w-10 h-10 flex items-center justify-center rounded-full text-stone-400 hover:text-stone-800 hover:bg-black/5 transition-all shadow-sm border border-transparent hover:border-black/5"
                     >
                         <Search size={18} />
-                    </motion.button>
+                    </Motion.button>
                 ) : (
-                    <motion.div
+                    <Motion.div
                         key="search-input"
                         initial={{ width: 40, opacity: 0 }}
                         animate={{ width: 280, opacity: 1 }}
@@ -93,7 +93,7 @@ export default function ChatSearchBar({ onSearch, placeholder = "Search messages
                         >
                             <X size={18} />
                         </button>
-                    </motion.div>
+                    </Motion.div>
                 )}
             </AnimatePresence>
         </div>

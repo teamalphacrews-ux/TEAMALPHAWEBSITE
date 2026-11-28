@@ -4,7 +4,7 @@ import { hasModuleAccess, hasFullModuleAccess } from '../../utils/moduleAccess';
 import StudioButton from '../components/common/StudioButton';
 import StudioSelect from '../components/common/StudioSelect';
 import DocumentSettingsPanel from '../components/common/DocumentSettingsPanel';
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../../utils/branding";
 import { quotationDefaults, addDocumentDays, documentCommunication, resolveStudioImage } from '../../utils/settingsDefaults';
 import { API_BASE_URL } from '../../utils/apiConfig';
@@ -14,6 +14,7 @@ import DocumentNextStep from '../components/operations/DocumentNextStep';
 import { documentClientContext, projectIncludesClient, quoteNextStep } from '../components/operations/documentGuidance';
 import { quotationStatus } from '../../utils/quotationStatus';
 import { documentClientLink } from '../../utils/documentClientLink';
+import { LEGACY_DEFAULT_QUOTE_COVER, quotePreviewCover, quoteWallpapers } from '../../utils/quoteWallpapers';
 import { removeQuoteItem, restoreQuoteItem } from '../utils/quoteItemUndo';
 import {useOfflineDraft,OfflineDraftStatus} from '../../offline/OfflineDrafts';
 import { Link, useLocation, useSearchParams } from "react-router-dom";
@@ -32,6 +33,7 @@ import {
   Printer,
   Search,
   ArrowUpRight,
+  Check,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { OperationsModal } from "../components/operations/OperationsUI";
@@ -49,14 +51,14 @@ import "./documentWorkflowRepair.css";
 import "./quotationEditorPolish.css";
 import { WorkspaceActionMenu } from "../components/operations/WorkspaceActionMenu";
 const covers = [
-  "/assets/banner.jpg",
-  "/assets/services/wedding.jpg",
-  "/assets/services/pre_wedding.jpg",
-  "/assets/services/engagement.jpg",
-  "/assets/services/haldi.jpg",
-  "/assets/studio-wedding.webp",
-  "/assets/studio-pre-wedding.webp",
-];
+  ['Classic banner', '/assets/quote-wallpapers/classic-banner.webp'],
+  ['Wedding', '/assets/services/wedding.jpg'],
+  ['Pre-wedding', '/assets/services/pre_wedding.jpg'],
+  ['Engagement', '/assets/services/engagement.jpg'],
+  ['Haldi', '/assets/services/haldi.jpg'],
+  ['Studio wedding', '/assets/studio-wedding.webp'],
+  ['Studio pre-wedding', '/assets/studio-pre-wedding.webp'],
+].map(([title, cover]) => ({ title, cover }));
 const blankItem = () => ({
   title: "Photography coverage",
   description: "",
@@ -91,7 +93,7 @@ const defaultForm = (settings) => ({
   reminderDays: [3, 7, 14, 21, 30],
   ...quotationDefaults(settings),
   design: {
-    coverImage: settings.coverImage || covers[0],
+    coverImage: settings.coverImage || LEGACY_DEFAULT_QUOTE_COVER,
     colorTheme: settings.colorTheme || "#202622",
     fontTheme: settings.fontTheme || "modern",
   },
@@ -116,7 +118,7 @@ const normalize = (q) => ({
   expiryEnabled: q.expiryEnabled !== false,
   reminderDays: q.reminderDays || [3, 7, 14, 21, 30],
   design: q.design || {
-    coverImage: covers[0],
+    coverImage: LEGACY_DEFAULT_QUOTE_COVER,
     colorTheme: "#202622",
     fontTheme: "modern",
   },
@@ -145,6 +147,53 @@ function Toggle({ label, checked, onChange, help }) {
         {checked ? "On" : "Off"}
       </label>
       {help && <p>{help}</p>}
+    </div>
+  );
+}
+function QuoteCoverPicker({ value, onChange, onAddPhoto }) {
+  const id = useId();
+  const selectedCover = quotePreviewCover(value);
+  const customCover = ![...quoteWallpapers, ...covers].some(({ cover }) => cover === selectedCover);
+  const sections = [
+    { title: "Wallpapers", choices: quoteWallpapers },
+    { title: "Studio photos", choices: customCover ? [...covers, { title: "Custom photo", cover: selectedCover }] : covers },
+  ];
+
+  return (
+    <div className="qw-cover-picker">
+      <div className="qw-cover-picker-heading">
+        <h3 id={id}>Cover image</h3>
+        <StudioButton type="button" icon={ImagePlus} onClick={onAddPhoto}>Add photo</StudioButton>
+      </div>
+      <div className="qw-cover-choices" role="radiogroup" aria-labelledby={id}>
+        {sections.map(({ title, choices }) => (
+          <div className="qw-cover-group" key={title}>
+            <h4>{title}</h4>
+            <div className="qw-cover-options">
+              {choices.map(({ title: name, cover, thumbnail }) => (
+                <label className="qw-cover-option" key={cover}>
+                  <input
+                    className="sr-only"
+                    type="radio"
+                    name={id}
+                    value={cover}
+                    checked={selectedCover === cover}
+                    onChange={() => onChange(cover)}
+                    aria-label={name}
+                  />
+                  <span className="qw-cover-option-tile">
+                    <img src={thumbnail || cover} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+                    <span className="qw-cover-option-caption">{name}</span>
+                    {selectedCover === cover && (
+                      <span className="qw-cover-option-check" aria-hidden="true"><Check size={14} strokeWidth={2.5} /></span>
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1429,32 +1478,16 @@ export default function Quotations() {
           {designOpen && (
             <OperationsModal title="Quotation design" description="Choose how this document appears to your client." onClose={() => setDesignOpen(false)} footer={<StudioButton type="button" variant="primary" onClick={() => setDesignOpen(false)}>Done</StudioButton>}>
             <div className="document-design-content">
-              <strong>Cover Image</strong>
-              <button
-                className="qw-text-button"
-                onClick={() => {
+              <QuoteCoverPicker
+                value={form.design?.coverImage}
+                onChange={(coverImage) => change("design", { ...formRef.current.design, coverImage })}
+                onAddPhoto={() => {
                   setModalValue("");
                   setModal("photo");
                 }}
-              >
-                <ImagePlus size={14} /> Add photo
-              </button>
-              <div className="qw-cover-grid">
-                {covers.map((src) => (
-                  <button
-                    className={form.design?.coverImage === src ? "active" : ""}
-                    key={src}
-                    onClick={() =>
-                      change("design", { ...form.design, coverImage: src })
-                    }
-                  >
-                    <img src={src} alt="Document cover option" />
-                  </button>
-                ))}
-              </div>
+              />
               <p>
-                Select a unique cover image for this document. Set default
-                cover, color and font in{" "}
+                Manage document defaults in{" "}
                 <Link to="/admin/settings?section=branding">Settings → Brand & documents</Link>.
               </p>
               <Field label="Color theme">
@@ -1484,11 +1517,12 @@ export default function Quotations() {
                   ))}
                 </StudioSelect>
               </Field>
-              <h3>Preview</h3>
+              <h3>Selected cover</h3>
               <img
                 className="qw-cover-preview"
-                src={form.design?.coverImage || covers[0]}
+                src={quotePreviewCover(form.design?.coverImage)}
                 alt="Selected quotation cover"
+                referrerPolicy="no-referrer"
               />
               <button className="qw-primary" onClick={preview}>
                 Preview Quote

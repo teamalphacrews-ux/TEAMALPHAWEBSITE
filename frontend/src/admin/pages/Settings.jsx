@@ -37,7 +37,7 @@ import SectionSelectionIndicator from './SectionSelectionIndicator';
 import { useSectionArrival } from './useSectionArrival';
 
 const sections = [
-  ['workspace', 'My workspace', 'Appearance, motion and your overview.', SlidersHorizontal, 'violet', 'Personal', 'dark light daylight system theme animations reduced motion homepage landing dashboard cards order reset'],
+  ['workspace', 'My workspace', 'Appearance, motion and your overview.', SlidersHorizontal, 'violet', 'Personal', 'dark light daylight system theme color colour palette animations reduced motion homepage landing dashboard cards order reset'],
   ['language', 'Language & region', 'Choose your language, date formats and time zone.', Languages, 'blue', 'Personal', 'Indian Hindi Bengali Marathi Telugu Tamil Gujarati Urdu Kannada Odia Malayalam English country region locale timezone date time numbers'],
   ['notifications', 'Sound & notifications', 'Your in-app sounds, banners and quiet hours.', Volume2, 'rose', 'Personal', 'sound volume tone chime bell notification badge banner quiet hours do not disturb alerts mute'],
   ['device', 'App & device', 'Privacy lock, push alerts and offline drafts.', Smartphone, 'blue', 'Personal', 'Face ID Touch ID passcode offline drafts push iPhone app privacy'],

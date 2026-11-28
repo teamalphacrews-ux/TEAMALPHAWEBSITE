@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const nodemailer = require('nodemailer');
 const Event = require('../models/Event');
 const Photographer = require('../models/Photographer');
+const StudioOperationLease = require('../models/StudioOperationLease');
 const { DEFAULT_STUDIO_TIMEZONE, studioDayStart } = require('../utils/studioDay');
 const { escapeHtml } = require('./studioMailer');
 
@@ -20,6 +21,21 @@ async function assignmentRecipients(names) {
         if (people.length === 1 && people[0].status !== 'Inactive' && people[0].email) recipients.push(people[0]);
     }
     return { recipients, unresolved: recipients.length !== lookup.size };
+}
+
+async function claimDailyReminder(event, photographer, tomorrow, expiresAt) {
+    const id = `crew-reminder:${event._id}:${photographer._id}:${tomorrow.toISOString()}`;
+    try {
+        const result = await StudioOperationLease.updateOne(
+            { _id: id },
+            { $setOnInsert: { until: expiresAt, expiresAt } },
+            { upsert: true, writeConcern: { w: 'majority' } },
+        );
+        return result.upsertedCount === 1;
+    } catch (error) {
+        if (error.code === 11000 && error.keyValue?._id === id) return false;
+        throw error;
+    }
 }
 
 let transporter = null;
@@ -95,6 +111,9 @@ const initCronJobs = () => {
                 };
 
                 try {
+                    // SMTP may accept a message before the connection fails. Keep
+                    // the durable claim on failure and never replay that recipient.
+                    if (!await claimDailyReminder(event, photographer, tomorrow, dayAfterTomorrow)) continue;
                     await transporter.sendMail(mailOptions);
                 } catch {
                     failed = true;

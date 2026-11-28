@@ -37,8 +37,6 @@ router.post('/signup', enabled, authLimit, guarded(async (req, res) => {
   if (process.env.SAAS_SIGNUP_ENABLED !== 'true') throw failure(503, 'New studio registration is currently invite-only. Please contact the Studio OS team.');
   const name = service.text(req.body.studioName, 'studio name');
   const account = await service.authenticateAccount(req.body, { create: true });
-  const count = await models.Membership.countDocuments({ accountId: account._id, role: 'owner', state: 'active' });
-  if (count >= 5) throw failure(409, 'Contact support to create more than five studios.');
   const { workspace, membership } = await service.provisionWorkspace(account, name);
   res.status(201).json(await service.issueSession(account, workspace, membership, req));
 }));
@@ -127,7 +125,6 @@ router.get('/workspaces', guarded(async (req, res) => {
   res.json({ workspaces: workspaces.map(item => service.workspaceView(item, memberships.find(m => String(m.workspaceId) === String(item._id)))), activeWorkspaceId: String(req.saas.workspace._id) });
 }));
 router.post('/workspaces', authLimit, guarded(async (req, res) => {
-  if (await models.Membership.countDocuments({ accountId: req.saas.account._id, role: 'owner', state: 'active' }) >= 5) throw failure(409, 'Contact support to create more than five studios.');
   const result = await service.provisionWorkspace(req.saas.account, service.text(req.body.studioName, 'studio name'));
   res.status(201).json(await service.issueSession(req.saas.account, result.workspace, result.membership, req));
 }));
@@ -196,7 +193,11 @@ router.patch('/members/:id', owner, guarded(async (req, res) => {
   res.json({ success: true });
 }));
 router.post('/billing/checkout', owner, guarded(async (req, res) => {
-  const workspace = req.saas.workspace, plan = await billing.approvedPlan(req.body.planId);
+  const workspace = req.saas.workspace;
+  if (workspace.pendingSubscriptionId && workspace.pendingPlanId !== req.body.planId) {
+    throw failure(409, 'Complete or cancel your existing pending subscription before choosing another plan.');
+  }
+  const plan = await billing.approvedPlan(req.body.planId, process.env, billing.pendingPlanApproval(workspace));
   if (workspace.razorpaySubscriptionId) {
     const previous = await billing.razorpay('subscriptions/' + workspace.razorpaySubscriptionId);
     if (!['cancelled', 'completed', 'expired'].includes(previous.status)) throw failure(409, 'An existing recurring subscription must be cancelled or reconciled before starting another. Contact support to change plans.');
@@ -204,10 +205,12 @@ router.post('/billing/checkout', owner, guarded(async (req, res) => {
   if (workspace.seatsReserved > plan.seatLimit) throw failure(409, 'Remove extra seats before choosing this plan.');
   let subscription;
   if (workspace.pendingSubscriptionId) {
-    if (workspace.pendingPlanId !== plan.id) throw failure(409, 'Complete or cancel your existing pending subscription before choosing another plan.');
     subscription = await billing.razorpay('subscriptions/' + workspace.pendingSubscriptionId);
+    if (!billing.matchesSubscription(subscription, workspace.pendingSubscriptionId, plan.providerId, workspace._id)) {
+      throw failure(409, 'The previous checkout does not match the saved studio plan. Contact support to reconcile it.');
+    }
     if (['cancelled', 'completed', 'expired'].includes(subscription.status)) {
-      await models.Workspace.updateOne({ _id: workspace._id, pendingSubscriptionId: subscription.id }, { $unset: { pendingSubscriptionId: 1, pendingPlanId: 1, checkoutState: 1, checkoutRequestedAt: 1 } });
+      await models.Workspace.updateOne({ _id: workspace._id, pendingSubscriptionId: subscription.id }, { $unset: billing.pendingCheckoutFields });
       throw failure(409, 'The previous checkout has ended and was cleared. Choose your plan again.');
     }
     if (!['created', 'authenticated'].includes(subscription.status)) throw failure(409, 'Your previous checkout is being processed. Refresh your subscription status before retrying.');
@@ -217,8 +220,15 @@ router.post('/billing/checkout', owner, guarded(async (req, res) => {
     if (!leased) throw failure(409, 'A subscription checkout is already being prepared. Please retry shortly.');
     try {
       subscription = await billing.razorpay('subscriptions', { method: 'POST', body: { plan_id: plan.providerId, total_count: 120, quantity: 1, customer_notify: 1, notes: { workspaceId: String(workspace._id), planId: plan.id } } });
-      if (!/^sub_[A-Za-z0-9]+$/.test(subscription.id || '')) throw failure(502, 'The payment provider returned an unexpected subscription. Contact support before retrying.');
-      await models.Workspace.updateOne({ _id: workspace._id }, { $set: { pendingSubscriptionId: subscription.id, pendingPlanId: plan.id, checkoutState: 'pending' } });
+      if (!/^sub_[A-Za-z0-9]+$/.test(subscription.id || '') ||
+          !billing.matchesSubscription(subscription, subscription.id, plan.providerId, workspace._id)) {
+        throw failure(502, 'The payment provider returned an unexpected subscription. Contact support before retrying.');
+      }
+      await models.Workspace.updateOne({ _id: workspace._id }, { $set: {
+        pendingSubscriptionId: subscription.id, pendingPlanId: plan.id,
+        pendingRazorpayPlanId: plan.providerId, pendingRazorpayPlanAmountPaise: plan.monthlyAmount * 100,
+        checkoutState: 'pending',
+      } });
     } catch (error) {
       // An ambiguous provider timeout must be reconciled before another mandate is created.
       await models.Workspace.updateOne({ _id: workspace._id }, { $set: { checkoutState: 'reconcile' } }).catch(() => {});

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   MessageSquare, Send, User, Check, CheckCheck, ChevronLeft,
   MoreVertical, Edit3, Trash2, Smile, Paperclip, Search, X, Clock, Reply, Copy, Image as ImageIcon, Bell
@@ -8,14 +8,20 @@ import { io } from 'socket.io-client';
 import EmojiPicker from 'emoji-picker-react';
 import { format } from 'date-fns';
 import { useAuth } from "../../context/AuthContext";
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchUnreadCounts, clearAdminUnread, handleRoomUpdate, markRoomAsRead } from '../../store/slices/chatSlice';
+import { fetchUnreadCounts, handleRoomUpdate, markRoomAsRead } from '../../store/slices/chatSlice';
 import ChatSearchBar from "../../components/client/Chat/SearchBar";
 import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😲', '😢'];
+
+const cleanToken = (raw) => {
+  if (!raw || typeof raw !== 'string') return null;
+  const cleaned = raw.replace(/^["']|["']$/g, '').trim();
+  return cleaned === 'null' || cleaned === 'undefined' ? null : cleaned;
+};
 
 export default function Chats() {
   const { user: adminProfile, token: authContextToken, logout } = useAuth();
@@ -26,41 +32,47 @@ export default function Chats() {
   const selectedUserRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState("");
   const [activeMenuId, setActiveMenuId] = useState(null);
-  const [numResults, setNumResults] = useState(0);
   const [isMobileThreadView, setIsMobileThreadView] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
-  const [globalSearchResults, setGlobalSearchResults] = useState([]);
-  const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [clearedHistory, setClearedHistory] = useState({}); // { [userId]: timestamp }
 
-  // Debounced Global Search
+  const hasGlobalSearch = searchTerm.length >= 2;
+  const searchIsCurrent = hasGlobalSearch && globalSearch?.query === searchTerm && globalSearch?.session === authContextToken;
+  const isSearchingGlobal = hasGlobalSearch && !searchIsCurrent;
+
+  // Debounce new queries and ignore stale results after the query changes.
   useEffect(() => {
-    if (!searchTerm || searchTerm.length < 2) {
-      setGlobalSearchResults([]);
-      return;
-    }
-    const delayDebounceFn = setTimeout(async () => {
-      setIsSearchingGlobal(true);
+    if (!hasGlobalSearch) return;
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      const token = cleanToken(authContextToken || localStorage.getItem("token"));
+      let results = [];
       try {
-        const token = cleanToken(authContextToken || localStorage.getItem("token"));
-        const res = await axios.get(`${API_URL}/api/chats/search-users?query=${searchTerm}`, {
-          headers: { "x-auth-token": token, "Authorization": `Bearer ${token}` }
+        const res = await axios.get(`${API_URL}/api/chats/search-users`, {
+          headers: { "x-auth-token": token, "Authorization": `Bearer ${token}` },
+          params: { query: searchTerm },
+          signal: controller.signal,
         });
-        setGlobalSearchResults(res.data);
-      } catch (err) { console.error("Global search error", err); }
-      finally { setIsSearchingGlobal(false); }
+        results = Array.isArray(res.data) ? res.data : [];
+      } catch {
+        if (!controller.signal.aborted) console.warn('Could not search chat contacts.');
+      }
+      if (!controller.signal.aborted) setGlobalSearch({ query: searchTerm, session: authContextToken, results });
     }, 500);
 
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, authContextToken]);
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [hasGlobalSearch, searchTerm, authContextToken]);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -88,33 +100,27 @@ export default function Chats() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const cleanToken = (raw) => {
-    if (!raw || typeof raw !== 'string') return null;
-    const cleaned = raw.replace(/^["']|["']$/g, '').trim();
-    return cleaned === 'null' || cleaned === 'undefined' ? null : cleaned;
-  };
-
-  const fetchConversations = async (showLoading = false) => {
+  const fetchConversations = useCallback((signal) => {
     const token = cleanToken(authContextToken || localStorage.getItem("token"));
     if (!token) return;
 
-    try {
-      if (showLoading) setLoading(true);
-      const res = await axios.get(`${API_URL}/api/chats/admin/conversations`, {
-        headers: {
-          "x-auth-token": token,
-          "Authorization": `Bearer ${token}`
-        }
-      });
+    return axios.get(`${API_URL}/api/chats/admin/conversations`, {
+      headers: {
+        "x-auth-token": token,
+        "Authorization": `Bearer ${token}`
+      },
+      signal,
+    }).then(res => {
+      if (signal?.aborted) return;
       const sortedUsers = Array.isArray(res.data) ? res.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) : [];
       setConversations(sortedUsers);
-    } catch (err) {
-      if (err.response?.status === 401) {
+    }).catch(err => {
+      if (!signal?.aborted && err.response?.status === 401) {
         console.warn("--- [AUTH/401] --- Admin fetchConversations rejected");
         logout();
       }
-    } finally { if (showLoading) setLoading(false); }
-  };
+    });
+  }, [authContextToken, logout]);
 
   // Socket Logic
   useEffect(() => {
@@ -225,44 +231,51 @@ export default function Chats() {
       fetchConversations();
     });
 
-    return () => newSocket.close();
-  }, [adminProfile, authContextToken]);
+    return () => {
+      clearTimeout(typingTimeoutRef.current);
+      socketRef.current = null;
+      newSocket.close();
+    };
+  }, [adminProfile, authContextToken, dispatch, fetchConversations]);
 
   // Initial Data Fetch Gate
   useEffect(() => {
     const token = cleanToken(authContextToken || localStorage.getItem("token"));
-    if (adminProfile && token) {
-      fetchConversations(true);
-      dispatch(fetchUnreadCounts());
-    }
-  }, [adminProfile, authContextToken]);
+    if (!adminProfile || !token) return;
+    const controller = new AbortController();
+    fetchConversations(controller.signal);
+    dispatch(fetchUnreadCounts());
+    return () => controller.abort();
+  }, [adminProfile, authContextToken, dispatch, fetchConversations]);
 
-  const fetchMessages = async (userId, pageNum = 1, showLoading = false) => {
+  const fetchMessages = async (userId, pageNum = 1) => {
     const token = cleanToken(authContextToken || localStorage.getItem("token"));
     if (!token) return;
 
     try {
-      if (pageNum === 1) setLoading(true);
-      else setIsFetchingMore(true);
+      if (pageNum > 1) setIsFetchingMore(true);
       const res = await axios.get(`${API_URL}/api/chats/admin/${userId}?page=${pageNum}&limit=40`, {
         headers: {
           "x-auth-token": token,
           "Authorization": `Bearer ${token}`
         }
       });
+      if (selectedUserRef.current?.chatId !== userId) return;
       if (pageNum === 1) {
         setMessages(res.data);
         setPage(1);
         setHasMore(res.data.length === 40);
         setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 100);
       } else {
-        const prevHeight = chatContainerRef.current.scrollHeight;
+        const prevHeight = chatContainerRef.current?.scrollHeight ?? 0;
         setMessages(prev => [...res.data, ...prev]);
         setPage(pageNum);
         setHasMore(res.data.length === 40);
         setTimeout(() => {
-          const newHeight = chatContainerRef.current.scrollHeight;
-          chatContainerRef.current.scrollTop = newHeight - prevHeight;
+          const container = chatContainerRef.current;
+          if (container && selectedUserRef.current?.chatId === userId) {
+            container.scrollTop = container.scrollHeight - prevHeight;
+          }
         }, 0);
       }
     } catch (err) {
@@ -271,25 +284,19 @@ export default function Chats() {
         logout();
       }
     } finally {
-      if (pageNum === 1) setLoading(false);
-      else setIsFetchingMore(false);
+      if (pageNum > 1 && selectedUserRef.current?.chatId === userId) setIsFetchingMore(false);
     }
   };
 
-  const filteredMessages = useMemo(() => {
-    if (!searchQuery) return messages;
-    return messages; // We show all but use searchQuery for highlighting
-  }, [messages, searchQuery]);
-
   const groupedMessages = useMemo(() => {
-    return filteredMessages.map((msg, i) => {
-      const prev = filteredMessages[i - 1];
-      const next = filteredMessages[i + 1];
+    return messages.map((msg, i) => {
+      const prev = messages[i - 1];
+      const next = messages[i + 1];
       const isGroupStart = !prev || prev.sender !== msg.sender || (new Date(msg.timestamp) - new Date(prev.timestamp) > 300000);
       const isGroupEnd = !next || next.sender !== msg.sender || (new Date(next.timestamp) - new Date(msg.timestamp) > 300000);
       return { ...msg, isGroupStart, isGroupEnd };
     });
-  }, [filteredMessages]);
+  }, [messages]);
 
   const handleScroll = () => {
     if (!chatContainerRef.current || isFetchingMore || !hasMore || !selectedUser) return;
@@ -299,6 +306,12 @@ export default function Chats() {
   };
 
   const handleSelectUser = (user) => {
+    if ((selectedUserRef.current?.chatId || selectedUserRef.current?._id) !== (user?.chatId || user?._id)) {
+      setMessages([]);
+      setPage(1);
+      setHasMore(false);
+      setIsFetchingMore(false);
+    }
     setSelectedUser(user);
     selectedUserRef.current = user;
     if (user) {
@@ -401,7 +414,7 @@ export default function Chats() {
       } else {
         fetchConversations();
       }
-    } catch (err) {
+    } catch {
       setMessages(prev => prev.map(m => m._id === tempId ? { ...m, status: 'error' } : m));
     }
   };
@@ -438,7 +451,9 @@ export default function Chats() {
       const res = await axios.post(`${API_URL}/api/chats/react/${messageId}`, { emoji }, { headers: { "x-auth-token": token } });
       setMessages(prev => prev.map(m => m._id === messageId ? { ...m, reactions: res.data } : m));
       setActiveMenuId(null);
-    } catch (err) { }
+    } catch {
+      toast.error('Could not save reaction');
+    }
   };
 
   const handleDelete = async (messageId, mode) => {
@@ -450,7 +465,9 @@ export default function Chats() {
       } else {
         setMessages(prev => prev.filter(m => m._id !== messageId));
       }
-    } catch (err) { }
+    } catch {
+      toast.error('Could not delete message');
+    }
   };
 
   const handleClear = async (userId) => {
@@ -484,7 +501,9 @@ export default function Chats() {
       setMessages(prev => prev.map(m => m._id === messageId ? res.data : m));
       setEditingMessage(null);
       setEditText("");
-    } catch (err) { }
+    } catch {
+      toast.error('Could not edit message');
+    }
   };
 
   const handleTyping = (e) => {
@@ -493,7 +512,7 @@ export default function Chats() {
     const targetUserId = selectedUser.chatId || selectedUser._id;
     socketRef.current.emit('typing_start', { roomId: targetUserId, senderId: 'admin' });
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => { socketRef.current.emit('typing_stop', { roomId: targetUserId, senderId: 'admin' }); }, 2000);
+    typingTimeoutRef.current = setTimeout(() => { socketRef.current?.emit('typing_stop', { roomId: targetUserId, senderId: 'admin' }); }, 2000);
   };
 
   const handleEmojiClick = (emojiData) => {
@@ -539,9 +558,9 @@ export default function Chats() {
   }, [conversations, searchTerm, clearedHistory]);
 
   const otherContacts = useMemo(() => {
-    if (!searchTerm) return [];
-    return globalSearchResults.filter(u => !conversations.find(c => c.chatId === u._id));
-  }, [globalSearchResults, conversations, searchTerm]);
+    if (!searchIsCurrent) return [];
+    return globalSearch.results.filter(u => !conversations.find(c => c.chatId === u._id));
+  }, [globalSearch, conversations, searchIsCurrent]);
 
   return (
     <div className="h-[calc(100vh-100px)] flex flex-col gap-6 animate-in fade-in duration-700 max-w-[1400px] mx-auto w-full font-sans text-[#5a5a5a] overflow-hidden">
@@ -586,12 +605,12 @@ export default function Chats() {
                 </div>
                 {/* --- ROOM-BASED REDUX BADGE --- */}
                 {(roomStates[conv.chatId]?.unreadCountAdmin > 0 || Number(conv.unreadCount || 0) > 0) && selectedUser?.chatId !== conv.chatId && (
-                  <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="shrink-0 ml-2 flex items-center gap-1.5">
+                  <Motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="shrink-0 ml-2 flex items-center gap-1.5">
                     <span className="bg-[#e11d48] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm">
                       {roomStates[conv.chatId]?.unreadCountAdmin || conv.unreadCount}
                     </span>
                     <Bell size={14} className="text-[#e11d48] fill-[#e11d48]/10 animate-shake" />
-                  </motion.div>
+                  </Motion.div>
                 )}
               </button>
             ))}
@@ -647,19 +666,16 @@ export default function Chats() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <ChatSearchBar onSearch={(q) => {
-                    setSearchQuery(q);
-                    setNumResults(messages.filter(m => String(m.text || '').toLowerCase().includes(q.toLowerCase())).length);
-                  }} />
+                  <ChatSearchBar onSearch={setSearchQuery} />
                   <div className="relative">
                     <button type="button" aria-label="Conversation options" title="Conversation options" aria-expanded={showOptionsMenu} onClick={() => setShowOptionsMenu(!showOptionsMenu)} className="studio-icon-button"><MoreVertical size={18} /></button>
                     <AnimatePresence>
                       {showOptionsMenu && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute top-11 right-0 w-44 bg-white/90 backdrop-blur-xl border border-white/80 shadow-2xl rounded-2xl py-2 z-50 overflow-hidden">
+                        <Motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute top-11 right-0 w-44 bg-white/90 backdrop-blur-xl border border-white/80 shadow-2xl rounded-2xl py-2 z-50 overflow-hidden">
                           <button onClick={() => setShowClearModal(true)} className="w-full text-left px-4 py-3 text-[10px] uppercase font-black text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors">
                             <Trash2 size={14} /> Clear DM History
                           </button>
-                        </motion.div>
+                        </Motion.div>
                       )}
                     </AnimatePresence>
                   </div>
@@ -751,19 +767,19 @@ export default function Chats() {
                     </React.Fragment>
                   );
                 })}
-                {isTyping && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-[10px] text-emerald-600 uppercase font-black tracking-[0.4em] pl-6 mt-2">Active Typing...</motion.div>}
+                {isTyping && <Motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-[10px] text-emerald-600 uppercase font-black tracking-[0.4em] pl-6 mt-2">Active Typing...</Motion.div>}
                 <div ref={messagesEndRef} className="h-6" />
               </div>
 
               <div className="p-5 bg-transparent relative">
                 {replyingTo && (
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="absolute bottom-[calc(100%+12px)] left-6 right-6 bg-white/80 backdrop-blur-2xl border border-white rounded-2xl p-4 flex items-center justify-between shadow-2xl z-30">
+                  <Motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="absolute bottom-[calc(100%+12px)] left-6 right-6 bg-white/80 backdrop-blur-2xl border border-white rounded-2xl p-4 flex items-center justify-between shadow-2xl z-30">
                     <div className="min-w-0 pr-4">
                       <p className="text-[9px] font-black text-emerald-600 mb-1 uppercase tracking-widest">Replying to msg</p>
                       <p className="text-[13px] text-charcoal font-medium truncate opacity-70 italic">"{replyingTo.text}"</p>
                     </div>
                     <button aria-label="Cancel reply" title="Cancel reply" onClick={() => setReplyingTo(null)} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-500 shadow-sm"><X size={16} /></button>
-                  </motion.div>
+                  </Motion.div>
                 )}
 
                 <div className="flex items-center gap-4 bg-white/60 backdrop-blur-2xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] rounded-[28px] px-4 py-3 relative border border-white">
@@ -796,10 +812,10 @@ export default function Chats() {
                 </div>
 
                 {attachmentsPreview && (
-                  <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="absolute bottom-[calc(100%+20px)] left-8 bg-white/90 backdrop-blur-2xl border-4 border-white rounded-2xl p-2 shadow-3xl z-40 group">
+                  <Motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="absolute bottom-[calc(100%+20px)] left-8 bg-white/90 backdrop-blur-2xl border-4 border-white rounded-2xl p-2 shadow-3xl z-40 group">
                     <img src={attachmentsPreview.url} className="max-h-40 rounded-xl shadow-inner" />
                     <button aria-label="Remove attachment" title="Remove attachment" onClick={() => setAttachmentsPreview(null)} className="absolute -top-3 -right-3 bg-red-600 text-white rounded-full p-2 shadow-2xl border-2 border-white hover:scale-110 transition-transform"><X size={12} /></button>
-                  </motion.div>
+                  </Motion.div>
                 )}
               </div>
             </div>

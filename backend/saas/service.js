@@ -6,6 +6,8 @@ const models = require('./models');
 const { runInWorkspace, workspaceDatabase } = require('./tenantContext');
 const { TRIAL_DAYS, plans } = require('./plans');
 const { failure } = require('./access');
+const MAX_OWNED_WORKSPACES = 5;
+const PROVISIONING_WINDOW_MS = 10 * 60 * 1000;
 const emailOf = value => typeof value === 'string' ? value.trim().toLowerCase() : '';
 function text(value, name, max = 120) {
   if (typeof value !== 'string' || !value.trim() || value.trim().length > max || /[\u0000-\u001f]/.test(value)) throw failure(400, `Enter a valid ${name}.`);
@@ -46,12 +48,29 @@ async function localMember(workspace, account, role, session) {
     return user;
   });
 }
+async function lockWorkspaceOwnership(accountId, session) {
+  // Every concurrent reservation and activation writes the same account row.
+  const locked = await models.Account.updateOne({ _id: accountId, state: 'active' },
+    { $inc: { workspaceProvisionRevision: 1 } }, { session, timestamps: false });
+  if (!locked.matchedCount) throw failure(403, 'This account is not available.');
+}
 async function provisionWorkspace(account, name) {
   const id = new mongoose.Types.ObjectId(), plan = plans()[0];
   const slugBase = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'studio';
-  const workspace = await models.Workspace.create({ _id: id, name, slug: `${slugBase}-${String(id).slice(-8)}`,
-    databaseName: workspaceDatabase(id), ownerAccountId: account._id, setupStep: 1, planId: plan.id, seatLimit: plan.seatLimit,
-    trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86400000), state: 'provisioning' });
+  const workspace = await mongoose.connection.transaction(async session => {
+    await lockWorkspaceOwnership(account._id, session);
+    const now = Date.now();
+    const owned = await models.Membership.countDocuments({ accountId: account._id, role: 'owner', state: 'active' }).session(session);
+    const pending = await models.Workspace.countDocuments({
+      ownerAccountId: account._id, state: 'provisioning', provisioningExpiresAt: { $gt: new Date(now) },
+    }).session(session);
+    if (owned + pending >= MAX_OWNED_WORKSPACES) throw failure(409, 'Contact support to create more than five studios.');
+    const [reserved] = await models.Workspace.create([{ _id: id, name, slug: `${slugBase}-${String(id).slice(-8)}`,
+      databaseName: workspaceDatabase(id), ownerAccountId: account._id, setupStep: 1, planId: plan.id, seatLimit: plan.seatLimit,
+      trialEndsAt: new Date(now + TRIAL_DAYS * 86400000), state: 'provisioning',
+      provisioningExpiresAt: new Date(now + PROVISIONING_WINDOW_MS) }], { session });
+    return reserved;
+  });
   try {
     await runInWorkspace(workspace, async () => {
       // Initialize tenant indexes before admitting members. Partial provisioning never opens access.
@@ -65,10 +84,22 @@ async function provisionWorkspace(account, name) {
         communication: { senderName: name, replyTo: account.email } });
     });
     const user = await localMember(workspace, account, 'owner');
-    const membership = await models.Membership.create({ workspaceId: id, accountId: account._id, localUserId: user._id, role: 'owner' });
-    workspace.state = 'active'; await workspace.save();
-    return { workspace, membership };
-  } catch (error) { workspace.state = 'failed'; await workspace.save().catch(() => {}); throw error; }
+    return await mongoose.connection.transaction(async session => {
+      await lockWorkspaceOwnership(account._id, session);
+      const active = await models.Workspace.findOneAndUpdate(
+        { _id: id, state: 'provisioning', provisioningExpiresAt: { $gt: new Date() } },
+        { $set: { state: 'active' }, $unset: { provisioningExpiresAt: 1 } }, { new: true, session });
+      if (!active) throw failure(409, 'Studio setup expired before it could finish. Start setup again.');
+      const [membership] = await models.Membership.create([
+        { workspaceId: id, accountId: account._id, localUserId: user._id, role: 'owner' },
+      ], { session });
+      return { workspace: active, membership };
+    });
+  } catch (error) {
+    await models.Workspace.updateOne({ _id: id, state: 'provisioning' },
+      { $set: { state: 'failed' }, $unset: { provisioningExpiresAt: 1 } }).catch(() => {});
+    throw error;
+  }
 }
 async function issueSession(account, workspace, membership, req) {
   if (workspace.state !== 'active' || membership.state !== 'active') throw failure(403, 'This studio is not available.');

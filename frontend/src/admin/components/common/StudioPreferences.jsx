@@ -92,13 +92,16 @@ function AccountPreferences({ children, storageKey, token, preview, user }) {
   useLayoutEffect(() => {
     const html = document.documentElement;
     const previous = html.getAttribute('data-studio-appearance'), previousMotion = html.getAttribute('data-studio-motion');
+    const previousColorTheme = html.getAttribute('data-studio-color-theme');
     html.setAttribute('data-studio-appearance', resolvedTheme);
     html.setAttribute('data-studio-motion', preferences.reduceMotion ? 'reduced' : 'standard');
+    html.setAttribute('data-studio-color-theme', preferences.colorTheme);
     return () => {
       if (previous) html.setAttribute('data-studio-appearance', previous); else html.removeAttribute('data-studio-appearance');
       if (previousMotion) html.setAttribute('data-studio-motion', previousMotion); else html.removeAttribute('data-studio-motion');
+      if (previousColorTheme) html.setAttribute('data-studio-color-theme', previousColorTheme); else html.removeAttribute('data-studio-color-theme');
     };
-  }, [resolvedTheme, preferences.reduceMotion]);
+  }, [resolvedTheme, preferences.reduceMotion, preferences.colorTheme]);
   useLayoutEffect(() => installStudioBrowserTheme(document, resolvedTheme), [resolvedTheme]);
   useEffect(() => () => cancelStudioThemeTransition(), []);
   useEffect(() => {

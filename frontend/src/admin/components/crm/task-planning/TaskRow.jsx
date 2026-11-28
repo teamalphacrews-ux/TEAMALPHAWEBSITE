@@ -10,14 +10,13 @@ const TaskRow = ({ task, index, tasks, setTasks, isAdmin }) => {
     if (!isAdmin || loading) return;
     setLoading(true);
 
-    const updated = [...tasks];
-    updated[index][field] = value;
+    const updated = tasks.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row);
     setTasks(updated);
 
     try {
       await updateTask(task.id, updated[index]);
       toast.success("Sync successful");
-    } catch (err) {
+    } catch {
       toast.error("Failed to sync change");
     } finally {
       setLoading(false);

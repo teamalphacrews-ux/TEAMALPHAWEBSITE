@@ -16,10 +16,10 @@ const input = {
   items: [{ title: 'Service', quantity: 1, unitPricePaise: 250 }],
 };
 
-async function controller(method, path, body = {}) {
+async function controller(method, path, body = {}, query = {}) {
   const route = financeRoutes.stack.find(layer => layer.route?.path === path && layer.route.methods[method]).route;
   const res = { code: 200, status(code) { this.code = code; return this; }, json(data) { this.data = data; } };
-  await route.stack.at(-1).handle({ body, params: { id: '507f1f77bcf86cd799439022' } }, res);
+  await route.stack.at(-1).handle({ body, query, params: { id: '507f1f77bcf86cd799439022' } }, res);
   return res;
 }
 
@@ -96,7 +96,10 @@ test('reminder checks operate in integer paise and handle absent historical adva
     paymentSchedule: [{ amountPaise: 29, dueDate: today }, { amountPaise: 1, dueDate: '2099-12-31' }], advancePaid: 0.29 };
   t.mock.method(Invoice, 'find', filter => ({
     select() { return this; },
-    async limit() { return filter.paymentReminders ? [invoice, { ...invoice, _id: 'unpaid', advancePaid: undefined }] : []; },
+    sort() { return this; },
+    async limit() {
+      return filter.paymentReminders ? [invoice, { ...invoice, _id: 'unpaid', advancePaid: undefined }] : [];
+    },
   }));
   const attempts = [];
   t.mock.method(Invoice, 'updateOne', async filter => { attempts.push(filter._id); return { modifiedCount: 0 }; });
@@ -104,17 +107,35 @@ test('reminder checks operate in integer paise and handle absent historical adva
   assert.deepEqual(attempts, ['unpaid']);
 });
 
-test('finance overview and pending balances include partial collections with exact decimals', async t => {
-  const partial = { _id: 'partial', status: 'Pending', total: 100.30, advancePaid: 20.10, invoiceDate: '2026-10-23' };
-  const paid = { status: 'Paid', total: 10.20 };
+test('finance reports one payment source and one reporting year with exact partial balances', async t => {
+  const date = '2026-10-23';
+  const partial = { _id: 'partial', leadId: 'test', status: 'Pending', total: 100.30, advancePaid: 20.10, invoiceDate: date };
+  const paid = { status: 'Paid', total: 10.20, invoiceDate: date };
   t.mock.method(Invoice, 'find', filter => {
     assert.deepEqual(filter.documentStatus.$nin, ['Draft', 'Cancelled', 'Archived']);
     return rows(filter.status.$nin ? [partial] : [partial, paid]);
   });
-  t.mock.method(Lead, 'find', () => rows([]));
-  t.mock.method(Finance, 'find', () => rows([{ amount: 0.1 }, { amount: 0.2 }]));
-  assert.deepEqual((await controller('get', '/overview')).data, {
-    annualSales: 30.30, annualProfit: 30, expenses: 0.30, pendingRevenue: 80.20,
+  t.mock.method(Lead, 'find', () => rows([
+    { _id: 'test', paymentStatus: 'Deposit Paid', totalAmount: 100.30, depositAmount: 20.10, createdAt: date },
+    { _id: 'old', paymentStatus: 'Paid', totalAmount: 200, createdAt: '2025-12-31T18:29:59.999Z' },
+  ]));
+  t.mock.method(Finance, 'find', filter => rows(filter.type === 'expense'
+    ? [{ amount: 0.1, date }, { amount: 0.2, date }] : [{ amount: 20.10, date, status: 'Received' }]));
+  const overview = async source => (await controller('get', '/overview', {}, { year: '2026', source })).data;
+  assert.deepEqual(await overview(), {
+    source: 'invoices', dateBasis: 'invoice_date', timezone: 'Asia/Kolkata', year: 2026,
+    annualSales: 30.30, annualProfit: null, expenses: 0.30, pendingRevenue: 80.20,
+  });
+  assert.equal((await overview('bookings')).annualSales, 20.10);
+  assert.equal((await overview('ledger')).annualSales, 20.10);
+  assert.equal((await overview('ledger')).annualProfit, 19.80);
+  assert.equal((await controller('get', '/overview', {}, { source: 'combined' })).code, 400);
+  assert.equal((await controller('get', '/overview', {}, { year: ['2026'] })).code, 400);
+  const months = (await controller('get', '/monthly-performance', {}, { source: 'bookings', year: '2026' })).data;
+  assert.equal(months.length, 12);
+  assert.deepEqual(months[9], {
+    source: 'bookings', dateBasis: 'booking_created_at', timezone: 'Asia/Kolkata',
+    name: 'Oct', year: 2026, month: 10, revenue: 20.10, expenses: 0.30, cashFlow: null,
   });
   const [item] = (await controller('get', '/pending-payments')).data;
   assert.equal(item.paid, 20.10);

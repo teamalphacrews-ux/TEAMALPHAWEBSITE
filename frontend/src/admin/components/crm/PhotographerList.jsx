@@ -11,23 +11,18 @@ export default function PhotographerList() {
     const API = import.meta.env.VITE_API_URL || '';
     const [photographers, setPhotographers] = useState([]);
     const [showForm, setShowForm] = useState(false);
-    const [loading, setLoading] = useState(true);
     const [selectedPhotographer, setSelectedPhotographer] = useState(null);
 
     useEffect(() => {
-        fetchPhotographers();
-    }, []);
-
-    const fetchPhotographers = async () => {
-        try {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/photographers`, authHeader);
-            setPhotographers(response.data);
-            setLoading(false);
-        } catch (err) {
-            console.error("Failed to fetch photographers", err);
-            setLoading(false);
-        }
-    };
+        const controller = new AbortController();
+        axios.get(`${API}/api/photographers`, {
+            headers: token ? { 'x-auth-token': token } : {},
+            signal: controller.signal,
+        }).then(({ data }) => setPhotographers(data)).catch(err => {
+            if (!controller.signal.aborted) console.error("Failed to fetch photographers", err);
+        });
+        return () => controller.abort();
+    }, [API, token]);
 
     const deletePhotographer = async (id, e) => {
         if (e) e.stopPropagation();

@@ -16,24 +16,47 @@ async function razorpay(path, { method = 'GET', body, env = process.env, fetchIm
   if (!response.ok || !data) throw failure(502, 'The payment provider could not complete this request. Please retry.');
   return data;
 }
-async function approvedPlan(planId, env = process.env) {
+async function approvedPlan(planId, env = process.env, recorded = {}) {
   const plan = plans(env).find(item => item.id === planId);
-  if (!plan?.configured) throw failure(503, 'Monthly pricing is awaiting configuration and approval.');
-  const providerId = env[`RAZORPAY_${plan.id.toUpperCase()}_PLAN_ID`];
+  if (!plan || (!recorded.providerId && !plan.configured)) throw failure(503, 'Monthly pricing is awaiting configuration and approval.');
+  const providerId = recorded.providerId || env[`RAZORPAY_${plan.id.toUpperCase()}_PLAN_ID`];
+  if (!/^plan_[A-Za-z0-9]+$/.test(providerId || '')) throw failure(503, 'The saved Razorpay plan requires review.');
+  const expectedPaise = recorded.providerId ? recorded.amountPaise : plan.monthlyAmount * 100;
   const remote = await razorpay('plans/' + encodeURIComponent(providerId), { env });
-  if (remote.id !== providerId || remote.period !== 'monthly' || remote.interval !== 1 || remote.item?.currency !== 'INR' || remote.item?.amount !== plan.monthlyAmount * 100)
+  const amount = remote.item?.amount;
+  // Older active subscriptions stored the verified plan ID only. Razorpay plans are immutable.
+  if (remote.id !== providerId || remote.period !== 'monthly' || remote.interval !== 1 ||
+      remote.item?.currency !== 'INR' || !Number.isSafeInteger(amount) || amount <= 0 || amount % 100 !== 0 ||
+      (expectedPaise != null && amount !== expectedPaise))
     throw failure(503, 'The configured Razorpay plan does not match the approved monthly price.');
-  return { ...plan, providerId };
+  return { ...plan, providerId, monthlyAmount: amount / 100 };
+}
+function pendingPlanApproval(workspace) {
+  const providerId = workspace.pendingSubscriptionId && workspace.pendingRazorpayPlanId;
+  const amountPaise = workspace.pendingRazorpayPlanAmountPaise;
+  if (providerId && (!Number.isSafeInteger(amountPaise) || amountPaise <= 0 || amountPaise % 100 !== 0)) {
+    throw failure(503, 'The saved Razorpay checkout price requires review.');
+  }
+  return providerId ? { providerId, amountPaise } : {};
+}
+const pendingCheckoutFields = {
+  pendingSubscriptionId: 1, pendingPlanId: 1, pendingRazorpayPlanId: 1, pendingRazorpayPlanAmountPaise: 1,
+  checkoutState: 1, checkoutRequestedAt: 1,
+};
+function matchesSubscription(subscription, subscriptionId, providerId, workspaceId) {
+  return subscription.id === subscriptionId && subscription.plan_id === providerId && subscription.notes?.workspaceId === String(workspaceId);
 }
 async function reconcileSubscription(workspace, subscriptionId, { models, env, leaseToken }) {
   if (!/^sub_[A-Za-z0-9]+$/.test(subscriptionId || '')) throw failure(400, 'Subscription is not valid.');
-  if (![workspace.pendingSubscriptionId, workspace.razorpaySubscriptionId].includes(subscriptionId)) throw failure(403, 'This subscription does not belong to your studio.');
-  const subscription = await razorpay('subscriptions/' + subscriptionId, { env });
-  const planId = subscriptionId === workspace.pendingSubscriptionId ? workspace.pendingPlanId : workspace.planId;
-  const plan = await approvedPlan(planId, env);
-  if (subscription.id !== subscriptionId || subscription.plan_id !== plan.providerId || subscription.notes?.workspaceId !== String(workspace._id)) throw failure(403, 'The subscription could not be matched to this studio.');
   const isPending = subscriptionId === workspace.pendingSubscriptionId;
   const isCurrent = subscriptionId === workspace.razorpaySubscriptionId;
+  if (!isPending && !isCurrent) throw failure(403, 'This subscription does not belong to your studio.');
+  const subscription = await razorpay('subscriptions/' + subscriptionId, { env });
+  const planId = isPending ? workspace.pendingPlanId : workspace.planId;
+  const recorded = isPending ? pendingPlanApproval(workspace)
+    : { providerId: workspace.razorpayPlanId, amountPaise: workspace.razorpayPlanAmountPaise };
+  const plan = await approvedPlan(planId, env, recorded);
+  if (!matchesSubscription(subscription, subscriptionId, plan.providerId, workspace._id)) throw failure(403, 'The subscription could not be matched to this studio.');
   const active = subscription.status === 'active';
   const ended = ['cancelled', 'completed', 'expired'].includes(subscription.status);
   const update = {};
@@ -43,14 +66,14 @@ async function reconcileSubscription(workspace, subscriptionId, { models, env, l
     if (plan.seatLimit < workspace.seatsReserved) throw failure(409, 'Remove extra team seats before changing to this plan.');
     filter.seatsReserved = { $lte: plan.seatLimit };
     update.$set = { planId, seatLimit: plan.seatLimit, razorpaySubscriptionId: subscriptionId,
-      razorpayPlanId: plan.providerId, subscriptionStatus: 'active' };
+      razorpayPlanId: plan.providerId, razorpayPlanAmountPaise: plan.monthlyAmount * 100, subscriptionStatus: 'active' };
   } else if (isCurrent && ended) {
     update.$set = { subscriptionStatus: 'cancelled' };
   } else if (isCurrent && ['halted', 'paused'].includes(subscription.status)) {
     update.$set = { subscriptionStatus: 'past_due' };
   }
   if (isPending && (active || ended)) {
-    update.$unset = { pendingSubscriptionId: 1, pendingPlanId: 1, checkoutState: 1, checkoutRequestedAt: 1 };
+    update.$unset = pendingCheckoutFields;
   }
   if (update.$set || update.$unset) {
     const result = await models.Workspace.updateOne(filter, update);
@@ -66,4 +89,5 @@ async function refreshSubscription(workspace, subscriptionId, { models = require
   try { return await reconcileSubscription(latest, subscriptionId, { models, env, leaseToken }); }
   finally { await models.Workspace.updateOne({ _id: workspace._id, billingSyncToken: leaseToken }, { $unset: { billingSyncToken: 1, billingSyncUntil: 1 } }); }
 }
-module.exports = { validSignature, paymentSignature, razorpay, approvedPlan, refreshSubscription };
+module.exports = { validSignature, paymentSignature, razorpay, approvedPlan, refreshSubscription,
+  pendingPlanApproval, pendingCheckoutFields, matchesSubscription };

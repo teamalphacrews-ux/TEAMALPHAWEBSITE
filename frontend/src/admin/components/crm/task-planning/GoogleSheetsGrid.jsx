@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { updateCell, batchUpdateCells, addRow, addColumn, getSheetData, deleteRow, deleteColumn, getDropdownConfig } from './taskService';
+import { batchUpdateCells, addRow, addColumn, deleteRow, deleteColumn, getDropdownConfig } from './taskService';
 import DropdownSettingsModal from './DropdownSettingsModal';
 import {
     Plus, Search, Filter, Loader2, Maximize2, Minimize2,
@@ -19,16 +19,22 @@ const API_URL = import.meta.env.VITE_API_URL || "";
 
 const MONTHS = ["All", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+function readDropdownOptions() {
+    return getDropdownConfig().then(configs => Object.fromEntries(configs.map(config => [config.type, config.options])));
+}
+
 const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) => {
-    const [headers, setHeaders] = useState(data.headers || []);
+    const headers = data.headers || [];
+    const sheetName = data.sheetName || "Loading...";
+    const [rowSource, setRowSource] = useState(data.rows);
     const [rows, setRows] = useState(data.rows || []);
-    const [sheetName, setSheetName] = useState(data.sheetName || "Loading...");
     const [selectedCell, setSelectedCell] = useState(null);
     const [editingCell, setEditingCell] = useState(null);
     const [editValue, setEditValue] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
     const [isFullScreen, setIsFullScreen] = useState(false);
-    const [isSheetIDOpen, setIsSheetIDOpen] = useState(false);
+    const [sheetMenuPosition, setSheetMenuPosition] = useState(null);
+    const isSheetIDOpen = sheetMenuPosition !== null;
     const [newSheetID, setNewSheetID] = useState(localStorage.getItem('google_sheet_id') || "");
     const [isMutating, setIsMutating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -43,28 +49,22 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
 
     const gridRef = useRef(null);
     const socketRef = useRef(null);
-    const switchButtonRef = useRef(null);
-
-    useEffect(() => {
-        if (data.headers) setHeaders([...data.headers]);
-        if (data.rows) setRows([...data.rows]);
-        if (data.sheetName) setSheetName(data.sheetName);
-
-        if (selectedCell && selectedCell.colIdx >= (data.headers?.length || 0)) {
+    // Local rows include optimistic edits and socket updates until the next server snapshot.
+    if (rowSource !== data.rows) {
+        setRowSource(data.rows);
+        setRows(data.rows || []);
+        if (selectedCell && selectedCell.colIdx >= headers.length) {
             setSelectedCell(null);
         }
+    }
 
-        fetchOptions();
-    }, [data]);
-
-    const fetchOptions = async () => {
-        const configData = await getDropdownConfig();
-        const newOptions = {};
-        configData.forEach(c => {
-            newOptions[c.type] = c.options;
+    useEffect(() => {
+        let active = true;
+        readDropdownOptions().then(options => {
+            if (active) setOptions(options);
         });
-        setOptions(newOptions);
-    };
+        return () => { active = false; };
+    }, [data]);
 
     useEffect(() => {
         // ALWAYS use the dynamic API_URL for socket connection
@@ -107,7 +107,7 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
             return;
         }
         localStorage.setItem('google_sheet_id', newSheetID);
-        setIsSheetIDOpen(false);
+        setSheetMenuPosition(null);
         toast.promise(onRefresh(), {
             loading: 'Connecting to Dynamic Sheet...',
             success: 'Sheet Switched Successfully!',
@@ -151,7 +151,6 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
         const res = await addColumn(colName, sheetName);
         if (res.success) {
             toast.success("Column Added Successfully");
-            setHeaders([]);
             await onRefresh();
         } else {
             toast.error("Failed to add column");
@@ -301,7 +300,14 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="relative">
-                            <button ref={switchButtonRef} onClick={() => setIsSheetIDOpen(!isSheetIDOpen)}
+                            <button onClick={event => {
+                                if (isSheetIDOpen) {
+                                    setSheetMenuPosition(null);
+                                    return;
+                                }
+                                const bounds = event.currentTarget.getBoundingClientRect();
+                                setSheetMenuPosition({ top: bounds.bottom + 12, right: window.innerWidth - bounds.right });
+                            }}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[11px] font-black transition-all border
                                     ${isSheetIDOpen ? 'bg-slate-800 text-white border-slate-900 shadow-xl' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100 shadow-sm'}`}>
                                 <Database size={16} className={isSheetIDOpen ? 'text-emerald-400' : 'text-slate-400'} />
@@ -309,13 +315,13 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
                             </button>
                             {isSheetIDOpen && createPortal(
                                 <div className="fixed bg-slate-900 rounded-3xl shadow-[0_30px_70px_rgba(0,0,0,0.6)] border border-slate-700/50 p-7 z-[99999999] animate-in zoom-in-95 duration-200"
-                                    style={{ top: (switchButtonRef.current?.getBoundingClientRect().bottom || 0) + 12, right: window.innerWidth - (switchButtonRef.current?.getBoundingClientRect().right || 0), width: '480px' }}>
+                                    style={{ ...sheetMenuPosition, width: '480px' }}>
                                     <div className="flex items-center justify-between mb-5">
                                         <div className="flex items-center gap-3 text-white">
                                             <div className="p-2 bg-emerald-500/20 rounded-xl"><Layers className="text-emerald-400" size={20} /></div>
                                             <span className="text-[13px] font-black uppercase tracking-[0.2em]">Connection Interface</span>
                                         </div>
-                                        <div onClick={() => setIsSheetIDOpen(false)} className="cursor-pointer p-2 hover:bg-white/10 rounded-full transition-colors"><X size={18} className="text-slate-500" /></div>
+                                        <div onClick={() => setSheetMenuPosition(null)} className="cursor-pointer p-2 hover:bg-white/10 rounded-full transition-colors"><X size={18} className="text-slate-500" /></div>
                                     </div>
                                     <div className="space-y-5">
                                         <div className="relative group">
@@ -408,7 +414,7 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredRows.map((row, rIdx) => (
+                        {filteredRows.map(row => (
                             <tr key={row.rowId} className="h-[52px] group/row transition-colors">
                                 <td className="sticky left-0 z-10 w-14 bg-slate-50 border-r border-b border-slate-200 text-center text-[12px] text-slate-400 font-bold shadow-sm group-hover/row:bg-emerald-50 transition-colors">
                                     {row.rowId}
@@ -485,7 +491,7 @@ const GoogleSheetsGrid = ({ data, onRefresh, isAdmin, activeMonth, setMonth }) =
             <DropdownSettingsModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
-                onUpdate={fetchOptions}
+                onUpdate={() => readDropdownOptions().then(setOptions)}
             />
             <style dangerouslySetInnerHTML={{ __html: `.custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 20px; }` }} />
         </div>

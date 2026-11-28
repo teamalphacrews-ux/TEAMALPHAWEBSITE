@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Plus, FolderOpen, Calendar, MoreVertical, Loader2, ArrowLeft, Image as ImageIcon, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 
 // Components
 import CreateEventModal from "../components/gallery/CreateEventModal";
@@ -11,8 +11,18 @@ import EditEventModal from "../components/gallery/EditEventModal";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+async function loadClientCollection(clientId, signal) {
+  const config = { headers: { 'x-auth-token': localStorage.getItem('token') }, signal };
+  const path = `${API_BASE_URL}/api/drive-gallery/${clientId}`;
+  return Promise.all([axios.get(path, config), axios.get(path + "/events", config)]);
+}
+
 export default function ClientEvents() {
   const { id: clientId } = useParams();
+  return <ClientEventCollection key={clientId} clientId={clientId} />;
+}
+
+function ClientEventCollection({ clientId }) {
   const navigate = useNavigate();
   const [client, setClient] = useState(null);
   const [events, setEvents] = useState([]);
@@ -20,32 +30,24 @@ export default function ClientEvents() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
 
-  useEffect(() => {
-    fetchClientAndEvents();
-  }, [clientId]);
-
-  const fetchClientAndEvents = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      
-      // Fetch Client Info
-      const clientRes = await axios.get(`${API_BASE_URL}/api/drive-gallery/${clientId}`, {
-        headers: { 'x-auth-token': token }
-      });
+  const fetchClientAndEvents = useCallback((signal) => loadClientCollection(clientId, signal)
+    .then(([clientRes, eventsRes]) => {
+      if (signal?.aborted) return;
       setClient(clientRes.data);
-
-      // Fetch Events
-      const eventsRes = await axios.get(`${API_BASE_URL}/api/drive-gallery/${clientId}/events`, {
-        headers: { 'x-auth-token': token }
-      });
       setEvents(eventsRes.data);
-    } catch (err) {
-      toast.error("Failed to load events.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    })
+    .catch(() => {
+      if (!signal?.aborted) toast.error("Failed to load events.");
+    })
+    .finally(() => {
+      if (!signal?.aborted) setLoading(false);
+    }), [clientId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchClientAndEvents(controller.signal);
+    return () => controller.abort();
+  }, [fetchClientAndEvents]);
 
   const deleteEvent = async (e, eventId) => {
     e.stopPropagation();
@@ -58,7 +60,7 @@ export default function ClientEvents() {
       });
       setEvents(prev => prev.filter(ev => ev._id !== eventId));
       toast.success("Event removed.");
-    } catch (err) {
+    } catch {
       toast.error("Delete failed.");
     }
   };
@@ -103,7 +105,7 @@ export default function ClientEvents() {
       ) : events.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {events.map((event, idx) => (
-            <motion.div
+            <Motion.div
               layout
               key={event._id}
               initial={{ opacity: 0, y: 30 }}
@@ -118,7 +120,7 @@ export default function ClientEvents() {
               className="group relative aspect-[3.5/4.5] rounded-[32px] overflow-hidden bg-black shadow-2xl transition-all duration-500 cursor-pointer"
             >
               {/* Full Image Background */}
-              <motion.img 
+              <Motion.img
                 src={event.thumbnail} 
                 alt={event.name}
                 whileHover={{ scale: 1.15 }}
@@ -158,7 +160,7 @@ export default function ClientEvents() {
 
               {/* Dynamic Text Content Overlay */}
               <div className="absolute inset-0 p-8 flex flex-col justify-end pointer-events-none z-30">
-                <motion.div 
+                <Motion.div
                   initial={false}
                   className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-1.5 w-fit mb-4 group-hover:bg-[#cfe8d5]/20 group-hover:border-[#cfe8d5]/40 transition-all duration-500"
                 >
@@ -166,7 +168,7 @@ export default function ClientEvents() {
                     <ImageIcon size={10} className="mb-0.5" />
                     Event Collection
                   </span>
-                </motion.div>
+                </Motion.div>
 
                 <h3 className="text-3xl font-bold text-white tracking-tight mb-2 group-hover:text-[#cfe8d5] transition-colors duration-500">
                   {event.name}
@@ -181,7 +183,7 @@ export default function ClientEvents() {
                   <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-500" />
                 </div>
               </div>
-            </motion.div>
+            </Motion.div>
           ))}
         </div>
       ) : (
@@ -208,7 +210,10 @@ export default function ClientEvents() {
         isOpen={!!editingEvent}
         onClose={() => setEditingEvent(null)}
         event={editingEvent}
-        onSuccess={fetchClientAndEvents}
+        onSuccess={() => {
+          setLoading(true);
+          void fetchClientAndEvents();
+        }}
       />
 
     </div>

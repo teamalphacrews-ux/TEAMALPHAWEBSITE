@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const Invoice = require("../models/Invoice");
 const StudioConfig = require("../models/StudioConfig");
 const { tokenHash } = require("../utils/quoteLifecycle");
+const { deliveryCandidates } = require("./deliveryCandidates");
 const {
   mailerReady,
   frontendOrigin,
@@ -239,10 +240,18 @@ async function runInvoiceDeliveryJobs() {
     documentStatus: { $ne: "Cancelled" },
   })
     .select("+shareToken")
+    .sort({ "scheduledDelivery.at": 1, _id: 1 })
     .limit(25);
   for (const invoice of scheduled) {
     const claim = await Invoice.updateOne(
-      { _id: invoice._id, "scheduledDelivery.state": "scheduled" },
+      {
+        _id: invoice._id,
+        updatedAt: invoice.updatedAt ?? null,
+        "scheduledDelivery.state": "scheduled",
+        "scheduledDelivery.at": invoice.scheduledDelivery.at,
+        status: { $ne: "Cancelled" },
+        documentStatus: { $ne: "Cancelled" },
+      },
       {
         $set: {
           "scheduledDelivery.state": "sending",
@@ -251,6 +260,12 @@ async function runInvoiceDeliveryJobs() {
       },
     );
     if (!claim.modifiedCount) continue;
+    const claimedSchedule = {
+      _id: invoice._id,
+      "scheduledDelivery.at": invoice.scheduledDelivery.at,
+      "scheduledDelivery.claimAt": now,
+      "scheduledDelivery.state": "sending",
+    };
     try {
       if (invoice.scheduledDelivery.requestedBy) await require('./studioSecurity').assertPermission(String(invoice.scheduledDelivery.requestedBy), 'invoiceIssue');
       else if (invoice.documentStatus !== 'Sent') throw Object.assign(new Error('This historical scheduled draft must be reviewed and issued by the studio before delivery.'), { status: 409 });
@@ -260,7 +275,7 @@ async function runInvoiceDeliveryJobs() {
         requestId: `schedule:${new Date(invoice.scheduledDelivery.at).getTime()}`,
       });
       await Invoice.updateOne(
-        { _id: invoice._id },
+        claimedSchedule,
         {
           $set: {
             "scheduledDelivery.state": "sent",
@@ -270,7 +285,7 @@ async function runInvoiceDeliveryJobs() {
       );
     } catch (e) {
       await Invoice.updateOne(
-        { _id: invoice._id },
+        claimedSchedule,
         {
           $set: {
             "scheduledDelivery.state": "failed",
@@ -290,15 +305,14 @@ async function runInvoiceDeliveryJobs() {
     month: "2-digit",
     day: "2-digit",
   }).format(now);
-  const invoices = await Invoice.find({
+  const invoices = deliveryCandidates(Invoice, {
     paymentReminders: true,
     documentStatus: "Sent",
     status: "Pending",
     clientEmail: { $ne: "" },
-  })
-    .select("+shareToken")
-    .limit(200);
-  for (const invoice of invoices) {
+  });
+  let attempts = 0;
+  for await (const invoice of invoices) {
     if (!require('../utils/documentDefaults').linkIsActive(invoice) || invoice.clientLinkOptions?.showPayments === false) continue;
     const payments = invoice.paymentScheduleEnabled
       ? invoice.paymentSchedule
@@ -354,6 +368,9 @@ async function runInvoiceDeliveryJobs() {
           },
         );
       }
+      // Only a durable claim consumes a delivery slot. Ineligible or previously
+      // claimed invoices should never keep later invoices from being scanned.
+      if (++attempts >= 200) return;
     }
   }
 }

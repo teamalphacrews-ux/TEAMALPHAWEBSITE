@@ -105,6 +105,7 @@ export default function Calendar() {
   const linkedEvent = events.find(event => String(event._id) === eventId);
   const linkedDay = linkedEvent ? eventStartDay(linkedEvent, timezone) : '';
   const connection = useWorkspaceData([isPreview ? null : "/api/calendar/sync-status"]);
+  const { reload: reloadConnection } = connection;
   const sync = connection.data[0] || {};
   const [monthState, setMonth] = useState(null),
     [selectedState, setSelected] = useState(null),
@@ -138,12 +139,12 @@ export default function Calendar() {
   useEffect(() => {
     if (isPreview || !hasFullModuleAccess(user)) return;
     let socket, cancelled = false;
-    const connect = () => { if (cancelled) return; socket = io(operationAPI + (user?.workspace?.id ? '/studio-' + user.workspace.id : ''), { auth: { token: localStorage.getItem('token') } }); socket.on('calendar_update', () => { reload(); connection.reload(); }); };
+    const connect = () => { if (cancelled) return; socket = io(operationAPI + (user?.workspace?.id ? '/studio-' + user.workspace.id : ''), { auth: { token: localStorage.getItem('token') } }); socket.on('calendar_update', () => { reload(); reloadConnection(); }); };
     // The access check initializes the namespace before an authenticated studio connects.
     if (user?.workspace?.id) workspaceRequest('get', '/api/saas/workspace').then(connect).catch(() => {});
     else connect();
     return () => { cancelled = true; socket?.disconnect(); };
-  }, [reload, connection.reload, isPreview, user, user?.workspace?.id]);
+  }, [reload, reloadConnection, isPreview, user]);
   const { visible, days, eventsByDay, dayLabels, selectedEvents, monthLoad, agendaEvents } = useCalendarSchedule(
     events, { query, crewFilter, month, selected, timezone, dateLabel, agendaScope },
   );

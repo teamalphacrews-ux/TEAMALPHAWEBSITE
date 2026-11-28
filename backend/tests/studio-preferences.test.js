@@ -52,6 +52,21 @@ test('personal appearance, motion and start pages are validated without acceptin
   assert.equal(new User({ studioPreferences: patch }).studioPreferences.validateSync(), undefined);
 });
 
+test('workspace palettes use preset IDs and default safely for older accounts', () => {
+  const User = require('../models/User');
+  const old = User.hydrate({ studioPreferences: { theme: 'system' } });
+  assert.equal(old.studioPreferences.colorTheme, 'default');
+  assert.equal(old.studioPreferences.theme, 'system');
+  for (const colorTheme of ['default', 'rosso-corsa', 'riviera-teal', 'alpine-jade', 'midnight-orchid', 'sahara-gold']) {
+    assert.deepEqual(parsePreferences({ colorTheme }), { colorTheme });
+    assert.equal(new User({ studioPreferences: { colorTheme } }).studioPreferences.validateSync(), undefined);
+  }
+  for (const colorTheme of ['#ff0000', 'light', 'dark', 'unknown', null, ['rosso-corsa'], { value: 'rosso-corsa' }]) {
+    assert.throws(() => parsePreferences({ colorTheme }), { status: 400 });
+  }
+  assert.ok(new User({ studioPreferences: { colorTheme: 'unknown' } }).studioPreferences.validateSync());
+});
+
 test('regional and notification preferences validate bounded values and leave partial updates partial', () => {
   const patch = { language: 'kn', region: 'IN', timezone: 'Asia/Kolkata', dateFormat: 'iso', timeFormat: '24h', numberFormat: 'international', notificationBadges: false, notificationToasts: true, notificationSound: true, notificationVolume: 65, notificationTone: 'soft', notificationCategories: [], quietHoursEnabled: true, quietHoursStart: '23:30', quietHoursEnd: '07:15' };
   assert.deepEqual(parsePreferences(patch), patch);
@@ -102,4 +117,15 @@ test('personal preference PATCH then GET round trip is scoped to the account and
   assert.equal(loaded.body.preferences.theme, 'dark'); assert.deepEqual(loaded.body.preferences.cardOrder, [...defaults().cardOrder].reverse());
   assert.equal(loaded.body.preferences.sidebarSort, 'custom'); assert.deepEqual(loaded.body.preferences.sidebarOrder, patch.sidebarOrder);
   assert.equal(loaded.body.preferences.language, 'kn'); assert.equal(loaded.body.preferences.notificationVolume, 20);
+
+  const palette = await call('PATCH', { colorTheme: 'rosso-corsa' });
+  assert.equal(palette.status, 200);
+  assert.deepEqual(captured.update.$set, { 'studioPreferences.colorTheme': 'rosso-corsa' });
+  assert.equal((await call('GET')).body.preferences.colorTheme, 'rosso-corsa');
+  assert.equal((await call('PATCH', { theme: 'light' })).body.preferences.colorTheme, 'rosso-corsa');
+  const reset = await call('PATCH', { colorTheme: defaults().colorTheme });
+  assert.equal(reset.status, 200);
+  assert.equal(reset.body.preferences.colorTheme, 'default');
+  assert.equal(reset.body.preferences.theme, 'light');
+  assert.deepEqual(reset.body.preferences.sidebarOrder, patch.sidebarOrder);
 });

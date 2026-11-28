@@ -93,9 +93,17 @@ test('SaaS onboarding, seat changes and subscription webhooks preserve committed
   Object.assign(process.env, { SAAS_STUDIO_MONTHLY_INR: '2500', RAZORPAY_STUDIO_PLAN_ID: planId,
     RAZORPAY_KEY_ID: 'fixture', RAZORPAY_KEY_SECRET: 'fixture-only', RAZORPAY_WEBHOOK_SECRET: 'fixture-webhook' });
   const originalFetch = global.fetch;
-  let providerStatus = 'active', providerReads = 0;
+  let providerStatus = 'created', providerReads = 0, providerCreations = 0;
   t.mock.method(global, 'fetch', (url, options) => {
     if (url.startsWith('http://127.0.0.1:')) return originalFetch(url, options);
+    if (options.method === 'POST') {
+      assert.equal(url, 'https://api.razorpay.com/v1/subscriptions');
+      const payload = JSON.parse(options.body);
+      assert.equal(payload.plan_id, planId);
+      assert.equal(payload.notes.workspaceId, workspaceId);
+      providerCreations++;
+      return Response.json({ id: subscriptionId, status: providerStatus, plan_id: planId, notes: { workspaceId } });
+    }
     assert.equal(options.method, 'GET');
     providerReads++;
     if (url === 'https://api.razorpay.com/v1/subscriptions/' + subscriptionId) {
@@ -116,11 +124,26 @@ test('SaaS onboarding, seat changes and subscription webhooks preserve committed
   assert.equal((await event('fixture-first', 'paused')).status, 503);
   assert.equal(await models.BillingEvent.exists({ _id: 'fixture-first' }), null);
   assert.equal(providerReads, 0);
-  await models.Workspace.updateOne({ _id: workspaceId }, { $set: { pendingSubscriptionId: subscriptionId, pendingPlanId: 'studio', checkoutState: 'pending' } });
-  assert.equal((await event('fixture-first', 'paused')).status, 200);
+  await models.Workspace.updateOne({ _id: workspaceId }, { $unset: { checkoutState: 1 } });
+  const checkout = () => api('billing/checkout', 'POST', { planId: 'studio' }, token);
+  assert.equal((await checkout()).data.monthlyAmount, 2500);
   let synced = await models.Workspace.findById(workspaceId);
+  assert.equal(synced.pendingRazorpayPlanId, planId);
+  assert.equal(synced.pendingRazorpayPlanAmountPaise, 250000);
+  Object.assign(process.env, { RAZORPAY_STUDIO_PLAN_ID: 'plan_Replacement', SAAS_STUDIO_MONTHLY_INR: '3000' });
+  const resumed = await checkout();
+  assert.equal(resumed.status, 200);
+  assert.equal(resumed.data.monthlyAmount, 2500);
+  assert.equal(resumed.data.subscriptionId, subscriptionId);
+  assert.equal(providerCreations, 1);
+  providerStatus = 'active';
+  assert.equal((await event('fixture-first', 'paused')).status, 200);
+  synced = await models.Workspace.findById(workspaceId);
   assert.equal(synced.subscriptionStatus, 'active');
   assert.equal(synced.seatLimit, 15);
+  assert.equal(synced.razorpayPlanId, planId);
+  assert.equal(synced.razorpayPlanAmountPaise, 250000);
+  assert.equal(synced.pendingRazorpayPlanId, undefined);
   const reads = providerReads;
   assert.equal((await event('fixture-first', 'paused')).status, 200);
   assert.equal(providerReads, reads);

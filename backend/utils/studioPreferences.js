@@ -4,7 +4,19 @@ const LANDING_PAGES = ['/admin', '/admin/crm', '/admin/calendar', '/admin/studio
 const LANGUAGES = ['en', 'hi', 'bn', 'mr', 'te', 'ta', 'gu', 'ur', 'kn', 'or', 'ml'];
 const REGIONS = ['IN', 'US', 'GB', 'AE', 'SG', 'AU', 'CA'];
 const NOTIFICATION_CATEGORIES = ['enquiries', 'calendar', 'tasks', 'finance', 'messages', 'system'];
-const PERSONAL_ENUMS = { sidebarSort: ['default', 'alphabetical', 'custom'], mobileTab: ['projects','finance'], overviewMode: ['today','insights'], textSize: ['compact','comfortable'], language: LANGUAGES, region: REGIONS, dateFormat: ['day-first', 'month-first', 'iso'], timeFormat: ['12h', '24h'], numberFormat: ['indian', 'international'], notificationTone: ['chime', 'soft', 'bell'] };
+const PERSONAL_ENUMS = {
+  colorTheme: ['default', 'rosso-corsa', 'riviera-teal', 'alpine-jade', 'midnight-orchid', 'sahara-gold'],
+  sidebarSort: ['default', 'alphabetical', 'custom'],
+  mobileTab: ['projects', 'finance'],
+  overviewMode: ['today', 'insights'],
+  textSize: ['compact', 'comfortable'],
+  language: LANGUAGES,
+  region: REGIONS,
+  dateFormat: ['day-first', 'month-first', 'iso'],
+  timeFormat: ['12h', '24h'],
+  numberFormat: ['indian', 'international'],
+  notificationTone: ['chime', 'soft', 'bell'],
+};
 const PERSONAL_BOOLEANS = ['notificationBadges', 'notificationToasts', 'notificationSound', 'quietHoursEnabled', 'showInspiration', 'showActivityStreak'];
 const validClockTime = value => typeof value === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
 function validSidebarOrder(value) {
@@ -16,7 +28,7 @@ function validTimezone(value) {
   if (typeof value !== 'string' || value.length > 80 || !/^(?:[A-Za-z_]+(?:\/[A-Za-z0-9_+-]+)+|UTC|GMT)$/.test(value)) return false;
   try { new Intl.DateTimeFormat('en', { timeZone: value }).format(); return true; } catch { return false; }
 }
-const personalDefaults = () => ({ sidebarSort: 'default', sidebarOrder: [], mobileTab: 'projects', overviewMode: 'today', textSize: 'compact', showInspiration: true, showActivityStreak: false, language: 'en', region: 'IN', timezone: 'studio', dateFormat: 'day-first', timeFormat: '12h', numberFormat: 'indian', notificationBadges: true, notificationToasts: true, notificationSound: false, notificationVolume: 50, notificationTone: 'chime', notificationCategories: [...NOTIFICATION_CATEGORIES], quietHoursEnabled: false, quietHoursStart: '22:00', quietHoursEnd: '08:00' });
+const personalDefaults = () => ({ colorTheme: 'default', sidebarSort: 'default', sidebarOrder: [], mobileTab: 'projects', overviewMode: 'today', textSize: 'compact', showInspiration: true, showActivityStreak: false, language: 'en', region: 'IN', timezone: 'studio', dateFormat: 'day-first', timeFormat: '12h', numberFormat: 'indian', notificationBadges: true, notificationToasts: true, notificationSound: false, notificationVolume: 50, notificationTone: 'chime', notificationCategories: [...NOTIFICATION_CATEGORIES], quietHoursEnabled: false, quietHoursStart: '22:00', quietHoursEnd: '08:00' });
 const defaults = () => ({ theme: 'light', reduceMotion: false, landingPage: '/admin', layoutVersion: 3, visibleCards: [...CARD_IDS], cardOrder: [...DEFAULT_CARD_ORDER], ...personalDefaults() });
 function parsePreferences(body) {
   const fail = () => { throw Object.assign(new Error('Choose valid workspace, language, region and notification preferences.'), { status: 400 }); };

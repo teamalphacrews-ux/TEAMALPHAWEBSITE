@@ -684,30 +684,6 @@
 .qw-design p a {
   color: #21a487;
 }
-.qw-cover-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 7px;
-  margin: 18px 0;
-}
-.qw-cover-grid button {
-  border: 2px solid transparent;
-  padding: 0;
-  background: none;
-  height: 60px;
-}
-.qw-cover-grid button.active {
-  border-color: var(--brand-ink);
-}
-.qw-cover-grid img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.qw-cover-preview {
-  width: 100%;
-  margin: 15px 0;
-}
 .qw-wizard {
   width: min(650px, calc(100% - 50px));
   margin: 100px auto;

@@ -2,19 +2,20 @@ import { useEffect, useState } from "react";
 import { TEAM_ALPHA_LOGO } from "../utils/branding";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import toast from "react-hot-toast";
 import { CheckCircle2, Printer } from "lucide-react";
 import { API_BASE_URL } from "../utils/apiConfig";
 import { resolveStudioImage } from '../utils/settingsDefaults';
 import { workspaceRequest } from "../admin/components/operations/workspaceData";
 import StudioProductBrand from "../components/StudioProductBrand";
 import { documentAccentInk } from "../utils/documentAccent";
+import { LEGACY_DEFAULT_QUOTE_COVER, quotePreviewCover } from "../utils/quoteWallpapers";
 import "./sharedQuotation.css";
 import "./studioClientGlass.css";
 import { IS_COMMERCIAL_DEPLOYMENT } from "../saas/release";
 import ClientProjectWorkspace from "./ClientProjectWorkspace";
 import "./clientSmartLinkDocuments.css";
 import "./clientDocumentLayout.css";
+import "./ownerQuotePreview.css";
 const money = (v) =>
   new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -80,11 +81,7 @@ export default function SharedQuotation() {
     quote.expiresAt &&
     now >= Date.parse(quote.expiresAt);
   const accept = async () => {
-    if (preview) {
-      toast.error("You cannot accept a quote in preview mode.");
-      return;
-    }
-    if (busy || expired) return;
+    if (preview || busy || expired) return;
     setBusy(true);
     setError("");
     try {
@@ -124,29 +121,32 @@ export default function SharedQuotation() {
               : "Inter, Arial, sans-serif",
       }
     : {};
+  const cover = quote?.design?.coverImage;
+  const heroStyle = preview
+    ? { "--quote-preview-wallpaper": `url(${JSON.stringify(quotePreviewCover(cover))})` }
+    : !IS_COMMERCIAL_DEPLOYMENT && {
+        backgroundImage: `linear-gradient(#10291e35,#14261e35),url("${cover || LEGACY_DEFAULT_QUOTE_COVER}")`,
+      };
+  const surface = preview ? " sq-owner-preview" : IS_COMMERCIAL_DEPLOYMENT ? " studio-client-glass" : "";
   const quotationDocument = (
-    <div className={`shared-quotation${IS_COMMERCIAL_DEPLOYMENT ? " studio-client-glass" : ""}`} style={style}>
+    <div className={`shared-quotation${surface}`} style={style}>
       <meta name="robots" content="noindex,nofollow" />
       <meta name="referrer" content="no-referrer" />
       {preview && (
         <div className="sq-owner-banner">
-          Previewing quote as Owner. Acceptance is disabled.
+          <strong>Owner preview</strong>
+          <span>Acceptance is disabled.</span>
         </div>
       )}
       {!quote ? (
-        <main className={IS_COMMERCIAL_DEPLOYMENT ? "sq-smart-link-state" : "sq-loading"}>
-          {IS_COMMERCIAL_DEPLOYMENT && <StudioProductBrand tone="inverse" />}
+        <main className={preview ? "sq-preview-state" : IS_COMMERCIAL_DEPLOYMENT ? "sq-smart-link-state" : "sq-loading"}>
+          {IS_COMMERCIAL_DEPLOYMENT && <StudioProductBrand tone={preview ? "light" : "inverse"} />}
           <h1>Your quotation</h1>
-          <p role={IS_COMMERCIAL_DEPLOYMENT && error ? "alert" : "status"}>{error || "Loading your quote…"}</p>
+          <p role={error ? "alert" : "status"}>{error || "Loading your quote…"}</p>
         </main>
       ) : (
         <>
-          <header
-            className="sq-hero"
-            style={!IS_COMMERCIAL_DEPLOYMENT || preview ? {
-              backgroundImage: `linear-gradient(#10291e35,#14261e35),url("${quote.design?.coverImage || "/assets/banner.jpg"}")`,
-            } : undefined}
-          >
+          <header className="sq-hero" style={heroStyle || undefined}>
             <img src={resolveStudioImage(quote.studio.logoUrl || TEAM_ALPHA_LOGO, API_BASE_URL)} alt={quote.studio.name} />
             <strong>{quote.studio.name}</strong>
             <h1>Hi {quote.clientName.split(" ")[0]},</h1>
@@ -155,11 +155,11 @@ export default function SharedQuotation() {
                 ? "Thank you. Your quote has been accepted."
                 : expired
                   ? "This quote has expired."
-                  : quote.expiryEnabled !== false
+                    : quote.expiryEnabled !== false && quote.validUntil
                     ? `Please review and accept this quote by ${date(quote.validUntil)}.`
                     : "Please review and accept your quote."}
             </p>
-            {!expired &&
+            {!preview && !expired &&
               quote.status !== "Accepted" &&
               quote.expiryEnabled !== false &&
               quote.expiresAt && (
@@ -189,14 +189,16 @@ export default function SharedQuotation() {
                 <div>
                   <button
                     type="button"
-                    aria-label="Print or save quote as PDF"
+                    aria-label={preview ? undefined : "Print or save quote as PDF"}
                     title="Print or save quote as PDF"
                     onClick={() => window.print()}
                   >
                     <Printer size={19} aria-hidden="true" />
+                    {preview && "Print or save PDF"}
                   </button>
                 </div>
               </div>
+              {preview && quote.title && <p className="sq-preview-title">{quote.title}</p>}
               <div className="sq-meta">
                 <div>
                   FROM<strong>{quote.studio.name}</strong>
@@ -233,23 +235,22 @@ export default function SharedQuotation() {
                     </tr>
                   </thead>
                   <tbody role="rowgroup">
-                    {quote.items.map((i, n) => (
-                      <tr key={n} role="row">
+                    {quote.items.map((i, n) => {
+                      const [firstLine, ...otherLines] = (i.description || "").split("\n");
+                      const description = i.title ? i.description : otherLines.join("\n");
+                      return <tr key={n} role="row">
                         <td role="cell">
-                          <strong>
-                            {i.title || i.description.split("\n")[0]}
-                          </strong>
-                          <p>
-                            {i.title
-                              ? i.description
-                              : i.description.split("\n").slice(1).join("\n")}
-                          </p>
+                          <strong>{i.title || firstLine}</strong>
+                          {preview && <span className="sq-preview-item-rate" aria-hidden="true">
+                            {i.quantity} × {money(i.unitPricePaise)}
+                          </span>}
+                          {description && <p>{description}</p>}
                         </td>
                         <td role="cell"><span className="client-document-cell-label" aria-hidden="true">Quantity</span>{i.quantity}</td>
                         <td role="cell"><span className="client-document-cell-label" aria-hidden="true">Unit price</span>{money(i.unitPricePaise)}</td>
                         <td role="cell"><span className="client-document-cell-label" aria-hidden="true">Amount</span>{money(i.quantity * i.unitPricePaise)}</td>
-                      </tr>
-                    ))}
+                      </tr>;
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -276,11 +277,11 @@ export default function SharedQuotation() {
               </dl>
               {(quote.notes || quote.terms) && (
                 <div className="sq-notes">
-                  <h3>NOTES</h3>
+                  <h3>{preview ? (quote.notes ? "Notes" : "Terms") : "NOTES"}</h3>
                   <p>{quote.notes || quote.terms}</p>
                   {quote.notes && quote.terms && (
                     <>
-                      <h3>TERMS</h3>
+                      <h3>{preview ? "Terms" : "TERMS"}</h3>
                       <p>{quote.terms}</p>
                     </>
                   )}
@@ -294,7 +295,7 @@ export default function SharedQuotation() {
                     Accepted by {quote.acceptedBy} on {date(quote.acceptedAt)}.
                   </p>
                   {quote.autoCreateInvoice !== false && !quote.invoiceReady && (
-                    <button onClick={accept} disabled={busy}>
+                    <button onClick={accept} disabled={preview || busy}>
                       Finish invoice generation
                     </button>
                   )}
@@ -310,7 +311,7 @@ export default function SharedQuotation() {
                     By selecting Accept Quote, you agree to the services, total
                     and terms above.
                   </p>
-                  <button disabled={busy} onClick={accept}>
+                  <button disabled={preview || busy} onClick={accept}>
                     {busy ? "RECORDING ACCEPTANCE…" : "ACCEPT QUOTE"}
                   </button>
                 </div>

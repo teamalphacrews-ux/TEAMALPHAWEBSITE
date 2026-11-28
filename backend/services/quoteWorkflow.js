@@ -4,6 +4,8 @@ const QuoteDelivery = require("../models/QuoteDelivery");
 const StudioConfig = require("../models/StudioConfig");
 const Notification = require("../models/Notification");
 const { expired, tokenHash } = require("../utils/quoteLifecycle");
+const { currentWorkspace } = require("../saas/tenantContext");
+const { deliveryCandidates } = require("./deliveryCandidates");
 const mailer = require("./studioMailer");
 const pipeline = require("./enquiryPipeline");
 const fail = (message, status = 400) =>
@@ -284,10 +286,11 @@ async function processDelivery(id) {
     return saved;
   }
 }
-let running = false;
+const runningStudios = new Set();
 async function runQuoteDeliveryJobs() {
-  if (running) return;
-  running = true;
+  const studio = currentWorkspace()?.databaseName || "legacy";
+  if (runningStudios.has(studio)) return;
+  runningStudios.add(studio);
   try {
     await QuoteDelivery.updateMany(
       {
@@ -302,11 +305,11 @@ async function runQuoteDeliveryJobs() {
         },
       },
     );
-    const quotes = await Quotation.find({
+    const quotes = deliveryCandidates(Quotation, {
       status: "Sent",
       sharedAt: { $exists: true },
-    }).limit(250);
-    for (const quote of quotes) {
+    });
+    for await (const quote of quotes) {
       if (expired(quote)) {
         const claimed = await Quotation.findOneAndUpdate(
           {
@@ -389,12 +392,12 @@ async function runQuoteDeliveryJobs() {
         status: "queued",
         dueAt: { $lte: new Date() },
       })
-        .sort({ dueAt: 1 })
+        .sort({ dueAt: 1, _id: 1 })
         .limit(25);
       for (const job of jobs) await processDelivery(job._id);
     }
   } finally {
-    running = false;
+    runningStudios.delete(studio);
   }
 }
 function startQuoteWorker() {

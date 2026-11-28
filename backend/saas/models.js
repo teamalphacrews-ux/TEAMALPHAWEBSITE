@@ -10,6 +10,7 @@ const account = new Schema({
   oauthProvider: { type: String, enum: ['google', 'apple'], immutable: true },
   oauthSubject: { type: String, maxlength: 255, immutable: true },
   socialProvisioningToken: { type: String, select: false }, socialProvisioningUntil: Date,
+  workspaceProvisionRevision: { type: Number, select: false },
   state: { type: String, enum: ['active', 'disabled'], default: 'active' },
 }, { timestamps: true });
 account.index({ oauthProvider: 1, oauthSubject: 1 }, { unique: true, partialFilterExpression: { oauthProvider: { $exists: true }, oauthSubject: { $exists: true } } });
@@ -18,6 +19,7 @@ const workspace = new Schema({
   databaseName: { type: String, required: true, unique: true, immutable: true },
   ownerAccountId: { type: Schema.Types.ObjectId, required: true, ref: 'SaaSAccount' },
   state: { type: String, enum: ['provisioning', 'active', 'suspended', 'failed'], default: 'provisioning' },
+  provisioningExpiresAt: Date,
   planId: { type: String, enum: ['starter', 'studio', 'scale'], default: 'starter' },
   // Set only by new provisioning. Studios created before guided setup keep their existing access.
   setupStep: { type: Number, enum: [1, 2, 3, 4] }, setupCompletedAt: Date,
@@ -26,8 +28,10 @@ const workspace = new Schema({
   subscriptionStatus: { type: String, enum: ['trialing', 'pending', 'active', 'past_due', 'cancelled', 'expired'], default: 'trialing' },
   trialEndsAt: { type: Date, required: true }, seatLimit: { type: Number, default: 5 },
   seatsReserved: { type: Number, default: 1, min: 0 },
-  razorpaySubscriptionId: String, razorpayPlanId: String,
-  pendingSubscriptionId: String, pendingPlanId: String, billingEventAt: { type: Number, default: 0 },
+  razorpaySubscriptionId: String, razorpayPlanId: String, razorpayPlanAmountPaise: Number,
+  pendingSubscriptionId: String, pendingPlanId: String,
+  pendingRazorpayPlanId: String, pendingRazorpayPlanAmountPaise: Number,
+  billingEventAt: { type: Number, default: 0 },
   checkoutState: { type: String, enum: ['creating', 'pending', 'reconcile'] }, checkoutRequestedAt: Date,
   billingSyncToken: String, billingSyncUntil: Date,
 }, { timestamps: true });

@@ -3,7 +3,7 @@ import {
   MoreVertical, Check, CheckCheck, Edit2, Trash2, 
   Reply as ReplyIcon, Sparkles, User, AlertCircle
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import MessageActionsMenu from './MessageActionsMenu';
 import ReactionsBar from './ReactionsBar';
@@ -27,6 +27,7 @@ export default function MessageBubble({
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.text);
+  const [isNewIncoming] = useState(() => !isOwn && Date.now() - new Date(message.timestamp).getTime() < 5000);
   const menuRef = useRef(null);
 
   // Highlighting utility
@@ -78,8 +79,6 @@ export default function MessageBubble({
     return <Check size={11} strokeWidth={3} className={isOwn ? "text-white/40" : "text-stone-400"} />;
   };
 
-  const isNewIncoming = !isOwn && (Date.now() - new Date(message.timestamp).getTime() < 5000);
-
   return (
     <div 
         id={id}
@@ -125,7 +124,7 @@ export default function MessageBubble({
         )}
 
         {/* Bubble */}
-        <motion.div 
+        <Motion.div
           initial={isNewIncoming ? { scale: 0.9, opacity: 0, x: isOwn ? 20 : -20 } : false}
           animate={isNewIncoming ? { 
             scale: 1, 
@@ -189,7 +188,7 @@ export default function MessageBubble({
                 </div>
             </div>
           )}
-        </motion.div>
+        </Motion.div>
 
         {/* Reactions List */}
         {!message.isDeletedEveryone && (

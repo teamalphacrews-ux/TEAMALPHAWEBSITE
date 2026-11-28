@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { getSheetData } from "./taskService";
 import GoogleSheetsGrid from "./GoogleSheetsGrid";
-import MonthTabs from "./MonthTabs";
 import { Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -11,11 +10,9 @@ const TaskPlanning = ({ user }) => {
   const [month, setMonth] = useState("All");
   const [error, setError] = useState(null);
 
-  const loadTasks = useCallback(async (isPolling = false) => {
-    if (!isPolling) setLoading(true);
-    setError(null);
-    try {
-      const res = await getSheetData();
+  const loadTasks = useCallback(() => getSheetData()
+    .then(res => {
+      setError(null);
       // Ensure completely new reference to prevent UI stale state blocks
       if (res && res.headers && res.rows) {
         setData({
@@ -26,21 +23,19 @@ const TaskPlanning = ({ user }) => {
       } else {
         setData({ headers: [], rows: [], sheetName: "Sheet1" });
       }
-    } catch (err) {
+    }).catch(() => {
       setError("Failed to synchronize with Google Sheets.");
       toast.error("Google Sheets Sync Failed");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    }).finally(() => setLoading(false)), []);
+
+  const refreshTasks = () => {
+    setLoading(true);
+    return loadTasks();
+  };
 
   useEffect(() => {
-    loadTasks();
-    // Auto refresh every 5 seconds for real-time feel
-    const interval = setInterval(() => {
-      loadTasks(true);
-    }, 5000);
-
+    void loadTasks();
+    const interval = setInterval(loadTasks, 5000);
     return () => clearInterval(interval);
   }, [loadTasks]);
 
@@ -79,7 +74,7 @@ const TaskPlanning = ({ user }) => {
     try {
       const taskMonth = parsedDate.toLocaleString("default", { month: "short" });
       return taskMonth.toUpperCase() === month.toUpperCase();
-    } catch (e) { 
+    } catch {
       return true; 
     }
   });
@@ -96,7 +91,7 @@ const TaskPlanning = ({ user }) => {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={loadTasks}
+            onClick={refreshTasks}
             disabled={loading}
             className="p-3 text-warmgray hover:text-charcoal hover:bg-white rounded-full border border-transparent hover:border-ivory transition-all shadow-sm group"
             title="Refresh Grid"
@@ -118,7 +113,7 @@ const TaskPlanning = ({ user }) => {
             <p className="font-serif text-xl text-red-900">{error}</p>
             <p className="text-xs text-red-600/70">Please check your backend Google API configuration.</p>
           </div>
-          <button onClick={loadTasks} className="mt-4 bg-white text-red-600 border border-red-200 px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm">
+          <button onClick={refreshTasks} className="mt-4 bg-white text-red-600 border border-red-200 px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm">
             Retry Connection
           </button>
         </div>
@@ -127,7 +122,7 @@ const TaskPlanning = ({ user }) => {
           <GoogleSheetsGrid
             data={filteredData}
             isAdmin={user?.role === "admin"}
-            onRefresh={loadTasks}
+            onRefresh={refreshTasks}
             activeMonth={month}
             setMonth={setMonth}
           />

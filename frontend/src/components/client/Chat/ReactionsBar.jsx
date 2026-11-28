@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 
 export default function ReactionsBar({ reactions, onReact, userId, isOwn }) {
   if (!reactions || reactions.length === 0) return null;
@@ -22,7 +22,7 @@ export default function ReactionsBar({ reactions, onReact, userId, isOwn }) {
             : `${userIds.length} others`;
 
           return (
-            <motion.button
+            <Motion.button
               key={emoji}
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -44,7 +44,7 @@ export default function ReactionsBar({ reactions, onReact, userId, isOwn }) {
               <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 px-2 py-1 bg-stone-800 text-white text-[9px] rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                 {tooltip}
               </div>
-            </motion.button>
+            </Motion.button>
           );
         })}
       </AnimatePresence>

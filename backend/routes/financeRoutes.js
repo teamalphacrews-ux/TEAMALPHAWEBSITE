@@ -11,51 +11,75 @@ const router = express.Router();
 
 router.use(auth, requireAdmin);
 
-const reportableInvoice = {
-    documentStatus: { $nin: ['Draft', 'Cancelled', 'Archived'] },
-    status: { $ne: 'Cancelled' },
+const {
+    reportOptions, periods, reportableInvoice, invoiceBalance, bookingBalance, ledgerBalance, toPaise,
+} = require('../utils/legacyFinanceReport');
+
+const books = {
+    invoices: { Model: Invoice, filter: reportableInvoice, balance: invoiceBalance, fields: 'total advancePaid status' },
+    bookings: {
+        Model: Lead, filter: { paymentStatus: { $in: ['Unpaid', 'Deposit Paid', 'Paid'] } },
+        balance: bookingBalance, fields: 'paymentStatus totalAmount depositAmount',
+    },
+    ledger: { Model: Finance, filter: { type: 'income' }, balance: ledgerBalance, fields: 'amount status' },
 };
-const toPaise = amount => Math.round((amount || 0) * 100);
-function invoiceBalance(invoice) {
-    const total = toPaise(invoice.total);
-    const paid = invoice.status === 'Paid' ? total : Math.min(total, Math.max(0, toPaise(invoice.advancePaid)));
-    return { total, paid, pending: total - paid };
+const expenseFilter = { type: 'expense', status: 'Paid' };
+
+function reportError(err, res) {
+    if (err.status === 400) return res.status(400).json({ error: err.message });
+    return res.status(500).json({ error: 'Unable to load the finance report.' });
 }
 
-const calculateFinanceStats = async () => {
-    const [invoices, leads, expensesData] = await Promise.all([
-        Invoice.find(reportableInvoice).select('total advancePaid status').lean(),
-        Lead.find({ paymentStatus: { $in: ['Unpaid', 'Deposit Paid', 'Paid'] } }).select('paymentStatus totalAmount depositAmount').lean(),
-        Finance.find({ type: 'expense' }).select('amount').lean(),
+async function report(req, monthly) {
+    const options = reportOptions(req.query);
+    const { source, dateBasis, dateField, timezone, year } = options;
+    const windows = periods(options, monthly);
+    const dateRange = { $gte: windows[0].start, $lt: windows.at(-1).end };
+    const book = books[source];
+    const [entries, expenses] = await Promise.all([
+        book.Model.find({ ...book.filter, [dateField]: dateRange }).select(book.fields + ' ' + dateField).lean(),
+        Finance.find({ ...expenseFilter, date: dateRange }).select('amount date').lean(),
     ]);
-    let received = 0, pending = 0;
-    for (const invoice of invoices) {
-        const balance = invoiceBalance(invoice);
-        received += balance.paid;
-        pending += balance.pending;
-    }
-    for (const lead of leads) {
-        const total = toPaise(lead.totalAmount);
-        const paid = lead.paymentStatus === 'Paid' ? total : lead.paymentStatus === 'Deposit Paid' ? toPaise(lead.depositAmount) : 0;
-        received += paid;
-        pending += total - paid;
-    }
-    const expensePaise = expensesData.reduce((sum, item) => sum + toPaise(item.amount), 0);
-    return {
-        annualSales: received / 100,
-        annualProfit: (received - expensePaise) / 100,
-        expenses: expensePaise / 100,
-        pendingRevenue: pending / 100,
-    };
-};
 
-// Get Finance Overview (Stats)
+    const totals = windows.map(window => ({ ...window, paid: 0, pending: 0, expenses: 0 }));
+    function groupFor(date) {
+        const time = new Date(date).getTime();
+        return totals.find(window => time >= window.start.getTime() && time < window.end.getTime());
+    }
+    for (const entry of entries) {
+        const bucket = groupFor(entry[dateField]);
+        if (!bucket) continue;
+        const balance = book.balance(entry);
+        bucket.paid += balance.paid;
+        bucket.pending += balance.pending;
+    }
+    for (const expense of expenses) {
+        const bucket = groupFor(expense.date);
+        if (bucket) bucket.expenses += toPaise(expense.amount);
+    }
+
+    const metadata = { source, dateBasis, timezone };
+    if (monthly) return totals.map(bucket => ({
+        ...metadata, name: bucket.name, month: bucket.month, year: bucket.year,
+        revenue: bucket.paid / 100, expenses: bucket.expenses / 100,
+        // Document dates can group outstanding balances, but cannot date a cash receipt.
+        cashFlow: source === 'ledger' ? (bucket.paid - bucket.expenses) / 100 : null,
+    }));
+    const [total] = totals;
+    return {
+        ...metadata, year,
+        annualSales: total.paid / 100,
+        annualProfit: source === 'ledger' ? (total.paid - total.expenses) / 100 : null,
+        expenses: total.expenses / 100,
+        pendingRevenue: total.pending / 100,
+    };
+}
+
 router.get('/overview', async (req, res) => {
     try {
-        const stats = await calculateFinanceStats();
-        res.json(stats);
+        res.json(await report(req, false));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        reportError(err, res);
     }
 });
 
@@ -121,65 +145,57 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Get Recent Transactions (Combined Invoices & Expenses)
+function incomeRow(row, source, dateField) {
+    const { paid, pending, total } = books[source].balance(row);
+    return {
+        id: row._id,
+        name: row.clientName || row.name || row.description || row.category || 'Income',
+        category: row.category || (source === 'invoices' ? 'Invoice Payment' : 'Client Payment'),
+        incomeType: { invoices: 'Invoice', bookings: 'Lead', ledger: 'Ledger' }[source],
+        status: row.paymentStatus || row.status || 'Pending',
+        total: total / 100,
+        paid: paid / 100,
+        pending: pending / 100,
+        date: row[dateField],
+    };
+}
+
+const byNewest = (a, b) => new Date(b.date) - new Date(a.date);
+
+function listDateFilter(options, dateField) {
+    if (!options.explicitYear) return {};
+    const [{ start, end }] = periods(options, false);
+    return { [dateField]: { $gte: start, $lt: end } };
+}
+
 router.get('/transactions', async (req, res) => {
     try {
-        // Fetch last 10 invoices (Paid or Pending)
-        const recentInvoices = await Invoice.find(reportableInvoice)
-            .sort({ invoiceDate: -1 })
-            .limit(10)
-            .lean();
-
-        // Fetch last 10 expenses
-        const recentExpenses = await Finance.find({ type: 'expense' })
-            .sort({ date: -1 })
-            .limit(10)
-            .lean();
-
-        // Fetch last 10 leads with deposit/paid
-        const recentLeads = await Lead.find({ paymentStatus: { $in: ['Deposit Paid', 'Paid'] } })
-            .sort({ createdAt: -1 })
-            .limit(10)
-            .lean();
-
-        // Combine and sort
-        const transactions = [
-            ...recentInvoices.map(inv => ({
-                id: inv._id,
-                name: inv.clientName,
-                category: 'Invoice Payment',
-                amount: invoiceBalance(inv).paid / 100,
-                pendingAmount: invoiceBalance(inv).pending / 100,
-                date: inv.invoiceDate,
-                type: 'income',
-                incomeType: 'Invoice',
-                status: inv.status || 'Pending'
-            })),
-            ...recentExpenses.map(exp => ({
-                id: exp._id,
-                name: exp.category || 'Expense',
-                category: exp.description || 'Operational Expense',
-                amount: exp.amount || 0,
-                date: exp.date,
-                type: 'expense',
-                status: exp.status || 'Paid'
-            })),
-            ...recentLeads.map(lead => ({
-                id: lead._id,
-                name: lead.name + ' (Lead)',
-                category: 'Client Payment',
-                amount: lead.paymentStatus === 'Paid' ? (lead.totalAmount || 0) : (lead.paymentStatus === 'Deposit Paid' ? (lead.depositAmount || 0) : 0),
-                pendingAmount: lead.paymentStatus === 'Paid' ? 0 : ((lead.totalAmount || 0) - (lead.paymentStatus === 'Deposit Paid' ? (lead.depositAmount || 0) : 0)),
-                date: lead.createdAt || new Date(),
-                type: 'income',
-                incomeType: 'Lead',
-                status: lead.paymentStatus
-            }))
-        ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
-
-        res.json(transactions);
+        const options = reportOptions(req.query);
+        const { source, dateField } = options;
+        const book = books[source];
+        const incomeFilter = source === 'bookings'
+            ? { paymentStatus: { $in: ['Deposit Paid', 'Paid'] } }
+            : book.filter;
+        const [income, expenses] = await Promise.all([
+            book.Model.find({ ...incomeFilter, ...listDateFilter(options, dateField) }).sort({ [dateField]: -1 }).limit(10).lean(),
+            Finance.find({ type: 'expense', ...listDateFilter(options, 'date') }).sort({ date: -1 }).limit(10).lean(),
+        ]);
+        const transactions = income.map(record => {
+            const row = incomeRow(record, source, dateField);
+            return { ...row, amount: row.paid, pendingAmount: row.pending, type: 'income' };
+        });
+        transactions.push(...expenses.map(expense => ({
+            id: expense._id,
+            name: expense.category || 'Expense',
+            category: expense.description || 'Operational Expense',
+            amount: expense.amount || 0,
+            date: expense.date,
+            type: 'expense',
+            status: expense.status || 'Paid',
+        })));
+        res.json(transactions.sort(byNewest).slice(0, 10));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        reportError(err, res);
     }
 });
 
@@ -305,106 +321,39 @@ router.delete('/income/:incomeType/:id', async (req, res) => {
     }
 });
 
-// Get Payment Plans (Pending Invoices)
 router.get('/pending-payments', async (req, res) => {
     try {
-        const pendingInvoices = await Invoice.find({ ...reportableInvoice, status: { $nin: ['Paid', 'Cancelled'] } }).sort({ invoiceDate: -1 }).lean();
-        const pendingLeads = await Lead.find({ paymentStatus: { $in: ['Unpaid', 'Deposit Paid'] } }).sort({ createdAt: -1 }).lean();
-
-        const formatted = [
-            ...pendingInvoices.filter(inv => invoiceBalance(inv).pending > 0).map(inv => ({
-                id: inv._id,
-                name: inv.clientName,
-                type: 'Invoice',
-                total: inv.total || 0,
-                paid: invoiceBalance(inv).paid / 100,
-                pending: invoiceBalance(inv).pending / 100,
-                status: invoiceBalance(inv).paid ? 'Part paid' : 'Unpaid',
-                date: inv.invoiceDate
-            })),
-            ...pendingLeads.map(lead => ({
-                id: lead._id,
-                name: lead.name,
-                type: 'Lead',
-                total: lead.totalAmount || 0,
-                paid: lead.paymentStatus === 'Deposit Paid' ? (lead.depositAmount || 0) : 0,
-                pending: (lead.totalAmount || 0) - (lead.paymentStatus === 'Deposit Paid' ? (lead.depositAmount || 0) : 0),
-                status: lead.paymentStatus,
-                date: lead.createdAt
-            }))
-        ].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        res.json(formatted);
+        const options = reportOptions(req.query);
+        const { source, dateField } = options;
+        const book = books[source];
+        const unsettled = {
+            invoices: { status: { $nin: ['Paid', 'Cancelled'] } },
+            bookings: { paymentStatus: { $in: ['Unpaid', 'Deposit Paid'] } },
+            ledger: { status: 'Pending' },
+        };
+        const rows = await book.Model.find({
+            ...book.filter, ...unsettled[source], ...listDateFilter(options, dateField),
+        }).sort({ [dateField]: -1 }).lean();
+        const payments = rows.map(row => {
+            const value = incomeRow(row, source, dateField);
+            return {
+                ...value,
+                type: value.incomeType,
+                status: source === 'invoices' ? (value.paid ? 'Part paid' : 'Unpaid') : value.status,
+            };
+        }).filter(row => row.pending > 0);
+        res.json(payments);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        reportError(err, res);
     }
 });
 
-// Get Monthly Performance Data (Revenue vs Expenses vs Cash Flow)
 router.get('/monthly-performance', async (req, res) => {
     try {
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const now = new Date();
-        const performanceData = [];
-
-        // Calculate the range: 6 months ago to now
-        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-
-        // Aggregation for Invoices
-        const invoiceAgg = await Invoice.aggregate([
-            { $match: { ...reportableInvoice, invoiceDate: { $gte: sixMonthsAgo } } },
-            { $group: {
-                _id: { month: { $month: "$invoiceDate" }, year: { $year: "$invoiceDate" } },
-                total: { $sum: { $cond: [
-                    { $eq: ["$status", "Paid"] }, "$total",
-                    { $min: ["$total", { $max: [0, { $ifNull: ["$advancePaid", 0] }] }] },
-                ] } }
-            }}
-        ]);
-
-        // Aggregation for Leads
-        const leadAgg = await Lead.aggregate([
-            { $match: { paymentStatus: { $in: ['Deposit Paid', 'Paid'] }, createdAt: { $gte: sixMonthsAgo } } },
-            { $group: {
-                _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
-                total: { $sum: { $cond: [{ $eq: ["$paymentStatus", "Paid"] }, "$totalAmount", "$depositAmount"] } }
-            }}
-        ]);
-
-        // Aggregation for Expenses
-        const expenseAgg = await Finance.aggregate([
-            { $match: { type: 'expense', date: { $gte: sixMonthsAgo } } },
-            { $group: {
-                _id: { month: { $month: "$date" }, year: { $year: "$date" } },
-                total: { $sum: "$amount" }
-            }}
-        ]);
-
-        // Combine into 6 months response
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const m = d.getMonth() + 1;
-            const y = d.getFullYear();
-
-            const invoiceTotal = invoiceAgg.find(a => a._id.month === m && a._id.year === y)?.total || 0;
-            const leadTotal = leadAgg.find(a => a._id.month === m && a._id.year === y)?.total || 0;
-            const expenseTotal = expenseAgg.find(a => a._id.month === m && a._id.year === y)?.total || 0;
-
-            const revenuePaise = toPaise(invoiceTotal) + toPaise(leadTotal);
-
-            performanceData.push({
-                name: months[d.getMonth()],
-                revenue: revenuePaise / 100,
-                expenses: toPaise(expenseTotal) / 100,
-                cashFlow: (revenuePaise - toPaise(expenseTotal)) / 100
-            });
-        }
-
-        res.json(performanceData);
+        res.json(await report(req, true));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        reportError(err, res);
     }
 });
 
 module.exports = router;
-

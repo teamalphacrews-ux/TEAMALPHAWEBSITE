@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
-import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchClientUnreadCounts, setClientUnreadCount, handleRoomUpdate } from '../../store/slices/chatSlice';
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import { 
   Heart, 
   Home, 
@@ -21,10 +21,8 @@ import { TEAM_ALPHA_LOGO as new_logo } from "../../utils/branding";
 
 export default function ClientSidebar({ onClose }) {
   const navigate = useNavigate();
-  const location = useLocation();
   const dispatch = useDispatch();
   const unreadCount = useSelector(state => state.chat.clientUnreadCount);
-  const socketRef = useRef(null);
   
   const { user } = useAuth();
   const userId = user?.id || user?._id;
@@ -37,9 +35,6 @@ export default function ClientSidebar({ onClose }) {
     }
   };
 
-  const locationRef = useRef(location.pathname);
-  useEffect(() => { locationRef.current = location.pathname; }, [location.pathname]);
-
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -48,7 +43,6 @@ export default function ClientSidebar({ onClose }) {
         auth: { token },
         reconnection: true
       });
-      socketRef.current = socket;
       socket.emit("join_chat", userId);
 
       // Global Redux Sync
@@ -64,7 +58,7 @@ export default function ClientSidebar({ onClose }) {
 
       return () => socket.disconnect();
     }
-  }, [userId]);
+  }, [dispatch, userId]);
 
   const navLinks = [
     { name: "Dashboard", path: "/portal", icon: Home, exact: true },
@@ -124,9 +118,9 @@ export default function ClientSidebar({ onClose }) {
                 <span className="text-[10px] font-bold uppercase tracking-[0.15em] relative z-10 flex items-center gap-2">
                   {link.name}
                   {link.hasUnread && (
-                    <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ repeat: Infinity, repeatType: 'reverse', duration: 1.5 }}>
+                    <Motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} transition={{ repeat: Infinity, repeatType: 'reverse', duration: 1.5 }}>
                       <Bell size={12} className="text-[#BA6A5D] fill-[#BA6A5D]/10" />
-                    </motion.div>
+                    </Motion.div>
                   )}
                 </span>
               </>

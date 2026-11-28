@@ -1,4 +1,17 @@
 const { basisPointAmount } = require('./paise');
+const quotationCoverAssets = new Set([
+  '/assets/studio-wedding.webp',
+  '/assets/studio-pre-wedding.webp',
+  '/assets/banner.jpg',
+  '/assets/services/wedding.jpg',
+  '/assets/services/pre_wedding.jpg',
+  '/assets/services/engagement.jpg',
+  '/assets/services/haldi.jpg',
+  ...[
+    'classic-banner', 'teal-resin', 'forest-canopy', 'fern-study', 'misty-valley',
+    'desert-dunes', 'tidal-shore', 'coastal-dusk', 'alpine-lake', 'first-light-peaks', 'ink-on-paper',
+  ].map(name => '/assets/quote-wallpapers/' + name + '.webp'),
+]);
 function bad(message) {
   throw Object.assign(new Error(message), { status: 400 });
 }
@@ -187,19 +200,7 @@ function quoteMetadata(body) {
   const design = body.design || {};
   object(design);
   const coverImage = text(design.coverImage, "cover image", 1000);
-  if (
-    coverImage &&
-    ![
-      "/assets/studio-wedding.webp",
-      "/assets/studio-pre-wedding.webp",
-      "/assets/banner.jpg",
-      "/assets/services/wedding.jpg",
-      "/assets/services/pre_wedding.jpg",
-      "/assets/services/engagement.jpg",
-      "/assets/services/haldi.jpg",
-    ].includes(coverImage)
-  )
-    url(coverImage);
+  if (coverImage && !quotationCoverAssets.has(coverImage)) url(coverImage);
   const colorTheme = text(design.colorTheme || "#1f2427", "color theme", 7);
   if (!/^#[a-f0-9]{6}$/i.test(colorTheme)) bad("Use a six-digit color code");
   return {

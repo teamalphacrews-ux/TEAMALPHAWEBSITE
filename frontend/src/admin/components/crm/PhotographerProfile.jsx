@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { X, Calendar, MapPin, MessageCircle, Clock, CheckCircle, Edit2, Save, User, Mail, Phone, Camera, Trash2, Loader2 } from "lucide-react";
 import { format, isPast } from "date-fns";
@@ -15,18 +15,20 @@ export default function PhotographerProfile({ photographer, onClose, onUpdate })
     const [formData, setFormData] = useState({ ...photographer });
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        fetchWorks();
-    }, [photographer.name]);
+    const fetchWorks = useCallback(signal => axios.get(
+        `${API}/api/photographers/${encodeURIComponent(photographer.name)}/works`,
+        { headers: token ? { 'x-auth-token': token } : {}, signal },
+    ), [API, photographer.name, token]);
 
-    const fetchWorks = async () => {
-        try {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL || ""}/api/photographers/${encodeURIComponent(photographer.name)}/works`, authHeader);
-            setWorks(response.data);
-        } catch (err) {
-            console.error("Failed to fetch works", err);
-        }
-    };
+    useEffect(() => {
+        const controller = new AbortController();
+        fetchWorks(controller.signal).then(({ data }) => {
+            if (!controller.signal.aborted) setWorks(data);
+        }).catch(err => {
+            if (!controller.signal.aborted) console.error("Failed to fetch works", err);
+        });
+        return () => controller.abort();
+    }, [fetchWorks]);
 
     const handleSaveProfile = async () => {
         setLoading(true);
@@ -60,9 +62,9 @@ export default function PhotographerProfile({ photographer, onClose, onUpdate })
         try {
             const newPeople = workPeople ? workPeople.filter(p => p !== photographer.name) : [];
             await axios.patch(`${import.meta.env.VITE_API_URL || ""}/api/leads/${workId}`, { people: newPeople }, authHeader);
-            fetchWorks();
+            fetchWorks().then(({ data }) => setWorks(data)).catch(err => console.error("Failed to fetch works", err));
             toast.success("Assignment removed");
-        } catch (e) { toast.error("Failed to remove assignment"); }
+        } catch { toast.error("Failed to remove assignment"); }
     };
 
     const safeFormat = (dateStr) => {

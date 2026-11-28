@@ -4,21 +4,18 @@ import { getDropdownConfig, updateDropdownConfig } from './taskService';
 import toast from 'react-hot-toast';
 
 const DropdownSettingsModal = ({ isOpen, onClose, onUpdate }) => {
-    const [configs, setConfigs] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [configs, setConfigs] = useState(null);
     const [saving, setSaving] = useState(null); // type being saved
     const [newOptions, setNewOptions] = useState({});
 
     useEffect(() => {
-        if (isOpen) fetchConfigs();
+        if (!isOpen) return;
+        let active = true;
+        getDropdownConfig().then(data => {
+            if (active) setConfigs(data);
+        });
+        return () => { active = false; };
     }, [isOpen]);
-
-    const fetchConfigs = async () => {
-        setLoading(true);
-        const data = await getDropdownConfig();
-        setConfigs(data);
-        setLoading(false);
-    };
 
     const handleAddOption = (type) => {
         const val = newOptions[type];
@@ -81,7 +78,7 @@ const DropdownSettingsModal = ({ isOpen, onClose, onUpdate }) => {
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-10">
-                    {loading ? (
+                    {configs === null ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <Loader2 className="animate-spin text-emerald-500" size={40} />
                             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Loading Configurations...</p>

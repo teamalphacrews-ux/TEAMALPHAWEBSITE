@@ -7,6 +7,7 @@ import { SettingsToggle } from './SettingsEditor';
 import { SettingsGroup } from './SettingsDisclosures';
 import { Link } from 'react-router-dom';
 import { STUDIO_LANDING_PAGES, OVERVIEW_CARDS } from '../../../utils/overviewPreferences';
+import WorkspaceColorThemes from './WorkspaceColorThemes';
 
 const themes = [
   { value: 'light', label: 'Daylight', description: 'Clean white surfaces', icon: Sun },
@@ -28,12 +29,13 @@ export default function WorkspacePreferences() {
   const themeGroup = useId();
   return <div className="settings-pref-panel">
     <div className="settings-pref-status" role="status"><Cloud size={17} aria-hidden="true" /><span>{syncMessages[syncState] || syncMessages.loading}</span>{['local', 'memory'].includes(syncState) && <button type="button" className="studio-button small" onClick={retrySave}><RefreshCw size={14} />Retry sync</button>}</div>
-    <SettingsGroup defaultOpen className="settings-pref-section" title="Appearance & motion" description="Choose a theme and how your workspace moves.">
+    <SettingsGroup defaultOpen className="settings-pref-section" title="Appearance & motion" description="Choose your display mode, colors, and motion preferences.">
       <fieldset className="settings-pref-themes"><legend className="studio-sr-only">Workspace appearance</legend>{themes.map(({ value, label, description, icon }) => <label key={value} className={'settings-pref-theme' + (preferences.theme === value ? ' is-selected' : '')}>
         <input type="radio" name={themeGroup} value={value} checked={preferences.theme === value} onChange={event => update({ theme: value }, { origin: event.currentTarget.closest('label') })} />
         <span className={'settings-pref-theme-preview is-' + value} aria-hidden="true"><i /><span><i /><i /><i /></span>{createElement(icon, { size: 20 })}</span>
         <span className="settings-pref-theme-label"><strong>{label}</strong>{preferences.theme === value && <Check size={16} aria-hidden="true" />}</span><small>{description}</small>
       </label>)}</fieldset>
+      <WorkspaceColorThemes current={preferences.colorTheme} onChange={colorTheme => update({ colorTheme })} />
       <SettingsToggle label="Reduce motion" description="Keep dashboard cards and transitions still. Your device’s reduced-motion preference is always respected." value={preferences.reduceMotion} onChange={reduceMotion => update({ reduceMotion })} />
     </SettingsGroup>
     <SettingsGroup className="settings-pref-section" title="Phone layout & overview" description="Keep your daily workspace focused.">

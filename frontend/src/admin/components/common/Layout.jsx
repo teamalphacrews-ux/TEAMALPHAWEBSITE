@@ -42,6 +42,7 @@ import '../../studio-commercial-legacy-controls.css';
 import '../../studio-workspace-shell.css';
 import '../../studio-workspace-phone.css';
 import '../../workspace-route-motion.css';
+import '../../studio-color-themes.css';
 import { enterWorkspacePage, followPrimaryAction, routeDirection } from './workspaceRouteMotion';
 
 const StudioControlReview = import.meta.env.DEV ? lazy(() => import('./StudioControlReview')) : null;

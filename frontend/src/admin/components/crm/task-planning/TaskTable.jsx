@@ -27,7 +27,7 @@ const TaskTable = ({ tasks, setTasks, isAdmin, onRefresh }) => {
       await addTask(newTask);
       toast.success("New task added to Google Sheets");
       onRefresh();
-    } catch (err) {
+    } catch {
       toast.error("Failed to add task");
     }
   };

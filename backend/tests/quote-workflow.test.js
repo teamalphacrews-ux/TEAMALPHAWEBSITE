@@ -54,6 +54,26 @@ test("quotation metadata validates booleans, references, numbering, reminders an
   assert.equal(values.role,undefined);
   for (const patch of [{ autoCreateInvoice: "true" }, { reminderDays: [0] }, { documentNumber: "bad\nnumber" }, { contactId: "x" }, { design: { coverImage: "javascript:alert(1)" } }, { design: { coverImage: "https://user:pass@example.com/image" } }, { design: { colorTheme: "red" } }]) assert.throws(() => validate.quotation({ ...body, ...patch }), { status:400 });
 });
+test("quotation and template designs keep the bundled wallpapers and existing cover options", () => {
+  const presetNames = [
+    'classic-banner', 'teal-resin', 'forest-canopy', 'fern-study', 'misty-valley', 'desert-dunes',
+    'tidal-shore', 'coastal-dusk', 'alpine-lake', 'first-light-peaks', 'ink-on-paper',
+  ];
+  const covers = [
+    ...presetNames.map(name => '/assets/quote-wallpapers/' + name + '.webp'),
+    '/assets/banner.jpg', '/assets/services/haldi.jpg', 'https://example.test/custom.jpg',
+  ];
+  for (const coverImage of covers) {
+    const q = { ...body, design: { coverImage } };
+    assert.equal(validate.quotation(q).design.coverImage, coverImage);
+    assert.equal(routes.templateValues({ ...q, name: 'Cover template' }).design.coverImage, coverImage);
+  }
+  for (const coverImage of [
+    '/assets/quote-wallpapers/unknown.webp',
+    '/assets/quote-wallpapers/thumbs/teal-resin.webp',
+    '/assets/quote-wallpapers/../banner.jpg',
+  ]) assert.throws(() => validate.quotation({ ...body, design: { coverImage } }), { status: 400 });
+});
 test("expiry can be disabled without exposing private client identifiers", () => {
   const q = { ...quote, validUntil: null, expiryEnabled: false, contactId: "private", studioProjectId: "private", notes: "Public notes" };
   assert.equal(expired(q),false);
@@ -211,7 +231,10 @@ test("confirmation retries report the persisted delivery state honestly", async 
 test("reminder recovery schedules only the newest missed reminder", async t => {
   const keys=[];
   t.mock.method(mailer,"mailerReady",() => true);
-  t.mock.method(Quotation,"find",() => ({limit:async () => [{...quote,remindersEnabled:true,reminderDays:[3,7,14,21,30],sharedAt:new Date(Date.now()-15*86400000)}]}));
+  t.mock.method(Quotation,"find",() => ({
+    sort() { return this; },
+    async limit() { return [{...quote,remindersEnabled:true,reminderDays:[3,7,14,21,30],sharedAt:new Date(Date.now()-15*86400000)}]; },
+  }));
   t.mock.method(QuoteDelivery,"updateMany",async () => ({}));
   t.mock.method(QuoteDelivery,"updateOne",async filter => {keys.push(filter.key);return {};});
   t.mock.method(QuoteDelivery,"find",() => ({sort:() => ({limit:async () => []})}));

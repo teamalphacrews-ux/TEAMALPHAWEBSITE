@@ -2,7 +2,21 @@
 
 **Review branch** `audit/backend-integrity-20261128` · **Release baseline** `00f89762ecf8b0dea2d8447ad664b3ca7481fe65`
 
-## Verdict
+## Follow-up findings and fixes
+
+The legacy Finance endpoints accept one source at a time. Choose `source=invoices` (the default), `source=bookings`, or `source=ledger`. The overview uses the current calendar year in Asia/Kolkata unless you supply `year=YYYY`. Monthly performance defaults to the last six months and shows all twelve months of a supplied year. Transactions and pending payments also accept the year filter. Cash flow and the legacy annual profit field are available from the ledger view, which uses dated entries and paid expenses. Invoice and booking views group current balances by invoice issue date or booking creation date. Only a receipt with a verifiable transaction reference can reconcile the same historical payment across sources.
+
+In the isolated MongoDB journey, the same ₹318.64 appeared in each separate source. Each report showed ₹318.64 instead of adding all three. The ledger view deducted the ₹10.01 paid expense. A pending expense and a previous-year receipt stayed outside that year’s cash totals.
+
+Delivery jobs now page through eligible quotes and invoices and isolate quote runs by studio. Scheduled invoice claims check the current schedule. The legacy daily crew reminder records a claim before attempting SMTP, so a retry skips a recipient whose original send was accepted or could not be confirmed.
+
+Concurrent studio creation now reserves capacity before provisioning and stays within the five-studio cap. Existing studios remain accessible, including those on accounts already above the cap. Interrupted reservations stop blocking capacity after ten minutes. Razorpay reconciliation now uses the provider plan and price approved for the subscription, so a catalog price change preserves an in-flight or active subscription. Older pending checkouts that lack approval details need their original plan configuration or provider reconciliation.
+
+Frontend lint covers authored source. The single checked-in minified docs bundle contains third-party code and is excluded by exact path.
+
+The follow-up passed 576 backend tests and 411 frontend tests. Frontend lint passed with zero warnings, and the commercial production build succeeded. Headless Chromium checked Overview motion behavior. Payment provider tests used a fixture, and historical production receipts were outside this run. The database changes are optional fields and use existing collections and indexes.
+
+## Original audit verdict
 
 A disposable two-studio journey verified that a booking, its contact, a restored production task, an accepted quote, and a partially paid invoice survived both HTTP process and database restarts. The other studio’s invoice register stayed empty. The release baseline passed its existing suite but failed new cases involving partial writes, inaccurate money totals, scheduling conflicts and repeated requests. The corrections and their regression cases are on this branch. No live database, client, payment account or messaging service participated.
 
